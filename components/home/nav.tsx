@@ -57,7 +57,7 @@ export default function Nav() {
                 <div className="hidden lg:flex lg:flex-1 lg:justify-end lg:items-center lg:gap-4">
                     <ModeToggle />
                     <a
-                        href="#"
+                        href="/login"
                         className="text-sm/6 font-semibold text-gray-900 dark:text-white">
                         Log in <span aria-hidden="true">&rarr;</span>
                     </a>
@@ -106,7 +106,7 @@ export default function Nav() {
                             <div className="py-6">
                                 <ModeToggle />
                                 <a
-                                    href="#"
+                                    href="/login"
                                     className="mt-4 -mx-3 block rounded-lg px-3 py-2.5 text-base/7 font-semibold text-gray-900 hover:bg-gray-50 dark:text-white dark:hover:bg-white/5">
                                     Log in
                                 </a>

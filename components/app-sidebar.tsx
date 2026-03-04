@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Command, Home, User } from "lucide-react";
+import { Command, DollarSign, FileSpreadsheet, Home, Shield, User } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
@@ -32,6 +32,21 @@ const data = {
             title: "Workers",
             url: "/dashboard/workers",
             icon: User,
+        },
+        {
+            title: "Timesheet",
+            url: "/dashboard/timesheet",
+            icon: FileSpreadsheet,
+        },
+        {
+            title: "Expenses",
+            url: "/dashboard/expenses",
+            icon: DollarSign,
+        },
+        {
+            title: "Admin",
+            url: "/dashboard/admin",
+            icon: Shield,
         },
     ],
 };

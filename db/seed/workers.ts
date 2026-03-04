@@ -1,4 +1,4 @@
-import type { workersTable, InsertWorker } from "@/db/schema";
+import type { workersTable, InsertWorker } from "@/db/workersTable";
 
 function isoDate(): Date {
     return new Date();

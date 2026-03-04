@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { SelectWorker } from "@/db/schema";
+import type { SelectWorker } from "@/db/workersTable";
 import Link from "next/link";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";

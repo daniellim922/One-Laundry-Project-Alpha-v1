@@ -31,6 +31,8 @@ interface DataTableProps<TData, TValue> {
   searchKey?: keyof TData & string;
   /** Name of the URL search param to sync the filter with (e.g. "search"). */
   searchParamKey?: string;
+  /** Optional actions to render next to the search input (e.g. "Add" button) */
+  actions?: React.ReactNode;
 }
 
 export function DataTable<TData, TValue>({
@@ -38,6 +40,7 @@ export function DataTable<TData, TValue>({
   data,
   searchKey,
   searchParamKey,
+  actions,
 }: DataTableProps<TData, TValue>) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -121,14 +124,19 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      {searchKey ? (
+      {searchKey || actions ? (
         <div className="flex items-center justify-between gap-2">
-          <Input
-            placeholder="Search..."
-            value={globalFilter ?? ""}
-            onChange={(event) => handleFilterChange(event.target.value)}
-            className="max-w-xs"
-          />
+          {searchKey ? (
+            <Input
+              placeholder="Search..."
+              value={globalFilter ?? ""}
+              onChange={(event) => handleFilterChange(event.target.value)}
+              className="max-w-xs"
+            />
+          ) : (
+            <div />
+          )}
+          {actions}
         </div>
       ) : null}
 

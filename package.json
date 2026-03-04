@@ -7,11 +7,11 @@
         "build": "next build",
         "start": "next start",
         "lint": "eslint",
-        "dev:db": "npx drizzle-kit push",
-        "dev:db:studio": "npx drizzle-kit studio",
-        "dev:db:seed": "npx drizzle-kit push && npx tsx lib/db.ts",
-        "drizzle:generate": "drizzle-kit generate",
-        "drizzle:migrate": "drizzle-kit migrate"
+        "db": "npx drizzle-kit push",
+        "db:studio": "npx drizzle-kit studio",
+        "db:seed": "npx drizzle-kit push && npx tsx db/seed/seed.ts",
+        "db:generate": "drizzle-kit generate",
+        "db:migrate": "drizzle-kit migrate"
     },
     "dependencies": {
         "@headlessui/react": "^2.2.9",
@@ -27,7 +27,8 @@
         "radix-ui": "^1.4.3",
         "react": "19.2.3",
         "react-dom": "19.2.3",
-        "tailwind-merge": "^3.5.0"
+        "tailwind-merge": "^3.5.0",
+        "xlsx": "^0.18.5"
     },
     "devDependencies": {
         "@tailwindcss/postcss": "^4",
