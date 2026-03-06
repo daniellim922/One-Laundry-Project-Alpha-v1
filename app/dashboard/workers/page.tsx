@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { db } from "@/lib/db";
-import { workersTable, type SelectWorker } from "@/db/workersTable";
+import { workersTable, type SelectWorker } from "@/db/tables/workersTable";
 import { columns } from "./columns";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";

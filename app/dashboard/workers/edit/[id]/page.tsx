@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { workersTable, type SelectWorker } from "@/db/workersTable";
+import { workersTable, type SelectWorker } from "@/db/tables/workersTable";
 import { WorkerForm } from "../../worker-form";
 
 interface PageProps {

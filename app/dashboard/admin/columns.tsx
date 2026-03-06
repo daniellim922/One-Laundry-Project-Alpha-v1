@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { SelectRole } from "@/db/workersTable";
+import type { SelectRole } from "@/db/tables/workersTable";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

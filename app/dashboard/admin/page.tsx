@@ -1,10 +1,10 @@
 import { db } from "@/lib/db";
-import { rolesTable, type SelectRole } from "@/db/workersTable";
+// import { rolesTable, type SelectRole } from "@/db/workersTable";
 import { columns } from "./columns";
 import { DataTable } from "@/components/data-table";
 
 export default async function Page() {
-    const roles: SelectRole[] = await db.select().from(rolesTable);
+    // const roles: SelectRole[] = await db.select().from(rolesTable);
 
     return (
         <div className="space-y-4">
@@ -17,7 +17,7 @@ export default async function Page() {
 
             <DataTable
                 columns={columns}
-                data={roles}
+                data={[]}
                 searchKey="name"
                 searchParamKey="search"
             />

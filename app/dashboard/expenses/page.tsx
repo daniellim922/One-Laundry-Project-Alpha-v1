@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { db } from "@/lib/db";
-import { expensesTable, type SelectExpense } from "@/db/expensesTable";
+import { expensesTable, type SelectExpense } from "@/db/tables/expensesTable";
 import { columns } from "./columns";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
