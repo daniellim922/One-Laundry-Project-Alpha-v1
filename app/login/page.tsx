@@ -2,18 +2,43 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { authClient } from "@/lib/auth-client";
 
 export default function LoginPage() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const router = useRouter();
 
-    function handleSubmit(e: React.FormEvent) {
+    async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        // Form submission logic can be added here
-        console.log("Login attempt:", { username, password });
+        setError(null);
+        setIsSubmitting(true);
+
+        try {
+            await authClient.signIn.username(
+                {
+                    username,
+                    password,
+                    callbackURL: "/dashboard",
+                },
+                {
+                    onSuccess: () => {
+                        router.push("/dashboard");
+                    },
+                    onError: (ctx) => {
+                        setError(ctx.error.message);
+                    },
+                },
+            );
+        } finally {
+            setIsSubmitting(false);
+        }
     }
 
     return (
@@ -57,7 +82,14 @@ export default function LoginPage() {
                             autoComplete="current-password"
                         />
                     </div>
-                    <Button type="submit" className="w-full" size="lg">
+                    {error ? (
+                        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                    ) : null}
+                    <Button
+                        type="submit"
+                        className="w-full"
+                        size="lg"
+                        disabled={isSubmitting}>
                         Log in
                     </Button>
                 </form>

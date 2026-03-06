@@ -32,7 +32,7 @@ const defaultValues = {
     race: "",
     monthlyPay: "",
     hourlyPay: "",
-    paymentMethod: undefined as SelectWorker["paymentMethod"],
+    paymentMethod: null as SelectWorker["paymentMethod"],
     payNowPhone: "",
     bankAccountNumber: "",
 };
@@ -310,7 +310,7 @@ export function WorkerForm({ worker }: WorkerFormProps) {
                                 Payment Method
                             </Label>
                             <Select
-                                value={paymentMethod}
+                                value={paymentMethod ?? undefined}
                                 onValueChange={(value) =>
                                     setPaymentMethod(
                                         value as NonNullable<

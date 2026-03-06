@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { db } from "@/lib/db";
 import { expensesTable, type SelectExpense } from "@/db/tables/expensesTable";
@@ -21,20 +22,27 @@ export default async function Page() {
                 </p>
             </div>
 
-            <DataTable
-                columns={columns}
-                data={expenses}
-                searchKey="description"
-                searchParamKey="search"
-                actions={
-                    <Button asChild>
-                        <Link href="/dashboard/expenses/new">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add expense
-                        </Link>
-                    </Button>
-                }
-            />
+            <Suspense
+                fallback={
+                    <div className="rounded-md border p-6 text-sm text-muted-foreground">
+                        Loading...
+                    </div>
+                }>
+                <DataTable
+                    columns={columns}
+                    data={expenses}
+                    searchKey="description"
+                    searchParamKey="search"
+                    actions={
+                        <Button asChild>
+                            <Link href="/dashboard/expenses/new">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add expense
+                            </Link>
+                        </Button>
+                    }
+                />
+            </Suspense>
         </div>
     );
 }

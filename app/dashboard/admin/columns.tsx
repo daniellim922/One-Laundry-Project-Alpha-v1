@@ -1,9 +1,18 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { SelectRole } from "@/db/tables/workersTable";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+export type AdminUserRow = {
+    id: string;
+    name: string;
+    email: string;
+    username: string | null;
+    roles: string[];
+    rolesDisplay: string; // for global search
+    createdAt: Date;
+};
 
 const sortableHeader =
     (label: string) =>
@@ -26,14 +35,26 @@ const sortableHeader =
         </Button>
     );
 
-export const columns: ColumnDef<SelectRole>[] = [
+export const columns: ColumnDef<AdminUserRow>[] = [
     {
         accessorKey: "name",
         header: sortableHeader("Name"),
     },
     {
-        accessorKey: "description",
-        header: sortableHeader("Description"),
-        cell: ({ row }) => row.original.description ?? "—",
+        accessorKey: "email",
+        header: sortableHeader("Email"),
+    },
+    {
+        accessorKey: "username",
+        header: sortableHeader("Username"),
+        cell: ({ row }) => row.original.username ?? "—",
+    },
+    {
+        accessorKey: "roles",
+        header: sortableHeader("Roles"),
+        cell: ({ row }) =>
+            row.original.roles.length > 0
+                ? row.original.roles.join(", ")
+                : "—",
     },
 ];

@@ -6,6 +6,7 @@ import { featuresTable } from "@/db/tables/featuresTable";
 import { rolePermissionsTable } from "@/db/tables/rolePermissionsTable";
 import { workers } from "./workers";
 import { FEATURES, ROLES, ROLE_PERMISSIONS } from "./iam";
+import { seedAdminUser } from "./auth";
 
 async function seed() {
     await db.insert(workersTable).values(workers);
@@ -39,6 +40,11 @@ async function seed() {
         }
     }
     console.log("New role permissions created!");
+
+    const seededAdmin = await seedAdminUser();
+    console.log(
+        `Seeded admin user: ${seededAdmin.email} (username: ${seededAdmin.username}) linked to roleId ${seededAdmin.roleId}`,
+    );
     process.exit(0);
 }
 seed();
