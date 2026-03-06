@@ -44,8 +44,8 @@ const data = {
             icon: DollarSign,
         },
         {
-            title: "Admin",
-            url: "/dashboard/admin",
+            title: "IAM",
+            url: "/dashboard/iam",
             icon: Shield,
         },
     ],

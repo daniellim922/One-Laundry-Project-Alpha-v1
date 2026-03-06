@@ -11,8 +11,12 @@ import { featuresTable } from "./featuresTable";
 
 export const rolePermissionsTable = pgTable("role_permissions", {
     id: uuid().primaryKey().defaultRandom(),
-    roleId: uuid("role_id").references(() => rolesTable.id),
-    featureId: uuid("feature_id").references(() => featuresTable.id),
+    roleId: uuid("role_id")
+        .notNull()
+        .references(() => rolesTable.id, { onDelete: "cascade" }),
+    featureId: uuid("feature_id")
+        .notNull()
+        .references(() => featuresTable.id, { onDelete: "cascade" }),
     create: boolean("create").default(false).notNull(),
     read: boolean("read").default(false).notNull(),
     update: boolean("update").default(false).notNull(),
