@@ -188,14 +188,12 @@ export async function updateUser(
         })
         .where(eq(user.id, userId));
 
-    await db
-        .delete(userRolesTable)
-        .where(eq(userRolesTable.userId, userId));
+    await db.delete(userRolesTable).where(eq(userRolesTable.userId, userId));
 
     if (data.roleIds.length > 0) {
-        await db.insert(userRolesTable).values(
-            data.roleIds.map((roleId) => ({ userId, roleId })),
-        );
+        await db
+            .insert(userRolesTable)
+            .values(data.roleIds.map((roleId) => ({ userId, roleId })));
     }
 
     revalidatePath("/dashboard/iam");
@@ -206,7 +204,11 @@ export async function banUser(
     userId: string,
     reason?: string,
 ): Promise<{ error?: string }> {
-    const [u] = await db.select().from(user).where(eq(user.id, userId)).limit(1);
+    const [u] = await db
+        .select()
+        .from(user)
+        .where(eq(user.id, userId))
+        .limit(1);
     if (!u) return { error: "User not found." };
 
     await db
@@ -226,7 +228,11 @@ export async function banUser(
 }
 
 export async function unbanUser(userId: string): Promise<{ error?: string }> {
-    const [u] = await db.select().from(user).where(eq(user.id, userId)).limit(1);
+    const [u] = await db
+        .select()
+        .from(user)
+        .where(eq(user.id, userId))
+        .limit(1);
     if (!u) return { error: "User not found." };
 
     await db

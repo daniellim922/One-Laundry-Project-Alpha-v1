@@ -27,7 +27,9 @@ export default async function EditUserPage({ params }: PageProps) {
     }
 
     const [roles, userRoles] = await Promise.all([
-        db.select({ id: rolesTable.id, name: rolesTable.name }).from(rolesTable),
+        db
+            .select({ id: rolesTable.id, name: rolesTable.name })
+            .from(rolesTable),
         db
             .select({ roleId: userRolesTable.roleId })
             .from(userRolesTable)
