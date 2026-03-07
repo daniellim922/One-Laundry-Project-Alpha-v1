@@ -5,4 +5,6 @@ export * from "./tables/expensesTable";
 export * from "./tables/featuresTable";
 export * from "./tables/rolePermissionsTable";
 export * from "./tables/userRolesTable";
+export * from "./tables/timesheetEntriesTable";
+export * from "./tables/payrollsTable";
 export * from "./auth-schema";

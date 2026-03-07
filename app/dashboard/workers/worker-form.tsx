@@ -124,14 +124,12 @@ export function WorkerForm({ worker }: WorkerFormProps) {
                         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                             <span>
                                 Created:{" "}
-                                {worker.createdAt.toLocaleDateString?.() ??
-                                    String(worker.createdAt)}
+                                {new Date(worker.createdAt).toLocaleDateString("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" })}
                             </span>
                             <span>•</span>
                             <span>
                                 Updated:{" "}
-                                {worker.updatedAt.toLocaleDateString?.() ??
-                                    String(worker.updatedAt)}
+                                {new Date(worker.updatedAt).toLocaleDateString("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" })}
                             </span>
                         </div>
                     </CardDescription>

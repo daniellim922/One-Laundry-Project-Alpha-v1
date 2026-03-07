@@ -13,6 +13,12 @@ import {
     type RolePermission,
 } from "./role-permissions-card";
 import { Button } from "@/components/ui/button";
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
 
 export default async function Page() {
     const [users, userRoleLinks, roles, rolePermissionsRows] = await Promise.all([
@@ -99,7 +105,7 @@ export default async function Page() {
     }));
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <div>
                 <h1 className="text-2xl font-semibold tracking-tight">
                     Identity and Access Management
@@ -107,6 +113,47 @@ export default async function Page() {
                 <p className="text-muted-foreground">
                     Manage users, roles, and permissions.
                 </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                            Users
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{users.length}</div>
+                        <p className="text-muted-foreground text-xs">
+                            Registered users
+                        </p>
+                        <Button variant="link" className="h-auto p-0" asChild>
+                            <Link href="/dashboard/iam/users/new">
+                                Add user
+                                <Plus className="ml-1 h-3 w-3" />
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                            Roles
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{roles.length}</div>
+                        <p className="text-muted-foreground text-xs">
+                            Defined roles
+                        </p>
+                        <Button variant="link" className="h-auto p-0" asChild>
+                            <Link href="/dashboard/iam/roles/new">
+                                Add role
+                                <Plus className="ml-1 h-3 w-3" />
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
             </div>
 
             <div className="space-y-4">

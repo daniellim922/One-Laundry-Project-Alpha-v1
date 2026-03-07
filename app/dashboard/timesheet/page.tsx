@@ -3,6 +3,7 @@
 import * as React from "react";
 import * as XLSX from "xlsx";
 
+import { importTimesheetEntries } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload } from "lucide-react";
@@ -25,16 +26,22 @@ function isValidFile(file: File): boolean {
 export default function TimesheetPage() {
     const [isDragging, setIsDragging] = React.useState(false);
     const [file, setFile] = React.useState<File | null>(null);
-    const [parsedData, setParsedData] = React.useState<unknown[] | null>(null);
+    const [parsedData, setParsedData] = React.useState<Record<string, unknown>[] | null>(null);
     const [error, setError] = React.useState<string | null>(null);
+    const [submitResult, setSubmitResult] = React.useState<{
+        imported?: number;
+        errors?: string[];
+    } | null>(null);
+    const [pending, setPending] = React.useState(false);
 
     const handleParse = React.useCallback(async (file: File) => {
         setError(null);
+        setSubmitResult(null);
         try {
             const data = await file.arrayBuffer();
             const workbook = XLSX.read(data, { type: "array" });
             const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-            const json = XLSX.utils.sheet_to_json(firstSheet);
+            const json = XLSX.utils.sheet_to_json(firstSheet) as Record<string, unknown>[];
             setParsedData(json);
             setFile(file);
         } catch (err) {
@@ -43,6 +50,25 @@ export default function TimesheetPage() {
             setFile(null);
         }
     }, []);
+
+    const handleSubmit = React.useCallback(async () => {
+        if (!parsedData || parsedData.length === 0) return;
+        setError(null);
+        setSubmitResult(null);
+        setPending(true);
+        try {
+            const result = await importTimesheetEntries(parsedData);
+            setSubmitResult(result);
+            if (result.imported && result.imported > 0) {
+                setFile(null);
+                setParsedData(null);
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Import failed");
+        } finally {
+            setPending(false);
+        }
+    }, [parsedData]);
 
     const onDrop = React.useCallback(
         (e: React.DragEvent) => {
@@ -96,6 +122,39 @@ export default function TimesheetPage() {
                 </p>
             </div>
 
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                            Import Status
+                        </CardTitle>
+                        <Upload className="text-muted-foreground h-4 w-4" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">
+                            {parsedData ? parsedData.length : "—"}
+                        </div>
+                        <p className="text-muted-foreground text-xs">
+                            {parsedData
+                                ? "Rows in current file"
+                                : "Drop or select a file below to import"}
+                        </p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                            Supported Formats
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground text-xs">
+                            Excel (.xlsx, .xls) and CSV files
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+
             <Card>
                 <CardHeader>
                     <CardTitle>Import timesheet</CardTitle>
@@ -135,26 +194,49 @@ export default function TimesheetPage() {
                     )}
 
                     {file && parsedData && (
-                        <div className="mt-4 rounded-lg border bg-muted/30 p-4">
+                        <div className="mt-4 space-y-2 rounded-lg border bg-muted/30 p-4">
                             <p className="font-medium">{file.name}</p>
                             <p className="text-muted-foreground text-sm">
-                                {parsedData.length} row{parsedData.length !== 1 ? "s" : ""} imported
+                                {parsedData.length} row{parsedData.length !== 1 ? "s" : ""} parsed.
+                                Expected columns: worker_name or name, date, time_in, time_out (or timeIn, timeOut).
                             </p>
                             <button
                                 type="button"
                                 onClick={reset}
-                                className="text-primary hover:underline mt-2 text-sm"
+                                className="text-primary hover:underline mr-4 text-sm"
                             >
                                 Upload a different file
                             </button>
+                        </div>
+                    )}
+                    {submitResult && (
+                        <div className="mt-4 rounded-lg border p-4">
+                            {submitResult.imported != null && submitResult.imported > 0 && (
+                                <p className="text-emerald-600 dark:text-emerald-400">
+                                    Imported {submitResult.imported} entries.
+                                </p>
+                            )}
+                            {submitResult.errors && submitResult.errors.length > 0 && (
+                                <ul className="mt-2 list-inside list-disc text-sm text-amber-600 dark:text-amber-400">
+                                    {submitResult.errors.slice(0, 5).map((e, i) => (
+                                        <li key={i}>{e}</li>
+                                    ))}
+                                    {submitResult.errors.length > 5 && (
+                                        <li>…and {submitResult.errors.length - 5} more</li>
+                                    )}
+                                </ul>
+                            )}
                         </div>
                     )}
                 </CardContent>
             </Card>
 
             <div className="flex justify-end">
-                <Button disabled={!parsedData || parsedData.length === 0}>
-                    Submit
+                <Button
+                    disabled={!parsedData || parsedData.length === 0 || pending}
+                    onClick={handleSubmit}
+                >
+                    {pending ? "Importing..." : "Import to database"}
                 </Button>
             </div>
         </div>

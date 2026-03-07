@@ -47,9 +47,9 @@ export const columns: ColumnDef<SelectExpense>[] = [
     {
         accessorKey: "date",
         header: sortableHeader("Date"),
-        cell: ({ row }) =>
-            row.original.date instanceof Date
-                ? row.original.date.toLocaleDateString()
-                : new Date(row.original.date).toLocaleDateString(),
+        cell: ({ row }) => {
+            const d = row.original.date instanceof Date ? row.original.date : new Date(row.original.date);
+            return d.toLocaleDateString("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" });
+        },
     },
 ];

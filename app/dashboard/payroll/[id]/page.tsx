@@ -1,0 +1,218 @@
+import { notFound } from "next/navigation";
+import { eq, and, gte, lte } from "drizzle-orm";
+import Link from "next/link";
+
+import { requirePermission } from "@/lib/require-permission";
+import { db } from "@/lib/db";
+import { payrollsTable } from "@/db/tables/payrollsTable";
+import { workersTable } from "@/db/tables/workersTable";
+import { timesheetEntriesTable } from "@/db/tables/timesheetEntriesTable";
+import {
+    calculateHoursFromTimes,
+    calculatePay,
+} from "@/lib/payroll-utils";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { ArrowLeft } from "lucide-react";
+
+interface PageProps {
+    params: Promise<{ id: string }>;
+}
+
+function formatDate(d: string | Date): string {
+    const date = d instanceof Date ? d : new Date(d + "T00:00:00");
+    return date.toLocaleDateString("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" });
+}
+
+function formatTime(t: string): string {
+    const s = String(t);
+    if (s.length >= 5) return s.slice(0, 5);
+    return s;
+}
+
+export default async function PayrollDetailPage({ params }: PageProps) {
+    await requirePermission("Payroll", "read");
+
+    const { id } = await params;
+
+    const [row] = await db
+        .select({
+            payroll: payrollsTable,
+            worker: workersTable,
+        })
+        .from(payrollsTable)
+        .innerJoin(workersTable, eq(payrollsTable.workerId, workersTable.id))
+        .where(eq(payrollsTable.id, id))
+        .limit(1);
+
+    if (!row) notFound();
+
+    const { payroll, worker } = row;
+
+    const periodStartStr = String(payroll.periodStart).slice(0, 10);
+    const periodEndStr = String(payroll.periodEnd).slice(0, 10);
+
+    const entries = await db
+        .select()
+        .from(timesheetEntriesTable)
+        .where(
+            and(
+                eq(timesheetEntriesTable.workerId, payroll.workerId),
+                gte(timesheetEntriesTable.date, periodStartStr),
+                lte(timesheetEntriesTable.date, periodEndStr),
+            ),
+        )
+        .orderBy(timesheetEntriesTable.date);
+
+    const dailyHours: number[] = [];
+    let totalHours = 0;
+    for (const e of entries) {
+        const timeIn = String(e.timeIn);
+        const timeOut = String(e.timeOut);
+        const hours = calculateHoursFromTimes(timeIn, timeOut);
+        dailyHours.push(hours);
+        totalHours += hours;
+    }
+
+    const payCalc = calculatePay(
+        totalHours,
+        dailyHours,
+        worker.monthlyPay,
+        worker.hourlyPay,
+    );
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-4">
+                <Button variant="ghost" size="icon" asChild>
+                    <Link href="/dashboard/payroll">
+                        <ArrowLeft className="h-4 w-4" />
+                    </Link>
+                </Button>
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight">
+                        {worker.name}
+                    </h1>
+                    <p className="text-muted-foreground">
+                        Period: {formatDate(payroll.periodStart)} –{" "}
+                        {formatDate(payroll.periodEnd)} | Payroll date:{" "}
+                        {formatDate(payroll.payrollDate)}
+                    </p>
+                </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Pay breakdown</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        <p>
+                            <span className="text-muted-foreground">
+                                Total hours worked:
+                            </span>{" "}
+                            {Number(payroll.totalHours).toFixed(2)}
+                        </p>
+                        <p>
+                            <span className="text-muted-foreground">
+                                Rate used:
+                            </span>{" "}
+                            {worker.hourlyPay != null
+                                ? `$${worker.hourlyPay}/hr`
+                                : worker.monthlyPay != null
+                                  ? `$${worker.monthlyPay}/mo (base)`
+                                  : "—"}
+                        </p>
+                        <p>
+                            <span className="text-muted-foreground">
+                                Calculation:
+                            </span>{" "}
+                            {payCalc.breakdown}
+                        </p>
+                        <p className="font-semibold pt-2">
+                            Total pay: ${payroll.totalPay}
+                        </p>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Status</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <span
+                            className={`inline-flex rounded-full px-2 py-1 text-sm font-medium ${
+                                payroll.status === "paid"
+                                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
+                                    : payroll.status === "approved"
+                                      ? "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300"
+                                      : "bg-slate-100 text-slate-800 dark:bg-slate-500/20 dark:text-slate-300"
+                            }`}>
+                            {payroll.status}
+                        </span>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Timesheet</CardTitle>
+                    <p className="text-muted-foreground text-sm">
+                        Clock in/out entries for this pay period
+                    </p>
+                </CardHeader>
+                <CardContent>
+                    {entries.length === 0 ? (
+                        <p className="text-muted-foreground text-sm">
+                            No timesheet entries for this period.
+                        </p>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Time in</TableHead>
+                                    <TableHead>Time out</TableHead>
+                                    <TableHead className="text-right">
+                                        Hours
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {entries.map((e, i) => {
+                                    const hours = calculateHoursFromTimes(
+                                        String(e.timeIn),
+                                        String(e.timeOut),
+                                    );
+                                    return (
+                                        <TableRow key={e.id}>
+                                            <TableCell>
+                                                {formatDate(e.date)}
+                                            </TableCell>
+                                            <TableCell>
+                                                {formatTime(String(e.timeIn))}
+                                            </TableCell>
+                                            <TableCell>
+                                                {formatTime(String(e.timeOut))}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                {hours.toFixed(2)}
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
