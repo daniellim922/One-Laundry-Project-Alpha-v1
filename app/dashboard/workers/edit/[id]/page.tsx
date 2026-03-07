@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 
+import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
 import { workersTable, type SelectWorker } from "@/db/tables/workersTable";
 import { WorkerForm } from "../../worker-form";
@@ -13,6 +14,8 @@ interface PageProps {
 }
 
 export default async function EditWorkerPage({ params }: PageProps) {
+    await requirePermission("Workers", "update");
+
     const { id } = await params;
 
     const [worker]: SelectWorker[] = await db

@@ -1,8 +1,11 @@
+import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
 import { featuresTable } from "@/db/tables/featuresTable";
 import { RoleForm } from "@/app/dashboard/iam/role-form";
 
 export default async function NewRolePage() {
+    await requirePermission("IAM (Identity and Access Management)", "create");
+
     const features = await db
         .select({ id: featuresTable.id, name: featuresTable.name })
         .from(featuresTable)

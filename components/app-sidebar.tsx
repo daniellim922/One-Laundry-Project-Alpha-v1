@@ -1,8 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { Command, DollarSign, FileSpreadsheet, Home, Shield, User } from "lucide-react";
+import {
+    Command,
+    DollarSign,
+    FileSpreadsheet,
+    Home,
+    Shield,
+    User,
+} from "lucide-react";
 
+import type { NavItemSerializable } from "@/lib/nav-config";
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
 import {
@@ -15,43 +23,36 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
+const ICON_MAP = {
+    Home,
+    Workers: User,
+    Timesheet: FileSpreadsheet,
+    Expenses: DollarSign,
+    IAM: Shield,
+} as const;
+
 const data = {
     user: {
         name: "shadcn",
         email: "m@example.com",
         avatar: "/avatars/shadcn.jpg",
     },
-    navMain: [
-        {
-            title: "Home",
-            url: "/dashboard",
-            icon: Home,
-            isActive: true,
-        },
-        {
-            title: "Workers",
-            url: "/dashboard/workers",
-            icon: User,
-        },
-        {
-            title: "Timesheet",
-            url: "/dashboard/timesheet",
-            icon: FileSpreadsheet,
-        },
-        {
-            title: "Expenses",
-            url: "/dashboard/expenses",
-            icon: DollarSign,
-        },
-        {
-            title: "IAM",
-            url: "/dashboard/iam",
-            icon: Shield,
-        },
-    ],
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar({
+    items,
+    ...props
+}: React.ComponentProps<typeof Sidebar> & {
+    items: NavItemSerializable[];
+}) {
+    const navItemsWithIcons = React.useMemo(
+        () =>
+            items.map((item) => ({
+                ...item,
+                icon: ICON_MAP[item.iconName],
+            })),
+        [items],
+    );
     return (
         <Sidebar variant="inset" {...props}>
             <SidebarHeader>
@@ -76,7 +77,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 </SidebarMenu>
             </SidebarHeader>
             <SidebarContent>
-                <NavMain items={data.navMain} />
+                <NavMain items={navItemsWithIcons} />
             </SidebarContent>
             <SidebarFooter>
                 <NavUser user={data.user} />

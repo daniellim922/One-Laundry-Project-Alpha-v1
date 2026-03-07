@@ -1,7 +1,9 @@
+import { requirePermission } from "@/lib/require-permission";
 import { WorkerFormPageLayout } from "../worker-form-page-layout";
 import { WorkerForm } from "../worker-form";
 
-export default function NewWorkerPage() {
+export default async function NewWorkerPage() {
+    await requirePermission("Workers", "create");
     return (
         <WorkerFormPageLayout
             title="Add worker"

@@ -1,5 +1,7 @@
 import { ReactNode } from "react";
 
+import { getVisibleNavItems } from "@/lib/nav-config";
+import { requirePermission } from "@/lib/require-permission";
 import { AppSidebar } from "@/components/app-sidebar";
 import {
     Breadcrumb,
@@ -14,10 +16,17 @@ import {
     SidebarTrigger,
 } from "@/components/ui/sidebar";
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
+export default async function DashboardLayout({
+    children,
+}: {
+    children: ReactNode;
+}) {
+    const { userId } = await requirePermission("Home", "read");
+    const navItems = await getVisibleNavItems(userId);
+
     return (
         <SidebarProvider>
-            <AppSidebar />
+            <AppSidebar items={navItems} />
             <SidebarInset>
                 <header className="flex h-16 shrink-0 items-center gap-2">
                     <div className="flex items-center gap-2 px-4">

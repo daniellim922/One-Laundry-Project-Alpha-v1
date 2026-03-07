@@ -1,10 +1,13 @@
-import { CreateUserForm } from "../../user-form";
+import { requirePermission } from "@/lib/require-permission";
+import { CreateUserForm } from "@/app/dashboard/iam/user-form";
 
 interface PageProps {
     searchParams: Promise<{ roleId?: string }>;
 }
 
 export default async function NewUserPage({ searchParams }: PageProps) {
+    await requirePermission("IAM (Identity and Access Management)", "create");
+
     const { roleId } = await searchParams;
 
     return (

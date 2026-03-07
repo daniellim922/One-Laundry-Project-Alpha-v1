@@ -1,9 +1,11 @@
 import Link from "next/link";
 
+import { requirePermission } from "@/lib/require-permission";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
-export default function NewExpensePage() {
+export default async function NewExpensePage() {
+    await requirePermission("Expenses", "create");
     return (
         <div className="space-y-4">
             <div className="flex items-center gap-4">

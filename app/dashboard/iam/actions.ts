@@ -1,15 +1,33 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 
 import { auth } from "@/lib/auth";
+import { checkPermission } from "@/lib/permissions";
 import { db } from "@/lib/db";
 import { user, session } from "@/db/auth-schema";
 import { rolesTable } from "@/db/tables/rolesTable";
 import { rolePermissionsTable } from "@/db/tables/rolePermissionsTable";
 import { userRolesTable } from "@/db/tables/userRolesTable";
+
+const IAM_FEATURE = "IAM (Identity and Access Management)";
+
+async function requireIamPermission(
+    action: "create" | "read" | "update" | "delete",
+) {
+    const authSession = await auth.api.getSession({ headers: await headers() });
+    if (!authSession) redirect("/login");
+    const allowed = await checkPermission(
+        authSession.user.id,
+        IAM_FEATURE,
+        action,
+    );
+    if (!allowed) return { error: "Forbidden" as const };
+    return { userId: authSession.user.id } as const;
+}
 
 export async function createRoleWithPermissions(
     name: string,
@@ -21,6 +39,9 @@ export async function createRoleWithPermissions(
         delete: boolean;
     }[],
 ): Promise<{ error?: string }> {
+    const perm = await requireIamPermission("create");
+    if (perm.error) return perm;
+
     const trimmedName = name.trim();
     if (!trimmedName) {
         return { error: "Role name is required." };
@@ -73,6 +94,9 @@ export async function updateRolePermissions(
     }[],
     name?: string,
 ): Promise<{ error?: string }> {
+    const perm = await requireIamPermission("update");
+    if (perm.error) return perm;
+
     const trimmedName = name?.trim();
     if (trimmedName) {
         const existing = await db
@@ -117,6 +141,9 @@ export async function createUser(data: {
     username?: string;
     roleId?: string;
 }): Promise<{ error?: string }> {
+    const perm = await requireIamPermission("create");
+    if (perm.error) return perm;
+
     const name = data.name.trim();
     const email = data.email.trim().toLowerCase();
     const password = data.password;
@@ -176,6 +203,9 @@ export async function updateUser(
     userId: string,
     data: { name: string; username?: string | null; roleIds: string[] },
 ): Promise<{ error?: string }> {
+    const perm = await requireIamPermission("update");
+    if (perm.error) return perm;
+
     const name = data.name.trim();
     if (!name) return { error: "Name is required." };
 
@@ -204,6 +234,9 @@ export async function banUser(
     userId: string,
     reason?: string,
 ): Promise<{ error?: string }> {
+    const perm = await requireIamPermission("update");
+    if (perm.error) return perm;
+
     const [u] = await db
         .select()
         .from(user)
@@ -228,6 +261,9 @@ export async function banUser(
 }
 
 export async function unbanUser(userId: string): Promise<{ error?: string }> {
+    const perm = await requireIamPermission("update");
+    if (perm.error) return perm;
+
     const [u] = await db
         .select()
         .from(user)

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 
+import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
 import { rolesTable } from "@/db/tables/rolesTable";
 import { rolePermissionsTable } from "@/db/tables/rolePermissionsTable";
@@ -14,6 +15,8 @@ interface PageProps {
 }
 
 export default async function EditRolePage({ params }: PageProps) {
+    await requirePermission("IAM (Identity and Access Management)", "update");
+
     const { id } = await params;
 
     const [role] = await db
