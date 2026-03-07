@@ -1,6 +1,9 @@
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { db } from "@/lib/db";
+import { workersTable } from "@/db/tables/workersTable";
+import { expensesTable } from "@/db/tables/expensesTable";
+import { count, sum } from "drizzle-orm";
 import {
     Card,
     CardContent,
@@ -8,83 +11,151 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { ArrowRight, LayoutDashboard, Users, FileSpreadsheet, DollarSign, Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, DollarSign, FileSpreadsheet, LayoutDashboard, Users } from "lucide-react";
 
-export default function Page() {
+export default async function Page() {
+    const [[workersResult], [expensesResult]] = await Promise.all([
+        db.select({ count: count() }).from(workersTable),
+        db.select({
+            count: count(),
+            total: sum(expensesTable.amount),
+        }).from(expensesTable),
+    ]);
+
+    const workersCount = workersResult?.count ?? 0;
+    const expensesCount = expensesResult?.count ?? 0;
+    const expensesTotal = Number(expensesResult?.total ?? 0);
+
     return (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mx-auto max-w-2xl space-y-6">
-                <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-                    Welcome to the Dashboard
+        <div className="space-y-6">
+            <div>
+                <h1 className="text-2xl font-semibold tracking-tight">
+                    Dashboard Overview
                 </h1>
-                <p className="text-muted-foreground text-lg">
-                    Get started by exploring the main areas of your workspace.
+                <p className="text-muted-foreground">
+                    Key metrics and quick access to your workspace
                 </p>
-                <Button asChild size="lg" className="mt-4">
-                    <Link href="/dashboard/home">
-                        Go to Overview
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
             </div>
 
-            <div className="mt-16 grid w-full max-w-3xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <Link href="/dashboard/home">
-                    <Card className="transition-colors hover:bg-muted/50">
-                        <CardHeader className="pb-2">
-                            <LayoutDashboard className="text-muted-foreground mb-2 h-8 w-8" />
-                            <CardTitle>Overview</CardTitle>
-                            <CardDescription>
-                                View dashboard metrics and key stats
-                            </CardDescription>
-                        </CardHeader>
-                    </Card>
-                </Link>
-                <Link href="/dashboard/workers">
-                    <Card className="transition-colors hover:bg-muted/50">
-                        <CardHeader className="pb-2">
-                            <Users className="text-muted-foreground mb-2 h-8 w-8" />
-                            <CardTitle>Workers</CardTitle>
-                            <CardDescription>
-                                Manage your workforce
-                            </CardDescription>
-                        </CardHeader>
-                    </Card>
-                </Link>
-                <Link href="/dashboard/timesheet">
-                    <Card className="transition-colors hover:bg-muted/50">
-                        <CardHeader className="pb-2">
-                            <FileSpreadsheet className="text-muted-foreground mb-2 h-8 w-8" />
-                            <CardTitle>Timesheet</CardTitle>
-                            <CardDescription>
-                                Import and manage timesheets
-                            </CardDescription>
-                        </CardHeader>
-                    </Card>
-                </Link>
-                <Link href="/dashboard/expenses">
-                    <Card className="transition-colors hover:bg-muted/50">
-                        <CardHeader className="pb-2">
-                            <DollarSign className="text-muted-foreground mb-2 h-8 w-8" />
-                            <CardTitle>Expenses</CardTitle>
-                            <CardDescription>
-                                Track and manage expenses
-                            </CardDescription>
-                        </CardHeader>
-                    </Card>
-                </Link>
-                <Link href="/dashboard/iam">
-                    <Card className="transition-colors hover:bg-muted/50">
-                        <CardHeader className="pb-2">
-                            <Shield className="text-muted-foreground mb-2 h-8 w-8" />
-                            <CardTitle>IAM</CardTitle>
-                            <CardDescription>
-                                Identity and access management
-                            </CardDescription>
-                        </CardHeader>
-                    </Card>
-                </Link>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                            Total Workers
+                        </CardTitle>
+                        <Users className="text-muted-foreground h-4 w-4" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{workersCount}</div>
+                        <p className="text-muted-foreground text-xs">
+                            Active workers in your workforce
+                        </p>
+                        <Button variant="link" className="h-auto p-0" asChild>
+                            <Link href="/dashboard/workers">
+                                View workers
+                                <ArrowRight className="ml-1 h-3 w-3" />
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                            Total Expenses
+                        </CardTitle>
+                        <DollarSign className="text-muted-foreground h-4 w-4" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">
+                            ${(expensesTotal / 100).toLocaleString()}
+                        </div>
+                        <p className="text-muted-foreground text-xs">
+                            {expensesCount} expense record
+                            {expensesCount !== 1 ? "s" : ""}
+                        </p>
+                        <Button variant="link" className="h-auto p-0" asChild>
+                            <Link href="/dashboard/expenses">
+                                View expenses
+                                <ArrowRight className="ml-1 h-3 w-3" />
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                            Timesheet
+                        </CardTitle>
+                        <FileSpreadsheet className="text-muted-foreground h-4 w-4" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">—</div>
+                        <p className="text-muted-foreground text-xs">
+                            Import Excel or CSV timesheets
+                        </p>
+                        <Button variant="link" className="h-auto p-0" asChild>
+                            <Link href="/dashboard/timesheet">
+                                Go to timesheet
+                                <ArrowRight className="ml-1 h-3 w-3" />
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                            Quick Start
+                        </CardTitle>
+                        <LayoutDashboard className="text-muted-foreground h-4 w-4" />
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground text-xs">
+                            Explore all dashboard areas
+                        </p>
+                        <Button variant="link" className="h-auto p-0" asChild>
+                            <Link href="/dashboard/workers">
+                                View workers
+                                <ArrowRight className="ml-1 h-3 w-3" />
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
             </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Getting Started</CardTitle>
+                    <CardDescription>
+                        Common actions to manage your workspace
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-3">
+                    <Button asChild>
+                        <Link href="/dashboard/workers/new">
+                            Add worker
+                        </Link>
+                    </Button>
+                    <Button variant="outline" asChild>
+                        <Link href="/dashboard/expenses/new">
+                            Add expense
+                        </Link>
+                    </Button>
+                    <Button variant="outline" asChild>
+                        <Link href="/dashboard/timesheet">
+                            Import timesheet
+                        </Link>
+                    </Button>
+                    <Button variant="outline" asChild>
+                        <Link href="/dashboard/iam">
+                            Manage IAM
+                        </Link>
+                    </Button>
+                </CardContent>
+            </Card>
         </div>
     );
 }

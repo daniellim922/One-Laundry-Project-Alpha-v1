@@ -10,7 +10,7 @@ export type NavItemSerializable = {
 export const NAV_ITEMS: NavItemSerializable[] = [
     {
         title: "Home",
-        url: "/dashboard/home",
+        url: "/dashboard",
         iconName: "Home",
         featureName: "Home",
     },
