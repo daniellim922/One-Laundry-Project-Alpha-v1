@@ -97,7 +97,7 @@ export default async function Page() {
                             Import Excel or CSV timesheets
                         </p>
                         <Button variant="link" className="h-auto p-0" asChild>
-                            <Link href="/dashboard/timesheet">
+                            <Link href="/dashboard/timesheet/import">
                                 Go to timesheet
                                 <ArrowRight className="ml-1 h-3 w-3" />
                             </Link>
@@ -145,7 +145,7 @@ export default async function Page() {
                         </Link>
                     </Button>
                     <Button variant="outline" asChild>
-                        <Link href="/dashboard/timesheet">
+                        <Link href="/dashboard/timesheet/import">
                             Import timesheet
                         </Link>
                     </Button>

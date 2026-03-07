@@ -25,7 +25,7 @@ export default async function NewPayrollPage() {
                 </Button>
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight">
-                        Add payroll
+                        Generate payroll
                     </h1>
                     <p className="text-muted-foreground">
                         Create a payroll record for a worker. Total hours and pay are calculated from timesheet entries.

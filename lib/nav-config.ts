@@ -37,9 +37,9 @@ export const NAV_ITEMS: (NavItemSerializable & {
         iconName: "Timesheet",
         featureName: "Timesheet",
         items: [
-            { title: "All entries", url: "/dashboard/timesheet/entries" },
-            { title: "Import timesheet", url: "/dashboard/timesheet" },
-            { title: "Add entry", url: "/dashboard/timesheet/new" },
+            { title: "All timesheets", url: "/dashboard/timesheet" },
+            { title: "Add timesheet", url: "/dashboard/timesheet/new" },
+            { title: "Import timesheet", url: "/dashboard/timesheet/import" },
         ],
     },
     {
@@ -49,7 +49,7 @@ export const NAV_ITEMS: (NavItemSerializable & {
         featureName: "Payroll",
         items: [
             { title: "All payrolls", url: "/dashboard/payroll" },
-            { title: "Add payroll", url: "/dashboard/payroll/new" },
+            { title: "Generate payroll", url: "/dashboard/payroll/new" },
         ],
     },
     {
@@ -70,7 +70,6 @@ export const NAV_ITEMS: (NavItemSerializable & {
         items: [{ title: "Users & Roles", url: "/dashboard/iam" }],
     },
 ];
-
 
 /**
  * Returns nav items the user has read permission for (serializable, no icon components).

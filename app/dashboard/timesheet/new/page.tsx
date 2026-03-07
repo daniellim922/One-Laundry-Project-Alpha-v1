@@ -16,7 +16,7 @@ export default async function NewTimesheetEntryPage() {
         .orderBy(workersTable.name);
 
     return (
-        <div className="space-y-4">
+        <div className="mx-auto max-w-md space-y-4">
             <div className="flex items-center gap-4">
                 <Button variant="ghost" size="icon" asChild>
                     <Link href="/dashboard/timesheet">

@@ -37,7 +37,7 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
     const today = new Date().toISOString().slice(0, 10);
 
     return (
-        <Card>
+        <Card className="mx-auto max-w-md">
             <CardHeader>
                 <CardTitle>New payroll</CardTitle>
                 <p className="text-muted-foreground text-sm">
@@ -92,7 +92,7 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
                     )}
                     <div className="flex gap-2">
                         <Button type="submit" disabled={pending}>
-                            {pending ? "Creating..." : "Create payroll"}
+                            {pending ? "Generating..." : "Generate"}
                         </Button>
                         <Button
                             type="button"
