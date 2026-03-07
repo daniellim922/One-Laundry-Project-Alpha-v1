@@ -1,10 +1,28 @@
 "use client";
 
-import * as React from "react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
 import type { SelectWorker } from "@/db/tables/workersTable";
+import {
+    Banknote,
+    Briefcase,
+    Building2,
+    CreditCard,
+    Globe,
+    Mail,
+    Phone,
+    User,
+    UserCircle2,
+    Users,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+} from "@/components/ui/input-group";
 import {
     Select,
     SelectContent,
@@ -19,84 +37,79 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import {
+    Field,
+    FieldError,
+    FieldGroup,
+    FieldLabel,
+} from "@/components/ui/field";
+import { cn } from "@/lib/utils";
 
-const defaultValues = {
-    name: "",
-    email: "",
-    phone: "",
-    status: "Active" as SelectWorker["status"],
-    employmentType: "Full Time" as SelectWorker["employmentType"],
-    employmentArrangement:
-        "Local Worker" as SelectWorker["employmentArrangement"],
-    countryOfOrigin: "",
-    race: "",
-    monthlyPay: "",
-    hourlyPay: "",
-    paymentMethod: null as SelectWorker["paymentMethod"],
-    payNowPhone: "",
-    bankAccountNumber: "",
-};
+const workerFormSchema = z.object({
+    name: z.string().min(1, "Name is required"),
+    email: z.string().optional(),
+    phone: z.string().optional(),
+    status: z.enum(["Active", "Inactive"]),
+    employmentType: z.enum(["Full Time", "Part Time"]),
+    employmentArrangement: z.enum(["Foreign Worker", "Local Worker"]),
+    countryOfOrigin: z.string().optional(),
+    race: z.string().optional(),
+    monthlyPay: z.string().optional(),
+    hourlyPay: z.string().optional(),
+    restDayPay: z.string().optional(),
+    paymentMethod: z
+        .enum(["PayNow", "Bank Transfer", "Cash"])
+        .nullable()
+        .optional(),
+    payNowPhone: z.string().optional(),
+    bankAccountNumber: z.string().optional(),
+});
+
+type WorkerFormValues = z.infer<typeof workerFormSchema>;
+
+function getDefaultValues(worker?: SelectWorker | null): WorkerFormValues {
+    return {
+        name: worker?.name ?? "",
+        email: worker?.email ?? "",
+        phone: worker?.phone ?? "",
+        status: (worker?.status === "On Leave"
+            ? "Active"
+            : (worker?.status ?? "Active")) as WorkerFormValues["status"],
+        employmentType: (worker?.employmentType ??
+            "Full Time") as WorkerFormValues["employmentType"],
+        employmentArrangement: (worker?.employmentArrangement ??
+            "Local Worker") as WorkerFormValues["employmentArrangement"],
+        countryOfOrigin: worker?.countryOfOrigin ?? "",
+        race: worker?.race ?? "",
+        monthlyPay: worker?.monthlyPay?.toString() ?? "",
+        hourlyPay: worker?.hourlyPay?.toString() ?? "",
+        restDayPay: worker?.restDayPay?.toString() ?? "",
+        paymentMethod: (worker?.paymentMethod ??
+            "Cash") as WorkerFormValues["paymentMethod"],
+        payNowPhone: worker?.payNowPhone ?? "",
+        bankAccountNumber: worker?.bankAccountNumber ?? "",
+    };
+}
 
 interface WorkerFormProps {
     worker?: SelectWorker | null;
+    /** When true, all fields are read-only (view mode) */
+    disabled?: boolean;
 }
 
-export function WorkerForm({ worker }: WorkerFormProps) {
+export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
     const isCreate = !worker;
-    const [name, setName] = React.useState(worker?.name ?? defaultValues.name);
-    const [email, setEmail] = React.useState(
-        worker?.email ?? defaultValues.email,
-    );
-    const [phone, setPhone] = React.useState(
-        worker?.phone ?? defaultValues.phone,
-    );
-    const [status, setStatus] = React.useState(
-        worker?.status ?? defaultValues.status,
-    );
-    const [employmentType, setEmploymentType] = React.useState(
-        worker?.employmentType ?? defaultValues.employmentType,
-    );
-    const [employmentArrangement, setEmploymentArrangement] = React.useState(
-        worker?.employmentArrangement ?? defaultValues.employmentArrangement,
-    );
-    const [countryOfOrigin, setCountryOfOrigin] = React.useState(
-        worker?.countryOfOrigin ?? defaultValues.countryOfOrigin,
-    );
-    const [race, setRace] = React.useState(worker?.race ?? defaultValues.race);
-    const [monthlyPay, setMonthlyPay] = React.useState(
-        worker?.monthlyPay?.toString() ?? defaultValues.monthlyPay,
-    );
-    const [hourlyPay, setHourlyPay] = React.useState(
-        worker?.hourlyPay?.toString() ?? defaultValues.hourlyPay,
-    );
-    const [paymentMethod, setPaymentMethod] = React.useState(
-        worker?.paymentMethod ?? defaultValues.paymentMethod,
-    );
-    const [payNowPhone, setPayNowPhone] = React.useState(
-        worker?.payNowPhone ?? defaultValues.payNowPhone,
-    );
-    const [bankAccountNumber, setBankAccountNumber] = React.useState(
-        worker?.bankAccountNumber ?? defaultValues.bankAccountNumber,
-    );
 
-    const handleSubmit = (event: React.FormEvent) => {
-        event.preventDefault();
-        console.log("Submitted worker values", {
-            name,
-            email,
-            phone,
-            status,
-            employmentType,
-            employmentArrangement,
-            countryOfOrigin,
-            race,
-            monthlyPay,
-            hourlyPay,
-            paymentMethod,
-            payNowPhone,
-            bankAccountNumber,
-        });
+    const form = useForm<WorkerFormValues>({
+        resolver: zodResolver(workerFormSchema),
+        defaultValues: getDefaultValues(worker),
+    });
+
+    const onSubmit = (data: WorkerFormValues) => {
+        console.log("Submitted worker values", data);
     };
+
+    const formId = "worker-form";
 
     return (
         <Card>
@@ -124,12 +137,26 @@ export function WorkerForm({ worker }: WorkerFormProps) {
                         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                             <span>
                                 Created:{" "}
-                                {new Date(worker.createdAt).toLocaleDateString("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" })}
+                                {new Date(worker.createdAt).toLocaleDateString(
+                                    "en-CA",
+                                    {
+                                        year: "numeric",
+                                        month: "2-digit",
+                                        day: "2-digit",
+                                    },
+                                )}
                             </span>
                             <span>•</span>
                             <span>
                                 Updated:{" "}
-                                {new Date(worker.updatedAt).toLocaleDateString("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" })}
+                                {new Date(worker.updatedAt).toLocaleDateString(
+                                    "en-CA",
+                                    {
+                                        year: "numeric",
+                                        month: "2-digit",
+                                        day: "2-digit",
+                                    },
+                                )}
                             </span>
                         </div>
                     </CardDescription>
@@ -137,229 +164,607 @@ export function WorkerForm({ worker }: WorkerFormProps) {
             </CardHeader>
             <CardContent>
                 <form
-                    onSubmit={handleSubmit}
+                    id={formId}
+                    onSubmit={form.handleSubmit(onSubmit)}
                     className="space-y-6"
                     autoComplete="off">
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="name">Name</Label>
-                            <Input
-                                id="name"
-                                value={name}
-                                onChange={(event) =>
-                                    setName(event.target.value)
-                                }
+                    <FieldGroup className="space-y-6">
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <Controller
+                                name="name"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        data-invalid={fieldState.invalid}
+                                        className="space-y-2">
+                                        <FieldLabel htmlFor={`${formId}-name`}>
+                                            Name
+                                        </FieldLabel>
+                                        <InputGroup>
+                                            <InputGroupInput
+                                                {...field}
+                                                id={`${formId}-name`}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                disabled={disabled}
+                                            />
+                                            <InputGroupAddon>
+                                                <User className="size-4 text-muted-foreground" />
+                                            </InputGroupAddon>
+                                        </InputGroup>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
+                            />
+                            <Controller
+                                name="status"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        data-invalid={fieldState.invalid}
+                                        className="space-y-2">
+                                        <FieldLabel>
+                                            <span className="flex items-center gap-2">
+                                                <UserCircle2 className="size-4" />
+                                                Status
+                                            </span>
+                                        </FieldLabel>
+                                        <div
+                                            role="group"
+                                            aria-label="Status"
+                                            className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                disabled={disabled}
+                                                aria-pressed={
+                                                    field.value === "Active"
+                                                }
+                                                onClick={() =>
+                                                    field.onChange("Active")
+                                                }
+                                                className={cn(
+                                                    "flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors",
+                                                    field.value === "Active"
+                                                        ? "border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/50"
+                                                        : "border-input bg-muted/50 text-muted-foreground hover:border-emerald-300 hover:bg-emerald-50/50 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10",
+                                                    disabled &&
+                                                        "cursor-not-allowed opacity-50",
+                                                )}>
+                                                Active
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={disabled}
+                                                aria-pressed={
+                                                    field.value === "Inactive"
+                                                }
+                                                onClick={() =>
+                                                    field.onChange("Inactive")
+                                                }
+                                                className={cn(
+                                                    "flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors",
+                                                    field.value === "Inactive"
+                                                        ? "border-red-500 bg-red-50 text-red-800 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/50"
+                                                        : "border-input bg-muted/50 text-muted-foreground hover:border-red-300 hover:bg-red-50/50 dark:hover:border-red-500/30 dark:hover:bg-red-500/10",
+                                                    disabled &&
+                                                        "cursor-not-allowed opacity-50",
+                                                )}>
+                                                Inactive
+                                            </button>
+                                        </div>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="status">Status</Label>
-                            <Select
-                                value={status}
-                                onValueChange={(value) =>
-                                    setStatus(value as SelectWorker["status"])
-                                }>
-                                <SelectTrigger id="status">
-                                    <SelectValue placeholder="Select status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Active">
-                                        Active
-                                    </SelectItem>
-                                    <SelectItem value="Inactive">
-                                        Inactive
-                                    </SelectItem>
-                                    <SelectItem value="On Leave">
-                                        On Leave
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
 
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="email">Email</Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                value={email}
-                                onChange={(event) =>
-                                    setEmail(event.target.value)
-                                }
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <Controller
+                                name="email"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        data-invalid={fieldState.invalid}
+                                        className="space-y-2">
+                                        <FieldLabel htmlFor={`${formId}-email`}>
+                                            Email
+                                        </FieldLabel>
+                                        <InputGroup>
+                                            <InputGroupInput
+                                                {...field}
+                                                id={`${formId}-email`}
+                                                type="email"
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                disabled={disabled}
+                                            />
+                                            <InputGroupAddon>
+                                                <Mail className="size-4 text-muted-foreground" />
+                                            </InputGroupAddon>
+                                        </InputGroup>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
+                            />
+                            <Controller
+                                name="phone"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        data-invalid={fieldState.invalid}
+                                        className="space-y-2">
+                                        <FieldLabel htmlFor={`${formId}-phone`}>
+                                            Phone
+                                        </FieldLabel>
+                                        <InputGroup>
+                                            <InputGroupInput
+                                                {...field}
+                                                id={`${formId}-phone`}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                disabled={disabled}
+                                            />
+                                            <InputGroupAddon>
+                                                <Phone className="size-4 text-muted-foreground" />
+                                            </InputGroupAddon>
+                                        </InputGroup>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="phone">Phone</Label>
-                            <Input
-                                id="phone"
-                                value={phone}
-                                onChange={(event) =>
-                                    setPhone(event.target.value)
-                                }
-                            />
-                        </div>
-                    </div>
 
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="employmentType">
-                                Employment Type
-                            </Label>
-                            <Select
-                                value={employmentType}
-                                onValueChange={(value) =>
-                                    setEmploymentType(
-                                        value as SelectWorker["employmentType"],
-                                    )
-                                }>
-                                <SelectTrigger id="employmentType">
-                                    <SelectValue placeholder="Select type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Full Time">
-                                        Full Time
-                                    </SelectItem>
-                                    <SelectItem value="Part Time">
-                                        Part Time
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="employmentArrangement">
-                                Employment Arrangement
-                            </Label>
-                            <Select
-                                value={employmentArrangement}
-                                onValueChange={(value) =>
-                                    setEmploymentArrangement(
-                                        value as SelectWorker["employmentArrangement"],
-                                    )
-                                }>
-                                <SelectTrigger id="employmentArrangement">
-                                    <SelectValue placeholder="Select arrangement" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Foreign Worker">
-                                        Foreign Worker
-                                    </SelectItem>
-                                    <SelectItem value="Local Worker">
-                                        Local Worker
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="countryOfOrigin">
-                                Country of Origin
-                            </Label>
-                            <Input
-                                id="countryOfOrigin"
-                                value={countryOfOrigin}
-                                onChange={(event) =>
-                                    setCountryOfOrigin(event.target.value)
-                                }
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <Controller
+                                name="countryOfOrigin"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        data-invalid={fieldState.invalid}
+                                        className="space-y-2">
+                                        <FieldLabel
+                                            htmlFor={`${formId}-countryOfOrigin`}>
+                                            Country of Origin
+                                        </FieldLabel>
+                                        <InputGroup>
+                                            <InputGroupInput
+                                                {...field}
+                                                id={`${formId}-countryOfOrigin`}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                disabled={disabled}
+                                            />
+                                            <InputGroupAddon>
+                                                <Globe className="size-4 text-muted-foreground" />
+                                            </InputGroupAddon>
+                                        </InputGroup>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
+                            />
+                            <Controller
+                                name="race"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        data-invalid={fieldState.invalid}
+                                        className="space-y-2">
+                                        <FieldLabel htmlFor={`${formId}-race`}>
+                                            Race
+                                        </FieldLabel>
+                                        <InputGroup>
+                                            <InputGroupInput
+                                                {...field}
+                                                id={`${formId}-race`}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                disabled={disabled}
+                                            />
+                                            <InputGroupAddon>
+                                                <Users className="size-4 text-muted-foreground" />
+                                            </InputGroupAddon>
+                                        </InputGroup>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="race">Race</Label>
-                            <Input
-                                id="race"
-                                value={race}
-                                onChange={(event) =>
-                                    setRace(event.target.value)
-                                }
-                            />
-                        </div>
-                    </div>
 
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="monthlyPay">Monthly Pay</Label>
-                            <Input
-                                id="monthlyPay"
-                                type="number"
-                                value={monthlyPay}
-                                onChange={(event) =>
-                                    setMonthlyPay(event.target.value)
-                                }
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <Controller
+                                name="employmentType"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        data-invalid={fieldState.invalid}
+                                        className="space-y-2">
+                                        <FieldLabel>
+                                            <span className="flex items-center gap-2">
+                                                <Briefcase className="size-4" />
+                                                Employment Type
+                                            </span>
+                                        </FieldLabel>
+                                        <div
+                                            role="group"
+                                            aria-label="Employment type"
+                                            className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                disabled={disabled}
+                                                aria-pressed={
+                                                    field.value === "Full Time"
+                                                }
+                                                onClick={() =>
+                                                    field.onChange("Full Time")
+                                                }
+                                                className={cn(
+                                                    "flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors",
+                                                    field.value === "Full Time"
+                                                        ? "border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/50"
+                                                        : "border-input bg-muted/50 text-muted-foreground hover:border-emerald-300 hover:bg-emerald-50/50 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10",
+                                                    disabled &&
+                                                        "cursor-not-allowed opacity-50",
+                                                )}>
+                                                Full Time
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={disabled}
+                                                aria-pressed={
+                                                    field.value === "Part Time"
+                                                }
+                                                onClick={() =>
+                                                    field.onChange("Part Time")
+                                                }
+                                                className={cn(
+                                                    "flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors",
+                                                    field.value === "Part Time"
+                                                        ? "border-sky-500 bg-sky-50 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-500/50"
+                                                        : "border-input bg-muted/50 text-muted-foreground hover:border-sky-300 hover:bg-sky-50/50 dark:hover:border-sky-500/30 dark:hover:bg-sky-500/10",
+                                                    disabled &&
+                                                        "cursor-not-allowed opacity-50",
+                                                )}>
+                                                Part Time
+                                            </button>
+                                        </div>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
+                            />
+                            <Controller
+                                name="employmentArrangement"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        data-invalid={fieldState.invalid}
+                                        className="space-y-2">
+                                        <FieldLabel>
+                                            <span className="flex items-center gap-2">
+                                                <Users className="size-4" />
+                                                Employment Arrangement
+                                            </span>
+                                        </FieldLabel>
+                                        <div
+                                            role="group"
+                                            aria-label="Employment arrangement"
+                                            className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                disabled={disabled}
+                                                aria-pressed={
+                                                    field.value ===
+                                                    "Foreign Worker"
+                                                }
+                                                onClick={() =>
+                                                    field.onChange(
+                                                        "Foreign Worker",
+                                                    )
+                                                }
+                                                className={cn(
+                                                    "flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors",
+                                                    field.value ===
+                                                        "Foreign Worker"
+                                                        ? "border-blue-500 bg-blue-50 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/50"
+                                                        : "border-input bg-muted/50 text-muted-foreground hover:border-blue-300 hover:bg-blue-50/50 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10",
+                                                    disabled &&
+                                                        "cursor-not-allowed opacity-50",
+                                                )}>
+                                                Foreign Worker
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={disabled}
+                                                aria-pressed={
+                                                    field.value ===
+                                                    "Local Worker"
+                                                }
+                                                onClick={() =>
+                                                    field.onChange(
+                                                        "Local Worker",
+                                                    )
+                                                }
+                                                className={cn(
+                                                    "flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors",
+                                                    field.value ===
+                                                        "Local Worker"
+                                                        ? "border-amber-500 bg-amber-50 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/50"
+                                                        : "border-input bg-muted/50 text-muted-foreground hover:border-amber-300 hover:bg-amber-50/50 dark:hover:border-amber-500/30 dark:hover:bg-amber-500/10",
+                                                    disabled &&
+                                                        "cursor-not-allowed opacity-50",
+                                                )}>
+                                                Local Worker
+                                            </button>
+                                        </div>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="hourlyPay">Hourly Pay</Label>
-                            <Input
-                                id="hourlyPay"
-                                type="number"
-                                value={hourlyPay}
-                                onChange={(event) =>
-                                    setHourlyPay(event.target.value)
-                                }
-                            />
-                        </div>
-                    </div>
 
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="paymentMethod">
-                                Payment Method
-                            </Label>
-                            <Select
-                                value={paymentMethod ?? undefined}
-                                onValueChange={(value) =>
-                                    setPaymentMethod(
-                                        value as NonNullable<
-                                            SelectWorker["paymentMethod"]
-                                        >,
-                                    )
-                                }>
-                                <SelectTrigger id="paymentMethod">
-                                    <SelectValue placeholder="Select payment method" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="PayNow">
-                                        PayNow
-                                    </SelectItem>
-                                    <SelectItem value="Bank Transfer">
-                                        Bank Transfer
-                                    </SelectItem>
-                                    <SelectItem value="Cash">Cash</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="payNowPhone">PayNow Phone</Label>
-                            <Input
-                                id="payNowPhone"
-                                value={payNowPhone}
-                                onChange={(event) =>
-                                    setPayNowPhone(event.target.value)
-                                }
+                        <div className="grid gap-4 md:grid-cols-3">
+                            <Controller
+                                name="monthlyPay"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        data-invalid={fieldState.invalid}
+                                        className="space-y-2">
+                                        <FieldLabel
+                                            htmlFor={`${formId}-monthlyPay`}>
+                                            Monthly Pay
+                                        </FieldLabel>
+                                        <InputGroup>
+                                            <InputGroupInput
+                                                {...field}
+                                                id={`${formId}-monthlyPay`}
+                                                type="number"
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                disabled={disabled}
+                                            />
+                                            <InputGroupAddon>
+                                                <Banknote className="size-4 text-muted-foreground" />
+                                            </InputGroupAddon>
+                                        </InputGroup>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
+                            />
+                            <Controller
+                                name="hourlyPay"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        data-invalid={fieldState.invalid}
+                                        className="space-y-2">
+                                        <FieldLabel
+                                            htmlFor={`${formId}-hourlyPay`}>
+                                            Hourly Pay
+                                        </FieldLabel>
+                                        <InputGroup>
+                                            <InputGroupInput
+                                                {...field}
+                                                id={`${formId}-hourlyPay`}
+                                                type="number"
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                disabled={disabled}
+                                            />
+                                            <InputGroupAddon>
+                                                <Banknote className="size-4 text-muted-foreground" />
+                                            </InputGroupAddon>
+                                        </InputGroup>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
+                            />
+                            <Controller
+                                name="restDayPay"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        data-invalid={fieldState.invalid}
+                                        className="space-y-2">
+                                        <FieldLabel
+                                            htmlFor={`${formId}-restDayPay`}>
+                                            Rest Day Pay
+                                        </FieldLabel>
+                                        <InputGroup>
+                                            <InputGroupInput
+                                                {...field}
+                                                id={`${formId}-restDayPay`}
+                                                type="number"
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                disabled={disabled}
+                                            />
+                                            <InputGroupAddon>
+                                                <Banknote className="size-4 text-muted-foreground" />
+                                            </InputGroupAddon>
+                                        </InputGroup>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
                             />
                         </div>
-                    </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="bankAccountNumber">
-                            Bank Account Number
-                        </Label>
-                        <Input
-                            id="bankAccountNumber"
-                            value={bankAccountNumber}
-                            onChange={(event) =>
-                                setBankAccountNumber(event.target.value)
-                            }
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <Controller
+                                name="paymentMethod"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        data-invalid={fieldState.invalid}
+                                        className="space-y-2">
+                                        <FieldLabel
+                                            htmlFor={`${formId}-paymentMethod`}>
+                                            <span className="flex items-center gap-2">
+                                                <CreditCard className="size-4" />
+                                                Payment Method
+                                            </span>
+                                        </FieldLabel>
+                                        <Select
+                                            value={field.value ?? undefined}
+                                            onValueChange={(val) =>
+                                                field.onChange(
+                                                    val as WorkerFormValues["paymentMethod"],
+                                                )
+                                            }
+                                            disabled={disabled}>
+                                            <SelectTrigger
+                                                id={`${formId}-paymentMethod`}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }>
+                                                <SelectValue placeholder="Select payment method" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="PayNow">
+                                                    PayNow
+                                                </SelectItem>
+                                                <SelectItem value="Bank Transfer">
+                                                    Bank Transfer
+                                                </SelectItem>
+                                                <SelectItem value="Cash">
+                                                    Cash
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
+                            />
+                            <Controller
+                                name="payNowPhone"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        data-invalid={fieldState.invalid}
+                                        className="space-y-2">
+                                        <FieldLabel
+                                            htmlFor={`${formId}-payNowPhone`}>
+                                            PayNow Phone
+                                        </FieldLabel>
+                                        <InputGroup>
+                                            <InputGroupInput
+                                                {...field}
+                                                id={`${formId}-payNowPhone`}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                disabled={disabled}
+                                            />
+                                            <InputGroupAddon>
+                                                <Phone className="size-4 text-muted-foreground" />
+                                            </InputGroupAddon>
+                                        </InputGroup>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
+                            />
+                        </div>
+
+                        <Controller
+                            name="bankAccountNumber"
+                            control={form.control}
+                            render={({ field, fieldState }) => (
+                                <Field
+                                    data-invalid={fieldState.invalid}
+                                    className="space-y-2">
+                                    <FieldLabel
+                                        htmlFor={`${formId}-bankAccountNumber`}>
+                                        Bank Account Number
+                                    </FieldLabel>
+                                    <InputGroup>
+                                        <InputGroupInput
+                                            {...field}
+                                            id={`${formId}-bankAccountNumber`}
+                                            aria-invalid={
+                                                fieldState.invalid
+                                            }
+                                            disabled={disabled}
+                                        />
+                                        <InputGroupAddon>
+                                            <Building2 className="size-4 text-muted-foreground" />
+                                        </InputGroupAddon>
+                                    </InputGroup>
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
+                                        />
+                                    )}
+                                </Field>
+                            )}
                         />
-                    </div>
+                    </FieldGroup>
 
-                    <div className="flex justify-end gap-2 pt-2">
-                        <Button type="submit">
-                            {isCreate ? "Add worker" : "Save changes"}
-                        </Button>
-                    </div>
+                    {!disabled && (
+                        <div className="flex justify-end gap-2 pt-2">
+                            <Button type="submit">
+                                {isCreate ? "Add worker" : "Save changes"}
+                            </Button>
+                        </div>
+                    )}
                 </form>
             </CardContent>
         </Card>

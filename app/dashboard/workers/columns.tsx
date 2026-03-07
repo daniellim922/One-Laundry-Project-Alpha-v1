@@ -3,7 +3,7 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { SelectWorker } from "@/db/tables/workersTable";
 import Link from "next/link";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, Eye, MoreHorizontal, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -29,9 +29,7 @@ const sortableHeader =
 const statusStyles: Record<string, string> = {
     Active: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
     Inactive:
-        "bg-slate-100 text-slate-800 dark:bg-slate-500/20 dark:text-slate-300",
-    "On Leave":
-        "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300",
+        "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300",
 };
 
 const employmentTypeStyles: Record<SelectWorker["employmentType"], string> = {
@@ -158,8 +156,17 @@ export const columns: ColumnDef<SelectWorker>[] = [
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
                             <Link
+                                href={`/dashboard/workers/view/${worker.id}`}
+                                className="flex w-full items-center gap-2">
+                                <Eye className="h-4 w-4" />
+                                View
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                            <Link
                                 href={`/dashboard/workers/edit/${worker.id}`}
-                                className="w-full">
+                                className="flex w-full items-center gap-2">
+                                <Pencil className="h-4 w-4" />
                                 Edit
                             </Link>
                         </DropdownMenuItem>

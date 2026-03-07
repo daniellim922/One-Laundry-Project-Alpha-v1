@@ -9,7 +9,7 @@ import { workersTable } from "@/db/tables/workersTable";
 import { timesheetEntriesTable } from "@/db/tables/timesheetEntriesTable";
 import {
     calculateHoursFromTimes,
-    calculatePay,
+    STANDARD_HOURS_PER_MONTH,
 } from "@/lib/payroll-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import {
     Table,
     TableBody,
     TableCell,
+    TableFooter,
     TableHead,
     TableHeader,
     TableRow,
@@ -82,12 +83,15 @@ export default async function PayrollDetailPage({ params }: PageProps) {
         totalHours += hours;
     }
 
-    const payCalc = calculatePay(
-        totalHours,
-        dailyHours,
-        worker.monthlyPay,
-        worker.hourlyPay,
-    );
+    let overtimeHours = 0;
+    for (const h of dailyHours) {
+        if (h > 8) overtimeHours += h - 8;
+    }
+
+    const expectedMonthlyHours =
+        worker.employmentType === "Full Time"
+            ? STANDARD_HOURS_PER_MONTH
+            : Math.round(STANDARD_HOURS_PER_MONTH / 2);
 
     return (
         <div className="space-y-6">
@@ -98,55 +102,8 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                     </Link>
                 </Button>
                 <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">
+                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
                         {worker.name}
-                    </h1>
-                    <p className="text-muted-foreground">
-                        Period: {formatDate(payroll.periodStart)} –{" "}
-                        {formatDate(payroll.periodEnd)} | Payroll date:{" "}
-                        {formatDate(payroll.payrollDate)}
-                    </p>
-                </div>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Pay breakdown</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                        <p>
-                            <span className="text-muted-foreground">
-                                Total hours worked:
-                            </span>{" "}
-                            {Number(payroll.totalHours).toFixed(2)}
-                        </p>
-                        <p>
-                            <span className="text-muted-foreground">
-                                Rate used:
-                            </span>{" "}
-                            {worker.hourlyPay != null
-                                ? `$${worker.hourlyPay}/hr`
-                                : worker.monthlyPay != null
-                                  ? `$${worker.monthlyPay}/mo (base)`
-                                  : "—"}
-                        </p>
-                        <p>
-                            <span className="text-muted-foreground">
-                                Calculation:
-                            </span>{" "}
-                            {payCalc.breakdown}
-                        </p>
-                        <p className="font-semibold pt-2">
-                            Total pay: ${payroll.totalPay}
-                        </p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Status</CardTitle>
-                    </CardHeader>
-                    <CardContent>
                         <span
                             className={`inline-flex rounded-full px-2 py-1 text-sm font-medium ${
                                 payroll.status === "paid"
@@ -157,9 +114,63 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                             }`}>
                             {payroll.status}
                         </span>
-                    </CardContent>
-                </Card>
+                    </h1>
+                    <p className="text-muted-foreground">
+                        Period: {formatDate(payroll.periodStart)} –{" "}
+                        {formatDate(payroll.periodEnd)} | Payroll date:{" "}
+                        {formatDate(payroll.payrollDate)}
+                    </p>
+                </div>
             </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Pay breakdown</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableBody>
+                            <TableRow>
+                                <TableCell className="text-muted-foreground">
+                                    Monthly pay
+                                </TableCell>
+                                <TableCell className="text-right font-medium">
+                                    {worker.monthlyPay != null
+                                        ? `$${worker.monthlyPay}`
+                                        : "—"}
+                                </TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell className="text-muted-foreground">
+                                    Hourly pay rate
+                                </TableCell>
+                                <TableCell className="text-right font-medium">
+                                    {worker.hourlyPay != null
+                                        ? `$${worker.hourlyPay}/hr`
+                                        : worker.monthlyPay != null
+                                          ? `$${(
+                                                worker.monthlyPay /
+                                                STANDARD_HOURS_PER_MONTH
+                                            ).toFixed(2)}/hr`
+                                          : "—"}
+                                </TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell className="text-muted-foreground">
+                                    Rest day pay
+                                </TableCell>
+                                <TableCell className="text-right font-medium">
+                                    {worker.monthlyPay != null
+                                        ? `$${Math.round(
+                                              worker.monthlyPay / 26,
+                                          )}`
+                                        : "—"}
+                                </TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
 
             <Card>
                 <CardHeader>
@@ -186,7 +197,7 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {entries.map((e, i) => {
+                                {entries.map((e) => {
                                     const hours = calculateHoursFromTimes(
                                         String(e.timeIn),
                                         String(e.timeOut),
@@ -209,6 +220,32 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                                     );
                                 })}
                             </TableBody>
+                            <TableFooter>
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-muted-foreground">
+                                        Total hours
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        {totalHours.toFixed(2)}
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-muted-foreground">
+                                        Expected ({worker.employmentType})
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        {expectedMonthlyHours}
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell colSpan={3} className="text-muted-foreground">
+                                        Overtime
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        {overtimeHours.toFixed(2)}
+                                    </TableCell>
+                                </TableRow>
+                            </TableFooter>
                         </Table>
                     )}
                 </CardContent>

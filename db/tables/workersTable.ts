@@ -16,6 +16,7 @@ export const workersTable = pgTable("workers", {
     // Pay details (only one of monthlyPay / hourlyPay is typically set)
     monthlyPay: integer("monthly_pay"),
     hourlyPay: integer("hourly_pay"),
+    restDayPay: integer("rest_day_pay"),
     paymentMethod: text("payment_method", {
         enum: ["PayNow", "Bank Transfer", "Cash"] as const,
     }),

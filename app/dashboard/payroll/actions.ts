@@ -86,3 +86,72 @@ export async function createPayroll(formData: FormData) {
     revalidatePath("/dashboard/payroll");
     return { success: true };
 }
+
+export async function createPayrolls(formData: FormData) {
+    const workerIds = formData.getAll("workerId") as string[];
+    const periodStart = toDateString(formData.get("periodStart") as string);
+    const periodEnd = toDateString(formData.get("periodEnd") as string);
+    const payrollDate = toDateString(formData.get("payrollDate") as string);
+
+    if (workerIds.length === 0 || !periodStart || !periodEnd || !payrollDate) {
+        return { error: "Select at least one worker and fill in period dates" };
+    }
+
+    let created = 0;
+    for (const workerId of workerIds) {
+        if (!workerId) continue;
+
+        const [worker] = await db
+            .select()
+            .from(workersTable)
+            .where(eq(workersTable.id, workerId))
+            .limit(1);
+
+        if (!worker) continue;
+
+        const entries = await db
+            .select()
+            .from(timesheetEntriesTable)
+            .where(
+                and(
+                    eq(timesheetEntriesTable.workerId, workerId),
+                    gte(timesheetEntriesTable.date, periodStart),
+                    lte(timesheetEntriesTable.date, periodEnd),
+                ),
+            );
+
+        const dailyHours: number[] = [];
+        let totalHours = 0;
+        for (const e of entries) {
+            const hours = calculateHoursFromTimes(
+                String(e.timeIn),
+                String(e.timeOut),
+            );
+            dailyHours.push(hours);
+            totalHours += hours;
+        }
+
+        const payCalc = calculatePay(
+            totalHours,
+            dailyHours,
+            worker.monthlyPay,
+            worker.hourlyPay,
+        );
+
+        await db.insert(payrollsTable).values({
+            workerId,
+            periodStart,
+            periodEnd,
+            payrollDate,
+            totalHours,
+            totalPay: payCalc.totalPay,
+            status: "draft",
+            createdAt: isoNow(),
+            updatedAt: isoNow(),
+        });
+        created++;
+    }
+
+    revalidatePath("/dashboard/payroll");
+    return { success: true, created };
+}
