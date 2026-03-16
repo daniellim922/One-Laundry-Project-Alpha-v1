@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
-import { timesheetEntriesTable } from "@/db/tables/timesheetEntriesTable";
-import { workersTable } from "@/db/tables/payroll/workerTable";
+import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
+import { workerTable } from "@/db/tables/payroll/workerTable";
 
 function isoNow(): Date {
     return new Date();
@@ -43,7 +43,7 @@ export async function createTimesheetEntry(formData: FormData) {
         return { error: "Missing required fields" };
     }
 
-    await db.insert(timesheetEntriesTable).values({
+    await db.insert(timesheetTable).values({
         workerId,
         date,
         timeIn,
@@ -61,16 +61,17 @@ type ImportRow = Record<string, unknown>;
 
 export async function importTimesheetEntries(rows: ImportRow[]) {
     const workerNames = await db
-        .select({ id: workersTable.id, name: workersTable.name })
-        .from(workersTable);
+        .select({ id: workerTable.id, name: workerTable.name })
+        .from(workerTable);
     const nameToId = new Map(
         workerNames.map((w) => [w.name.toLowerCase().trim(), w.id]),
     );
 
     const toInsert: {
         workerId: string;
-        date: string;
+        dateIn: string;
         timeIn: string;
+        dateOut: string;
         timeOut: string;
         createdAt: Date;
         updatedAt: Date;
@@ -109,7 +110,7 @@ export async function importTimesheetEntries(rows: ImportRow[]) {
     }
 
     if (toInsert.length > 0) {
-        await db.insert(timesheetEntriesTable).values(toInsert);
+        await db.insert(timesheetTable).values(toInsert);
     }
 
     revalidatePath("/dashboard/timesheet");

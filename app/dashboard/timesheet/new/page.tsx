@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
-import { workersTable } from "@/db/tables/payroll/workerTable";
+import { workerTable } from "@/db/tables/payroll/workerTable";
 import { Button } from "@/components/ui/button";
 import { TimesheetEntryForm } from "../timesheet-entry-form";
 import { ArrowLeft } from "lucide-react";
@@ -11,9 +11,9 @@ export default async function NewTimesheetEntryPage() {
     await requirePermission("Timesheet", "create");
 
     const workers = await db
-        .select({ id: workersTable.id, name: workersTable.name })
-        .from(workersTable)
-        .orderBy(workersTable.name);
+        .select({ id: workerTable.id, name: workerTable.name })
+        .from(workerTable)
+        .orderBy(workerTable.name);
 
     return (
         <div className="mx-auto max-w-md space-y-4">

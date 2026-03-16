@@ -4,9 +4,9 @@ import { and, eq, gte, lte } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
-import { payrollsTable } from "@/db/tables/payroll/payrollTable";
-import { timesheetEntriesTable } from "@/db/tables/timesheetEntriesTable";
-import { workersTable } from "@/db/tables/payroll/workerTable";
+import { payrollTable } from "@/db/tables/payroll/payrollTable";
+import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
+import { workerTable } from "@/db/tables/payroll/workerTable";
 import { calculateHoursFromTimes, calculatePay } from "@/lib/payroll-utils";
 
 function isoNow(): Date {
@@ -31,8 +31,8 @@ export async function createPayroll(formData: FormData) {
 
     const [worker] = await db
         .select()
-        .from(workersTable)
-        .where(eq(workersTable.id, workerId))
+        .from(workerTable)
+        .where(eq(workerTable.id, workerId))
         .limit(1);
 
     if (!worker) {
@@ -41,12 +41,12 @@ export async function createPayroll(formData: FormData) {
 
     const entries = await db
         .select()
-        .from(timesheetEntriesTable)
+        .from(timesheetTable)
         .where(
             and(
-                eq(timesheetEntriesTable.workerId, workerId),
-                gte(timesheetEntriesTable.date, periodStart),
-                lte(timesheetEntriesTable.date, periodEnd),
+                eq(timesheetTable.workerId, workerId),
+                gte(timesheetTable.dateIn, periodStart),
+                lte(timesheetTable.dateOut, periodEnd),
             ),
         );
 
@@ -64,11 +64,11 @@ export async function createPayroll(formData: FormData) {
     const payCalc = calculatePay(
         totalHours,
         dailyHours,
-        worker.monthlyPay,
-        worker.hourlyPay,
+        worker.employment.monthlyPay,
+        worker.employment.hourlyPay,
     );
 
-    await db.insert(payrollsTable).values({
+    await db.insert(payrollTable).values({
         workerId,
         periodStart,
         periodEnd,
@@ -100,20 +100,20 @@ export async function createPayrolls(formData: FormData) {
 
         const [worker] = await db
             .select()
-            .from(workersTable)
-            .where(eq(workersTable.id, workerId))
+            .from(workerTable)
+            .where(eq(workerTable.id, workerId))
             .limit(1);
 
         if (!worker) continue;
 
         const entries = await db
             .select()
-            .from(timesheetEntriesTable)
+            .from(timesheetTable)
             .where(
                 and(
-                    eq(timesheetEntriesTable.workerId, workerId),
-                    gte(timesheetEntriesTable.date, periodStart),
-                    lte(timesheetEntriesTable.date, periodEnd),
+                    eq(timesheetTable.workerId, workerId),
+                    gte(timesheetTable.dateIn, periodStart),
+                    lte(timesheetTable.dateOut, periodEnd),
                 ),
             );
 
@@ -131,11 +131,11 @@ export async function createPayrolls(formData: FormData) {
         const payCalc = calculatePay(
             totalHours,
             dailyHours,
-            worker.monthlyPay,
-            worker.hourlyPay,
+            worker.employment.monthlyPay,
+            worker.employment.hourlyPay,
         );
 
-        await db.insert(payrollsTable).values({
+        await db.insert(payrollTable).values({
             workerId,
             periodStart,
             periodEnd,
