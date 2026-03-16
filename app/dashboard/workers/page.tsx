@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { count } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import {
     workerTable,
-    type SelectWorker,
+    type WorkerWithEmployment,
 } from "@/db/tables/payroll/workerTable";
+import { employmentTable } from "@/db/tables/payroll/employmentTable";
 import { columns } from "./columns";
 import { DataTable } from "@/components/data-table";
 import {
@@ -21,7 +22,33 @@ import { ArrowRight, Plus, Users } from "lucide-react";
 
 export default async function Page() {
     const [workers, workersCountResult] = await Promise.all([
-        db.select().from(workerTable),
+        db
+            .select({
+                id: workerTable.id,
+                name: workerTable.name,
+                email: workerTable.email,
+                phone: workerTable.phone,
+                status: workerTable.status,
+                countryOfOrigin: workerTable.countryOfOrigin,
+                race: workerTable.race,
+                employmentId: workerTable.employmentId,
+                createdAt: workerTable.createdAt,
+                updatedAt: workerTable.updatedAt,
+                employmentType: employmentTable.employmentType,
+                employmentArrangement: employmentTable.employmentArrangement,
+                monthlyPay: employmentTable.monthlyPay,
+                workingHours: employmentTable.workingHours,
+                hourlyPay: employmentTable.hourlyPay,
+                restDayPay: employmentTable.restDayPay,
+                paymentMethod: employmentTable.paymentMethod,
+                payNowPhone: employmentTable.payNowPhone,
+                bankAccountNumber: employmentTable.bankAccountNumber,
+            })
+            .from(workerTable)
+            .innerJoin(
+                employmentTable,
+                eq(workerTable.employmentId, employmentTable.id),
+            ) as Promise<WorkerWithEmployment[]>,
         db.select({ count: count() }).from(workerTable),
     ]);
     const workersCount = workersCountResult[0]?.count ?? 0;

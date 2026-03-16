@@ -1,12 +1,5 @@
-import {
-    pgTable,
-    uuid,
-    text,
-    timestamp,
-    integer,
-    jsonb,
-} from "drizzle-orm/pg-core";
-import { employmentTable } from "./employmentTable";
+import { pgTable, uuid, text, timestamp } from "drizzle-orm/pg-core";
+import { employmentTable, type SelectEmployment } from "./employmentTable";
 
 export const workerTable = pgTable("worker", {
     id: uuid().primaryKey().defaultRandom(),
@@ -31,3 +24,9 @@ export const workerTable = pgTable("worker", {
 
 export type SelectWorker = typeof workerTable.$inferSelect;
 export type InsertWorker = typeof workerTable.$inferInsert;
+
+export type WorkerWithEmployment = SelectWorker &
+    Pick<
+        SelectEmployment,
+        "employmentType" | "employmentArrangement" | "monthlyPay" | "hourlyPay" | "paymentMethod"
+    >;

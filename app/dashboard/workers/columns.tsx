@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { SelectWorker } from "@/db/tables/payroll/workerTable";
+import type { WorkerWithEmployment } from "@/db/tables/payroll/workerTable";
 import Link from "next/link";
 import { ArrowUpDown, Eye, MoreHorizontal, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,14 +31,17 @@ const statusStyles: Record<string, string> = {
     Inactive: "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300",
 };
 
-const employmentTypeStyles: Record<SelectWorker["employmentType"], string> = {
+const employmentTypeStyles: Record<
+    WorkerWithEmployment["employmentType"],
+    string
+> = {
     "Full Time":
         "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
     "Part Time": "bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300",
 };
 
 const employmentArrangementStyles: Record<
-    SelectWorker["employmentArrangement"],
+    WorkerWithEmployment["employmentArrangement"],
     string
 > = {
     "Foreign Worker":
@@ -48,7 +51,7 @@ const employmentArrangementStyles: Record<
 };
 
 const paymentMethodStyles: Record<
-    NonNullable<SelectWorker["paymentMethod"]>,
+    NonNullable<WorkerWithEmployment["paymentMethod"]>,
     string
 > = {
     PayNow: "bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300",
@@ -57,7 +60,7 @@ const paymentMethodStyles: Record<
     Cash: "bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300",
 };
 
-export const columns: ColumnDef<SelectWorker>[] = [
+export const columns: ColumnDef<WorkerWithEmployment>[] = [
     {
         accessorKey: "name",
         header: sortableHeader("Name"),
@@ -104,9 +107,9 @@ export const columns: ColumnDef<SelectWorker>[] = [
         },
     },
     {
-        accessorKey: "countryOfOrigin",
-        header: sortableHeader("Country of Origin"),
-        cell: ({ row }) => row.original.countryOfOrigin ?? "—",
+        accessorKey: "phone",
+        header: sortableHeader("Phone"),
+        cell: ({ row }) => row.original.phone ?? "—",
     },
     {
         accessorKey: "monthlyPay",
