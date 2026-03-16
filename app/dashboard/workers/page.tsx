@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { count, eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import {
@@ -48,7 +48,8 @@ export default async function Page() {
             .innerJoin(
                 employmentTable,
                 eq(workerTable.employmentId, employmentTable.id),
-            ) as Promise<WorkerWithEmployment[]>,
+            )
+            .orderBy(desc(workerTable.updatedAt)) as Promise<WorkerWithEmployment[]>,
         db.select({ count: count() }).from(workerTable),
     ]);
     const workersCount = workersCountResult[0]?.count ?? 0;

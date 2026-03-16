@@ -1,5 +1,7 @@
 "use client";
 
+import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -43,27 +45,149 @@ import {
     FieldLabel,
 } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
+import { createWorker, updateWorker } from "./actions";
 
-const workerFormSchema = z.object({
-    name: z.string().min(1, "Name is required"),
-    email: z.string().optional(),
-    phone: z.string().optional(),
-    status: z.enum(["Active", "Inactive"]),
-    employmentType: z.enum(["Full Time", "Part Time"]),
-    employmentArrangement: z.enum(["Foreign Worker", "Local Worker"]),
-    countryOfOrigin: z.string().optional(),
-    race: z.string().optional(),
-    monthlyPay: z.string().optional(),
-    hourlyPay: z.string().optional(),
-    restDayPay: z.string().optional(),
-    minimumWorkingHours: z.string().optional(),
-    paymentMethod: z
-        .enum(["PayNow", "Bank Transfer", "Cash"])
-        .nullable()
-        .optional(),
-    payNowPhone: z.string().optional(),
-    bankAccountNumber: z.string().optional(),
-});
+const workerFormSchema = z
+    .object({
+        name: z.string().min(1, "Name is required"),
+        email: z.string().optional(),
+        phone: z.string().optional(),
+        status: z.enum(["Active", "Inactive"]),
+        employmentType: z.enum(["Full Time", "Part Time"]),
+        employmentArrangement: z.enum(["Foreign Worker", "Local Worker"]),
+        countryOfOrigin: z.string().optional(),
+        race: z.string().optional(),
+        monthlyPay: z.string().optional(),
+        hourlyPay: z.string().optional(),
+        restDayPay: z.string().optional(),
+        minimumWorkingHours: z.string().optional(),
+        paymentMethod: z
+            .enum(["PayNow", "Bank Transfer", "Cash"])
+            .nullable()
+            .optional(),
+        payNowPhone: z.string().optional(),
+        bankAccountNumber: z.string().optional(),
+    })
+    .superRefine((values, ctx) => {
+        const isFullTime = values.employmentType === "Full Time";
+        const isPartTime = values.employmentType === "Part Time";
+        const isBankTransfer = values.paymentMethod === "Bank Transfer";
+        const isPayNow = values.paymentMethod === "PayNow";
+
+        if (isFullTime) {
+            const payFields: Array<{
+                key: "monthlyPay" | "hourlyPay" | "restDayPay" | "minimumWorkingHours";
+                requiredMessage: string;
+                positiveMessage: string;
+            }> = [
+                {
+                    key: "monthlyPay",
+                    requiredMessage:
+                        "Monthly pay is required for full time workers",
+                    positiveMessage:
+                        "Monthly pay must be a positive number",
+                },
+                {
+                    key: "hourlyPay",
+                    requiredMessage:
+                        "Hourly pay is required for full time workers",
+                    positiveMessage:
+                        "Hourly pay must be a positive number",
+                },
+                {
+                    key: "restDayPay",
+                    requiredMessage:
+                        "Rest day pay is required for full time workers",
+                    positiveMessage:
+                        "Rest day pay must be a positive number",
+                },
+                {
+                    key: "minimumWorkingHours",
+                    requiredMessage:
+                        "Minimum working hours are required for full time workers",
+                    positiveMessage:
+                        "Minimum working hours must be a positive number",
+                },
+            ];
+
+            for (const field of payFields) {
+                const rawValue = values[field.key];
+                const value = typeof rawValue === "string" ? rawValue.trim() : "";
+
+                if (!value) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: [field.key],
+                        message: field.requiredMessage,
+                    });
+                    continue;
+                }
+
+                const numericValue = Number(value);
+                if (!Number.isFinite(numericValue) || numericValue <= 0) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: [field.key],
+                        message: field.positiveMessage,
+                    });
+                }
+            }
+        }
+
+        if (isPartTime) {
+            const rawValue = values.hourlyPay;
+            const value = typeof rawValue === "string" ? rawValue.trim() : "";
+
+            if (!value) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["hourlyPay"],
+                    message:
+                        "Hourly pay is required for part time workers",
+                });
+            } else {
+                const numericValue = Number(value);
+                if (!Number.isFinite(numericValue) || numericValue <= 0) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: ["hourlyPay"],
+                        message:
+                            "Hourly pay must be a positive number",
+                    });
+                }
+            }
+        }
+
+        if (isBankTransfer) {
+            const account =
+                typeof values.bankAccountNumber === "string"
+                    ? values.bankAccountNumber.trim()
+                    : "";
+
+            if (!account) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["bankAccountNumber"],
+                    message:
+                        "Bank account number is required for bank transfer",
+                });
+            }
+        }
+
+        if (isPayNow) {
+            const rawPhone = values.payNowPhone;
+            const phone =
+                typeof rawPhone === "string" ? rawPhone.trim() : "";
+
+            if (!phone) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["payNowPhone"],
+                    message: "PayNow phone is required when PayNow is selected",
+                });
+            }
+        }
+    });
 
 type WorkerFormValues = z.infer<typeof workerFormSchema>;
 
@@ -124,13 +248,43 @@ interface WorkerFormProps {
 export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
     const isCreate = !worker;
 
+    const router = useRouter();
+    const [pending, setPending] = React.useState(false);
+    const [error, setError] = React.useState<string | null>(null);
+
     const form = useForm<WorkerFormValues>({
         resolver: zodResolver(workerFormSchema),
         defaultValues: getDefaultValues(worker),
     });
 
-    const onSubmit = (data: WorkerFormValues) => {
-        console.log("Submitted worker values", data);
+    const onSubmit = async (data: WorkerFormValues) => {
+        if (disabled) return;
+
+        setError(null);
+        setPending(true);
+
+        const formData = new FormData();
+        for (const [key, value] of Object.entries(data)) {
+            if (value === undefined || value === null) continue;
+            formData.set(key, String(value));
+        }
+
+        let result;
+        if (!worker) {
+            result = await createWorker(formData);
+        } else {
+            result = await updateWorker(worker.id, formData);
+        }
+
+        setPending(false);
+
+        if (!result.success) {
+            setError(result.error);
+            return;
+        }
+
+        router.push("/dashboard/workers");
+        router.refresh();
     };
 
     const formId = "worker-form";
@@ -579,15 +733,16 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                 Monthly Pay
                                             </FieldLabel>
                                             <InputGroup>
-                                                <InputGroupInput
-                                                    {...field}
-                                                    id={`${formId}-monthlyPay`}
-                                                    type="number"
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    disabled={disabled}
-                                                />
+                                            <InputGroupInput
+                                                {...field}
+                                                id={`${formId}-monthlyPay`}
+                                                type="number"
+                                                min={0}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                disabled={disabled}
+                                            />
                                                 <InputGroupAddon>
                                                     <Banknote className="size-4 text-muted-foreground" />
                                                 </InputGroupAddon>
@@ -617,6 +772,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                 {...field}
                                                 id={`${formId}-hourlyPay`}
                                                 type="number"
+                                                min={0}
                                                 aria-invalid={
                                                     fieldState.invalid
                                                 }
@@ -647,15 +803,16 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                 Rest Day Pay
                                             </FieldLabel>
                                             <InputGroup>
-                                                <InputGroupInput
-                                                    {...field}
-                                                    id={`${formId}-restDayPay`}
-                                                    type="number"
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    disabled={disabled}
-                                                />
+                                            <InputGroupInput
+                                                {...field}
+                                                id={`${formId}-restDayPay`}
+                                                type="number"
+                                                min={0}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                disabled={disabled}
+                                            />
                                                 <InputGroupAddon>
                                                     <Banknote className="size-4 text-muted-foreground" />
                                                 </InputGroupAddon>
@@ -682,15 +839,16 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                 Minimum Working Hours
                                             </FieldLabel>
                                             <InputGroup>
-                                                <InputGroupInput
-                                                    {...field}
-                                                    id={`${formId}-minimumWorkingHours`}
-                                                    type="number"
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    disabled={disabled}
-                                                />
+                                            <InputGroupInput
+                                                {...field}
+                                                id={`${formId}-minimumWorkingHours`}
+                                                type="number"
+                                                min={0}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
+                                                disabled={disabled}
+                                            />
                                                 <InputGroupAddon>
                                                     <Clock className="size-4 text-muted-foreground" />
                                                 </InputGroupAddon>
@@ -860,10 +1018,23 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                     </FieldGroup>
 
                     {!disabled && (
-                        <div className="flex justify-end gap-2 pt-2">
-                            <Button type="submit">
-                                {isCreate ? "Add worker" : "Save changes"}
-                            </Button>
+                        <div className="flex flex-col gap-2 pt-2">
+                            {error && (
+                                <p className="text-destructive text-sm">
+                                    {error}
+                                </p>
+                            )}
+                            <div className="flex justify-end gap-2">
+                                <Button type="submit" disabled={pending}>
+                                    {pending
+                                        ? isCreate
+                                            ? "Adding..."
+                                            : "Saving..."
+                                        : isCreate
+                                          ? "Add worker"
+                                          : "Save changes"}
+                                </Button>
+                            </div>
                         </div>
                     )}
                 </form>
