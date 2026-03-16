@@ -3,15 +3,10 @@ import { Suspense } from "react";
 import { count, sum } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { expensesTable, type SelectExpense } from "@/db/tables/expensesTable";
+import { expensesTable, type SelectExpense } from "@/db/expensesTable";
 import { columns } from "./columns";
 import { DataTable } from "@/components/data-table";
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, DollarSign, Plus } from "lucide-react";
 

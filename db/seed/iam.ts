@@ -1,6 +1,5 @@
-import type { InsertRolePermission } from "@/db/tables/rolePermissionsTable";
-import type { InsertFeature } from "@/db/tables/featuresTable";
-import type { InsertRole } from "@/db/tables/rolesTable";
+import type { InsertFeature } from "@/db/tables/auth/featuresTable";
+import type { InsertRole } from "@/db/tables/auth/rolesTable";
 
 export const FEATURES: InsertFeature[] = [
     { name: "Home" },

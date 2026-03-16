@@ -6,8 +6,8 @@ import {
     integer,
     boolean,
 } from "drizzle-orm/pg-core";
-import { rolesTable } from "./rolesTable";
-import { featuresTable } from "./featuresTable";
+import { rolesTable } from "@/db/tables/auth/rolesTable";
+import { featuresTable } from "@/db/tables/auth/featuresTable";
 
 export const rolePermissionsTable = pgTable("role_permissions", {
     id: uuid().primaryKey().defaultRandom(),

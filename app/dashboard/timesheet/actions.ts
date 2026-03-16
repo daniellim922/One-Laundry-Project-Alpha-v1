@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
 import { timesheetEntriesTable } from "@/db/tables/timesheetEntriesTable";
-import { workersTable } from "@/db/tables/workersTable";
+import { workersTable } from "@/db/tables/payroll/workerTable";
 
 function isoNow(): Date {
     return new Date();
@@ -60,7 +60,9 @@ export async function createTimesheetEntry(formData: FormData) {
 type ImportRow = Record<string, unknown>;
 
 export async function importTimesheetEntries(rows: ImportRow[]) {
-    const workerNames = await db.select({ id: workersTable.id, name: workersTable.name }).from(workersTable);
+    const workerNames = await db
+        .select({ id: workersTable.id, name: workersTable.name })
+        .from(workersTable);
     const nameToId = new Map(
         workerNames.map((w) => [w.name.toLowerCase().trim(), w.id]),
     );
@@ -85,9 +87,7 @@ export async function importTimesheetEntries(rows: ImportRow[]) {
             errors.push(`Row ${i + 1}: Unknown worker "${workerName}"`);
             continue;
         }
-        const date = toDateString(
-            (row.date ?? "") as string | number,
-        );
+        const date = toDateString((row.date ?? "") as string | number);
         const timeIn = toTimeString(
             String(row.time_in ?? row.timeIn ?? "09:00"),
         );

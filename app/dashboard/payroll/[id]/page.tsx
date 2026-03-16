@@ -4,8 +4,8 @@ import Link from "next/link";
 
 import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
-import { payrollsTable } from "@/db/tables/payrollsTable";
-import { workersTable } from "@/db/tables/workersTable";
+import { payrollsTable } from "@/db/tables/payroll/payrollTable";
+import { workersTable } from "@/db/tables/payroll/workerTable";
 import { timesheetEntriesTable } from "@/db/tables/timesheetEntriesTable";
 import {
     calculateHoursFromTimes,
@@ -30,7 +30,11 @@ interface PageProps {
 
 function formatDate(d: string | Date): string {
     const date = d instanceof Date ? d : new Date(d + "T00:00:00");
-    return date.toLocaleDateString("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" });
+    return date.toLocaleDateString("en-CA", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    });
 }
 
 function formatTime(t: string): string {
@@ -222,7 +226,9 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                             </TableBody>
                             <TableFooter>
                                 <TableRow>
-                                    <TableCell colSpan={3} className="text-muted-foreground">
+                                    <TableCell
+                                        colSpan={3}
+                                        className="text-muted-foreground">
                                         Total hours
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -230,7 +236,9 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                                     </TableCell>
                                 </TableRow>
                                 <TableRow>
-                                    <TableCell colSpan={3} className="text-muted-foreground">
+                                    <TableCell
+                                        colSpan={3}
+                                        className="text-muted-foreground">
                                         Expected ({worker.employmentType})
                                     </TableCell>
                                     <TableCell className="text-right">
@@ -238,7 +246,9 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                                     </TableCell>
                                 </TableRow>
                                 <TableRow>
-                                    <TableCell colSpan={3} className="text-muted-foreground">
+                                    <TableCell
+                                        colSpan={3}
+                                        className="text-muted-foreground">
                                         Overtime
                                     </TableCell>
                                     <TableCell className="text-right">

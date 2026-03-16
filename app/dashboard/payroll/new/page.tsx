@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
-import { workersTable } from "@/db/tables/workersTable";
+import { workersTable } from "@/db/tables/payroll/workerTable";
 import { Button } from "@/components/ui/button";
 import { PayrollForm } from "../payroll-form";
 import { ArrowLeft } from "lucide-react";
@@ -28,7 +28,8 @@ export default async function NewPayrollPage() {
                         Generate payroll
                     </h1>
                     <p className="text-muted-foreground">
-                        Create a payroll record for a worker. Total hours and pay are calculated from timesheet entries.
+                        Create a payroll record for a worker. Total hours and
+                        pay are calculated from timesheet entries.
                     </p>
                 </div>
             </div>

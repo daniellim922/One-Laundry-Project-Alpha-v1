@@ -1,6 +1,13 @@
-import { pgTable, uuid, text, timestamp, index, uniqueIndex } from "drizzle-orm/pg-core";
-import { rolesTable } from "./rolesTable";
-import { user } from "../auth-schema";
+import {
+    pgTable,
+    uuid,
+    text,
+    timestamp,
+    index,
+    uniqueIndex,
+} from "drizzle-orm/pg-core";
+import { rolesTable } from "@/db/tables/auth/rolesTable";
+import { user } from "@/db/auth-schema";
 
 export const userRolesTable = pgTable(
     "user_roles",
@@ -17,7 +24,10 @@ export const userRolesTable = pgTable(
     (table) => [
         index("user_roles_userId_idx").on(table.userId),
         index("user_roles_roleId_idx").on(table.roleId),
-        uniqueIndex("user_roles_userId_roleId_uniq").on(table.userId, table.roleId),
+        uniqueIndex("user_roles_userId_roleId_uniq").on(
+            table.userId,
+            table.roleId,
+        ),
     ],
 );
 

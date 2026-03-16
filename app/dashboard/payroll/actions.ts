@@ -4,13 +4,10 @@ import { and, eq, gte, lte } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
-import { payrollsTable } from "@/db/tables/payrollsTable";
+import { payrollsTable } from "@/db/tables/payroll/payrollTable";
 import { timesheetEntriesTable } from "@/db/tables/timesheetEntriesTable";
-import { workersTable } from "@/db/tables/workersTable";
-import {
-    calculateHoursFromTimes,
-    calculatePay,
-} from "@/lib/payroll-utils";
+import { workersTable } from "@/db/tables/payroll/workerTable";
+import { calculateHoursFromTimes, calculatePay } from "@/lib/payroll-utils";
 
 function isoNow(): Date {
     return new Date();

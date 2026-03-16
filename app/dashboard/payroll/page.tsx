@@ -6,8 +6,8 @@ import { db } from "@/lib/db";
 import {
     payrollsTable,
     type SelectPayroll,
-} from "@/db/tables/payrollsTable";
-import { workersTable } from "@/db/tables/workersTable";
+} from "@/db/tables/payroll/payrollTable";
+import { workersTable } from "@/db/tables/payroll/workerTable";
 import { columns } from "./columns";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";

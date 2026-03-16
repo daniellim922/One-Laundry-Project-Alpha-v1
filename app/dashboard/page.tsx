@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 import { db } from "@/lib/db";
-import { workersTable } from "@/db/tables/workersTable";
-import { expensesTable } from "@/db/tables/expensesTable";
+import { workerTable } from "@/db/tables/payroll/workerTable";
+import { expensesTable } from "@/db/expensesTable";
 import { count, sum } from "drizzle-orm";
 import {
     Card,
@@ -12,15 +12,23 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, DollarSign, FileSpreadsheet, LayoutDashboard, Users } from "lucide-react";
+import {
+    ArrowRight,
+    DollarSign,
+    FileSpreadsheet,
+    LayoutDashboard,
+    Users,
+} from "lucide-react";
 
 export default async function Page() {
     const [[workersResult], [expensesResult]] = await Promise.all([
-        db.select({ count: count() }).from(workersTable),
-        db.select({
-            count: count(),
-            total: sum(expensesTable.amount),
-        }).from(expensesTable),
+        db.select({ count: count() }).from(workerTable),
+        db
+            .select({
+                count: count(),
+                total: sum(expensesTable.amount),
+            })
+            .from(expensesTable),
     ]);
 
     const workersCount = workersResult?.count ?? 0;
@@ -73,7 +81,7 @@ export default async function Page() {
                         </div>
                         <p className="text-muted-foreground text-xs">
                             {expensesCount} expense record
-                            {expensesCount !== 1 ? "s" : ""}
+                            {expensesCount > 1 ? "s" : ""}
                         </p>
                         <Button variant="link" className="h-auto p-0" asChild>
                             <Link href="/dashboard/expenses">
@@ -135,14 +143,10 @@ export default async function Page() {
                 </CardHeader>
                 <CardContent className="flex flex-wrap gap-3">
                     <Button asChild>
-                        <Link href="/dashboard/workers/new">
-                            Add worker
-                        </Link>
+                        <Link href="/dashboard/workers/new">Add worker</Link>
                     </Button>
                     <Button variant="outline" asChild>
-                        <Link href="/dashboard/expenses/new">
-                            Add expense
-                        </Link>
+                        <Link href="/dashboard/expenses/new">Add expense</Link>
                     </Button>
                     <Button variant="outline" asChild>
                         <Link href="/dashboard/timesheet/import">
@@ -150,9 +154,7 @@ export default async function Page() {
                         </Link>
                     </Button>
                     <Button variant="outline" asChild>
-                        <Link href="/dashboard/iam">
-                            Manage IAM
-                        </Link>
+                        <Link href="/dashboard/iam">Manage IAM</Link>
                     </Button>
                 </CardContent>
             </Card>

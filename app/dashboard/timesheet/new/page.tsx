@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
-import { workersTable } from "@/db/tables/workersTable";
+import { workersTable } from "@/db/tables/payroll/workerTable";
 import { Button } from "@/components/ui/button";
 import { TimesheetEntryForm } from "../timesheet-entry-form";
 import { ArrowLeft } from "lucide-react";

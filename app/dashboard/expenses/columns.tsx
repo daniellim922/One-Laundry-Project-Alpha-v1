@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { SelectExpense } from "@/db/tables/expensesTable";
+import type { SelectExpense } from "@/db/expensesTable";
 import { ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -48,8 +48,15 @@ export const columns: ColumnDef<SelectExpense>[] = [
         accessorKey: "date",
         header: sortableHeader("Date"),
         cell: ({ row }) => {
-            const d = row.original.date instanceof Date ? row.original.date : new Date(row.original.date);
-            return d.toLocaleDateString("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" });
+            const d =
+                row.original.date instanceof Date
+                    ? row.original.date
+                    : new Date(row.original.date);
+            return d.toLocaleDateString("en-CA", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+            });
         },
     },
 ];

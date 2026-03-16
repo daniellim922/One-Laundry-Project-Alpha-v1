@@ -1,8 +1,8 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "./db";
-import { featuresTable } from "@/db/tables/featuresTable";
-import { rolePermissionsTable } from "@/db/tables/rolePermissionsTable";
-import { userRolesTable } from "@/db/tables/userRolesTable";
+import { featuresTable } from "@/db/tables/auth/featuresTable";
+import { rolePermissionsTable } from "@/db/tables/auth/rolePermissionsTable";
+import { userRolesTable } from "@/db/tables/auth/userRolesTable";
 
 export type PermissionAction = "create" | "read" | "update" | "delete";
 

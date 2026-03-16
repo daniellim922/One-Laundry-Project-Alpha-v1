@@ -3,7 +3,10 @@ import { Suspense } from "react";
 import { count } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { workersTable, type SelectWorker } from "@/db/tables/workersTable";
+import {
+    workerTable,
+    type SelectWorker,
+} from "@/db/tables/payroll/workerTable";
 import { columns } from "./columns";
 import { DataTable } from "@/components/data-table";
 import {
@@ -18,8 +21,8 @@ import { ArrowRight, Plus, Users } from "lucide-react";
 
 export default async function Page() {
     const [workers, workersCountResult] = await Promise.all([
-        db.select().from(workersTable),
-        db.select({ count: count() }).from(workersTable),
+        db.select().from(workerTable),
+        db.select({ count: count() }).from(workerTable),
     ]);
     const workersCount = workersCountResult[0]?.count ?? 0;
 

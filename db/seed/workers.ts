@@ -1,10 +1,13 @@
-import type { workersTable, InsertWorker } from "@/db/tables/workersTable";
+import type {
+    workerTable,
+    InsertWorker,
+} from "@/db/tables/payroll/workerTable";
 
 function isoDate(): Date {
     return new Date();
 }
 
-export const workers: InsertWorker[] = [
+export const workers = [
     // ── Full-Time employees ──────────────────────────────────────────────────
     {
         name: "Ding Chun Rong",
@@ -13,14 +16,15 @@ export const workers: InsertWorker[] = [
         status: "Active",
         countryOfOrigin: "China",
         race: "Chinese",
+        type: "Full Time",
+        arrangement: "Foreign Worker",
         monthlyPay: 2500,
+        workingHours: 40,
+        hourlyPay: 12,
+        restDayPay: 100,
         paymentMethod: "PayNow",
         payNowPhone: "+6586086736",
         bankAccountNumber: null,
-        employmentType: "Full Time",
-        employmentArrangement: "Foreign Worker",
-        createdAt: isoDate(),
-        updatedAt: isoDate(),
     },
     {
         name: "Nguyen Thi Thao",

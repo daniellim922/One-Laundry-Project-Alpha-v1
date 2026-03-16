@@ -3,52 +3,54 @@ import { eq } from "drizzle-orm";
 import { Plus } from "lucide-react";
 import { db } from "@/lib/db";
 import { user } from "@/db/auth-schema";
-import { rolesTable } from "@/db/tables/rolesTable";
-import { userRolesTable } from "@/db/tables/userRolesTable";
-import { rolePermissionsTable } from "@/db/tables/rolePermissionsTable";
-import { featuresTable } from "@/db/tables/featuresTable";
+import { rolesTable } from "@/db/tables/auth/rolesTable";
+import { userRolesTable } from "@/db/tables/auth/userRolesTable";
+import { rolePermissionsTable } from "@/db/tables/auth/rolePermissionsTable";
+import { featuresTable } from "@/db/tables/auth/featuresTable";
 import { type IAMUserRow } from "./columns";
 import {
     RolePermissionsCard,
     type RolePermission,
 } from "./role-permissions-card";
 import { Button } from "@/components/ui/button";
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function Page() {
-    const [users, userRoleLinks, roles, rolePermissionsRows] = await Promise.all([
-        db.select().from(user).orderBy(user.createdAt),
-        db
-            .select({
-                userId: userRolesTable.userId,
-                roleId: userRolesTable.roleId,
-                roleName: rolesTable.name,
-            })
-            .from(userRolesTable)
-            .innerJoin(rolesTable, eq(userRolesTable.roleId, rolesTable.id)),
-        db.select().from(rolesTable),
-        db
-            .select({
-                roleId: rolePermissionsTable.roleId,
-                roleName: rolesTable.name,
-                featureName: featuresTable.name,
-                create: rolePermissionsTable.create,
-                read: rolePermissionsTable.read,
-                update: rolePermissionsTable.update,
-                delete: rolePermissionsTable.delete,
-            })
-            .from(rolePermissionsTable)
-            .innerJoin(rolesTable, eq(rolePermissionsTable.roleId, rolesTable.id))
-            .innerJoin(
-                featuresTable,
-                eq(rolePermissionsTable.featureId, featuresTable.id),
-            ),
-    ]);
+    const [users, userRoleLinks, roles, rolePermissionsRows] =
+        await Promise.all([
+            db.select().from(user).orderBy(user.createdAt),
+            db
+                .select({
+                    userId: userRolesTable.userId,
+                    roleId: userRolesTable.roleId,
+                    roleName: rolesTable.name,
+                })
+                .from(userRolesTable)
+                .innerJoin(
+                    rolesTable,
+                    eq(userRolesTable.roleId, rolesTable.id),
+                ),
+            db.select().from(rolesTable),
+            db
+                .select({
+                    roleId: rolePermissionsTable.roleId,
+                    roleName: rolesTable.name,
+                    featureName: featuresTable.name,
+                    create: rolePermissionsTable.create,
+                    read: rolePermissionsTable.read,
+                    update: rolePermissionsTable.update,
+                    delete: rolePermissionsTable.delete,
+                })
+                .from(rolePermissionsTable)
+                .innerJoin(
+                    rolesTable,
+                    eq(rolePermissionsTable.roleId, rolesTable.id),
+                )
+                .innerJoin(
+                    featuresTable,
+                    eq(rolePermissionsTable.featureId, featuresTable.id),
+                ),
+        ]);
 
     const roleMap = new Map<string, string[]>();
     const usersByRoleId = new Map<string, IAMUserRow[]>();

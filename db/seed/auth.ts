@@ -2,8 +2,8 @@ import { eq, and } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user } from "@/db/auth-schema";
-import { rolesTable } from "@/db/tables/rolesTable";
-import { userRolesTable } from "@/db/tables/userRolesTable";
+import { rolesTable } from "@/db/tables/auth/rolesTable";
+import { userRolesTable } from "@/db/tables/auth/userRolesTable";
 
 type SeedAdminUserResult = {
     userId: string;

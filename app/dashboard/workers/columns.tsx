@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { SelectWorker } from "@/db/tables/workersTable";
+import type { SelectWorker } from "@/db/tables/payroll/workerTable";
 import Link from "next/link";
 import { ArrowUpDown, Eye, MoreHorizontal, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,8 +28,7 @@ const sortableHeader =
 
 const statusStyles: Record<string, string> = {
     Active: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
-    Inactive:
-        "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300",
+    Inactive: "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300",
 };
 
 const employmentTypeStyles: Record<SelectWorker["employmentType"], string> = {
@@ -156,7 +155,7 @@ export const columns: ColumnDef<SelectWorker>[] = [
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
                             <Link
-                                href={`/dashboard/workers/view/${worker.id}`}
+                                href={`/dashboard/workers/${worker.id}/view`}
                                 className="flex w-full items-center gap-2">
                                 <Eye className="h-4 w-4" />
                                 View
@@ -164,7 +163,7 @@ export const columns: ColumnDef<SelectWorker>[] = [
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                             <Link
-                                href={`/dashboard/workers/edit/${worker.id}`}
+                                href={`/dashboard/workers/${worker.id}/edit`}
                                 className="flex w-full items-center gap-2">
                                 <Pencil className="h-4 w-4" />
                                 Edit

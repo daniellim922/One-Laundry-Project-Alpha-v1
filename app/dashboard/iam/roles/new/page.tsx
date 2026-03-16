@@ -1,6 +1,6 @@
 import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
-import { featuresTable } from "@/db/tables/featuresTable";
+import { featuresTable } from "@/db/tables/auth/featuresTable";
 import { RoleForm } from "@/app/dashboard/iam/role-form";
 
 export default async function NewRolePage() {

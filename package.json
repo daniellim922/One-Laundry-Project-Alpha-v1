@@ -11,7 +11,7 @@
         "db:seed": "npx drizzle-kit push && npx tsx db/seed/seed.ts",
         "db:generate": "drizzle-kit generate",
         "db:migrate": "drizzle-kit migrate",
-        "db:wipe": "npx tsx scripts/wipe-db.ts"
+        "db:wipe": "npx tsx db/wipe-db.ts"
     },
     "dependencies": {
         "@headlessui/react": "^2.2.9",

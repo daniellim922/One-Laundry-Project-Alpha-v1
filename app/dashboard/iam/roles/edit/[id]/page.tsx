@@ -3,9 +3,9 @@ import { eq } from "drizzle-orm";
 
 import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
-import { rolesTable } from "@/db/tables/rolesTable";
-import { rolePermissionsTable } from "@/db/tables/rolePermissionsTable";
-import { featuresTable } from "@/db/tables/featuresTable";
+import { rolesTable } from "@/db/tables/auth/rolesTable";
+import { rolePermissionsTable } from "@/db/tables/auth/rolePermissionsTable";
+import { featuresTable } from "@/db/tables/auth/featuresTable";
 import { RoleForm } from "../../../role-form";
 
 interface PageProps {

@@ -3,8 +3,8 @@ import { Suspense } from "react";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { timesheetEntriesTable } from "@/db/tables/timesheetEntriesTable";
-import { workersTable } from "@/db/tables/workersTable";
+import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
+import { workerTable } from "@/db/tables/payroll/workerTable";
 import { columns } from "./columns";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
@@ -14,21 +14,19 @@ import type { TimesheetEntryWithWorker } from "./columns";
 export default async function TimesheetPage() {
     const rows = await db
         .select({
-            entry: timesheetEntriesTable,
-            workerName: workersTable.name,
+            entry: timesheetTable,
+            workerName: workerTable.name,
         })
-        .from(timesheetEntriesTable)
-        .innerJoin(
-            workersTable,
-            eq(timesheetEntriesTable.workerId, workersTable.id),
-        )
-        .orderBy(timesheetEntriesTable.date);
+        .from(timesheetTable)
+        .innerJoin(workerTable, eq(timesheetTable.workerId, workerTable.id))
+        .orderBy(timesheetTable.dateIn);
 
     const data: TimesheetEntryWithWorker[] = rows.map((r) => ({
         id: r.entry.id,
         workerId: r.entry.workerId,
-        date: String(r.entry.date),
+        dateIn: String(r.entry.dateIn),
         timeIn: String(r.entry.timeIn),
+        dateOut: String(r.entry.dateOut),
         timeOut: String(r.entry.timeOut),
         workerName: r.workerName,
     }));

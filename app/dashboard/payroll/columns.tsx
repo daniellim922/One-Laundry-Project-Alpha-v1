@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { SelectPayroll } from "@/db/tables/payrollsTable";
+import type { SelectPayroll } from "@/db/tables/payroll/payrollTable";
 import Link from "next/link";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,11 @@ type PayrollWithWorker = SelectPayroll & { workerName: string };
 
 function formatDate(d: string | Date): string {
     const date = d instanceof Date ? d : new Date(d + "T00:00:00");
-    return date.toLocaleDateString("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" });
+    return date.toLocaleDateString("en-CA", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+    });
 }
 
 const sortableHeader =
@@ -78,9 +82,7 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
         accessorKey: "totalPay",
         header: sortableHeader("Total Pay"),
         cell: ({ row }) =>
-            row.original.totalPay != null
-                ? `$${row.original.totalPay}`
-                : "—",
+            row.original.totalPay != null ? `$${row.original.totalPay}` : "—",
     },
     {
         accessorKey: "status",

@@ -1,10 +1,15 @@
 // Re-exports all schema tables for drizzle.config
-export * from "./tables/workersTable";
-export * from "./tables/rolesTable";
-export * from "./tables/expensesTable";
-export * from "./tables/featuresTable";
-export * from "./tables/rolePermissionsTable";
-export * from "./tables/userRolesTable";
-export * from "./tables/timesheetEntriesTable";
-export * from "./tables/payrollsTable";
+export * from "./tables/payroll/workerTable";
+export * from "./tables/payroll/employmentTable";
+export * from "./tables/payroll/timesheetTable";
+export * from "./tables/payroll/advanceTable";
+export * from "./tables/payroll/payrollTable";
+export * from "./tables/payroll/payrollTimesheetTable";
+
+export * from "./tables/auth/featuresTable";
+export * from "./tables/auth/rolesTable";
+export * from "./tables/auth/rolePermissionsTable";
+export * from "./tables/auth/userRolesTable";
+
 export * from "./auth-schema";
+export * from "./expensesTable";
