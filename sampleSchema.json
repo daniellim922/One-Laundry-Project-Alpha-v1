@@ -1,0 +1,110 @@
+{
+    "attendanceDate": {
+        "startDate": "01/01/2026",
+        "endDate": "01/28/2026"
+    },
+    "tablingDate": "01/28/2026 17:10:10",
+    "workers": [
+        {
+            "userId": "1",
+            "name": "alvis",
+            "dates": []
+        },
+        {
+            "userId": "2",
+            "name": "rongrong",
+            "dates": [
+                {
+                    "dateIn": "20/01/2026",
+                    "timeIn": "10:14",
+                    "dateOut": "20/01/2026",
+                    "timeOut": "19:13"
+                },
+                {
+                    "dateIn": "21/01/2026",
+                    "timeIn": "10:07",
+                    "dateOut": "21/01/2026",
+                    "timeOut": "19:13"
+                },
+                {
+                    "dateIn": "22/01/2026",
+                    "timeIn": "09:48",
+                    "dateOut": "22/01/2026",
+                    "timeOut": "18:56"
+                },
+                {
+                    "dateIn": "23/01/2026",
+                    "timeIn": "10:11",
+                    "dateOut": "23/01/2026",
+                    "timeOut": "     "
+                },
+                {
+                    "dateIn": "24/01/2026",
+                    "timeIn": "10:24",
+                    "dateOut": "24/01/2026",
+                    "timeOut": "     "
+                }
+            ]
+        },
+        {
+            "userId": "3",
+            "name": "nyanthoo",
+            "dates": [
+                {
+                    "dateIn": "20/01/2026",
+                    "timeIn": "07:39",
+                    "dateOut": "20/01/2026",
+                    "timeOut": "09:08"
+                },
+                {
+                    "dateIn": "20/01/2026",
+                    "timeIn": "20:25",
+                    "dateOut": "20/01/2026",
+                    "timeOut": "     "
+                },
+                {
+                    "dateIn": "21/01/2026",
+                    "timeIn": "08:02",
+                    "dateOut": "21/01/2026",
+                    "timeOut": "18:52"
+                },
+                {
+                    "dateIn": "22/01/2026",
+                    "timeIn": "08:00",
+                    "dateOut": "22/01/2026",
+                    "timeOut": "19:18"
+                },
+                {
+                    "dateIn": "23/01/2026",
+                    "timeIn": "07:56",
+                    "dateOut": "23/01/2026",
+                    "timeOut": "     "
+                },
+                {
+                    "dateIn": "24/01/2026",
+                    "timeIn": "07:49",
+                    "dateOut": "24/01/2026",
+                    "timeOut": "19:00"
+                },
+                {
+                    "dateIn": "26/01/2026",
+                    "timeIn": "07:55",
+                    "dateOut": "26/01/2026",
+                    "timeOut": "19:13"
+                },
+                {
+                    "dateIn": "27/01/2026",
+                    "timeIn": "07:55",
+                    "dateOut": "27/01/2026",
+                    "timeOut": "19:01"
+                },
+                {
+                    "dateIn": "28/01/2026",
+                    "timeIn": "08:02",
+                    "dateOut": "28/01/2026",
+                    "timeOut": "     "
+                }
+            ]
+        }
+    ]
+}

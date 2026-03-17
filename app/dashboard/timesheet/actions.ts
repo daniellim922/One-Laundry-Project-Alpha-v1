@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/db";
+import type { AttendRecordOutput } from "@/lib/parse-attendrecord";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 
@@ -33,6 +34,16 @@ function toDateString(val: string | number): string {
     return d.toISOString().slice(0, 10);
 }
 
+/** Convert DD/MM/YYYY to YYYY-MM-DD for DB storage */
+function ddMmYyyyToIso(val: string): string {
+    const m = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!m) return "";
+    const [, day, month, year] = m;
+    const d = `${year}-${month!.padStart(2, "0")}-${day!.padStart(2, "0")}`;
+    const parsed = new Date(d);
+    return Number.isNaN(parsed.getTime()) ? "" : d;
+}
+
 export async function createTimesheetEntry(formData: FormData) {
     const workerId = formData.get("workerId") as string;
     const date = toDateString(formData.get("date") as string);
@@ -45,8 +56,9 @@ export async function createTimesheetEntry(formData: FormData) {
 
     await db.insert(timesheetTable).values({
         workerId,
-        date,
+        dateIn: date,
         timeIn,
+        dateOut: date,
         timeOut,
         createdAt: isoNow(),
         updatedAt: isoNow(),
@@ -101,12 +113,78 @@ export async function importTimesheetEntries(rows: ImportRow[]) {
         }
         toInsert.push({
             workerId,
-            date,
+            dateIn: date,
             timeIn,
+            dateOut: date,
             timeOut,
             createdAt: isoNow(),
             updatedAt: isoNow(),
         });
+    }
+
+    if (toInsert.length > 0) {
+        await db.insert(timesheetTable).values(toInsert);
+    }
+
+    revalidatePath("/dashboard/timesheet");
+    revalidatePath("/dashboard/payroll");
+
+    return {
+        imported: toInsert.length,
+        errors: errors.length > 0 ? errors : undefined,
+    };
+}
+
+export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
+    const workerNames = await db
+        .select({ id: workerTable.id, name: workerTable.name })
+        .from(workerTable);
+    const nameToId = new Map(
+        workerNames.map((w) => [w.name.toLowerCase().trim(), w.id]),
+    );
+
+    const toInsert: {
+        workerId: string;
+        dateIn: string;
+        timeIn: string;
+        dateOut: string;
+        timeOut: string;
+        createdAt: Date;
+        updatedAt: Date;
+    }[] = [];
+    const errors: string[] = [];
+
+    for (const worker of data.workers) {
+        const workerId = nameToId.get(worker.name.toLowerCase().trim());
+        if (!workerId) {
+            errors.push(`Unknown worker "${worker.name}"`);
+            continue;
+        }
+
+        for (const d of worker.dates) {
+            const dateIn = ddMmYyyyToIso(d.dateIn);
+            const dateOut = ddMmYyyyToIso(d.dateOut);
+            if (!dateIn || !dateOut) {
+                errors.push(`Invalid date for ${worker.name}: ${d.dateIn}`);
+                continue;
+            }
+
+            const timeOutRaw = String(d.timeOut ?? "").trim();
+            const timeOut =
+                !timeOutRaw || /^\s+$/.test(timeOutRaw)
+                    ? "23:59:59"
+                    : toTimeString(d.timeOut);
+
+            toInsert.push({
+                workerId,
+                dateIn,
+                timeIn: toTimeString(d.timeIn),
+                dateOut,
+                timeOut,
+                createdAt: isoNow(),
+                updatedAt: isoNow(),
+            });
+        }
     }
 
     if (toInsert.length > 0) {

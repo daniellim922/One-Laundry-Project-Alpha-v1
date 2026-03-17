@@ -4,9 +4,9 @@ import Link from "next/link";
 
 import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
-import { payrollsTable } from "@/db/tables/payroll/payrollTable";
-import { workersTable } from "@/db/tables/payroll/workerTable";
-import { timesheetEntriesTable } from "@/db/tables/timesheetEntriesTable";
+import { payrollTable } from "@/db/tables/payroll/payrollTable";
+import { workerTable } from "@/db/tables/payroll/workerTable";
+import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import {
     calculateHoursFromTimes,
     STANDARD_HOURS_PER_MONTH,
@@ -50,12 +50,12 @@ export default async function PayrollDetailPage({ params }: PageProps) {
 
     const [row] = await db
         .select({
-            payroll: payrollsTable,
-            worker: workersTable,
+            payroll: payrollTable,
+            worker: workerTable,
         })
-        .from(payrollsTable)
-        .innerJoin(workersTable, eq(payrollsTable.workerId, workersTable.id))
-        .where(eq(payrollsTable.id, id))
+        .from(payrollTable)
+        .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id))
+        .where(eq(payrollTable.id, id))
         .limit(1);
 
     if (!row) notFound();
@@ -67,15 +67,15 @@ export default async function PayrollDetailPage({ params }: PageProps) {
 
     const entries = await db
         .select()
-        .from(timesheetEntriesTable)
+        .from(timesheetTable)
         .where(
             and(
-                eq(timesheetEntriesTable.workerId, payroll.workerId),
-                gte(timesheetEntriesTable.date, periodStartStr),
-                lte(timesheetEntriesTable.date, periodEndStr),
+                eq(timesheetTable.workerId, payroll.workerId),
+                gte(timesheetTable.date, periodStartStr),
+                lte(timesheetTable.date, periodEndStr),
             ),
         )
-        .orderBy(timesheetEntriesTable.date);
+        .orderBy(timesheetTable.date);
 
     const dailyHours: number[] = [];
     let totalHours = 0;

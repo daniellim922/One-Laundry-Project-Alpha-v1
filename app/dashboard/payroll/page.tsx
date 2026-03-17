@@ -4,10 +4,10 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import {
-    payrollsTable,
+    payrollTable,
     type SelectPayroll,
 } from "@/db/tables/payroll/payrollTable";
-import { workersTable } from "@/db/tables/payroll/workerTable";
+import { workerTable } from "@/db/tables/payroll/workerTable";
 import { columns } from "./columns";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
@@ -20,11 +20,11 @@ type PayrollWithWorker = SelectPayroll & {
 export default async function Page() {
     const rows = await db
         .select({
-            payroll: payrollsTable,
-            workerName: workersTable.name,
+            payroll: payrollTable,
+            workerName: workerTable.name,
         })
-        .from(payrollsTable)
-        .innerJoin(workersTable, eq(payrollsTable.workerId, workersTable.id));
+        .from(payrollTable)
+        .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id));
 
     const data: PayrollWithWorker[] = rows.map((r) => ({
         ...r.payroll,
