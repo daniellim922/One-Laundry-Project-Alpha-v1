@@ -15,7 +15,7 @@ export function WorkerFormPageLayout({
 }: WorkerFormPageLayoutProps) {
     return (
         <div className="flex min-h-[calc(100vh-4rem)] items-start justify-center">
-            <div className="w-full max-w-3xl space-y-6 py-8">
+            <div className="w-full max-w-6xl space-y-6 py-8">
                 <div className="flex items-center gap-3">
                     <BackButton />
                     <div>

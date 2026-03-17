@@ -33,6 +33,7 @@ export default async function ViewWorkerPage({ params }: PageProps) {
             race: workerTable.race,
             employmentType: employmentTable.employmentType,
             employmentArrangement: employmentTable.employmentArrangement,
+            cpf: employmentTable.cpf,
             monthlyPay: employmentTable.monthlyPay,
             workingHours: employmentTable.workingHours,
             hourlyPay: employmentTable.hourlyPay,

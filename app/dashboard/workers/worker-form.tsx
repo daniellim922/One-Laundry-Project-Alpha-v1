@@ -57,6 +57,7 @@ const workerFormSchema = z
         employmentArrangement: z.enum(["Foreign Worker", "Local Worker"]),
         countryOfOrigin: z.string().optional(),
         race: z.string().optional(),
+        cpf: z.string().optional(),
         monthlyPay: z.string().optional(),
         hourlyPay: z.string().optional(),
         restDayPay: z.string().optional(),
@@ -201,6 +202,7 @@ export type WorkerWithEmployment = {
     race: string | null;
     employmentType: string;
     employmentArrangement: string;
+    cpf: number | null;
     monthlyPay: number | null;
     hourlyPay: number | null;
     restDayPay: number | null;
@@ -228,6 +230,7 @@ function getDefaultValues(
             "Local Worker") as WorkerFormValues["employmentArrangement"],
         countryOfOrigin: worker?.countryOfOrigin ?? "",
         race: worker?.race ?? "",
+        cpf: worker?.cpf?.toString() ?? "",
         monthlyPay: worker?.monthlyPay?.toString() ?? "",
         hourlyPay: worker?.hourlyPay?.toString() ?? "",
         restDayPay: worker?.restDayPay?.toString() ?? "",
@@ -290,6 +293,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
     const formId = "worker-form";
 
     const employmentType = form.watch("employmentType");
+    const employmentArrangement = form.watch("employmentArrangement");
     const paymentMethod = form.watch("paymentMethod");
 
     return (
@@ -719,7 +723,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                             />
                         </div>
 
-                        <div className="grid gap-4 md:grid-cols-4">
+                        <div className="grid gap-4 md:grid-cols-5">
                             {employmentType === "Full Time" && (
                                 <Controller
                                     name="monthlyPay"
@@ -790,6 +794,42 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                     </Field>
                                 )}
                             />
+                            {employmentArrangement === "Local Worker" && (
+                                <Controller
+                                    name="cpf"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                            className="space-y-2">
+                                            <FieldLabel
+                                                htmlFor={`${formId}-cpf`}>
+                                                CPF
+                                            </FieldLabel>
+                                            <InputGroup>
+                                                <InputGroupInput
+                                                    {...field}
+                                                    id={`${formId}-cpf`}
+                                                    type="number"
+                                                    min={0}
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                    disabled={disabled}
+                                                />
+                                                <InputGroupAddon>
+                                                    <Banknote className="size-4 text-muted-foreground" />
+                                                </InputGroupAddon>
+                                            </InputGroup>
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </Field>
+                                    )}
+                                />
+                            )}
                             {employmentType === "Full Time" && (
                                 <Controller
                                     name="restDayPay"

@@ -51,6 +51,10 @@ export async function createWorker(formData: FormData): Promise<ActionResult> {
         formData.get("employmentArrangement") ?? "Local Worker"
     ).toString() as InsertEmployment["employmentArrangement"];
 
+    const cpf =
+        employmentArrangement === "Local Worker"
+            ? toInt(formData.get("cpf"))
+            : null;
     const monthlyPay = toInt(formData.get("monthlyPay"));
     const hourlyPay = toInt(formData.get("hourlyPay"));
     const restDayPay = toInt(formData.get("restDayPay"));
@@ -74,6 +78,7 @@ export async function createWorker(formData: FormData): Promise<ActionResult> {
             .values({
                 employmentType,
                 employmentArrangement,
+                cpf,
                 monthlyPay,
                 workingHours: minimumWorkingHours,
                 hourlyPay,
@@ -148,6 +153,10 @@ export async function updateWorker(
         formData.get("employmentArrangement") ?? "Local Worker"
     ).toString() as InsertEmployment["employmentArrangement"];
 
+    const cpf =
+        employmentArrangement === "Local Worker"
+            ? toInt(formData.get("cpf"))
+            : null;
     const monthlyPay = toInt(formData.get("monthlyPay"));
     const hourlyPay = toInt(formData.get("hourlyPay"));
     const restDayPay = toInt(formData.get("restDayPay"));
@@ -186,6 +195,7 @@ export async function updateWorker(
             .set({
                 employmentType,
                 employmentArrangement,
+                cpf,
                 monthlyPay,
                 workingHours: minimumWorkingHours,
                 hourlyPay,
