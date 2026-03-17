@@ -4,6 +4,7 @@ import {
     timestamp,
     time,
     date,
+    real,
     index,
 } from "drizzle-orm/pg-core";
 import { workerTable } from "./workerTable";
@@ -16,6 +17,7 @@ export const timesheetTable = pgTable(
         timeIn: time("time_in").notNull(),
         dateOut: date("date_out").notNull(),
         timeOut: time("time_out").notNull(),
+        hours: real("hours").notNull().default(0),
 
         workerId: uuid("worker_id")
             .notNull()

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 
-import { createTimesheetEntry } from "./actions";
+import { createTimesheetEntry, updateTimesheetEntry } from "./actions";
 import { SearchableWorkerSelect } from "@/components/searchable-worker-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,15 +12,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Worker = { id: string; name: string };
 
+type TimesheetEntry = {
+    id: string;
+    workerId: string;
+    dateIn: string;
+    dateOut: string;
+    timeIn: string;
+    timeOut: string;
+};
+
 export function TimesheetEntryForm({
     workers,
+    entry,
 }: {
     workers: Worker[];
+    entry?: TimesheetEntry;
 }) {
     const router = useRouter();
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
-    const [workerId, setWorkerId] = React.useState("");
+    const [workerId, setWorkerId] = React.useState(entry?.workerId ?? "");
 
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
@@ -28,7 +39,9 @@ export function TimesheetEntryForm({
         setPending(true);
         const form = e.currentTarget;
         const formData = new FormData(form);
-        const result = await createTimesheetEntry(formData);
+        const result = entry
+            ? await updateTimesheetEntry(entry.id, formData)
+            : await createTimesheetEntry(formData);
         setPending(false);
         if (result.error) {
             setError(result.error);
@@ -39,13 +52,17 @@ export function TimesheetEntryForm({
     }
 
     const today = new Date().toISOString().slice(0, 10);
+    const defaultDateIn = entry?.dateIn ?? today;
+    const defaultDateOut = entry?.dateOut ?? defaultDateIn;
+    const defaultTimeIn = entry?.timeIn?.slice(0, 5) ?? "09:00";
+    const defaultTimeOut = entry?.timeOut?.slice(0, 5) ?? "17:00";
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle>New entry</CardTitle>
+                <CardTitle>{entry ? "Edit entry" : "New entry"}</CardTitle>
                 <p className="text-muted-foreground text-sm">
-                    Worker name, date, and clock in/out times
+                    Worker name, date in/out, and clock in/out times
                 </p>
             </CardHeader>
             <CardContent>
@@ -60,16 +77,29 @@ export function TimesheetEntryForm({
                             required
                         />
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="date">Date</Label>
-                        <Input
-                            id="date"
-                            name="date"
-                            type="date"
-                            defaultValue={today}
-                            suppressHydrationWarning
-                            required
-                        />
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="dateIn">Date in</Label>
+                            <Input
+                                id="dateIn"
+                                name="dateIn"
+                                type="date"
+                                defaultValue={defaultDateIn}
+                                suppressHydrationWarning
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="dateOut">Date out</Label>
+                            <Input
+                                id="dateOut"
+                                name="dateOut"
+                                type="date"
+                                defaultValue={defaultDateOut}
+                                suppressHydrationWarning
+                                required
+                            />
+                        </div>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
@@ -78,7 +108,7 @@ export function TimesheetEntryForm({
                                 id="timeIn"
                                 name="timeIn"
                                 type="time"
-                                defaultValue="09:00"
+                                defaultValue={defaultTimeIn}
                                 required
                             />
                         </div>
@@ -88,7 +118,7 @@ export function TimesheetEntryForm({
                                 id="timeOut"
                                 name="timeOut"
                                 type="time"
-                                defaultValue="17:00"
+                                defaultValue={defaultTimeOut}
                                 required
                             />
                         </div>

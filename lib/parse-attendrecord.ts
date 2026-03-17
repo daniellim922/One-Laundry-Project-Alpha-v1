@@ -8,6 +8,8 @@ export type AttendRecordDate = {
     timeIn: string;
     dateOut: string;
     timeOut: string;
+    /** Decimal hours worked; computed from dateIn/timeIn to dateOut/timeOut when present */
+    hours?: number;
 };
 
 export type AttendRecordWorker = {
@@ -27,15 +29,20 @@ type Row = CellValue[];
 type Rows = Row[];
 
 export function parseAttendRecord(rows: Rows): AttendRecordOutput {
-    // Parse "Attendance date:01/01/2026 ~01/28/2026"
-    const attendanceDateMatch = (rows[0] as Row | undefined)
-        ?.find((c) => typeof c === "string" && c.startsWith("Attendance date:"))
-        ?.toString()
-        .match(
-            /Attendance date:(\d{2}\/\d{2}\/\d{4})\s*~\s*(\d{2}\/\d{2}\/\d{4})/,
+    // Parse "Attendance date:01/01/2026 ~01/28/2026" (can be in any of the first rows)
+    let attendanceDateMatch: RegExpMatchArray | null = null;
+    for (const row of rows.slice(0, 10)) {
+        if (!Array.isArray(row)) continue;
+        const cell = row.find(
+            (c) => typeof c === "string" && c.startsWith("Attendance date:"),
         );
-    // const startDate = attendanceDateMatch?.[1] ?? "01/01/2026";
-    // const endDate = attendanceDateMatch?.[2] ?? "01/28/2026";
+        if (cell) {
+            attendanceDateMatch = String(cell).match(
+                /Attendance date:(\d{2}\/\d{2}\/\d{4})\s*~\s*(\d{2}\/\d{2}\/\d{4})/,
+            );
+            break;
+        }
+    }
     const startDate = attendanceDateMatch?.[1];
     const endDate = attendanceDateMatch?.[2];
 
@@ -54,10 +61,9 @@ export function parseAttendRecord(rows: Rows): AttendRecordOutput {
         if (tablingDate) break;
     }
 
-    // const startDateMatch = startDate.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-    const startDateMatch = startDate;
-    const startMonth = startDateMatch?.[1] ?? "01";
-    const startYear = startDateMatch?.[3] ?? "2026";
+    const startDateParts = startDate?.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    const startMonth = startDateParts?.[2];
+    const startYear = startDateParts?.[3];
 
     function formatDate(day: number): string {
         const d = String(day).padStart(2, "0");
@@ -163,7 +169,10 @@ export function parseAttendRecord(rows: Rows): AttendRecordOutput {
     }
 
     return {
-        attendanceDate: { startDate, endDate },
+        attendanceDate: {
+            startDate: startDate ?? "",
+            endDate: endDate ?? "",
+        },
         tablingDate,
         workers,
     };

@@ -20,12 +20,15 @@ export function SearchableWorkerSelect({
     onChange,
     name,
     required,
+    placeholder = "Select worker",
 }: {
     workers: Worker[];
     value: string;
     onChange: (id: string, name: string) => void;
     name: string;
     required?: boolean;
+    /** Shown when no worker is selected (e.g. unmatched name from import) */
+    placeholder?: string;
 }) {
     const [open, setOpen] = React.useState(false);
     const [search, setSearch] = React.useState("");
@@ -68,7 +71,7 @@ export function SearchableWorkerSelect({
                             setTimeout(() => inputRef.current?.focus(), 0);
                         }}>
                         <span className="truncate">
-                            {displayValue || "Select worker"}
+                            {displayValue || placeholder}
                         </span>
                         <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>

@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import type { AttendRecordOutput } from "@/lib/parse-attendrecord";
+import { calculateHoursFromDateTimes } from "@/lib/payroll-utils";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 
@@ -34,6 +36,12 @@ function toDateString(val: string | number): string {
     return d.toISOString().slice(0, 10);
 }
 
+function formDate(formData: FormData, key: string): string {
+    const raw = formData.get(key);
+    if (raw == null) return "";
+    return toDateString(raw as string);
+}
+
 /** Convert DD/MM/YYYY to YYYY-MM-DD for DB storage */
 function ddMmYyyyToIso(val: string): string {
     const m = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
@@ -46,23 +54,70 @@ function ddMmYyyyToIso(val: string): string {
 
 export async function createTimesheetEntry(formData: FormData) {
     const workerId = formData.get("workerId") as string;
-    const date = toDateString(formData.get("date") as string);
+    const dateRaw = formData.get("date");
+    const date = dateRaw != null ? toDateString(dateRaw as string) : "";
+    const dateIn = formDate(formData, "dateIn") || date;
+    const dateOut = formDate(formData, "dateOut") || dateIn;
     const timeIn = toTimeString(formData.get("timeIn") as string);
     const timeOut = toTimeString(formData.get("timeOut") as string);
 
-    if (!workerId || !date || !timeIn || !timeOut) {
+    if (!workerId || !dateIn || !dateOut || !timeIn || !timeOut) {
         return { error: "Missing required fields" };
     }
 
+    const hours = calculateHoursFromDateTimes(dateIn, timeIn, dateOut, timeOut);
+
     await db.insert(timesheetTable).values({
         workerId,
-        dateIn: date,
+        dateIn,
         timeIn,
-        dateOut: date,
+        dateOut,
         timeOut,
+        hours,
         createdAt: isoNow(),
         updatedAt: isoNow(),
     });
+
+    revalidatePath("/dashboard/timesheet");
+    revalidatePath("/dashboard/payroll");
+    return { success: true };
+}
+
+export async function updateTimesheetEntry(id: string, formData: FormData) {
+    const workerId = formData.get("workerId") as string;
+    const dateIn = formDate(formData, "dateIn");
+    const dateOut = formDate(formData, "dateOut");
+    const timeIn = toTimeString(formData.get("timeIn") as string);
+    const timeOut = toTimeString(formData.get("timeOut") as string);
+
+    if (!id || !workerId || !dateIn || !dateOut || !timeIn || !timeOut) {
+        return { error: "Missing required fields" };
+    }
+
+    const hours = calculateHoursFromDateTimes(dateIn, timeIn, dateOut, timeOut);
+
+    await db
+        .update(timesheetTable)
+        .set({
+            workerId,
+            dateIn,
+            timeIn,
+            dateOut,
+            timeOut,
+            hours,
+            updatedAt: isoNow(),
+        })
+        .where(eq(timesheetTable.id, id));
+
+    revalidatePath("/dashboard/timesheet");
+    revalidatePath("/dashboard/payroll");
+    return { success: true };
+}
+
+export async function deleteTimesheetEntry(id: string) {
+    if (!id) return { error: "Missing id" };
+
+    await db.delete(timesheetTable).where(eq(timesheetTable.id, id));
 
     revalidatePath("/dashboard/timesheet");
     revalidatePath("/dashboard/payroll");
@@ -85,6 +140,7 @@ export async function importTimesheetEntries(rows: ImportRow[]) {
         timeIn: string;
         dateOut: string;
         timeOut: string;
+        hours: number;
         createdAt: Date;
         updatedAt: Date;
     }[] = [];
@@ -111,12 +167,14 @@ export async function importTimesheetEntries(rows: ImportRow[]) {
             errors.push(`Row ${i + 1}: Invalid date`);
             continue;
         }
+        const hours = calculateHoursFromDateTimes(date, timeIn, date, timeOut);
         toInsert.push({
             workerId,
             dateIn: date,
             timeIn,
             dateOut: date,
             timeOut,
+            hours,
             createdAt: isoNow(),
             updatedAt: isoNow(),
         });
@@ -149,6 +207,7 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
         timeIn: string;
         dateOut: string;
         timeOut: string;
+        hours: number;
         createdAt: Date;
         updatedAt: Date;
     }[] = [];
@@ -169,18 +228,30 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
                 continue;
             }
 
+            const timeIn = toTimeString(d.timeIn);
             const timeOutRaw = String(d.timeOut ?? "").trim();
             const timeOut =
                 !timeOutRaw || /^\s+$/.test(timeOutRaw)
                     ? "23:59:59"
                     : toTimeString(d.timeOut);
 
+            const hours =
+                typeof d.hours === "number" && d.hours >= 0
+                    ? d.hours
+                    : calculateHoursFromDateTimes(
+                          dateIn,
+                          timeIn,
+                          dateOut,
+                          timeOut,
+                      );
+
             toInsert.push({
                 workerId,
                 dateIn,
-                timeIn: toTimeString(d.timeIn),
+                timeIn,
                 dateOut,
                 timeOut,
+                hours,
                 createdAt: isoNow(),
                 updatedAt: isoNow(),
             });

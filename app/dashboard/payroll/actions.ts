@@ -6,8 +6,9 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payroll/payrollTable";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
+import { employmentTable } from "@/db/tables/payroll/employmentTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
-import { calculateHoursFromTimes, calculatePay } from "@/lib/payroll-utils";
+import { calculatePay } from "@/lib/payroll-utils";
 
 function isoNow(): Date {
     return new Date();
@@ -29,15 +30,23 @@ export async function createPayroll(formData: FormData) {
         return { error: "Missing required fields" };
     }
 
-    const [worker] = await db
-        .select()
+    const [row] = await db
+        .select({
+            worker: workerTable,
+            employment: {
+                monthlyPay: employmentTable.monthlyPay,
+                hourlyPay: employmentTable.hourlyPay,
+            },
+        })
         .from(workerTable)
+        .innerJoin(employmentTable, eq(workerTable.employmentId, employmentTable.id))
         .where(eq(workerTable.id, workerId))
         .limit(1);
 
-    if (!worker) {
+    if (!row) {
         return { error: "Worker not found" };
     }
+    const { worker, employment } = row;
 
     const entries = await db
         .select()
@@ -50,30 +59,30 @@ export async function createPayroll(formData: FormData) {
             ),
         );
 
-    const dailyHours: number[] = [];
-    let totalHours = 0;
-    for (const e of entries) {
-        const hours = calculateHoursFromTimes(
-            String(e.timeIn),
-            String(e.timeOut),
-        );
-        dailyHours.push(hours);
-        totalHours += hours;
+    const dailyHours = entries.map((e) => Number(e.hours));
+    const totalHours = dailyHours.reduce((sum, h) => sum + h, 0);
+    let overtimeHours = 0;
+    for (const h of dailyHours) {
+        if (h > 8) overtimeHours += h - 8;
     }
+    const restDays = 0;
 
     const payCalc = calculatePay(
         totalHours,
         dailyHours,
-        worker.employment.monthlyPay,
-        worker.employment.hourlyPay,
+        employment.monthlyPay,
+        employment.hourlyPay,
     );
 
     await db.insert(payrollTable).values({
         workerId,
+        employmentId: worker.employmentId,
         periodStart,
         periodEnd,
         payrollDate,
         totalHours,
+        overtimeHours,
+        restDays,
         totalPay: payCalc.totalPay,
         status: "draft",
         createdAt: isoNow(),
@@ -98,13 +107,24 @@ export async function createPayrolls(formData: FormData) {
     for (const workerId of workerIds) {
         if (!workerId) continue;
 
-        const [worker] = await db
-            .select()
+        const [row] = await db
+            .select({
+                worker: workerTable,
+                employment: {
+                    monthlyPay: employmentTable.monthlyPay,
+                    hourlyPay: employmentTable.hourlyPay,
+                },
+            })
             .from(workerTable)
+            .innerJoin(
+                employmentTable,
+                eq(workerTable.employmentId, employmentTable.id),
+            )
             .where(eq(workerTable.id, workerId))
             .limit(1);
 
-        if (!worker) continue;
+        if (!row) continue;
+        const { worker, employment } = row;
 
         const entries = await db
             .select()
@@ -117,30 +137,30 @@ export async function createPayrolls(formData: FormData) {
                 ),
             );
 
-        const dailyHours: number[] = [];
-        let totalHours = 0;
-        for (const e of entries) {
-            const hours = calculateHoursFromTimes(
-                String(e.timeIn),
-                String(e.timeOut),
-            );
-            dailyHours.push(hours);
-            totalHours += hours;
+        const dailyHours = entries.map((e) => Number(e.hours));
+        const totalHours = dailyHours.reduce((sum, h) => sum + h, 0);
+        let overtimeHours = 0;
+        for (const h of dailyHours) {
+            if (h > 8) overtimeHours += h - 8;
         }
+        const restDays = 0;
 
         const payCalc = calculatePay(
             totalHours,
             dailyHours,
-            worker.employment.monthlyPay,
-            worker.employment.hourlyPay,
+            employment.monthlyPay,
+            employment.hourlyPay,
         );
 
         await db.insert(payrollTable).values({
             workerId,
+            employmentId: worker.employmentId,
             periodStart,
             periodEnd,
             payrollDate,
             totalHours,
+            overtimeHours,
+            restDays,
             totalPay: payCalc.totalPay,
             status: "draft",
             createdAt: isoNow(),

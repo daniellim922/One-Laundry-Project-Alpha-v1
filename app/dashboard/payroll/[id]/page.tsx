@@ -7,10 +7,7 @@ import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payroll/payrollTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
-import {
-    calculateHoursFromTimes,
-    STANDARD_HOURS_PER_MONTH,
-} from "@/lib/payroll-utils";
+import { STANDARD_HOURS_PER_MONTH } from "@/lib/payroll-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -71,21 +68,14 @@ export default async function PayrollDetailPage({ params }: PageProps) {
         .where(
             and(
                 eq(timesheetTable.workerId, payroll.workerId),
-                gte(timesheetTable.date, periodStartStr),
-                lte(timesheetTable.date, periodEndStr),
+                gte(timesheetTable.dateIn, periodStartStr),
+                lte(timesheetTable.dateOut, periodEndStr),
             ),
         )
-        .orderBy(timesheetTable.date);
+        .orderBy(timesheetTable.dateIn);
 
-    const dailyHours: number[] = [];
-    let totalHours = 0;
-    for (const e of entries) {
-        const timeIn = String(e.timeIn);
-        const timeOut = String(e.timeOut);
-        const hours = calculateHoursFromTimes(timeIn, timeOut);
-        dailyHours.push(hours);
-        totalHours += hours;
-    }
+    const dailyHours = entries.map((e) => Number(e.hours));
+    const totalHours = dailyHours.reduce((sum, h) => sum + h, 0);
 
     let overtimeHours = 0;
     for (const h of dailyHours) {
@@ -201,28 +191,22 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {entries.map((e) => {
-                                    const hours = calculateHoursFromTimes(
-                                        String(e.timeIn),
-                                        String(e.timeOut),
-                                    );
-                                    return (
-                                        <TableRow key={e.id}>
-                                            <TableCell>
-                                                {formatDate(e.date)}
-                                            </TableCell>
+                                {entries.map((e) => (
+                                    <TableRow key={e.id}>
+                                        <TableCell>
+                                            {formatDate(e.dateIn)}
+                                        </TableCell>
                                             <TableCell>
                                                 {formatTime(String(e.timeIn))}
                                             </TableCell>
                                             <TableCell>
                                                 {formatTime(String(e.timeOut))}
                                             </TableCell>
-                                            <TableCell className="text-right">
-                                                {hours.toFixed(2)}
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
+                                        <TableCell className="text-right">
+                                            {Number(e.hours).toFixed(2)}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
                             </TableBody>
                             <TableFooter>
                                 <TableRow>

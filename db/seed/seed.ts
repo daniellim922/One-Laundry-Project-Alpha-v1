@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { calculateHoursFromDateTimes } from "@/lib/payroll-utils";
 import { eq } from "drizzle-orm";
 import { workerTable, type InsertWorker } from "@/db/tables/payroll/workerTable";
 import {
@@ -109,21 +110,35 @@ async function seed() {
     const demoWorkers = insertedWorkers.slice(0, 3);
     const timesheetInserts: InsertTimesheet[] = demoWorkers.flatMap((w, index) => {
         const dayOffset = index + 1;
+        const date1 = toDateOnlyString(daysAgo(dayOffset + 1));
+        const date2 = toDateOnlyString(daysAgo(dayOffset));
         return [
             {
-                dateIn: toDateOnlyString(daysAgo(dayOffset + 1)),
+                dateIn: date1,
                 timeIn: "09:00:00",
-                dateOut: toDateOnlyString(daysAgo(dayOffset + 1)),
+                dateOut: date1,
                 timeOut: "18:00:00",
+                hours: calculateHoursFromDateTimes(
+                    date1,
+                    "09:00",
+                    date1,
+                    "18:00",
+                ),
                 workerId: w.id,
                 createdAt: new Date(),
                 updatedAt: new Date(),
             },
             {
-                dateIn: toDateOnlyString(daysAgo(dayOffset)),
+                dateIn: date2,
                 timeIn: "10:00:00",
-                dateOut: toDateOnlyString(daysAgo(dayOffset)),
+                dateOut: date2,
                 timeOut: "19:00:00",
+                hours: calculateHoursFromDateTimes(
+                    date2,
+                    "10:00",
+                    date2,
+                    "19:00",
+                ),
                 workerId: w.id,
                 createdAt: new Date(),
                 updatedAt: new Date(),
