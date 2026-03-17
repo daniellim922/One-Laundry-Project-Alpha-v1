@@ -15,10 +15,11 @@ CREATE TABLE "employment" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"employment_type" text NOT NULL,
 	"employment_arrangement" text NOT NULL,
+	"cpf" integer,
 	"monthly_pay" integer,
 	"working_hours" integer,
 	"hourly_pay" integer,
-	"rest_day_pay" integer,
+	"rest_day_pay" real,
 	"payment_method" text,
 	"paynow_phone" text,
 	"bank_account_number" text,
@@ -57,20 +58,12 @@ CREATE TABLE "payroll" (
 	"total_hours" real NOT NULL,
 	"overtime_hours" real NOT NULL,
 	"rest_days" integer NOT NULL,
+	"cpf" real NOT NULL,
 	"total_pay" integer NOT NULL,
 	"status" text DEFAULT 'draft' NOT NULL,
 	"worker_id" uuid NOT NULL,
-	"employment_id" uuid NOT NULL,
 	"created_at" timestamp NOT NULL,
 	"updated_at" timestamp NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "payroll_timesheet" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"payroll_id" uuid NOT NULL,
-	"timesheet_id" uuid NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "features" (
@@ -168,9 +161,6 @@ ALTER TABLE "worker" ADD CONSTRAINT "worker_employment_id_employment_id_fk" FORE
 ALTER TABLE "timesheet" ADD CONSTRAINT "timesheet_worker_id_worker_id_fk" FOREIGN KEY ("worker_id") REFERENCES "public"."worker"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "advance" ADD CONSTRAINT "advance_worker_id_worker_id_fk" FOREIGN KEY ("worker_id") REFERENCES "public"."worker"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payroll" ADD CONSTRAINT "payroll_worker_id_worker_id_fk" FOREIGN KEY ("worker_id") REFERENCES "public"."worker"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "payroll" ADD CONSTRAINT "payroll_employment_id_employment_id_fk" FOREIGN KEY ("employment_id") REFERENCES "public"."employment"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "payroll_timesheet" ADD CONSTRAINT "payroll_timesheet_payroll_id_payroll_id_fk" FOREIGN KEY ("payroll_id") REFERENCES "public"."payroll"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "payroll_timesheet" ADD CONSTRAINT "payroll_timesheet_timesheet_id_timesheet_id_fk" FOREIGN KEY ("timesheet_id") REFERENCES "public"."timesheet"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "role_permissions" ADD CONSTRAINT "role_permissions_role_id_roles_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."roles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "role_permissions" ADD CONSTRAINT "role_permissions_feature_id_features_id_fk" FOREIGN KEY ("feature_id") REFERENCES "public"."features"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_roles" ADD CONSTRAINT "user_roles_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

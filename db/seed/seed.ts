@@ -1,7 +1,10 @@
 import { db } from "@/lib/db";
 import { calculateHoursFromDateTimes } from "@/lib/payroll-utils";
 import { eq } from "drizzle-orm";
-import { workerTable, type InsertWorker } from "@/db/tables/payroll/workerTable";
+import {
+    workerTable,
+    type InsertWorker,
+} from "@/db/tables/payroll/workerTable";
 import {
     employmentTable,
     type InsertEmployment,
@@ -18,11 +21,13 @@ import {
     payrollTable,
     type InsertPayroll,
 } from "@/db/tables/payroll/payrollTable";
-import { payrollTimesheetTable } from "@/db/tables/payroll/payrollTimesheetTable";
 import { featuresTable } from "../tables/auth/featuresTable";
 import { rolesTable } from "@/db/tables/auth/rolesTable";
 import { rolePermissionsTable } from "@/db/tables/auth/rolePermissionsTable";
 import { workers } from "./workers";
+import { timesheets } from "./timesheet";
+import { advances } from "./advances";
+import { payrolls } from "./payrolls";
 import { FEATURES, ROLES, ROLE_PERMISSIONS } from "./iam";
 import { seedAdminUser } from "./auth";
 
@@ -32,18 +37,10 @@ type SplitWorkerSeed = {
 };
 
 function splitWorkerSeed(seed: any): SplitWorkerSeed {
-    const employmentType =
-        seed.employmentType ??
-        seed.type ??
-        (seed.hourlyPay ? "Part Time" : "Full Time");
-    const employmentArrangement =
-        seed.employmentArrangement ??
-        seed.arrangement ??
-        (seed.countryOfOrigin === "Singapore" ? "Local Worker" : "Foreign Worker");
-
     const employment: InsertEmployment = {
-        employmentType,
-        employmentArrangement,
+        employmentType: seed.employmentType ?? null,
+        employmentArrangement: seed.employmentArrangement ?? null,
+        cpf: seed.cpf ?? null,
         monthlyPay: seed.monthlyPay ?? null,
         workingHours: seed.workingHours ?? null,
         hourlyPay: seed.hourlyPay ?? null,
@@ -65,189 +62,61 @@ function splitWorkerSeed(seed: any): SplitWorkerSeed {
     return { employment, worker };
 }
 
-function daysAgo(days: number): Date {
-    const d = new Date();
-    d.setDate(d.getDate() - days);
-    return d;
-}
-
-function toDateOnlyString(date: Date): string {
-    return date.toISOString().slice(0, 10);
-}
-
-function startOfPreviousMonth(): Date {
+async function seedTimesheets(
+    insertedWorkers: { id: string }[],
+): Promise<void> {
     const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth() - 1, 1);
-}
-
-function endOfPreviousMonth(): Date {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 0);
-}
-
-async function seed() {
-    // Normalize workers into employment + worker props
-    const split = workers.map(splitWorkerSeed);
-    const employmentInserts = split.map((s) => s.employment);
-
-    const insertedEmployments = await db
-        .insert(employmentTable)
-        .values(employmentInserts)
-        .returning();
-
-    const workerInserts: InsertWorker[] = split.map((s, index) => ({
-        ...s.worker,
-        employmentId: insertedEmployments[index].id,
+    const timesheetInserts: InsertTimesheet[] = timesheets.map((t) => ({
+        workerId: insertedWorkers[t.workerIndex]!.id,
+        dateIn: t.dateIn,
+        timeIn: t.timeIn,
+        dateOut: t.dateOut,
+        timeOut: t.timeOut,
+        hours: t.hours,
+        createdAt: now,
+        updatedAt: now,
     }));
+    await db.insert(timesheetTable).values(timesheetInserts);
+}
 
-    const insertedWorkers = await db
-        .insert(workerTable)
-        .values(workerInserts)
-        .returning();
-    console.log("New workers and employments created!");
+async function seedAdvances(
+    insertedWorkers: { id: string }[],
+): Promise<void> {
+    const now = new Date();
+    const advanceInserts: InsertAdvance[] = advances.map((a) => ({
+        workerId: insertedWorkers[a.workerIndex]!.id,
+        amount: a.amount,
+        status: a.status,
+        loanDate: a.loanDate,
+        repaymentDate: a.repaymentDate,
+        createdAt: now,
+        updatedAt: now,
+    }));
+    await db.insert(advanceTable).values(advanceInserts);
+}
 
-    // Minimal timesheet data for first few workers
-    const demoWorkers = insertedWorkers.slice(0, 3);
-    const timesheetInserts: InsertTimesheet[] = demoWorkers.flatMap((w, index) => {
-        const dayOffset = index + 1;
-        const date1 = toDateOnlyString(daysAgo(dayOffset + 1));
-        const date2 = toDateOnlyString(daysAgo(dayOffset));
-        return [
-            {
-                dateIn: date1,
-                timeIn: "09:00:00",
-                dateOut: date1,
-                timeOut: "18:00:00",
-                hours: calculateHoursFromDateTimes(
-                    date1,
-                    "09:00",
-                    date1,
-                    "18:00",
-                ),
-                workerId: w.id,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-            {
-                dateIn: date2,
-                timeIn: "10:00:00",
-                dateOut: date2,
-                timeOut: "19:00:00",
-                hours: calculateHoursFromDateTimes(
-                    date2,
-                    "10:00",
-                    date2,
-                    "19:00",
-                ),
-                workerId: w.id,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            },
-        ];
-    });
+async function seedPayrolls(
+    insertedWorkers: { id: string }[],
+): Promise<void> {
+    const now = new Date();
+    const payrollInserts: InsertPayroll[] = payrolls.map((p) => ({
+        workerId: insertedWorkers[p.workerIndex]!.id,
+        periodStart: p.periodStart,
+        periodEnd: p.periodEnd,
+        payrollDate: p.payrollDate,
+        totalHours: p.totalHours,
+        overtimeHours: p.overtimeHours,
+        restDays: p.restDays,
+        cpf: p.cpf,
+        totalPay: p.totalPay,
+        status: p.status,
+        createdAt: now,
+        updatedAt: now,
+    }));
+    await db.insert(payrollTable).values(payrollInserts);
+}
 
-    const insertedTimesheets = await db
-        .insert(timesheetTable)
-        .values(timesheetInserts)
-        .returning();
-    console.log("Demo timesheets created!");
-
-    // Minimal advances for first two workers
-    const advanceWorkers = insertedWorkers.slice(0, 2);
-    const advanceInserts: InsertAdvance[] = advanceWorkers.flatMap((w, index) => [
-        {
-            amount: 200 + index * 50,
-            status: "loan" as const,
-            loanDate: toDateOnlyString(daysAgo(10 + index)),
-            repaymentDate: toDateOnlyString(daysAgo(5)),
-            workerId: w.id,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        },
-        {
-            amount: 150 + index * 50,
-            status: "paid" as const,
-            loanDate: toDateOnlyString(daysAgo(20 + index)),
-            repaymentDate: toDateOnlyString(daysAgo(2)),
-            workerId: w.id,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        },
-    ]);
-
-    const insertedAdvances = await db
-        .insert(advanceTable)
-        .values(advanceInserts)
-        .returning();
-    console.log("Demo advances created!", insertedAdvances.length);
-
-    // Minimal payroll data for first two workers
-    const payrollWorkers = insertedWorkers.slice(0, 2);
-    const periodStart = startOfPreviousMonth();
-    const periodEnd = endOfPreviousMonth();
-
-    const payrollInserts: InsertPayroll[] = payrollWorkers.map((w, index) => {
-        const employment = insertedEmployments[index];
-        const totalHours = 160 + index * 5;
-        const overtimeHours = 8 + index * 2;
-        const restDays = 4;
-        const baseMonthly = employment.monthlyPay ?? 0;
-        const hourly = employment.hourlyPay ?? 0;
-        const computedTotal =
-            baseMonthly || Math.round((totalHours + overtimeHours) * hourly);
-
-        return {
-            periodStart: toDateOnlyString(periodStart),
-            periodEnd: toDateOnlyString(periodEnd),
-            payrollDate: toDateOnlyString(daysAgo(1)),
-            totalHours,
-            overtimeHours,
-            restDays,
-            totalPay: computedTotal,
-            status: index === 0 ? "approved" : "paid",
-            workerId: w.id,
-            employmentId: employment.id,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-    });
-
-    const insertedPayrolls = await db
-        .insert(payrollTable)
-        .values(payrollInserts)
-        .returning();
-    console.log("Demo payrolls created!");
-
-    // Link payrolls to timesheets for the same workers
-    const timesheetsByWorker = new Map<
-        string,
-        (typeof insertedTimesheets)[number][]
-    >();
-    for (const t of insertedTimesheets) {
-        const arr = timesheetsByWorker.get(t.workerId) ?? [];
-        arr.push(t);
-        timesheetsByWorker.set(t.workerId, arr);
-    }
-
-    const payrollTimesheetInserts = insertedPayrolls.flatMap((p) => {
-        const workerTimesheets = timesheetsByWorker.get(p.workerId) ?? [];
-        return workerTimesheets.slice(0, 2).map((t) => ({
-            payrollId: p.id,
-            timesheetId: t.id,
-        }));
-    });
-
-    if (payrollTimesheetInserts.length > 0) {
-        await db.insert(payrollTimesheetTable).values(payrollTimesheetInserts);
-    }
-    console.log("Demo payroll-timesheet links created!");
-
-    // Seed IAM roles, features, permissions, and admin user
-    await db.insert(rolesTable).values(ROLES);
-    console.log("New roles created!");
-    await db.insert(featuresTable).values(FEATURES);
-    console.log("New features created!");
-
+async function seedRolePermissions(): Promise<void> {
     for (const rolePermission of ROLE_PERMISSIONS) {
         const roleId = await db
             .select({ id: rolesTable.id })
@@ -271,6 +140,44 @@ async function seed() {
             }
         }
     }
+}
+
+async function seed() {
+    // Normalize workers into employment + worker props
+    const split = workers.map(splitWorkerSeed);
+    const employmentInserts = split.map((s) => s.employment);
+
+    const insertedEmployments = await db
+        .insert(employmentTable)
+        .values(employmentInserts)
+        .returning();
+
+    const workerInserts: InsertWorker[] = split.map((s, index) => ({
+        ...s.worker,
+        employmentId: insertedEmployments[index].id,
+    }));
+
+    const insertedWorkers = await db
+        .insert(workerTable)
+        .values(workerInserts)
+        .returning();
+    console.log("New workers and employments created!");
+
+    await seedTimesheets(insertedWorkers);
+    console.log("New timesheet entries created!");
+
+    await seedAdvances(insertedWorkers);
+    console.log("New advance entries created!");
+
+    await seedPayrolls(insertedWorkers);
+    console.log("New payroll entries created!");
+
+    // Seed IAM roles, features, permissions, and admin user
+    await db.insert(rolesTable).values(ROLES);
+    console.log("New roles created!");
+    await db.insert(featuresTable).values(FEATURES);
+    console.log("New features created!");
+    await seedRolePermissions();
     console.log("New role permissions created!");
 
     const seededAdmin = await seedAdminUser();

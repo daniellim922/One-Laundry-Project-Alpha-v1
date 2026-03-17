@@ -1,5 +1,5 @@
 {
-  "id": "afd9d701-c132-481b-851a-2cc8122fe207",
+  "id": "331f0824-a085-4c47-879b-57c53176dbc8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -117,6 +117,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "cpf": {
+          "name": "cpf",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "monthly_pay": {
           "name": "monthly_pay",
           "type": "integer",
@@ -137,7 +143,7 @@
         },
         "rest_day_pay": {
           "name": "rest_day_pay",
-          "type": "integer",
+          "type": "real",
           "primaryKey": false,
           "notNull": false
         },
@@ -414,6 +420,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "cpf": {
+          "name": "cpf",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
         "total_pay": {
           "name": "total_pay",
           "type": "integer",
@@ -429,12 +441,6 @@
         },
         "worker_id": {
           "name": "worker_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "employment_id": {
-          "name": "employment_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -460,92 +466,6 @@
           "tableTo": "worker",
           "columnsFrom": [
             "worker_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "payroll_employment_id_employment_id_fk": {
-          "name": "payroll_employment_id_employment_id_fk",
-          "tableFrom": "payroll",
-          "tableTo": "employment",
-          "columnsFrom": [
-            "employment_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.payroll_timesheet": {
-      "name": "payroll_timesheet",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "payroll_id": {
-          "name": "payroll_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "timesheet_id": {
-          "name": "timesheet_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "payroll_timesheet_payroll_id_payroll_id_fk": {
-          "name": "payroll_timesheet_payroll_id_payroll_id_fk",
-          "tableFrom": "payroll_timesheet",
-          "tableTo": "payroll",
-          "columnsFrom": [
-            "payroll_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "payroll_timesheet_timesheet_id_timesheet_id_fk": {
-          "name": "payroll_timesheet_timesheet_id_timesheet_id_fk",
-          "tableFrom": "payroll_timesheet",
-          "tableTo": "timesheet",
-          "columnsFrom": [
-            "timesheet_id"
           ],
           "columnsTo": [
             "id"

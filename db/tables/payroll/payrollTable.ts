@@ -19,6 +19,7 @@ export const payrollTable = pgTable("payroll", {
     totalHours: real("total_hours").notNull(),
     overtimeHours: real("overtime_hours").notNull(),
     restDays: integer("rest_days").notNull(),
+    cpf: real("cpf").notNull(),
     totalPay: integer("total_pay").notNull(),
     status: text("status", {
         enum: ["draft", "approved", "paid"] as const,
@@ -28,9 +29,6 @@ export const payrollTable = pgTable("payroll", {
 
     workerId: uuid("worker_id")
         .references(() => workerTable.id, { onDelete: "cascade" })
-        .notNull(),
-    employmentId: uuid("employment_id")
-        .references(() => employmentTable.id, { onDelete: "cascade" })
         .notNull(),
 
     createdAt: timestamp("created_at", { withTimezone: false }).notNull(),

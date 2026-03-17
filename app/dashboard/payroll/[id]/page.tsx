@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payroll/payrollTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
+import { employmentTable } from "@/db/tables/payroll/employmentTable";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { STANDARD_HOURS_PER_MONTH } from "@/lib/payroll-utils";
 import { Button } from "@/components/ui/button";
@@ -49,18 +50,17 @@ export default async function PayrollDetailPage({ params }: PageProps) {
         .select({
             payroll: payrollTable,
             worker: workerTable,
+            employment: employmentTable,
         })
         .from(payrollTable)
         .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id))
+        .innerJoin(employmentTable, eq(workerTable.employmentId, employmentTable.id))
         .where(eq(payrollTable.id, id))
         .limit(1);
 
     if (!row) notFound();
 
-    const { payroll, worker } = row;
-
-    const periodStartStr = String(payroll.periodStart).slice(0, 10);
-    const periodEndStr = String(payroll.periodEnd).slice(0, 10);
+    const { payroll, worker, employment } = row;
 
     const entries = await db
         .select()
@@ -68,8 +68,8 @@ export default async function PayrollDetailPage({ params }: PageProps) {
         .where(
             and(
                 eq(timesheetTable.workerId, payroll.workerId),
-                gte(timesheetTable.dateIn, periodStartStr),
-                lte(timesheetTable.dateOut, periodEndStr),
+                gte(timesheetTable.dateIn, payroll.periodStart),
+                lte(timesheetTable.dateOut, payroll.periodEnd),
             ),
         )
         .orderBy(timesheetTable.dateIn);
@@ -83,7 +83,7 @@ export default async function PayrollDetailPage({ params }: PageProps) {
     }
 
     const expectedMonthlyHours =
-        worker.employmentType === "Full Time"
+        employment.employmentType === "Full Time"
             ? STANDARD_HOURS_PER_MONTH
             : Math.round(STANDARD_HOURS_PER_MONTH / 2);
 
@@ -129,8 +129,8 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                                     Monthly pay
                                 </TableCell>
                                 <TableCell className="text-right font-medium">
-                                    {worker.monthlyPay != null
-                                        ? `$${worker.monthlyPay}`
+                                    {employment.monthlyPay != null
+                                        ? `$${employment.monthlyPay}`
                                         : "—"}
                                 </TableCell>
                             </TableRow>
@@ -139,11 +139,11 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                                     Hourly pay rate
                                 </TableCell>
                                 <TableCell className="text-right font-medium">
-                                    {worker.hourlyPay != null
-                                        ? `$${worker.hourlyPay}/hr`
-                                        : worker.monthlyPay != null
+                                    {employment.hourlyPay != null
+                                        ? `$${employment.hourlyPay}/hr`
+                                        : employment.monthlyPay != null
                                           ? `$${(
-                                                worker.monthlyPay /
+                                                employment.monthlyPay /
                                                 STANDARD_HOURS_PER_MONTH
                                             ).toFixed(2)}/hr`
                                           : "—"}
@@ -151,12 +151,22 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                             </TableRow>
                             <TableRow>
                                 <TableCell className="text-muted-foreground">
+                                    Minimum working hours
+                                </TableCell>
+                                <TableCell className="text-right font-medium">
+                                    {employment.workingHours != null
+                                        ? `${employment.workingHours}`
+                                        : "—"}
+                                </TableCell>
+                            </TableRow>
+                            <TableRow>
+                                <TableCell className="text-muted-foreground">
                                     Rest day pay
                                 </TableCell>
                                 <TableCell className="text-right font-medium">
-                                    {worker.monthlyPay != null
+                                    {employment.monthlyPay != null
                                         ? `$${Math.round(
-                                              worker.monthlyPay / 26,
+                                              employment.monthlyPay / 26,
                                           )}`
                                         : "—"}
                                 </TableCell>
@@ -196,12 +206,12 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                                         <TableCell>
                                             {formatDate(e.dateIn)}
                                         </TableCell>
-                                            <TableCell>
-                                                {formatTime(String(e.timeIn))}
-                                            </TableCell>
-                                            <TableCell>
-                                                {formatTime(String(e.timeOut))}
-                                            </TableCell>
+                                        <TableCell>
+                                            {formatTime(String(e.timeIn))}
+                                        </TableCell>
+                                        <TableCell>
+                                            {formatTime(String(e.timeOut))}
+                                        </TableCell>
                                         <TableCell className="text-right">
                                             {Number(e.hours).toFixed(2)}
                                         </TableCell>
@@ -223,7 +233,7 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                                     <TableCell
                                         colSpan={3}
                                         className="text-muted-foreground">
-                                        Expected ({worker.employmentType})
+                                        Expected ({employment.employmentType})
                                     </TableCell>
                                     <TableCell className="text-right">
                                         {expectedMonthlyHours}

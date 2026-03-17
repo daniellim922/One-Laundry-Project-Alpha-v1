@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, integer, real } from "drizzle-orm/pg-core";
 
 export const employmentTable = pgTable("employment", {
     id: uuid().primaryKey().defaultRandom(),
@@ -8,10 +8,11 @@ export const employmentTable = pgTable("employment", {
     employmentArrangement: text("employment_arrangement", {
         enum: ["Foreign Worker", "Local Worker"] as const,
     }).notNull(),
+    cpf: integer("cpf"),
     monthlyPay: integer("monthly_pay"),
     workingHours: integer("working_hours"),
     hourlyPay: integer("hourly_pay"),
-    restDayPay: integer("rest_day_pay"),
+    restDayPay: real("rest_day_pay"),
     paymentMethod: text("payment_method", {
         enum: ["PayNow", "Bank Transfer", "Cash"] as const,
     }),
