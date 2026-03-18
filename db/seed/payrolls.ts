@@ -10,7 +10,11 @@
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
 
-const REST_DAYS_MARCH_2025 = 5; // Sundays: Mar 2, 9, 16, 23, 30
+const REST_DAYS_MARCH_2025 = 4;
+
+function roundMoney(n: number): number {
+    return Math.round(n * 100) / 100;
+}
 
 export type VoucherEntry = {
     voucherNumber: number;
@@ -19,14 +23,19 @@ export type VoucherEntry = {
     monthlyPay: number | null;
     minimumWorkingHours: number | null;
     totalHoursWorked: number;
+    hoursNotMet: number | null;
+    hoursNotMetDeduction: number;
     overtimeHours: number;
     hourlyRate: number | null;
     overtimePay: number;
     restDays: number;
     restDayRate: number | null;
     restDayPay: number;
+    publicHolidays: number;
+    publicHolidayPay: number;
     cpf: number;
     totalPay: number;
+    netPay: number;
     paymentMethod: string | null;
     payNowPhone: string | null;
     bankAccountNumber: string | null;
@@ -64,6 +73,10 @@ function generatePayrolls(): PayrollEntry[] {
         const overtimeHours = minimumWorkingHours != null
             ? Math.max(0, Math.round((totalHoursWorked - minimumWorkingHours) * 100) / 100)
             : 0;
+        const rawHoursNotMet = minimumWorkingHours != null
+            ? Math.round((totalHoursWorked - minimumWorkingHours) * 100) / 100
+            : null;
+        const hoursNotMet = rawHoursNotMet == null ? null : rawHoursNotMet > 0 ? 0 : rawHoursNotMet;
 
         const hourlyRate = worker.hourlyRate ?? null;
         const monthlyPay = worker.monthlyPay ?? null;
@@ -73,16 +86,26 @@ function generatePayrolls(): PayrollEntry[] {
         let totalPay = 0;
         let overtimePay = 0;
         let restDayPay = 0;
+        const publicHolidays = 0;
+        const publicHolidayPay = 0;
 
         if (isPartTime) {
-            totalPay = Math.round((hourlyRate ?? 0) * totalHoursWorked);
+            totalPay = roundMoney((hourlyRate ?? 0) * totalHoursWorked) + publicHolidayPay;
         } else {
-            overtimePay = Math.round((hourlyRate ?? 0) * overtimeHours);
-            restDayPay = Math.round((restDayRate ?? 0) * REST_DAYS_MARCH_2025);
-            totalPay = (monthlyPay ?? 0) + overtimePay + restDayPay;
+            overtimePay = roundMoney((hourlyRate ?? 0) * overtimeHours);
+            restDayPay = roundMoney((restDayRate ?? 0) * REST_DAYS_MARCH_2025);
+            totalPay = roundMoney(
+                (monthlyPay ?? 0) + overtimePay + restDayPay + publicHolidayPay,
+            );
         }
 
         const cpf = worker.cpf ?? 0;
+        const hoursNotMetDeduction =
+            hoursNotMet != null && hoursNotMet !== 0
+                ? -roundMoney(Math.max(0, -hoursNotMet) * (hourlyRate ?? 0))
+                : 0;
+        totalPay = roundMoney(totalPay + hoursNotMetDeduction);
+        const netPay = roundMoney(totalPay - cpf);
 
         payrolls.push({
             workerIndex: wi,
@@ -97,14 +120,19 @@ function generatePayrolls(): PayrollEntry[] {
                 monthlyPay: monthlyPay,
                 minimumWorkingHours: minimumWorkingHours,
                 totalHoursWorked,
+                hoursNotMet,
+                hoursNotMetDeduction,
                 overtimeHours,
                 hourlyRate: hourlyRate,
                 overtimePay,
                 restDays: REST_DAYS_MARCH_2025,
                 restDayRate: restDayRate,
                 restDayPay,
+                publicHolidays,
+                publicHolidayPay,
                 cpf,
                 totalPay,
+                netPay,
                 paymentMethod: worker.paymentMethod ?? null,
                 payNowPhone: worker.payNowPhone ?? null,
                 bankAccountNumber: worker.bankAccountNumber ?? null,

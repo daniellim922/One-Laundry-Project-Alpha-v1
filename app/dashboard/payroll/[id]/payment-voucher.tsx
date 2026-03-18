@@ -10,11 +10,14 @@ interface PaymentVoucherProps {
         monthlyPay: number | null;
         hourlyRate: number | null;
         totalHoursWorked: number | null;
+        hoursNotMetDeduction?: number | null;
         overtimeHours: number | null;
         overtimePay: number | null;
         restDays: number | null;
         restDayRate: number | null;
         restDayPay: number | null;
+        publicHolidays: number | null;
+        publicHolidayPay: number | null;
         cpf: number | null;
         totalPay: number | null;
         paymentMethod: string | null;
@@ -106,6 +109,27 @@ export function PaymentVoucher({
                 amount: voucher.restDayPay ?? 0,
             });
         }
+    }
+
+    if (
+        voucher.publicHolidays != null &&
+        voucher.publicHolidays > 0 &&
+        voucher.restDayRate != null
+    ) {
+        items.push({
+            description: "Public Holiday Pay",
+            qty: voucher.publicHolidays,
+            unit: "day",
+            rate: voucher.restDayRate,
+            amount: voucher.publicHolidayPay ?? 0,
+        });
+    }
+
+    if (voucher.hoursNotMetDeduction != null && voucher.hoursNotMetDeduction !== 0) {
+        items.push({
+            description: "Hours Not Met Deduction",
+            amount: voucher.hoursNotMetDeduction,
+        });
     }
 
     if (voucher.cpf != null && voucher.cpf > 0) {

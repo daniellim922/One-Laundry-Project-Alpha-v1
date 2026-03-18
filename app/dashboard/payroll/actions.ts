@@ -19,6 +19,32 @@ function generateVoucherNumber(): number {
     return parseInt(crypto.randomUUID().slice(0, 8), 16);
 }
 
+function roundHours(n: number): number {
+    return Math.round(n * 100) / 100;
+}
+
+function roundMoney(n: number): number {
+    return Math.round(n * 100) / 100;
+}
+
+function clampHoursNotMet(hoursNotMet: number): number {
+    return hoursNotMet > 0 ? 0 : hoursNotMet;
+}
+
+function calcHoursNotMetDeduction(args: {
+    hoursNotMet: number | null;
+    hourlyRate: number | null;
+}): number {
+    const { hoursNotMet, hourlyRate } = args;
+    if (hoursNotMet == null) return 0;
+    if (hoursNotMet === 0) return 0;
+    return -roundMoney(Math.max(0, -hoursNotMet) * (hourlyRate ?? 0));
+}
+
+function calcNetPay(args: { totalPay: number; cpf: number | null }): number {
+    return roundMoney(args.totalPay - (args.cpf ?? 0));
+}
+
 function toDateString(val: string): string {
     const d = new Date(val);
     if (Number.isNaN(d.getTime())) return "";
@@ -48,7 +74,7 @@ export async function createPayroll(formData: FormData) {
     if (!row) {
         return { error: "Worker not found" };
     }
-    const { worker, employment } = row;
+    const { employment } = row;
 
     const entries = await db
         .select()
@@ -62,6 +88,8 @@ export async function createPayroll(formData: FormData) {
         );
 
     const totalHoursWorked = entries.reduce((sum, e) => sum + Number(e.hours), 0);
+    const restDays = 4;
+    const publicHolidays = 0;
     const payCalc = calculatePay({
         employmentType: employment.employmentType,
         totalHoursWorked,
@@ -69,8 +97,19 @@ export async function createPayroll(formData: FormData) {
         monthlyPay: employment.monthlyPay,
         hourlyRate: employment.hourlyRate,
         restDayRate: employment.restDayRate,
-        restDays: 0,
+        restDays,
+        publicHolidays,
     });
+    const hoursNotMet =
+        employment.minimumWorkingHours != null
+            ? clampHoursNotMet(roundHours(totalHoursWorked - employment.minimumWorkingHours))
+            : null;
+    const hoursNotMetDeduction = calcHoursNotMetDeduction({
+        hoursNotMet,
+        hourlyRate: employment.hourlyRate,
+    });
+    const totalPay = roundMoney(payCalc.totalPay + hoursNotMetDeduction);
+    const netPay = calcNetPay({ totalPay, cpf: employment.cpf });
 
     const now = isoNow();
 
@@ -83,14 +122,19 @@ export async function createPayroll(formData: FormData) {
             monthlyPay: employment.monthlyPay,
             minimumWorkingHours: employment.minimumWorkingHours,
             totalHoursWorked,
+            hoursNotMet,
+            hoursNotMetDeduction,
             overtimeHours: payCalc.overtimeHours,
             hourlyRate: employment.hourlyRate,
             overtimePay: payCalc.overtimePay,
-            restDays: 0,
+            restDays,
             restDayRate: employment.restDayRate,
             restDayPay: payCalc.restDayPay,
+            publicHolidays,
+            publicHolidayPay: payCalc.publicHolidayPay,
             cpf: employment.cpf,
-            totalPay: payCalc.totalPay,
+            totalPay,
+            netPay,
             paymentMethod: employment.paymentMethod,
             payNowPhone: employment.payNowPhone,
             bankAccountNumber: employment.bankAccountNumber,
@@ -142,7 +186,7 @@ export async function createPayrolls(formData: FormData) {
             .limit(1);
 
         if (!row) continue;
-        const { worker, employment } = row;
+        const { employment } = row;
 
         const entries = await db
             .select()
@@ -156,6 +200,8 @@ export async function createPayrolls(formData: FormData) {
             );
 
         const totalHoursWorked = entries.reduce((sum, e) => sum + Number(e.hours), 0);
+        const restDays = 4;
+        const publicHolidays = 0;
         const payCalc = calculatePay({
             employmentType: employment.employmentType,
             totalHoursWorked,
@@ -163,8 +209,19 @@ export async function createPayrolls(formData: FormData) {
             monthlyPay: employment.monthlyPay,
             hourlyRate: employment.hourlyRate,
             restDayRate: employment.restDayRate,
-            restDays: 0,
+            restDays,
+            publicHolidays,
         });
+        const hoursNotMet =
+            employment.minimumWorkingHours != null
+                ? clampHoursNotMet(roundHours(totalHoursWorked - employment.minimumWorkingHours))
+                : null;
+        const hoursNotMetDeduction = calcHoursNotMetDeduction({
+            hoursNotMet,
+            hourlyRate: employment.hourlyRate,
+        });
+        const totalPay = roundMoney(payCalc.totalPay + hoursNotMetDeduction);
+        const netPay = calcNetPay({ totalPay, cpf: employment.cpf });
 
         const now = isoNow();
 
@@ -177,14 +234,19 @@ export async function createPayrolls(formData: FormData) {
                 monthlyPay: employment.monthlyPay,
                 minimumWorkingHours: employment.minimumWorkingHours,
                 totalHoursWorked,
+                hoursNotMet,
+                hoursNotMetDeduction,
                 overtimeHours: payCalc.overtimeHours,
                 hourlyRate: employment.hourlyRate,
                 overtimePay: payCalc.overtimePay,
-                restDays: 0,
+                restDays,
                 restDayRate: employment.restDayRate,
                 restDayPay: payCalc.restDayPay,
+                publicHolidays,
+                publicHolidayPay: payCalc.publicHolidayPay,
                 cpf: employment.cpf,
-                totalPay: payCalc.totalPay,
+                totalPay,
+                netPay,
                 paymentMethod: employment.paymentMethod,
                 payNowPhone: employment.payNowPhone,
                 bankAccountNumber: employment.bankAccountNumber,
@@ -253,6 +315,17 @@ export async function updatePayroll(payrollId: string, formData: FormData) {
         );
 
     const totalHoursWorked = entries.reduce((sum, e) => sum + Number(e.hours), 0);
+    const [currentVoucher] = await db
+        .select({
+            restDays: payrollVoucherTable.restDays,
+            publicHolidays: payrollVoucherTable.publicHolidays,
+        })
+        .from(payrollVoucherTable)
+        .where(eq(payrollVoucherTable.id, existing.payrollVoucherId))
+        .limit(1);
+
+    const restDays = currentVoucher?.restDays ?? 0;
+    const publicHolidays = currentVoucher?.publicHolidays ?? 0;
     const payCalc = calculatePay({
         employmentType: employment.employmentType,
         totalHoursWorked,
@@ -260,8 +333,19 @@ export async function updatePayroll(payrollId: string, formData: FormData) {
         monthlyPay: employment.monthlyPay,
         hourlyRate: employment.hourlyRate,
         restDayRate: employment.restDayRate,
-        restDays: 0,
+        restDays,
+        publicHolidays,
     });
+    const hoursNotMet =
+        employment.minimumWorkingHours != null
+            ? clampHoursNotMet(roundHours(totalHoursWorked - employment.minimumWorkingHours))
+            : null;
+    const hoursNotMetDeduction = calcHoursNotMetDeduction({
+        hoursNotMet,
+        hourlyRate: employment.hourlyRate,
+    });
+    const totalPay = roundMoney(payCalc.totalPay + hoursNotMetDeduction);
+    const netPay = calcNetPay({ totalPay, cpf: employment.cpf });
 
     const now = isoNow();
 
@@ -283,13 +367,17 @@ export async function updatePayroll(payrollId: string, formData: FormData) {
             monthlyPay: employment.monthlyPay,
             minimumWorkingHours: employment.minimumWorkingHours,
             totalHoursWorked,
+            hoursNotMet,
+            hoursNotMetDeduction,
             overtimeHours: payCalc.overtimeHours,
             hourlyRate: employment.hourlyRate,
             overtimePay: payCalc.overtimePay,
             restDayRate: employment.restDayRate,
             restDayPay: payCalc.restDayPay,
+            publicHolidayPay: payCalc.publicHolidayPay,
             cpf: employment.cpf,
-            totalPay: payCalc.totalPay,
+            totalPay,
+            netPay,
             paymentMethod: employment.paymentMethod,
             payNowPhone: employment.payNowPhone,
             bankAccountNumber: employment.bankAccountNumber,
@@ -344,7 +432,10 @@ export async function recalculateVouchersForWorker(workerId: string) {
         );
 
         const [currentVoucher] = await db
-            .select({ restDays: payrollVoucherTable.restDays })
+            .select({
+                restDays: payrollVoucherTable.restDays,
+                publicHolidays: payrollVoucherTable.publicHolidays,
+            })
             .from(payrollVoucherTable)
             .where(eq(payrollVoucherTable.id, payroll.payrollVoucherId))
             .limit(1);
@@ -357,18 +448,112 @@ export async function recalculateVouchersForWorker(workerId: string) {
             hourlyRate: employment.hourlyRate,
             restDayRate: employment.restDayRate,
             restDays: currentVoucher?.restDays ?? 0,
+            publicHolidays: currentVoucher?.publicHolidays ?? 0,
         });
+        const hoursNotMet =
+            employment.minimumWorkingHours != null
+                ? clampHoursNotMet(roundHours(totalHoursWorked - employment.minimumWorkingHours))
+                : null;
+        const hoursNotMetDeduction = calcHoursNotMetDeduction({
+            hoursNotMet,
+            hourlyRate: employment.hourlyRate,
+        });
+        const totalPay = roundMoney(payCalc.totalPay + hoursNotMetDeduction);
+        const netPay = calcNetPay({ totalPay, cpf: employment.cpf });
 
         await db
             .update(payrollVoucherTable)
             .set({
                 totalHoursWorked,
+                hoursNotMet,
+                hoursNotMetDeduction,
                 overtimeHours: payCalc.overtimeHours,
                 overtimePay: payCalc.overtimePay,
                 restDayPay: payCalc.restDayPay,
-                totalPay: payCalc.totalPay,
+                publicHolidayPay: payCalc.publicHolidayPay,
+                totalPay,
+                netPay,
                 updatedAt: new Date(),
             })
             .where(eq(payrollVoucherTable.id, payroll.payrollVoucherId));
     }
+}
+
+export async function updateVoucherDays(input: {
+    payrollId: string;
+    voucherId: string;
+    restDays: number;
+    publicHolidays: number;
+}) {
+    const { payrollId, voucherId, restDays, publicHolidays } = input;
+    if (!voucherId || !payrollId) return { error: "Missing voucherId or payrollId" };
+    if (!Number.isFinite(restDays) || restDays < 0) return { error: "Invalid restDays" };
+    if (!Number.isFinite(publicHolidays) || publicHolidays < 0)
+        return { error: "Invalid publicHolidays" };
+
+    const [voucher] = await db
+        .select({
+            employmentType: payrollVoucherTable.employmentType,
+            totalHoursWorked: payrollVoucherTable.totalHoursWorked,
+            minimumWorkingHours: payrollVoucherTable.minimumWorkingHours,
+            monthlyPay: payrollVoucherTable.monthlyPay,
+            hourlyRate: payrollVoucherTable.hourlyRate,
+            restDayRate: payrollVoucherTable.restDayRate,
+            cpf: payrollVoucherTable.cpf,
+        })
+        .from(payrollVoucherTable)
+        .where(eq(payrollVoucherTable.id, voucherId))
+        .limit(1);
+
+    if (!voucher) return { error: "Voucher not found" };
+
+    const totalHoursWorked = Number(voucher.totalHoursWorked ?? 0);
+    const minimumWorkingHours =
+        voucher.minimumWorkingHours != null ? Number(voucher.minimumWorkingHours) : null;
+
+    const payCalc = calculatePay({
+        employmentType: (voucher.employmentType ?? "Full Time") as PayCalcInput["employmentType"],
+        totalHoursWorked,
+        minimumWorkingHours,
+        monthlyPay: voucher.monthlyPay != null ? Number(voucher.monthlyPay) : null,
+        hourlyRate: voucher.hourlyRate != null ? Number(voucher.hourlyRate) : null,
+        restDayRate: voucher.restDayRate != null ? Number(voucher.restDayRate) : null,
+        restDays,
+        publicHolidays,
+    });
+
+    const hoursNotMet =
+        minimumWorkingHours != null
+            ? clampHoursNotMet(roundHours(totalHoursWorked - minimumWorkingHours))
+            : null;
+    const hoursNotMetDeduction = calcHoursNotMetDeduction({
+        hoursNotMet,
+        hourlyRate: voucher.hourlyRate != null ? Number(voucher.hourlyRate) : null,
+    });
+    const totalPay = roundMoney(payCalc.totalPay + hoursNotMetDeduction);
+    const netPay = calcNetPay({
+        totalPay,
+        cpf: voucher.cpf != null ? Number(voucher.cpf) : null,
+    });
+
+    await db
+        .update(payrollVoucherTable)
+        .set({
+            restDays,
+            publicHolidays,
+            hoursNotMet,
+            hoursNotMetDeduction,
+            overtimeHours: payCalc.overtimeHours,
+            overtimePay: payCalc.overtimePay,
+            restDayPay: payCalc.restDayPay,
+            publicHolidayPay: payCalc.publicHolidayPay,
+            totalPay,
+            netPay,
+            updatedAt: isoNow(),
+        })
+        .where(eq(payrollVoucherTable.id, voucherId));
+
+    revalidatePath(`/dashboard/payroll/${payrollId}`);
+    revalidatePath("/dashboard/payroll");
+    return { success: true };
 }

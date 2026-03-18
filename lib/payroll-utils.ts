@@ -107,6 +107,7 @@ export interface PayCalcInput {
     hourlyRate: number | null;
     restDayRate: number | null;
     restDays: number;
+    publicHolidays: number;
 }
 
 export interface PayCalcResult {
@@ -114,14 +115,19 @@ export interface PayCalcResult {
     overtimeHours: number;
     overtimePay: number;
     restDayPay: number;
+    publicHolidayPay: number;
     totalPay: number;
+}
+
+function roundMoney(n: number): number {
+    return Math.round(n * 100) / 100;
 }
 
 /**
  * Part-time:  totalPay = hourlyRate * totalHoursWorked
  * Full-time:  overtimePay = hourlyRate * overtimeHours
  *             restDayPay  = restDayRate * restDays
- *             totalPay    = monthlyPay + overtimePay + restDayPay
+ *             totalPay    = monthlyPay + overtimePay + restDayPay + publicHolidayPay
  */
 export function calculatePay(input: PayCalcInput): PayCalcResult {
     const {
@@ -132,6 +138,7 @@ export function calculatePay(input: PayCalcInput): PayCalcResult {
         hourlyRate,
         restDayRate,
         restDays,
+        publicHolidays,
     } = input;
 
     const overtimeHours =
@@ -139,27 +146,32 @@ export function calculatePay(input: PayCalcInput): PayCalcResult {
             ? Math.max(0, totalHoursWorked - minimumWorkingHours)
             : 0;
 
+    const publicHolidayPay = roundMoney((restDayRate ?? 0) * publicHolidays);
+
     if (employmentType === "Part Time") {
-        const totalPay = Math.round((hourlyRate ?? 0) * totalHoursWorked);
+        const basePay = roundMoney((hourlyRate ?? 0) * totalHoursWorked);
+        const totalPay = roundMoney(basePay + publicHolidayPay);
         return {
-            basePay: totalPay,
+            basePay,
             overtimeHours: 0,
             overtimePay: 0,
             restDayPay: 0,
+            publicHolidayPay,
             totalPay,
         };
     }
 
     const basePay = monthlyPay ?? 0;
-    const overtimePay = Math.round((hourlyRate ?? 0) * overtimeHours);
-    const restDayPay = Math.round((restDayRate ?? 0) * restDays);
-    const totalPay = basePay + overtimePay + restDayPay;
+    const overtimePay = roundMoney((hourlyRate ?? 0) * overtimeHours);
+    const restDayPay = roundMoney((restDayRate ?? 0) * restDays);
+    const totalPay = roundMoney(basePay + overtimePay + restDayPay + publicHolidayPay);
 
     return {
         basePay,
         overtimeHours,
         overtimePay,
         restDayPay,
+        publicHolidayPay,
         totalPay,
     };
 }

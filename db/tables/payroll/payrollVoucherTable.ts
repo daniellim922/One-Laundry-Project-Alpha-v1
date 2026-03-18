@@ -14,6 +14,8 @@ export const payrollVoucherTable = pgTable("payroll_voucher", {
     monthlyPay: real("monthly_pay"),
     minimumWorkingHours: real("minimum_working_hours"),
     totalHoursWorked: real("total_hours_worked"),
+    hoursNotMet: real("hours_not_met"),
+    hoursNotMetDeduction: real("hours_not_met_deduction"),
     overtimeHours: real("overtime_hours"),
     hourlyRate: real("hourly_rate"),
     overtimePay: real("overtime_pay"),
@@ -22,8 +24,12 @@ export const payrollVoucherTable = pgTable("payroll_voucher", {
     restDayRate: real("rest_day_rate"),
     restDayPay: real("rest_day_pay"),
 
+    publicHolidays: real("public_holidays"),
+    publicHolidayPay: real("public_holiday_pay"),
+
     cpf: real("cpf"),
     totalPay: real("total_pay"),
+    netPay: real("net_pay"),
 
     paymentMethod: text("payment_method"),
     payNowPhone: text("paynow_phone"),

@@ -29,6 +29,7 @@ import {
 import { MoreHorizontal, Pencil } from "lucide-react";
 import { PayrollHeader } from "./payroll-header";
 import { PaymentVoucher } from "./payment-voucher";
+import { VoucherEditableNumber } from "./voucher-editable-number";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -49,6 +50,30 @@ function formatTime(t: string): string {
     return s;
 }
 
+function pad2(n: number): string {
+    return String(n).padStart(2, "0");
+}
+
+function dateKey(d: string | Date): string {
+    if (d instanceof Date) {
+        return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+    }
+    const s = String(d);
+    // If already ISO-like, keep the date portion.
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    const parsed = new Date(s);
+    if (!Number.isNaN(parsed.getTime())) {
+        return `${parsed.getFullYear()}-${pad2(parsed.getMonth() + 1)}-${pad2(parsed.getDate())}`;
+    }
+    // Fallback: use original string (best-effort).
+    return s;
+}
+
+function dateFromKey(key: string): Date {
+    // key is expected to be YYYY-MM-DD
+    return new Date(`${key}T00:00:00`);
+}
+
 export default async function PayrollDetailPage({ params }: PageProps) {
     await requirePermission("Payroll", "read");
 
@@ -63,8 +88,14 @@ export default async function PayrollDetailPage({ params }: PageProps) {
         })
         .from(payrollTable)
         .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id))
-        .innerJoin(employmentTable, eq(workerTable.employmentId, employmentTable.id))
-        .innerJoin(payrollVoucherTable, eq(payrollTable.payrollVoucherId, payrollVoucherTable.id))
+        .innerJoin(
+            employmentTable,
+            eq(workerTable.employmentId, employmentTable.id),
+        )
+        .innerJoin(
+            payrollVoucherTable,
+            eq(payrollTable.payrollVoucherId, payrollVoucherTable.id),
+        )
         .where(eq(payrollTable.id, id))
         .limit(1);
 
@@ -84,7 +115,18 @@ export default async function PayrollDetailPage({ params }: PageProps) {
         )
         .orderBy(timesheetTable.dateIn);
 
-    const monetaryKeys = ["monthlyPay", "hourlyRate", "overtimePay", "restDayRate", "restDayPay", "cpf", "totalPay"] as const;
+    const presentDateIns = new Set(entries.map((e) => dateKey(e.dateIn)));
+    const missingDateIns: string[] = [];
+    {
+        const start = dateFromKey(dateKey(payroll.periodStart));
+        const end = dateFromKey(dateKey(payroll.periodEnd));
+        const cursor = new Date(start);
+        while (cursor <= end) {
+            const key = dateKey(cursor);
+            if (!presentDateIns.has(key)) missingDateIns.push(key);
+            cursor.setDate(cursor.getDate() + 1);
+        }
+    }
 
     return (
         <div className="space-y-6">
@@ -104,12 +146,14 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
-                                <Link href={`/dashboard/workers/${worker.id}/view`}>
+                                <Link
+                                    href={`/dashboard/workers/${worker.id}/view`}>
                                     View
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
-                                <Link href={`/dashboard/workers/${worker.id}/edit`}>
+                                <Link
+                                    href={`/dashboard/workers/${worker.id}/edit`}>
                                     Edit
                                 </Link>
                             </DropdownMenuItem>
@@ -120,37 +164,59 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                         <div className="space-y-4">
                             <div className="space-y-1">
-                                <p className="text-sm text-muted-foreground">Employment Type</p>
-                                <p className="text-sm font-medium">{employment.employmentType}</p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-sm text-muted-foreground">Employment Arrangement</p>
-                                <p className="text-sm font-medium">{employment.employmentArrangement}</p>
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="space-y-1">
-                                <p className="text-sm text-muted-foreground">Monthly Pay</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Employment Type
+                                </p>
                                 <p className="text-sm font-medium">
-                                    {employment.monthlyPay != null ? `$${employment.monthlyPay}` : "–"}
+                                    {employment.employmentType}
                                 </p>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-sm text-muted-foreground">Hourly Rate</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Employment Arrangement
+                                </p>
                                 <p className="text-sm font-medium">
-                                    {employment.hourlyRate != null ? `$${employment.hourlyRate}` : "–"}
+                                    {employment.employmentArrangement}
                                 </p>
                             </div>
                         </div>
                         <div className="space-y-4">
                             <div className="space-y-1">
-                                <p className="text-sm text-muted-foreground">Rest Day Rate</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Monthly Pay
+                                </p>
                                 <p className="text-sm font-medium">
-                                    {employment.restDayRate != null ? `$${employment.restDayRate}` : "–"}
+                                    {employment.monthlyPay != null
+                                        ? `$${employment.monthlyPay}`
+                                        : "–"}
                                 </p>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-sm text-muted-foreground">Minimum Working Hours</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Hourly Rate
+                                </p>
+                                <p className="text-sm font-medium">
+                                    {employment.hourlyRate != null
+                                        ? `$${employment.hourlyRate}`
+                                        : "–"}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">
+                                    Rest Day Rate
+                                </p>
+                                <p className="text-sm font-medium">
+                                    {employment.restDayRate != null
+                                        ? `$${employment.restDayRate}`
+                                        : "–"}
+                                </p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">
+                                    Minimum Working Hours
+                                </p>
                                 <p className="text-sm font-medium">
                                     {employment.minimumWorkingHours ?? "–"}
                                 </p>
@@ -158,20 +224,33 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                         </div>
                         <div className="space-y-4">
                             <div className="space-y-1">
-                                <p className="text-sm text-muted-foreground">Payment Method</p>
-                                <p className="text-sm font-medium">{employment.paymentMethod ?? "–"}</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Payment Method
+                                </p>
+                                <p className="text-sm font-medium">
+                                    {employment.paymentMethod ?? "–"}
+                                </p>
                             </div>
-                            {employment.paymentMethod === "PayNow" && employment.payNowPhone && (
-                                <div className="space-y-1">
-                                    <p className="text-sm text-muted-foreground">PayNow Phone</p>
-                                    <p className="text-sm font-medium">{employment.payNowPhone}</p>
-                                </div>
-                            )}
+                            {employment.paymentMethod === "PayNow" &&
+                                employment.payNowPhone && (
+                                    <div className="space-y-1">
+                                        <p className="text-sm text-muted-foreground">
+                                            PayNow Phone
+                                        </p>
+                                        <p className="text-sm font-medium">
+                                            {employment.payNowPhone}
+                                        </p>
+                                    </div>
+                                )}
                             {employment.paymentMethod === "Bank Transfer" &&
                                 employment.bankAccountNumber && (
                                     <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">Bank Account</p>
-                                        <p className="text-sm font-medium">{employment.bankAccountNumber}</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            Bank Account
+                                        </p>
+                                        <p className="text-sm font-medium">
+                                            {employment.bankAccountNumber}
+                                        </p>
                                     </div>
                                 )}
                         </div>
@@ -187,40 +266,206 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                     </p>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                        {(
-                            [
-                                { key: "employmentType", label: "Employment Type" },
-                                { key: "employmentArrangement", label: "Employment Arrangement" },
-                                { key: "monthlyPay", label: "Monthly Pay" },
-                                { key: "hourlyRate", label: "Hourly Rate" },
-                                { key: "minimumWorkingHours", label: "Minimum Working Hours" },
-                                { key: "totalHoursWorked", label: "Total Hours Worked" },
-                                { key: "overtimeHours", label: "Overtime Hours" },
-                                { key: "overtimePay", label: "Overtime Pay" },
-                                { key: "restDays", label: "Rest Days" },
-                                { key: "restDayRate", label: "Rest Day Rate" },
-                                { key: "restDayPay", label: "Rest Day Pay" },
-                                { key: "cpf", label: "CPF" },
-                                { key: "totalPay", label: "Total Pay" },
-                                { key: "paymentMethod", label: "Payment Method" },
-                                { key: "payNowPhone", label: "PayNow Phone" },
-                                { key: "bankAccountNumber", label: "Bank Account Number" },
-                            ] as const
-                        )
-                            .filter(({ key }) => voucher[key] != null)
-                            .map(({ key, label }) => {
-                                const raw = voucher[key];
-                                const display = (monetaryKeys as readonly string[]).includes(key)
-                                    ? `$${raw}`
-                                    : String(raw);
-                                return (
-                                    <div key={key} className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">{label}</p>
-                                        <p className="text-sm font-medium">{display}</p>
-                                    </div>
-                                );
-                            })}
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                        {/* Row 1 */}
+                        <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">
+                                Employment Type
+                            </p>
+                            <p className="text-sm font-medium">
+                                {voucher.employmentType ?? "–"}
+                            </p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">
+                                Employment Arrangement
+                            </p>
+                            <p className="text-sm font-medium">
+                                {voucher.employmentArrangement ?? "–"}
+                            </p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">
+                                Payment Method
+                            </p>
+                            <p className="text-sm font-medium">
+                                {voucher.paymentMethod ?? "–"}
+                            </p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">
+                                {voucher.paymentMethod === "PayNow"
+                                    ? "PayNow Phone"
+                                    : voucher.paymentMethod === "Bank Transfer"
+                                      ? "Bank Account"
+                                      : "PayNow/Bank Account"}
+                            </p>
+                            <p className="text-sm font-medium">
+                                {voucher.paymentMethod === "PayNow"
+                                    ? (voucher.payNowPhone ?? "–")
+                                    : voucher.paymentMethod === "Bank Transfer"
+                                      ? (voucher.bankAccountNumber ?? "–")
+                                      : (voucher.payNowPhone ??
+                                        voucher.bankAccountNumber ??
+                                        "–")}
+                            </p>
+                        </div>
+
+                        {/* Row 2 */}
+                        <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">
+                                Monthly Pay
+                            </p>
+                            <p className="text-sm font-medium">
+                                {voucher.monthlyPay != null
+                                    ? `$${voucher.monthlyPay}`
+                                    : "–"}
+                            </p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">
+                                Hourly Rate
+                            </p>
+                            <p className="text-sm font-medium">
+                                {voucher.hourlyRate != null
+                                    ? `$${voucher.hourlyRate}`
+                                    : "–"}
+                            </p>
+                        </div>
+                        <div className="space-y-1 md:col-span-2">
+                            <p className="text-sm text-muted-foreground">
+                                Rest Day Rate
+                            </p>
+                            <p className="text-sm font-medium">
+                                {voucher.restDayRate != null
+                                    ? `$${voucher.restDayRate}`
+                                    : "–"}
+                            </p>
+                        </div>
+
+                        {/* Row 3 */}
+                        <div className="space-y-1 md:col-span-1 mt-10">
+                            <p className="text-sm text-muted-foreground">
+                                Minimum Working Hours
+                            </p>
+                            <p className="text-sm font-medium">
+                                {voucher.minimumWorkingHours ?? "–"}
+                            </p>
+                        </div>
+                        <div className="space-y-1 md:col-span-3 mt-10">
+                            <p className="text-sm text-muted-foreground">
+                                Total Hours Worked
+                            </p>
+                            <p className="text-sm font-medium">
+                                {voucher.totalHoursWorked ?? "–"}
+                            </p>
+                        </div>
+
+                        {/* Row 4 */}
+                        <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">
+                                Hours Not Met
+                            </p>
+                            <p className="text-sm font-medium">
+                                {voucher.hoursNotMet ?? "–"}
+                            </p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">
+                                Hours Not Met Deduction
+                            </p>
+                            <p className="text-sm font-medium">
+                                {voucher.hoursNotMetDeduction != null
+                                    ? voucher.hoursNotMetDeduction < 0
+                                        ? `-$${Math.abs(voucher.hoursNotMetDeduction)}`
+                                        : `$${voucher.hoursNotMetDeduction}`
+                                    : "–"}
+                            </p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">
+                                Overtime Hours
+                            </p>
+                            <p className="text-sm font-medium">
+                                {voucher.overtimeHours ?? "–"}
+                            </p>
+                        </div>
+                        <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">
+                                Overtime Pay
+                            </p>
+                            <p className="text-sm font-medium">
+                                {voucher.overtimePay != null
+                                    ? `$${voucher.overtimePay}`
+                                    : "–"}
+                            </p>
+                        </div>
+
+                        {/* Row 5 */}
+                        <VoucherEditableNumber
+                            payrollId={payroll.id}
+                            voucherId={voucher.id}
+                            label="Rest Days"
+                            field="restDays"
+                            restDays={voucher.restDays}
+                            publicHolidays={voucher.publicHolidays}
+                        />
+                        <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">
+                                Rest Day Pay
+                            </p>
+                            <p className="text-sm font-medium">
+                                {voucher.restDayPay != null
+                                    ? `$${voucher.restDayPay}`
+                                    : "–"}
+                            </p>
+                        </div>
+                        <VoucherEditableNumber
+                            payrollId={payroll.id}
+                            voucherId={voucher.id}
+                            label="Public Holidays"
+                            field="publicHolidays"
+                            restDays={voucher.restDays}
+                            publicHolidays={voucher.publicHolidays}
+                        />
+                        <div className="space-y-1">
+                            <p className="text-sm text-muted-foreground">
+                                Public Holiday Pay
+                            </p>
+                            <p className="text-sm font-medium">
+                                {voucher.publicHolidayPay != null
+                                    ? `$${voucher.publicHolidayPay}`
+                                    : "–"}
+                            </p>
+                        </div>
+
+                        {/* Row 6 */}
+                        <div className="space-y-1 mt-10">
+                            <p className="text-sm text-muted-foreground">
+                                Total Pay
+                            </p>
+                            <p className="text-sm font-medium">
+                                {voucher.totalPay != null
+                                    ? `$${voucher.totalPay}`
+                                    : "–"}
+                            </p>
+                        </div>
+                        <div className="space-y-1 mt-10">
+                            <p className="text-sm text-muted-foreground">CPF</p>
+                            <p className="text-sm font-medium">
+                                {voucher.cpf != null ? `$${voucher.cpf}` : "–"}
+                            </p>
+                        </div>
+                        <div className="space-y-1 md:col-span-2 mt-10">
+                            <p className="text-sm text-muted-foreground">
+                                Net Pay
+                            </p>
+                            <p className="text-sm font-medium">
+                                {voucher.netPay != null
+                                    ? `$${voucher.netPay}`
+                                    : "–"}
+                            </p>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
@@ -231,6 +476,26 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                     <p className="text-muted-foreground text-sm">
                         Clock in/out entries for this pay period
                     </p>
+                    {missingDateIns.length > 0 ? (
+                        <div className="mt-2 space-y-2">
+                            <p className="text-muted-foreground text-sm">
+                                Missing dates
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {missingDateIns.map((k) => (
+                                    <span
+                                        key={k}
+                                        className="inline-flex items-center rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">
+                                        {formatDate(dateFromKey(k))}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="text-muted-foreground text-sm mt-2">
+                            No missing dates in this period.
+                        </p>
+                    )}
                 </CardHeader>
                 <CardContent>
                     {entries.length === 0 ? (
@@ -272,10 +537,16 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                                             {Number(e.hours).toFixed(2)}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" asChild>
-                                                <Link href={`/dashboard/timesheet/${e.id}/edit`}>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                asChild>
+                                                <Link
+                                                    href={`/dashboard/timesheet/${e.id}/edit`}>
                                                     <Pencil className="h-4 w-4" />
-                                                    <span className="sr-only">Edit</span>
+                                                    <span className="sr-only">
+                                                        Edit
+                                                    </span>
                                                 </Link>
                                             </Button>
                                         </TableCell>
@@ -284,11 +555,19 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                             </TableBody>
                             <TableFooter>
                                 <TableRow>
-                                    <TableCell colSpan={4} className="text-right font-medium">
+                                    <TableCell
+                                        colSpan={4}
+                                        className="text-right font-medium">
                                         Total Working Hours
                                     </TableCell>
                                     <TableCell className="text-right font-medium">
-                                        {entries.reduce((sum, e) => sum + Number(e.hours), 0).toFixed(2)}
+                                        {entries
+                                            .reduce(
+                                                (sum, e) =>
+                                                    sum + Number(e.hours),
+                                                0,
+                                            )
+                                            .toFixed(2)}
                                     </TableCell>
                                     <TableCell />
                                 </TableRow>
