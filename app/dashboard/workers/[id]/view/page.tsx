@@ -35,7 +35,7 @@ export default async function ViewWorkerPage({ params }: PageProps) {
             employmentArrangement: employmentTable.employmentArrangement,
             cpf: employmentTable.cpf,
             monthlyPay: employmentTable.monthlyPay,
-            workingHours: employmentTable.workingHours,
+            minimumWorkingHours: employmentTable.minimumWorkingHours,
             hourlyPay: employmentTable.hourlyPay,
             restDayPay: employmentTable.restDayPay,
             paymentMethod: employmentTable.paymentMethod,

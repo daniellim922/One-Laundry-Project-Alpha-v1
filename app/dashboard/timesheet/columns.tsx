@@ -29,7 +29,7 @@ export type TimesheetEntryWithWorker = {
 };
 
 function formatDate(d: string): string {
-    return new Date(d + "T00:00:00").toLocaleDateString("en-CA", {
+    return new Date(d + "T00:00:00").toLocaleDateString("en-GB", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
@@ -159,12 +159,14 @@ export const columns: ColumnDef<TimesheetEntryWithWorker>[] = [
     {
         id: "hours",
         header: sortableHeader("Hours"),
+        enableColumnFilter: false,
         cell: ({ row }) => row.original.hours.toFixed(2),
     },
     {
         id: "actions",
         header: () => <div className="text-right">Actions</div>,
         enableSorting: false,
+        enableColumnFilter: false,
         cell: ({ row }) => <TimesheetRowActions id={row.original.id} />,
     },
 ];

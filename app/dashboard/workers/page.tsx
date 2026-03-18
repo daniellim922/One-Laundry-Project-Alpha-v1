@@ -29,7 +29,7 @@ export default async function Page() {
             employmentType: employmentTable.employmentType,
             employmentArrangement: employmentTable.employmentArrangement,
             monthlyPay: employmentTable.monthlyPay,
-            workingHours: employmentTable.workingHours,
+            minimumWorkingHours: employmentTable.minimumWorkingHours,
             hourlyPay: employmentTable.hourlyPay,
             restDayPay: employmentTable.restDayPay,
             paymentMethod: employmentTable.paymentMethod,

@@ -12,11 +12,15 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type PayrollWithWorker = SelectPayroll & { workerName: string };
+type PayrollWithWorker = SelectPayroll & {
+    workerName: string;
+    employmentType: string;
+    employmentArrangement: string;
+};
 
 function formatDate(d: string | Date): string {
     const date = d instanceof Date ? d : new Date(d + "T00:00:00");
-    return date.toLocaleDateString("en-CA", {
+    return date.toLocaleDateString("en-GB", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
@@ -44,6 +48,20 @@ const sortableHeader =
         </Button>
     );
 
+const employmentTypeStyles: Record<string, string> = {
+    "Full Time":
+        "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300",
+    "Part Time":
+        "bg-violet-100 text-violet-800 dark:bg-violet-500/20 dark:text-violet-300",
+};
+
+const arrangementStyles: Record<string, string> = {
+    "Foreign Worker":
+        "bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300",
+    "Local Worker":
+        "bg-teal-100 text-teal-800 dark:bg-teal-500/20 dark:text-teal-300",
+};
+
 const statusStyles: Record<string, string> = {
     draft: "bg-slate-100 text-slate-800 dark:bg-slate-500/20 dark:text-slate-300",
     approved:
@@ -57,32 +75,49 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
         header: sortableHeader("Worker"),
     },
     {
-        id: "period",
-        header: sortableHeader("Period"),
+        accessorKey: "employmentType",
+        header: sortableHeader("Employment Type"),
         cell: ({ row }) => {
-            const start = formatDate(row.original.periodStart);
-            const end = formatDate(row.original.periodEnd);
-            return `${start} – ${end}`;
+            const value = row.original.employmentType;
+            return (
+                <span
+                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                        employmentTypeStyles[value] ?? ""
+                    }`}>
+                    {value}
+                </span>
+            );
         },
+    },
+    {
+        accessorKey: "employmentArrangement",
+        header: sortableHeader("Arrangement"),
+        cell: ({ row }) => {
+            const value = row.original.employmentArrangement;
+            return (
+                <span
+                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                        arrangementStyles[value] ?? ""
+                    }`}>
+                    {value}
+                </span>
+            );
+        },
+    },
+    {
+        accessorKey: "periodStart",
+        header: sortableHeader("Period Start"),
+        cell: ({ row }) => formatDate(row.original.periodStart),
+    },
+    {
+        accessorKey: "periodEnd",
+        header: sortableHeader("Period End"),
+        cell: ({ row }) => formatDate(row.original.periodEnd),
     },
     {
         accessorKey: "payrollDate",
         header: sortableHeader("Payroll Date"),
         cell: ({ row }) => formatDate(row.original.payrollDate),
-    },
-    {
-        accessorKey: "totalHours",
-        header: sortableHeader("Total Hours"),
-        cell: ({ row }) =>
-            row.original.totalHours != null
-                ? Number(row.original.totalHours).toFixed(2)
-                : "—",
-    },
-    {
-        accessorKey: "totalPay",
-        header: sortableHeader("Total Pay"),
-        cell: ({ row }) =>
-            row.original.totalPay != null ? `$${row.original.totalPay}` : "—",
     },
     {
         accessorKey: "status",
@@ -102,6 +137,7 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
     {
         id: "actions",
         header: "",
+        enableColumnFilter: false,
         cell: ({ row }) => {
             const payroll = row.original;
             return (

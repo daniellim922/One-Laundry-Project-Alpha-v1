@@ -57,6 +57,20 @@ export function TimesheetEntryForm({
     const defaultTimeIn = entry?.timeIn?.slice(0, 5) ?? "09:00";
     const defaultTimeOut = entry?.timeOut?.slice(0, 5) ?? "17:00";
 
+    const [dateIn, setDateIn] = React.useState(defaultDateIn);
+    const [dateOut, setDateOut] = React.useState(defaultDateOut);
+    const [timeIn, setTimeIn] = React.useState(defaultTimeIn);
+    const [timeOut, setTimeOut] = React.useState(defaultTimeOut);
+
+    const totalHours = React.useMemo(() => {
+        if (!dateIn || !dateOut || !timeIn || !timeOut) return null;
+        const start = new Date(`${dateIn}T${timeIn}:00`);
+        const end = new Date(`${dateOut}T${timeOut}:00`);
+        const diffMs = end.getTime() - start.getTime();
+        if (diffMs < 0 || isNaN(diffMs)) return null;
+        return (diffMs / 3_600_000).toFixed(2);
+    }, [dateIn, dateOut, timeIn, timeOut]);
+
     return (
         <Card>
             <CardHeader>
@@ -84,8 +98,8 @@ export function TimesheetEntryForm({
                                 id="dateIn"
                                 name="dateIn"
                                 type="date"
-                                defaultValue={defaultDateIn}
-                                suppressHydrationWarning
+                                value={dateIn}
+                                onChange={(e) => setDateIn(e.target.value)}
                                 required
                             />
                         </div>
@@ -95,8 +109,8 @@ export function TimesheetEntryForm({
                                 id="dateOut"
                                 name="dateOut"
                                 type="date"
-                                defaultValue={defaultDateOut}
-                                suppressHydrationWarning
+                                value={dateOut}
+                                onChange={(e) => setDateOut(e.target.value)}
                                 required
                             />
                         </div>
@@ -108,7 +122,8 @@ export function TimesheetEntryForm({
                                 id="timeIn"
                                 name="timeIn"
                                 type="time"
-                                defaultValue={defaultTimeIn}
+                                value={timeIn}
+                                onChange={(e) => setTimeIn(e.target.value)}
                                 required
                             />
                         </div>
@@ -118,11 +133,18 @@ export function TimesheetEntryForm({
                                 id="timeOut"
                                 name="timeOut"
                                 type="time"
-                                defaultValue={defaultTimeOut}
+                                value={timeOut}
+                                onChange={(e) => setTimeOut(e.target.value)}
                                 required
                             />
                         </div>
                     </div>
+                    {totalHours !== null && (
+                        <div className="rounded-md bg-muted px-4 py-3 text-sm">
+                            <span className="font-medium">Total hours:</span>{" "}
+                            <span className="text-lg font-semibold">{totalHours}</span>
+                        </div>
+                    )}
                     {error && (
                         <p className="text-destructive text-sm">{error}</p>
                     )}

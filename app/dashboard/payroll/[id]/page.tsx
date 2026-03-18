@@ -8,19 +8,23 @@ import { payrollTable } from "@/db/tables/payroll/payrollTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { employmentTable } from "@/db/tables/payroll/employmentTable";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
-import { STANDARD_HOURS_PER_MONTH } from "@/lib/payroll-utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     Table,
     TableBody,
     TableCell,
-    TableFooter,
     TableHead,
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft } from "lucide-react";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ArrowLeft, MoreHorizontal, Pencil } from "lucide-react";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -28,7 +32,7 @@ interface PageProps {
 
 function formatDate(d: string | Date): string {
     const date = d instanceof Date ? d : new Date(d + "T00:00:00");
-    return date.toLocaleDateString("en-CA", {
+    return date.toLocaleDateString("en-GB", {
         year: "numeric",
         month: "2-digit",
         day: "2-digit",
@@ -74,18 +78,6 @@ export default async function PayrollDetailPage({ params }: PageProps) {
         )
         .orderBy(timesheetTable.dateIn);
 
-    const dailyHours = entries.map((e) => Number(e.hours));
-    const totalHours = dailyHours.reduce((sum, h) => sum + h, 0);
-
-    let overtimeHours = 0;
-    for (const h of dailyHours) {
-        if (h > 8) overtimeHours += h - 8;
-    }
-
-    const expectedMonthlyHours =
-        employment.employmentType === "Full Time"
-            ? STANDARD_HOURS_PER_MONTH
-            : Math.round(STANDARD_HOURS_PER_MONTH / 2);
 
     return (
         <div className="space-y-6">
@@ -118,61 +110,62 @@ export default async function PayrollDetailPage({ params }: PageProps) {
             </div>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Pay breakdown</CardTitle>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                    <CardTitle>Employment breakdown</CardTitle>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                className="h-8 w-8 p-0"
+                                aria-label="Worker actions">
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                                <Link href={`/dashboard/workers/${worker.id}/view`}>
+                                    View worker
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                                <Link href={`/dashboard/workers/${worker.id}/edit`}>
+                                    Edit worker
+                                </Link>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableBody>
-                            <TableRow>
-                                <TableCell className="text-muted-foreground">
-                                    Monthly pay
-                                </TableCell>
-                                <TableCell className="text-right font-medium">
-                                    {employment.monthlyPay != null
-                                        ? `$${employment.monthlyPay}`
-                                        : "—"}
-                                </TableCell>
-                            </TableRow>
-                            <TableRow>
-                                <TableCell className="text-muted-foreground">
-                                    Hourly pay rate
-                                </TableCell>
-                                <TableCell className="text-right font-medium">
-                                    {employment.hourlyPay != null
-                                        ? `$${employment.hourlyPay}/hr`
-                                        : employment.monthlyPay != null
-                                          ? `$${(
-                                                employment.monthlyPay /
-                                                STANDARD_HOURS_PER_MONTH
-                                            ).toFixed(2)}/hr`
-                                          : "—"}
-                                </TableCell>
-                            </TableRow>
-                            <TableRow>
-                                <TableCell className="text-muted-foreground">
-                                    Minimum working hours
-                                </TableCell>
-                                <TableCell className="text-right font-medium">
-                                    {employment.workingHours != null
-                                        ? `${employment.workingHours}`
-                                        : "—"}
-                                </TableCell>
-                            </TableRow>
-                            <TableRow>
-                                <TableCell className="text-muted-foreground">
-                                    Rest day pay
-                                </TableCell>
-                                <TableCell className="text-right font-medium">
-                                    {employment.monthlyPay != null
-                                        ? `$${Math.round(
-                                              employment.monthlyPay / 26,
-                                          )}`
-                                        : "—"}
-                                </TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                        {(
+                            [
+                                { key: "employmentType", label: "Employment Type" },
+                                { key: "employmentArrangement", label: "Employment Arrangement" },
+                                { key: "cpf", label: "CPF" },
+                                { key: "monthlyPay", label: "Monthly Pay" },
+                                { key: "minimumWorkingHours", label: "Minimum Working Hours" },
+                                { key: "hourlyPay", label: "Hourly Pay" },
+                                { key: "restDayPay", label: "Rest Day Pay" },
+                                { key: "paymentMethod", label: "Payment Method" },
+                                { key: "payNowPhone", label: "PayNow Phone" },
+                                { key: "bankAccountNumber", label: "Bank Account Number" },
+                            ] as const
+                        )
+                            .filter(({ key }) => employment[key] != null)
+                            .map(({ key, label }) => {
+                                const raw = employment[key];
+                                const monetary = ["monthlyPay", "hourlyPay", "restDayPay"] as const;
+                                const display = (monetary as readonly string[]).includes(key)
+                                    ? `$${raw}`
+                                    : String(raw);
+                                return (
+                                    <div key={key} className="space-y-1">
+                                        <p className="text-sm text-muted-foreground">{label}</p>
+                                        <p className="text-sm font-medium">{display}</p>
+                                    </div>
+                                );
+                            })}
+                    </div>
                 </CardContent>
             </Card>
 
@@ -192,11 +185,15 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Date</TableHead>
-                                    <TableHead>Time in</TableHead>
-                                    <TableHead>Time out</TableHead>
+                                    <TableHead>Date In</TableHead>
+                                    <TableHead>Time In</TableHead>
+                                    <TableHead>Date Out</TableHead>
+                                    <TableHead>Time Out</TableHead>
                                     <TableHead className="text-right">
                                         Hours
+                                    </TableHead>
+                                    <TableHead className="text-right">
+                                        Actions
                                     </TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -210,46 +207,25 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                                             {formatTime(String(e.timeIn))}
                                         </TableCell>
                                         <TableCell>
+                                            {formatDate(e.dateOut)}
+                                        </TableCell>
+                                        <TableCell>
                                             {formatTime(String(e.timeOut))}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             {Number(e.hours).toFixed(2)}
                                         </TableCell>
+                                        <TableCell className="text-right">
+                                            <Button variant="ghost" size="icon" asChild>
+                                                <Link href={`/dashboard/timesheet/${e.id}/edit`}>
+                                                    <Pencil className="h-4 w-4" />
+                                                    <span className="sr-only">Edit</span>
+                                                </Link>
+                                            </Button>
+                                        </TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
-                            <TableFooter>
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={3}
-                                        className="text-muted-foreground">
-                                        Total hours
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        {totalHours.toFixed(2)}
-                                    </TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={3}
-                                        className="text-muted-foreground">
-                                        Expected ({employment.employmentType})
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        {expectedMonthlyHours}
-                                    </TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell
-                                        colSpan={3}
-                                        className="text-muted-foreground">
-                                        Overtime
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        {overtimeHours.toFixed(2)}
-                                    </TableCell>
-                                </TableRow>
-                            </TableFooter>
                         </Table>
                     )}
                 </CardContent>

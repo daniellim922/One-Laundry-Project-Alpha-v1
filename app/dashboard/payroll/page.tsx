@@ -8,6 +8,7 @@ import {
     type SelectPayroll,
 } from "@/db/tables/payroll/payrollTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
+import { employmentTable } from "@/db/tables/payroll/employmentTable";
 import { columns } from "./columns";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,8 @@ import { Plus } from "lucide-react";
 
 type PayrollWithWorker = SelectPayroll & {
     workerName: string;
+    employmentType: string;
+    employmentArrangement: string;
 };
 
 export default async function Page() {
@@ -22,13 +25,18 @@ export default async function Page() {
         .select({
             payroll: payrollTable,
             workerName: workerTable.name,
+            employmentType: employmentTable.employmentType,
+            employmentArrangement: employmentTable.employmentArrangement,
         })
         .from(payrollTable)
-        .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id));
+        .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id))
+        .innerJoin(employmentTable, eq(workerTable.employmentId, employmentTable.id));
 
     const data: PayrollWithWorker[] = rows.map((r) => ({
         ...r.payroll,
         workerName: r.workerName,
+        employmentType: r.employmentType,
+        employmentArrangement: r.employmentArrangement,
     }));
 
     return (

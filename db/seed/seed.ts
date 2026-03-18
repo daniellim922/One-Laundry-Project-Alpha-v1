@@ -42,7 +42,7 @@ function splitWorkerSeed(seed: any): SplitWorkerSeed {
         employmentArrangement: seed.employmentArrangement ?? null,
         cpf: seed.cpf ?? null,
         monthlyPay: seed.monthlyPay ?? null,
-        workingHours: seed.workingHours ?? null,
+        minimumWorkingHours: seed.minimumWorkingHours ?? null,
         hourlyPay: seed.hourlyPay ?? null,
         restDayPay: seed.restDayPay ?? null,
         paymentMethod: seed.paymentMethod ?? null,

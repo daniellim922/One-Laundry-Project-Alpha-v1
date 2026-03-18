@@ -38,7 +38,6 @@ export const NAV_ITEMS: (NavItemSerializable & {
         featureName: "Timesheet",
         items: [
             { title: "All timesheets", url: "/dashboard/timesheet" },
-            { title: "Add timesheet", url: "/dashboard/timesheet/new" },
             { title: "Import timesheet", url: "/dashboard/timesheet/import" },
         ],
     },

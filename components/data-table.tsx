@@ -3,6 +3,7 @@
 import * as React from "react";
 import {
   ColumnDef,
+  ColumnFiltersState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -52,6 +53,7 @@ export function DataTable<TData, TValue>({
   }, [searchParams, searchParamKey]);
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = React.useState(initialFilter);
 
   React.useEffect(() => {
@@ -89,9 +91,11 @@ export function DataTable<TData, TValue>({
     },
     state: {
       sorting,
+      columnFilters,
       globalFilter,
     },
     onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
     getSortedRowModel: getSortedRowModel(),
     onGlobalFilterChange: handleFilterChange,
     getCoreRowModel: getCoreRowModel(),
@@ -146,7 +150,7 @@ export function DataTable<TData, TValue>({
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
+                  <TableHead key={header.id} className="align-middle">
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -157,6 +161,22 @@ export function DataTable<TData, TValue>({
                 ))}
               </TableRow>
             ))}
+            <TableRow>
+              {table.getHeaderGroups().at(-1)?.headers.map((header) => (
+                <TableHead key={`${header.id}-filter`} className="px-2 py-1">
+                  {header.column.getCanFilter() ? (
+                    <Input
+                      placeholder="Filter..."
+                      value={(header.column.getFilterValue() as string) ?? ""}
+                      onChange={(e) =>
+                        header.column.setFilterValue(e.target.value || undefined)
+                      }
+                      className="h-8 text-xs"
+                    />
+                  ) : null}
+                </TableHead>
+              ))}
+            </TableRow>
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows?.length ? (
@@ -166,7 +186,7 @@ export function DataTable<TData, TValue>({
                   data-state={row.getIsSelected() ? "selected" : undefined}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="align-middle">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),

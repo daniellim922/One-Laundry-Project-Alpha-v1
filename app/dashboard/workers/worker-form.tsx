@@ -741,6 +741,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                 {...field}
                                                 id={`${formId}-monthlyPay`}
                                                 type="number"
+                                                step="any"
                                                 min={0}
                                                 aria-invalid={
                                                     fieldState.invalid
@@ -776,6 +777,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                 {...field}
                                                 id={`${formId}-hourlyPay`}
                                                 type="number"
+                                                step="any"
                                                 min={0}
                                                 aria-invalid={
                                                     fieldState.invalid
@@ -847,6 +849,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                 {...field}
                                                 id={`${formId}-restDayPay`}
                                                 type="number"
+                                                step="any"
                                                 min={0}
                                                 aria-invalid={
                                                     fieldState.invalid
@@ -883,6 +886,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                 {...field}
                                                 id={`${formId}-minimumWorkingHours`}
                                                 type="number"
+                                                step="any"
                                                 min={0}
                                                 aria-invalid={
                                                     fieldState.invalid

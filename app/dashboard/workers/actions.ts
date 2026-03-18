@@ -17,13 +17,13 @@ function isoNow(): Date {
     return new Date();
 }
 
-function toInt(val: FormDataEntryValue | null): number | null {
+function toNumber(val: FormDataEntryValue | null): number | null {
     if (val == null) return null;
     const s = String(val).trim();
     if (!s) return null;
     const n = Number(s);
     if (Number.isNaN(n)) return null;
-    return Math.trunc(n);
+    return n;
 }
 
 type ActionResult =
@@ -53,12 +53,12 @@ export async function createWorker(formData: FormData): Promise<ActionResult> {
 
     const cpf =
         employmentArrangement === "Local Worker"
-            ? toInt(formData.get("cpf"))
+            ? toNumber(formData.get("cpf"))
             : null;
-    const monthlyPay = toInt(formData.get("monthlyPay"));
-    const hourlyPay = toInt(formData.get("hourlyPay"));
-    const restDayPay = toInt(formData.get("restDayPay"));
-    const minimumWorkingHours = toInt(formData.get("minimumWorkingHours"));
+    const monthlyPay = toNumber(formData.get("monthlyPay"));
+    const hourlyPay = toNumber(formData.get("hourlyPay"));
+    const restDayPay = toNumber(formData.get("restDayPay"));
+    const minimumWorkingHours = toNumber(formData.get("minimumWorkingHours"));
 
     const paymentMethodRaw = (formData.get("paymentMethod") ?? "")
         .toString()
@@ -80,7 +80,7 @@ export async function createWorker(formData: FormData): Promise<ActionResult> {
                 employmentArrangement,
                 cpf,
                 monthlyPay,
-                workingHours: minimumWorkingHours,
+                minimumWorkingHours,
                 hourlyPay,
                 restDayPay,
                 paymentMethod,
@@ -155,12 +155,12 @@ export async function updateWorker(
 
     const cpf =
         employmentArrangement === "Local Worker"
-            ? toInt(formData.get("cpf"))
+            ? toNumber(formData.get("cpf"))
             : null;
-    const monthlyPay = toInt(formData.get("monthlyPay"));
-    const hourlyPay = toInt(formData.get("hourlyPay"));
-    const restDayPay = toInt(formData.get("restDayPay"));
-    const minimumWorkingHours = toInt(formData.get("minimumWorkingHours"));
+    const monthlyPay = toNumber(formData.get("monthlyPay"));
+    const hourlyPay = toNumber(formData.get("hourlyPay"));
+    const restDayPay = toNumber(formData.get("restDayPay"));
+    const minimumWorkingHours = toNumber(formData.get("minimumWorkingHours"));
 
     const paymentMethodRaw = (formData.get("paymentMethod") ?? "")
         .toString()
@@ -197,7 +197,7 @@ export async function updateWorker(
                 employmentArrangement,
                 cpf,
                 monthlyPay,
-                workingHours: minimumWorkingHours,
+                minimumWorkingHours,
                 hourlyPay,
                 restDayPay,
                 paymentMethod,
