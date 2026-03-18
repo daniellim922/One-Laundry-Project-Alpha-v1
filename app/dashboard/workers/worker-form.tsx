@@ -59,8 +59,8 @@ const workerFormSchema = z
         race: z.string().optional(),
         cpf: z.string().optional(),
         monthlyPay: z.string().optional(),
-        hourlyPay: z.string().optional(),
-        restDayPay: z.string().optional(),
+        hourlyRate: z.string().optional(),
+        restDayRate: z.string().optional(),
         minimumWorkingHours: z.string().optional(),
         paymentMethod: z
             .enum(["PayNow", "Bank Transfer", "Cash"])
@@ -77,7 +77,7 @@ const workerFormSchema = z
 
         if (isFullTime) {
             const payFields: Array<{
-                key: "monthlyPay" | "hourlyPay" | "restDayPay" | "minimumWorkingHours";
+                key: "monthlyPay" | "hourlyRate" | "restDayRate" | "minimumWorkingHours";
                 requiredMessage: string;
                 positiveMessage: string;
             }> = [
@@ -89,18 +89,18 @@ const workerFormSchema = z
                         "Monthly pay must be a positive number",
                 },
                 {
-                    key: "hourlyPay",
+                    key: "hourlyRate",
                     requiredMessage:
-                        "Hourly pay is required for full time workers",
+                        "Hourly rate is required for full time workers",
                     positiveMessage:
-                        "Hourly pay must be a positive number",
+                        "Hourly rate must be a positive number",
                 },
                 {
-                    key: "restDayPay",
+                    key: "restDayRate",
                     requiredMessage:
-                        "Rest day pay is required for full time workers",
+                        "Rest day rate is required for full time workers",
                     positiveMessage:
-                        "Rest day pay must be a positive number",
+                        "Rest day rate must be a positive number",
                 },
                 {
                     key: "minimumWorkingHours",
@@ -136,24 +136,24 @@ const workerFormSchema = z
         }
 
         if (isPartTime) {
-            const rawValue = values.hourlyPay;
+            const rawValue = values.hourlyRate;
             const value = typeof rawValue === "string" ? rawValue.trim() : "";
 
             if (!value) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
-                    path: ["hourlyPay"],
+                    path: ["hourlyRate"],
                     message:
-                        "Hourly pay is required for part time workers",
+                        "Hourly rate is required for part time workers",
                 });
             } else {
                 const numericValue = Number(value);
                 if (!Number.isFinite(numericValue) || numericValue <= 0) {
                     ctx.addIssue({
                         code: z.ZodIssueCode.custom,
-                        path: ["hourlyPay"],
+                        path: ["hourlyRate"],
                         message:
-                            "Hourly pay must be a positive number",
+                            "Hourly rate must be a positive number",
                     });
                 }
             }
@@ -204,8 +204,8 @@ export type WorkerWithEmployment = {
     employmentArrangement: string;
     cpf: number | null;
     monthlyPay: number | null;
-    hourlyPay: number | null;
-    restDayPay: number | null;
+    hourlyRate: number | null;
+    restDayRate: number | null;
     minimumWorkingHours?: number | null;
     paymentMethod: string | null;
     payNowPhone: string | null;
@@ -232,8 +232,8 @@ function getDefaultValues(
         race: worker?.race ?? "",
         cpf: worker?.cpf?.toString() ?? "",
         monthlyPay: worker?.monthlyPay?.toString() ?? "",
-        hourlyPay: worker?.hourlyPay?.toString() ?? "",
-        restDayPay: worker?.restDayPay?.toString() ?? "",
+        hourlyRate: worker?.hourlyRate?.toString() ?? "",
+        restDayRate: worker?.restDayRate?.toString() ?? "",
         minimumWorkingHours: worker?.minimumWorkingHours?.toString() ?? "",
         paymentMethod: (worker?.paymentMethod ??
             "Cash") as WorkerFormValues["paymentMethod"],
@@ -762,20 +762,20 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                 />
                             )}
                             <Controller
-                                name="hourlyPay"
+                                name="hourlyRate"
                                 control={form.control}
                                 render={({ field, fieldState }) => (
                                     <Field
                                         data-invalid={fieldState.invalid}
                                         className="space-y-2">
                                         <FieldLabel
-                                            htmlFor={`${formId}-hourlyPay`}>
-                                            Hourly Pay
+                                            htmlFor={`${formId}-hourlyRate`}>
+                                            Hourly Rate
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupInput
                                                 {...field}
-                                                id={`${formId}-hourlyPay`}
+                                                id={`${formId}-hourlyRate`}
                                                 type="number"
                                                 step="any"
                                                 min={0}
@@ -834,20 +834,20 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                             )}
                             {employmentType === "Full Time" && (
                                 <Controller
-                                    name="restDayPay"
+                                    name="restDayRate"
                                     control={form.control}
                                     render={({ field, fieldState }) => (
                                         <Field
                                             data-invalid={fieldState.invalid}
                                             className="space-y-2">
                                             <FieldLabel
-                                                htmlFor={`${formId}-restDayPay`}>
-                                                Rest Day Pay
+                                                htmlFor={`${formId}-restDayRate`}>
+                                                Rest Day Rate
                                             </FieldLabel>
                                             <InputGroup>
                                             <InputGroupInput
                                                 {...field}
-                                                id={`${formId}-restDayPay`}
+                                                id={`${formId}-restDayRate`}
                                                 type="number"
                                                 step="any"
                                                 min={0}

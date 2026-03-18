@@ -11,8 +11,8 @@ export const employmentTable = pgTable("employment", {
     cpf: real("cpf"),
     monthlyPay: real("monthly_pay"),
     minimumWorkingHours: real("minimum_working_hours"),
-    hourlyPay: real("hourly_pay"),
-    restDayPay: real("rest_day_pay"),
+    hourlyRate: real("hourly_rate"),
+    restDayRate: real("rest_day_rate"),
     paymentMethod: text("payment_method", {
         enum: ["PayNow", "Bank Transfer", "Cash"] as const,
     }),

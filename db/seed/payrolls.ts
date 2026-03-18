@@ -1,6 +1,6 @@
 /**
- * Payroll seed entries for March 2025.
- * Computes totalHours, overtimeHours, totalPay, and cpf from the
+ * Payroll + voucher seed entries for March 2025.
+ * Computes totalHoursWorked, overtimeHours, totalPay, and cpf from the
  * timesheet seed data and each worker's employment terms.
  *
  * workerIndex references the workers array in workers.ts (0-based).
@@ -10,38 +10,42 @@
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
 
-const STANDARD_HOURS_PER_MONTH = 176;
-const OT_MULTIPLIER = 1.5;
 const REST_DAYS_MARCH_2025 = 5; // Sundays: Mar 2, 9, 16, 23, 30
 
-type PayrollEntry = {
+export type VoucherEntry = {
+    voucherNumber: number;
+    employmentType: string | null;
+    employmentArrangement: string | null;
+    monthlyPay: number | null;
+    minimumWorkingHours: number | null;
+    totalHoursWorked: number;
+    overtimeHours: number;
+    hourlyRate: number | null;
+    overtimePay: number;
+    restDays: number;
+    restDayRate: number | null;
+    restDayPay: number;
+    cpf: number;
+    totalPay: number;
+    paymentMethod: string | null;
+    payNowPhone: string | null;
+    bankAccountNumber: string | null;
+};
+
+export type PayrollEntry = {
     workerIndex: number;
     periodStart: string;
     periodEnd: string;
     payrollDate: string;
-    totalHours: number;
-    overtimeHours: number;
-    restDays: number;
-    cpf: number;
-    totalPay: number;
     status: "draft" | "approved" | "paid";
+    voucher: VoucherEntry;
 };
 
 function generatePayrolls(): PayrollEntry[] {
-    const hoursMap = new Map<
-        number,
-        { total: number; dailyHours: Map<string, number> }
-    >();
+    const hoursMap = new Map<number, number>();
 
     for (const t of timesheets) {
-        let entry = hoursMap.get(t.workerIndex);
-        if (!entry) {
-            entry = { total: 0, dailyHours: new Map() };
-            hoursMap.set(t.workerIndex, entry);
-        }
-        entry.total += t.hours;
-        const existing = entry.dailyHours.get(t.dateIn) ?? 0;
-        entry.dailyHours.set(t.dateIn, existing + t.hours);
+        hoursMap.set(t.workerIndex, (hoursMap.get(t.workerIndex) ?? 0) + t.hours);
     }
 
     const statusForIndex = (i: number): "draft" | "approved" | "paid" => {
@@ -54,32 +58,28 @@ function generatePayrolls(): PayrollEntry[] {
 
     for (let wi = 0; wi < workers.length; wi++) {
         const worker = workers[wi];
-        const hrs = hoursMap.get(wi);
-        const totalHours = hrs
-            ? Math.round(hrs.total * 100) / 100
+        const totalHoursWorked = Math.round((hoursMap.get(wi) ?? 0) * 100) / 100;
+
+        const minimumWorkingHours = worker.minimumWorkingHours ?? null;
+        const overtimeHours = minimumWorkingHours != null
+            ? Math.max(0, Math.round((totalHoursWorked - minimumWorkingHours) * 100) / 100)
             : 0;
-        const dailyHours = hrs
-            ? Array.from(hrs.dailyHours.values())
-            : [];
 
-        let overtimeHours = 0;
+        const hourlyRate = worker.hourlyRate ?? null;
+        const monthlyPay = worker.monthlyPay ?? null;
+        const restDayRate = worker.restDayRate ?? null;
+        const isPartTime = worker.employmentType === "Part Time";
+
         let totalPay = 0;
+        let overtimePay = 0;
+        let restDayPay = 0;
 
-        const hourlyPay = worker.hourlyPay;
-        const monthlyPay = worker.monthlyPay;
-
-        if (hourlyPay != null) {
-            totalPay = Math.round(totalHours * hourlyPay);
-        } else if (monthlyPay != null) {
-            const hourlyRate = monthlyPay / STANDARD_HOURS_PER_MONTH;
-            for (const h of dailyHours) {
-                if (h > 8) overtimeHours += h - 8;
-            }
-            overtimeHours = Math.round(overtimeHours * 100) / 100;
-            const overtimePay = Math.round(
-                overtimeHours * hourlyRate * OT_MULTIPLIER,
-            );
-            totalPay = monthlyPay + overtimePay;
+        if (isPartTime) {
+            totalPay = Math.round((hourlyRate ?? 0) * totalHoursWorked);
+        } else {
+            overtimePay = Math.round((hourlyRate ?? 0) * overtimeHours);
+            restDayPay = Math.round((restDayRate ?? 0) * REST_DAYS_MARCH_2025);
+            totalPay = (monthlyPay ?? 0) + overtimePay + restDayPay;
         }
 
         const cpf = worker.cpf ?? 0;
@@ -89,12 +89,26 @@ function generatePayrolls(): PayrollEntry[] {
             periodStart: "2025-03-01",
             periodEnd: "2025-03-31",
             payrollDate: "2025-04-05",
-            totalHours,
-            overtimeHours,
-            restDays: REST_DAYS_MARCH_2025,
-            cpf,
-            totalPay,
             status: statusForIndex(wi),
+            voucher: {
+                voucherNumber: parseInt(crypto.randomUUID().slice(0, 8), 16),
+                employmentType: worker.employmentType ?? null,
+                employmentArrangement: worker.employmentArrangement ?? null,
+                monthlyPay: monthlyPay,
+                minimumWorkingHours: minimumWorkingHours,
+                totalHoursWorked,
+                overtimeHours,
+                hourlyRate: hourlyRate,
+                overtimePay,
+                restDays: REST_DAYS_MARCH_2025,
+                restDayRate: restDayRate,
+                restDayPay,
+                cpf,
+                totalPay,
+                paymentMethod: worker.paymentMethod ?? null,
+                payNowPhone: worker.payNowPhone ?? null,
+                bankAccountNumber: worker.bankAccountNumber ?? null,
+            },
         });
     }
 

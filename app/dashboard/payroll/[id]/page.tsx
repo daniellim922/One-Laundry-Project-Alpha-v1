@@ -5,6 +5,7 @@ import Link from "next/link";
 import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payroll/payrollTable";
+import { payrollVoucherTable } from "@/db/tables/payroll/payrollVoucherTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { employmentTable } from "@/db/tables/payroll/employmentTable";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
@@ -14,6 +15,7 @@ import {
     Table,
     TableBody,
     TableCell,
+    TableFooter,
     TableHead,
     TableHeader,
     TableRow,
@@ -24,7 +26,9 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowLeft, MoreHorizontal, Pencil } from "lucide-react";
+import { MoreHorizontal, Pencil } from "lucide-react";
+import { PayrollHeader } from "./payroll-header";
+import { PaymentVoucher } from "./payment-voucher";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -55,16 +59,18 @@ export default async function PayrollDetailPage({ params }: PageProps) {
             payroll: payrollTable,
             worker: workerTable,
             employment: employmentTable,
+            voucher: payrollVoucherTable,
         })
         .from(payrollTable)
         .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id))
         .innerJoin(employmentTable, eq(workerTable.employmentId, employmentTable.id))
+        .innerJoin(payrollVoucherTable, eq(payrollTable.payrollVoucherId, payrollVoucherTable.id))
         .where(eq(payrollTable.id, id))
         .limit(1);
 
     if (!row) notFound();
 
-    const { payroll, worker, employment } = row;
+    const { payroll, worker, employment, voucher } = row;
 
     const entries = await db
         .select()
@@ -78,36 +84,11 @@ export default async function PayrollDetailPage({ params }: PageProps) {
         )
         .orderBy(timesheetTable.dateIn);
 
+    const monetaryKeys = ["monthlyPay", "hourlyRate", "overtimePay", "restDayRate", "restDayPay", "cpf", "totalPay"] as const;
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-4">
-                <Button variant="ghost" size="icon" asChild>
-                    <Link href="/dashboard/payroll">
-                        <ArrowLeft className="h-4 w-4" />
-                    </Link>
-                </Button>
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-                        {worker.name}
-                        <span
-                            className={`inline-flex rounded-full px-2 py-1 text-sm font-medium ${
-                                payroll.status === "paid"
-                                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
-                                    : payroll.status === "approved"
-                                      ? "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300"
-                                      : "bg-slate-100 text-slate-800 dark:bg-slate-500/20 dark:text-slate-300"
-                            }`}>
-                            {payroll.status}
-                        </span>
-                    </h1>
-                    <p className="text-muted-foreground">
-                        Period: {formatDate(payroll.periodStart)} –{" "}
-                        {formatDate(payroll.periodEnd)} | Payroll date:{" "}
-                        {formatDate(payroll.payrollDate)}
-                    </p>
-                </div>
-            </div>
+            <PayrollHeader payroll={payroll} workerName={worker.name} />
 
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -124,12 +105,12 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                         <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
                                 <Link href={`/dashboard/workers/${worker.id}/view`}>
-                                    View worker
+                                    View
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                                 <Link href={`/dashboard/workers/${worker.id}/edit`}>
-                                    Edit worker
+                                    Edit
                                 </Link>
                             </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -137,25 +118,100 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                        <div className="space-y-4">
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">Employment Type</p>
+                                <p className="text-sm font-medium">{employment.employmentType}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">Employment Arrangement</p>
+                                <p className="text-sm font-medium">{employment.employmentArrangement}</p>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">Monthly Pay</p>
+                                <p className="text-sm font-medium">
+                                    {employment.monthlyPay != null ? `$${employment.monthlyPay}` : "–"}
+                                </p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">Hourly Rate</p>
+                                <p className="text-sm font-medium">
+                                    {employment.hourlyRate != null ? `$${employment.hourlyRate}` : "–"}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">Rest Day Rate</p>
+                                <p className="text-sm font-medium">
+                                    {employment.restDayRate != null ? `$${employment.restDayRate}` : "–"}
+                                </p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">Minimum Working Hours</p>
+                                <p className="text-sm font-medium">
+                                    {employment.minimumWorkingHours ?? "–"}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <div className="space-y-1">
+                                <p className="text-sm text-muted-foreground">Payment Method</p>
+                                <p className="text-sm font-medium">{employment.paymentMethod ?? "–"}</p>
+                            </div>
+                            {employment.paymentMethod === "PayNow" && employment.payNowPhone && (
+                                <div className="space-y-1">
+                                    <p className="text-sm text-muted-foreground">PayNow Phone</p>
+                                    <p className="text-sm font-medium">{employment.payNowPhone}</p>
+                                </div>
+                            )}
+                            {employment.paymentMethod === "Bank Transfer" &&
+                                employment.bankAccountNumber && (
+                                    <div className="space-y-1">
+                                        <p className="text-sm text-muted-foreground">Bank Account</p>
+                                        <p className="text-sm font-medium">{employment.bankAccountNumber}</p>
+                                    </div>
+                                )}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Payroll Voucher</CardTitle>
+                    <p className="text-muted-foreground text-sm">
+                        Snapshot of employment terms at payroll generation
+                    </p>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                         {(
                             [
                                 { key: "employmentType", label: "Employment Type" },
                                 { key: "employmentArrangement", label: "Employment Arrangement" },
-                                { key: "cpf", label: "CPF" },
                                 { key: "monthlyPay", label: "Monthly Pay" },
+                                { key: "hourlyRate", label: "Hourly Rate" },
                                 { key: "minimumWorkingHours", label: "Minimum Working Hours" },
-                                { key: "hourlyPay", label: "Hourly Pay" },
+                                { key: "totalHoursWorked", label: "Total Hours Worked" },
+                                { key: "overtimeHours", label: "Overtime Hours" },
+                                { key: "overtimePay", label: "Overtime Pay" },
+                                { key: "restDays", label: "Rest Days" },
+                                { key: "restDayRate", label: "Rest Day Rate" },
                                 { key: "restDayPay", label: "Rest Day Pay" },
+                                { key: "cpf", label: "CPF" },
+                                { key: "totalPay", label: "Total Pay" },
                                 { key: "paymentMethod", label: "Payment Method" },
                                 { key: "payNowPhone", label: "PayNow Phone" },
                                 { key: "bankAccountNumber", label: "Bank Account Number" },
                             ] as const
                         )
-                            .filter(({ key }) => employment[key] != null)
+                            .filter(({ key }) => voucher[key] != null)
                             .map(({ key, label }) => {
-                                const raw = employment[key];
-                                const monetary = ["monthlyPay", "hourlyPay", "restDayPay"] as const;
-                                const display = (monetary as readonly string[]).includes(key)
+                                const raw = voucher[key];
+                                const display = (monetaryKeys as readonly string[]).includes(key)
                                     ? `$${raw}`
                                     : String(raw);
                                 return (
@@ -226,10 +282,27 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                                     </TableRow>
                                 ))}
                             </TableBody>
+                            <TableFooter>
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-right font-medium">
+                                        Total Working Hours
+                                    </TableCell>
+                                    <TableCell className="text-right font-medium">
+                                        {entries.reduce((sum, e) => sum + Number(e.hours), 0).toFixed(2)}
+                                    </TableCell>
+                                    <TableCell />
+                                </TableRow>
+                            </TableFooter>
                         </Table>
                     )}
                 </CardContent>
             </Card>
+
+            <PaymentVoucher
+                voucher={voucher}
+                payroll={payroll}
+                workerName={worker.name}
+            />
         </div>
     );
 }

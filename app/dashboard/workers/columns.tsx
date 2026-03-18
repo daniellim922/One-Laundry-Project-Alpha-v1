@@ -120,10 +120,10 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
                 : "—",
     },
     {
-        accessorKey: "hourlyPay",
-        header: sortableHeader("Hourly Pay"),
+        accessorKey: "hourlyRate",
+        header: sortableHeader("Hourly Rate"),
         cell: ({ row }) =>
-            row.original.hourlyPay != null ? `$${row.original.hourlyPay}` : "—",
+            row.original.hourlyRate != null ? `$${row.original.hourlyRate}` : "—",
     },
     {
         accessorKey: "paymentMethod",

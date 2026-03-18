@@ -99,62 +99,67 @@ export function calculateHoursFromTimes(timeIn: string, timeOut: string): number
     return Math.round((outHours - inHours) * 100) / 100;
 }
 
-/**
- * Standard hours per month for overtime calculation (22 days * 8 hours).
- */
-export const STANDARD_HOURS_PER_MONTH = 176;
+export interface PayCalcInput {
+    employmentType: "Full Time" | "Part Time";
+    totalHoursWorked: number;
+    minimumWorkingHours: number | null;
+    monthlyPay: number | null;
+    hourlyRate: number | null;
+    restDayRate: number | null;
+    restDays: number;
+}
+
+export interface PayCalcResult {
+    basePay: number;
+    overtimeHours: number;
+    overtimePay: number;
+    restDayPay: number;
+    totalPay: number;
+}
 
 /**
- * Overtime multiplier (1.5x).
+ * Part-time:  totalPay = hourlyRate * totalHoursWorked
+ * Full-time:  overtimePay = hourlyRate * overtimeHours
+ *             restDayPay  = restDayRate * restDays
+ *             totalPay    = monthlyPay + overtimePay + restDayPay
  */
-export const OT_MULTIPLIER = 1.5;
+export function calculatePay(input: PayCalcInput): PayCalcResult {
+    const {
+        employmentType,
+        totalHoursWorked,
+        minimumWorkingHours,
+        monthlyPay,
+        hourlyRate,
+        restDayRate,
+        restDays,
+    } = input;
 
-/**
- * Calculate pay for a worker based on total hours.
- * - Hourly: total_hours * hourlyPay
- * - Monthly: base salary + overtime (hours beyond 8/day at 1.5x based on monthly rate)
- */
-export function calculatePay(
-    totalHours: number,
-    dailyHours: number[],
-    monthlyPay: number | null,
-    hourlyPay: number | null,
-): { basePay: number; overtimePay: number; totalPay: number; breakdown: string } {
-    if (hourlyPay != null) {
-        const totalPay = Math.round(totalHours * hourlyPay);
+    const overtimeHours =
+        minimumWorkingHours != null
+            ? Math.max(0, totalHoursWorked - minimumWorkingHours)
+            : 0;
+
+    if (employmentType === "Part Time") {
+        const totalPay = Math.round((hourlyRate ?? 0) * totalHoursWorked);
         return {
             basePay: totalPay,
+            overtimeHours: 0,
             overtimePay: 0,
+            restDayPay: 0,
             totalPay,
-            breakdown: `${totalHours.toFixed(2)} hrs × $${hourlyPay} = $${totalPay}`,
         };
     }
-    if (monthlyPay != null) {
-        const basePay = monthlyPay;
-        const hourlyRate = monthlyPay / STANDARD_HOURS_PER_MONTH;
-        let overtimeHours = 0;
-        for (const h of dailyHours) {
-            if (h > 8) overtimeHours += h - 8;
-        }
-        const overtimePay = Math.round(
-            overtimeHours * hourlyRate * OT_MULTIPLIER,
-        );
-        const totalPay = basePay + overtimePay;
-        const breakdown =
-            overtimeHours > 0
-                ? `Base: $${basePay} + OT (${overtimeHours.toFixed(2)} hrs × $${hourlyRate.toFixed(2)} × 1.5) = $${totalPay}`
-                : `Monthly salary: $${basePay}`;
-        return {
-            basePay,
-            overtimePay,
-            totalPay,
-            breakdown,
-        };
-    }
+
+    const basePay = monthlyPay ?? 0;
+    const overtimePay = Math.round((hourlyRate ?? 0) * overtimeHours);
+    const restDayPay = Math.round((restDayRate ?? 0) * restDays);
+    const totalPay = basePay + overtimePay + restDayPay;
+
     return {
-        basePay: 0,
-        overtimePay: 0,
-        totalPay: 0,
-        breakdown: "No pay rate configured",
+        basePay,
+        overtimeHours,
+        overtimePay,
+        restDayPay,
+        totalPay,
     };
 }

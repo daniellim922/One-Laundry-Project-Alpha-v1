@@ -8,6 +8,7 @@ import type { AttendRecordOutput } from "@/lib/parse-attendrecord";
 import { calculateHoursFromDateTimes } from "@/lib/payroll-utils";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
+import { recalculateVouchersForWorker } from "@/app/dashboard/payroll/actions";
 
 function isoNow(): Date {
     return new Date();
@@ -78,6 +79,8 @@ export async function createTimesheetEntry(formData: FormData) {
         updatedAt: isoNow(),
     });
 
+    await recalculateVouchersForWorker(workerId);
+
     revalidatePath("/dashboard/timesheet");
     revalidatePath("/dashboard/payroll");
     return { success: true };
@@ -94,6 +97,12 @@ export async function updateTimesheetEntry(id: string, formData: FormData) {
         return { error: "Missing required fields" };
     }
 
+    const [oldEntry] = await db
+        .select({ workerId: timesheetTable.workerId })
+        .from(timesheetTable)
+        .where(eq(timesheetTable.id, id))
+        .limit(1);
+
     const hours = calculateHoursFromDateTimes(dateIn, timeIn, dateOut, timeOut);
 
     await db
@@ -109,6 +118,11 @@ export async function updateTimesheetEntry(id: string, formData: FormData) {
         })
         .where(eq(timesheetTable.id, id));
 
+    await recalculateVouchersForWorker(workerId);
+    if (oldEntry && oldEntry.workerId !== workerId) {
+        await recalculateVouchersForWorker(oldEntry.workerId);
+    }
+
     revalidatePath("/dashboard/timesheet");
     revalidatePath("/dashboard/payroll");
     return { success: true };
@@ -117,7 +131,15 @@ export async function updateTimesheetEntry(id: string, formData: FormData) {
 export async function deleteTimesheetEntry(id: string) {
     if (!id) return { error: "Missing id" };
 
+    const [entry] = await db
+        .select({ workerId: timesheetTable.workerId })
+        .from(timesheetTable)
+        .where(eq(timesheetTable.id, id))
+        .limit(1);
+
     await db.delete(timesheetTable).where(eq(timesheetTable.id, id));
+
+    if (entry) await recalculateVouchersForWorker(entry.workerId);
 
     revalidatePath("/dashboard/timesheet");
     revalidatePath("/dashboard/payroll");
@@ -182,6 +204,11 @@ export async function importTimesheetEntries(rows: ImportRow[]) {
 
     if (toInsert.length > 0) {
         await db.insert(timesheetTable).values(toInsert);
+
+        const affectedWorkerIds = [...new Set(toInsert.map((r) => r.workerId))];
+        for (const wid of affectedWorkerIds) {
+            await recalculateVouchersForWorker(wid);
+        }
     }
 
     revalidatePath("/dashboard/timesheet");
@@ -260,6 +287,11 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
 
     if (toInsert.length > 0) {
         await db.insert(timesheetTable).values(toInsert);
+
+        const affectedWorkerIds = [...new Set(toInsert.map((r) => r.workerId))];
+        for (const wid of affectedWorkerIds) {
+            await recalculateVouchersForWorker(wid);
+        }
     }
 
     revalidatePath("/dashboard/timesheet");

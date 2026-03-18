@@ -21,6 +21,10 @@ import {
     payrollTable,
     type InsertPayroll,
 } from "@/db/tables/payroll/payrollTable";
+import {
+    payrollVoucherTable,
+    type InsertPayrollVoucher,
+} from "@/db/tables/payroll/payrollVoucherTable";
 import { featuresTable } from "../tables/auth/featuresTable";
 import { rolesTable } from "@/db/tables/auth/rolesTable";
 import { rolePermissionsTable } from "@/db/tables/auth/rolePermissionsTable";
@@ -43,8 +47,8 @@ function splitWorkerSeed(seed: any): SplitWorkerSeed {
         cpf: seed.cpf ?? null,
         monthlyPay: seed.monthlyPay ?? null,
         minimumWorkingHours: seed.minimumWorkingHours ?? null,
-        hourlyPay: seed.hourlyPay ?? null,
-        restDayPay: seed.restDayPay ?? null,
+        hourlyRate: seed.hourlyRate ?? null,
+        restDayRate: seed.restDayRate ?? null,
         paymentMethod: seed.paymentMethod ?? null,
         payNowPhone: seed.payNowPhone ?? null,
         bankAccountNumber: seed.bankAccountNumber ?? null,
@@ -99,21 +103,30 @@ async function seedPayrolls(
     insertedWorkers: { id: string }[],
 ): Promise<void> {
     const now = new Date();
-    const payrollInserts: InsertPayroll[] = payrolls.map((p) => ({
-        workerId: insertedWorkers[p.workerIndex]!.id,
-        periodStart: p.periodStart,
-        periodEnd: p.periodEnd,
-        payrollDate: p.payrollDate,
-        totalHours: p.totalHours,
-        overtimeHours: p.overtimeHours,
-        restDays: p.restDays,
-        cpf: p.cpf,
-        totalPay: p.totalPay,
-        status: p.status,
-        createdAt: now,
-        updatedAt: now,
-    }));
-    await db.insert(payrollTable).values(payrollInserts);
+
+    for (const p of payrolls) {
+        const voucherInsert: InsertPayrollVoucher = {
+            ...p.voucher,
+            createdAt: now,
+            updatedAt: now,
+        };
+        const [insertedVoucher] = await db
+            .insert(payrollVoucherTable)
+            .values(voucherInsert)
+            .returning({ id: payrollVoucherTable.id });
+
+        const payrollInsert: InsertPayroll = {
+            workerId: insertedWorkers[p.workerIndex]!.id,
+            payrollVoucherId: insertedVoucher!.id,
+            periodStart: p.periodStart,
+            periodEnd: p.periodEnd,
+            payrollDate: p.payrollDate,
+            status: p.status,
+            createdAt: now,
+            updatedAt: now,
+        };
+        await db.insert(payrollTable).values(payrollInsert);
+    }
 }
 
 async function seedRolePermissions(): Promise<void> {
