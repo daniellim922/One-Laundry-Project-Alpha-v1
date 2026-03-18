@@ -30,6 +30,7 @@ import { MoreHorizontal, Pencil } from "lucide-react";
 import { PayrollHeader } from "./payroll-header";
 import { PaymentVoucher } from "./payment-voucher";
 import { VoucherEditableNumber } from "./voucher-editable-number";
+import { WorkerAdvances } from "../../workers/worker-advances";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -257,6 +258,8 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                     </div>
                 </CardContent>
             </Card>
+
+            <WorkerAdvances workerId={worker.id} status="loan" />
 
             <Card>
                 <CardHeader>

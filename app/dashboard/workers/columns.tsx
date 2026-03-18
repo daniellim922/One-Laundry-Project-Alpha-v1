@@ -1,9 +1,9 @@
 "use client";
 
-import type { ColumnDef } from "@tanstack/react-table";
+import type { Column, ColumnDef } from "@tanstack/react-table";
 import type { WorkerWithEmployment } from "@/db/tables/payroll/workerTable";
 import Link from "next/link";
-import { ArrowUpDown, Eye, MoreHorizontal, Pencil } from "lucide-react";
+import { ArrowUpDown, Banknote, Eye, MoreHorizontal, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -12,19 +12,20 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const sortableHeader =
-    (label: string) =>
-    ({ column }: { column: any }) => (
+function sortableHeader(label: string) {
+    const Header = <TData, TValue>({ column }: { column: Column<TData, TValue> }) => (
         <Button
             variant="ghost"
             className="px-0 font-semibold"
-            onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-            }>
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
             {label}
             <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
     );
+
+    Header.displayName = `SortableHeader(${label})`;
+    return Header;
+}
 
 const statusStyles: Record<string, string> = {
     Active: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
@@ -170,6 +171,14 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
                                 className="flex w-full items-center gap-2">
                                 <Pencil className="h-4 w-4" />
                                 Edit
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                            <Link
+                                href={`/dashboard/workers/${worker.id}/advance`}
+                                className="flex w-full items-center gap-2">
+                                <Banknote className="h-4 w-4" />
+                                Advance
                             </Link>
                         </DropdownMenuItem>
                     </DropdownMenuContent>

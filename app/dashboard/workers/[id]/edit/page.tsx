@@ -10,6 +10,7 @@ import {
     type WorkerWithEmployment,
 } from "../../worker-form";
 import { WorkerFormPageLayout } from "../../worker-form-page-layout";
+import { WorkerAdvances } from "../../worker-advances";
 
 interface PageProps {
     params: Promise<{
@@ -61,6 +62,7 @@ export default async function EditWorkerPage({ params }: PageProps) {
             title="Edit worker"
             description="Update this worker's details.">
             <WorkerForm worker={worker} />
+            <WorkerAdvances workerId={id} />
         </WorkerFormPageLayout>
     );
 }

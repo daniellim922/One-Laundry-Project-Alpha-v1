@@ -18,7 +18,7 @@ export const advanceTable = pgTable("advance", {
         .default("loan"),
 
     loanDate: date("loan_date").notNull().defaultNow(),
-    repaymentDate: date("repayment_date").notNull(),
+    repaymentDate: date("repayment_date"),
 
     workerId: uuid("worker_id")
         .notNull()
