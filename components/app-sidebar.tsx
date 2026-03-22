@@ -3,6 +3,7 @@
 import * as React from "react";
 import { usePathname } from "next/navigation";
 import {
+    Banknote,
     Command,
     DollarSign,
     FileSpreadsheet,
@@ -31,6 +32,7 @@ const ICON_MAP = {
     Workers: User,
     Timesheet: FileSpreadsheet,
     Payroll: Wallet,
+    Advance: Banknote,
     Expenses: DollarSign,
     IAM: Shield,
 } as const;
@@ -67,7 +69,14 @@ export function AppSidebar({
     items: {
         title: string;
         url: string;
-        iconName: "Home" | "Workers" | "Timesheet" | "Payroll" | "Expenses" | "IAM";
+        iconName:
+            | "Home"
+            | "Workers"
+            | "Timesheet"
+            | "Payroll"
+            | "Advance"
+            | "Expenses"
+            | "IAM";
         featureName: string;
         items?: { title: string; url: string }[];
     }[];

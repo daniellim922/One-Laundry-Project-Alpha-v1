@@ -9,9 +9,9 @@ import { auth } from "@/lib/auth";
 import { checkPermission } from "@/lib/permissions";
 import { db } from "@/lib/db";
 import { user, session } from "@/db/auth-schema";
-import { rolesTable } from "@/db/tables/rolesTable";
-import { rolePermissionsTable } from "@/db/tables/rolePermissionsTable";
-import { userRolesTable } from "@/db/tables/userRolesTable";
+import { rolesTable } from "@/db/tables/auth/rolesTable";
+import { rolePermissionsTable } from "@/db/tables/auth/rolePermissionsTable";
+import { userRolesTable } from "@/db/tables/auth/userRolesTable";
 
 const IAM_FEATURE = "IAM (Identity and Access Management)";
 

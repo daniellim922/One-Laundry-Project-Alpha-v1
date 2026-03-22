@@ -1,0 +1,612 @@
+"use client";
+
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Banknote, Check, ChevronsUpDown, Plus, Trash2 } from "lucide-react";
+
+import { createAdvance } from "@/app/dashboard/workers/[id]/advance/actions";
+import { Button } from "@/components/ui/button";
+import {
+    Card,
+    CardAction,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupInput,
+} from "@/components/ui/input-group";
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from "@/components/ui/command";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
+const formSchema = z
+    .object({
+        workerId: z.string().min(1, "Select an employee"),
+        loanDate: z
+            .string()
+            .min(1, "Date of request is required")
+            .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date"),
+        amount: z
+            .string()
+            .min(1, "Amount is required")
+            .refine((v) => Number.isInteger(Number(v)) && Number(v) > 0, {
+                message: "Amount must be a positive integer",
+            }),
+        purpose: z.string().optional(),
+        installmentAmounts: z.array(
+            z.object({
+                amount: z.string().optional(),
+                repaymentDate: z
+                    .string()
+                    .transform((v) => v.trim())
+                    .refine(
+                        (v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v),
+                        "Invalid date",
+                    ),
+            }),
+        ),
+        acknowledged: z
+            .boolean()
+            .refine((v) => v === true, {
+                message:
+                    "You must acknowledge the terms to submit this request",
+            }),
+    })
+    .superRefine((values, ctx) => {
+        values.installmentAmounts.forEach((row, i) => {
+            if (
+                row.repaymentDate &&
+                row.repaymentDate < values.loanDate
+            ) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["installmentAmounts", i, "repaymentDate"],
+                    message:
+                        "Expected repayment date must be on or after date of request",
+                });
+            }
+        });
+    });
+
+type FormValues = z.infer<typeof formSchema>;
+
+function todayIsoDate(): string {
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+const textareaClass = cn(
+    "placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex min-h-[100px] w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none md:text-sm",
+    "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+    "aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive",
+);
+
+export type AdvanceRequestWorkerOption = { id: string; name: string };
+
+function WorkerSearchSelect({
+    workers,
+    value,
+    onChange,
+    disabled,
+    id,
+    "aria-invalid": ariaInvalid,
+    "data-testid": dataTestId,
+}: {
+    workers: AdvanceRequestWorkerOption[];
+    value: string;
+    onChange: (workerId: string) => void;
+    disabled?: boolean;
+    id?: string;
+    "aria-invalid"?: boolean;
+    "data-testid"?: string;
+}) {
+    const [open, setOpen] = React.useState(false);
+    const selected = workers.find((w) => w.id === value);
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button
+                    id={id}
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    aria-invalid={ariaInvalid}
+                    data-testid={dataTestId}
+                    disabled={disabled}
+                    className="h-auto min-h-9 w-full justify-between py-2 font-normal">
+                    <span className="truncate text-left">
+                        {selected
+                            ? selected.name
+                            : "Search or select employee…"}
+                    </span>
+                    <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent
+                className="max-w-md min-w-[280px] p-0 sm:min-w-[320px]"
+                align="start">
+                <Command>
+                    <CommandInput placeholder="Search employees…" />
+                    <CommandList>
+                        <CommandEmpty>No employee found.</CommandEmpty>
+                        <CommandGroup>
+                            {workers.map((w) => (
+                                <CommandItem
+                                    key={w.id}
+                                    value={`${w.name} ${w.id}`}
+                                    onSelect={() => {
+                                        onChange(w.id);
+                                        setOpen(false);
+                                    }}>
+                                    <Check
+                                        className={cn(
+                                            "size-4 shrink-0",
+                                            value === w.id
+                                                ? "opacity-100"
+                                                : "opacity-0",
+                                        )}
+                                    />
+                                    {w.name}
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
+}
+
+export function AdvanceRequestForm({
+    workers,
+}: {
+    workers: AdvanceRequestWorkerOption[];
+}) {
+    const router = useRouter();
+    const [pending, setPending] = React.useState(false);
+    const [error, setError] = React.useState<string | null>(null);
+
+    const form = useForm<FormValues>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            workerId: "",
+            loanDate: todayIsoDate(),
+            amount: "",
+            purpose: "",
+            installmentAmounts: [{ amount: "", repaymentDate: "" }],
+            acknowledged: false,
+        },
+    });
+
+    const { fields, insert, remove } = useFieldArray({
+        control: form.control,
+        name: "installmentAmounts",
+    });
+
+    /** RHF `field.id` is not stable across SSR vs client; render rows only after mount. */
+    const [installmentRowsMounted, setInstallmentRowsMounted] =
+        React.useState(false);
+    React.useEffect(() => {
+        setInstallmentRowsMounted(true);
+    }, []);
+
+    const formId = "advance-request-form";
+
+    async function onSubmit(data: FormValues) {
+        setError(null);
+        setPending(true);
+
+        const rowDates = data.installmentAmounts
+            .map((r) => r.repaymentDate.trim())
+            .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d));
+        const repaymentDateForApi =
+            rowDates.length === 0
+                ? ""
+                : rowDates.reduce((a, b) => (a > b ? a : b));
+
+        const fd = new FormData();
+        fd.set("amount", data.amount);
+        fd.set("loanDate", data.loanDate);
+        fd.set("repaymentDate", repaymentDateForApi);
+        fd.set("status", "loan");
+
+        const result = await createAdvance(data.workerId, fd);
+        setPending(false);
+
+        if (!result.success) {
+            setError(result.error);
+            return;
+        }
+
+        router.push("/dashboard/advance");
+        router.refresh();
+    }
+
+    return (
+        <form
+            id={formId}
+            data-testid="advance-request-form"
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-6"
+            autoComplete="off">
+            {error ? (
+                <p className="text-destructive text-sm" role="alert">
+                    {error}
+                </p>
+            ) : null}
+
+            <FieldGroup className="gap-6">
+                <Card>
+                    <CardHeader className="border-b pb-4">
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wide">
+                            1. Advance information
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4 pt-4">
+                        <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+                            <Controller
+                                name="workerId"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        data-invalid={fieldState.invalid}
+                                        className="min-w-0 space-y-2">
+                                        <FieldLabel htmlFor={`${formId}-worker`}>
+                                            Employee
+                                        </FieldLabel>
+                                        <WorkerSearchSelect
+                                            workers={workers}
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            disabled={pending}
+                                            id={`${formId}-worker`}
+                                            data-testid="advance-request-worker"
+                                            aria-invalid={fieldState.invalid}
+                                        />
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
+                            />
+
+                            <Controller
+                                name="loanDate"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        data-invalid={fieldState.invalid}
+                                        className="min-w-0 space-y-2">
+                                        <FieldLabel htmlFor={`${formId}-loan-date`}>
+                                            Date of request
+                                        </FieldLabel>
+                                        <Input
+                                            {...field}
+                                            id={`${formId}-loan-date`}
+                                            type="date"
+                                            disabled={pending}
+                                            aria-invalid={fieldState.invalid}
+                                        />
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
+                            />
+                        </div>
+
+                        <Controller
+                            name="amount"
+                            control={form.control}
+                            render={({ field, fieldState }) => (
+                                <Field
+                                    data-invalid={fieldState.invalid}
+                                    className="space-y-2">
+                                    <FieldLabel htmlFor={`${formId}-amount`}>
+                                        Amount requested
+                                    </FieldLabel>
+                                    <InputGroup>
+                                        <InputGroupInput
+                                            {...field}
+                                            id={`${formId}-amount`}
+                                            type="number"
+                                            step={1}
+                                            min={1}
+                                            inputMode="numeric"
+                                            disabled={pending}
+                                            aria-invalid={fieldState.invalid}
+                                        />
+                                        <InputGroupAddon>
+                                            <Banknote className="size-4 text-muted-foreground" />
+                                        </InputGroupAddon>
+                                    </InputGroup>
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
+                                        />
+                                    )}
+                                </Field>
+                            )}
+                        />
+
+                        <Controller
+                            name="purpose"
+                            control={form.control}
+                            render={({ field }) => (
+                                <Field className="space-y-2">
+                                    <FieldLabel htmlFor={`${formId}-purpose`}>
+                                        Purpose of advance
+                                    </FieldLabel>
+                                    <textarea
+                                        {...field}
+                                        id={`${formId}-purpose`}
+                                        rows={4}
+                                        disabled={pending}
+                                        className={textareaClass}
+                                    />
+                                </Field>
+                            )}
+                        />
+                    </CardContent>
+                </Card>
+
+                <Card className="gap-4">
+                    <CardHeader className="border-b pb-2">
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wide">
+                            2. Repayment terms
+                        </CardTitle>
+                        {installmentRowsMounted && (
+                            <CardAction>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    disabled={pending}
+                                    aria-label="Add installment row"
+                                    className="border-white bg-white text-black hover:bg-white/90 dark:border-white dark:bg-transparent dark:text-white dark:hover:bg-white/10"
+                                    onClick={() =>
+                                        insert(fields.length, {
+                                            amount: "",
+                                            repaymentDate: "",
+                                        })
+                                    }>
+                                    <Plus className="size-4" />
+                                </Button>
+                            </CardAction>
+                        )}
+                    </CardHeader>
+                    <CardContent className="space-y-2 pt-2">
+                        {!installmentRowsMounted ? (
+                            <div
+                                className="space-y-2"
+                                aria-busy="true"
+                                data-testid="installment-rows-ssr-placeholder">
+                                <div className="hidden gap-x-2 sm:grid sm:grid-cols-[minmax(0,1fr)_12rem_2.25rem] sm:items-end">
+                                    <div className="bg-muted/30 h-4 w-32 max-w-full rounded" />
+                                    <div className="bg-muted/30 h-4 w-36 max-w-full rounded" />
+                                    <div className="size-9" aria-hidden />
+                                </div>
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_12rem_2.25rem] sm:items-center">
+                                    <div className="bg-muted/30 h-9 w-full rounded-md border border-dashed border-muted-foreground/20" />
+                                    <div className="bg-muted/30 h-9 w-full rounded-md border border-dashed border-muted-foreground/20" />
+                                    <div className="bg-muted/30 size-9 shrink-0 rounded-md border border-dashed border-muted-foreground/20" />
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <div className="hidden gap-x-2 text-sm leading-none font-medium sm:grid sm:grid-cols-[minmax(0,1fr)_12rem_2.25rem] sm:items-end">
+                                    <span id={`${formId}-installment-col`}>
+                                        Installment amount
+                                    </span>
+                                    <span id={`${formId}-repayment-col`}>
+                                        Expected repayment date
+                                    </span>
+                                    <span className="size-9 shrink-0" aria-hidden />
+                                </div>
+                                {fields.map((row, index) => (
+                                    <div
+                                        key={row.id}
+                                        role="group"
+                                        aria-label={`Installment row ${index + 1}`}
+                                        className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_12rem_2.25rem] sm:items-start">
+                                        <Controller
+                                            name={`installmentAmounts.${index}.amount`}
+                                            control={form.control}
+                                            render={({ field, fieldState }) => (
+                                                <Field
+                                                    data-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                    className="min-w-0 gap-1.5">
+                                                    <Input
+                                                        {...field}
+                                                        id={`${formId}-inst-${index}`}
+                                                        type="number"
+                                                        min={0}
+                                                        step={1}
+                                                        inputMode="decimal"
+                                                        disabled={pending}
+                                                        aria-labelledby={`${formId}-installment-col`}
+                                                        aria-invalid={
+                                                            fieldState.invalid
+                                                        }
+                                                    />
+                                                    {fieldState.invalid && (
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
+                                                    )}
+                                                </Field>
+                                            )}
+                                        />
+                                        <Controller
+                                            name={`installmentAmounts.${index}.repaymentDate`}
+                                            control={form.control}
+                                            render={({
+                                                field,
+                                                fieldState,
+                                            }) => (
+                                                <Field
+                                                    data-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                    className="min-w-0 gap-1.5">
+                                                    <Input
+                                                        {...field}
+                                                        id={`${formId}-repayment-${index}`}
+                                                        type="date"
+                                                        disabled={pending}
+                                                        aria-labelledby={`${formId}-repayment-col`}
+                                                        aria-invalid={
+                                                            fieldState.invalid
+                                                        }
+                                                    />
+                                                    {fieldState.invalid && (
+                                                        <FieldError
+                                                            errors={[
+                                                                fieldState.error,
+                                                            ]}
+                                                        />
+                                                    )}
+                                                </Field>
+                                            )}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            disabled={
+                                                pending || fields.length === 1
+                                            }
+                                            aria-label="Remove this installment row"
+                                            onClick={() => remove(index)}>
+                                            <Trash2 className="size-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="border-b pb-4">
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wide">
+                            3. Employee acknowledgment
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4 pt-4">
+                        <p className="text-muted-foreground text-sm leading-relaxed">
+                            I acknowledge that this advance is a loan and will be
+                            repaid according to the agreed terms. I authorize the
+                            company to deduct the repayment from my salary as
+                            specified.
+                        </p>
+                        <div className="space-y-4">
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="space-y-1">
+                                    <p className="text-muted-foreground text-sm">
+                                        Employee signature
+                                    </p>
+                                    <div className="border-muted-foreground/40 h-8 border-b" />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-muted-foreground text-sm">
+                                        Date
+                                    </p>
+                                    <div className="border-muted-foreground/40 h-8 border-b" />
+                                </div>
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="space-y-1">
+                                    <p className="text-muted-foreground text-sm">
+                                        Manager&apos;s signature
+                                    </p>
+                                    <div className="border-muted-foreground/40 h-8 border-b" />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-muted-foreground text-sm">
+                                        Date
+                                    </p>
+                                    <div className="border-muted-foreground/40 h-8 border-b" />
+                                </div>
+                            </div>
+                        </div>
+                        <Controller
+                            name="acknowledged"
+                            control={form.control}
+                            render={({ field, fieldState }) => (
+                                <Field
+                                    data-invalid={fieldState.invalid}
+                                    className="flex flex-row items-start gap-3">
+                                    <Checkbox
+                                        id={`${formId}-ack`}
+                                        checked={field.value === true}
+                                        onCheckedChange={(c) =>
+                                            field.onChange(c === true)
+                                        }
+                                        disabled={pending}
+                                        aria-invalid={fieldState.invalid}
+                                    />
+                                    <div className="grid gap-1.5 leading-none">
+                                        <Label
+                                            htmlFor={`${formId}-ack`}
+                                            className="cursor-pointer text-sm font-medium leading-snug">
+                                            I have read and agree to the above.
+                                        </Label>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </div>
+                                </Field>
+                            )}
+                        />
+                    </CardContent>
+                </Card>
+            </FieldGroup>
+
+            <div className="flex justify-end">
+                <Button
+                    type="submit"
+                    disabled={pending || workers.length === 0}
+                    data-testid="advance-request-submit">
+                    {pending ? "Submitting…" : "Submit request"}
+                </Button>
+            </div>
+        </form>
+    );
+}

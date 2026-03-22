@@ -1,20 +1,31 @@
 import { checkPermission } from "./permissions";
 
-export type NavItemSerializable = {
-    title: string;
-    url: string;
-    iconName: "Home" | "Workers" | "Timesheet" | "Payroll" | "Expenses" | "IAM";
-    featureName: string;
-};
-
 export type NavSubItem = {
     title: string;
     url: string;
 };
 
-export const NAV_ITEMS: (NavItemSerializable & {
+export type NavItemSerializable = {
+    title: string;
+    url: string;
+    iconName:
+        | "Home"
+        | "Workers"
+        | "Timesheet"
+        | "Payroll"
+        | "Expenses"
+        | "IAM"
+        | "Advance";
+    featureName: string;
     items?: NavSubItem[];
-})[] = [
+};
+
+type NavItemConfig = NavItemSerializable & {
+    /** When true, show in sidebar without IAM read check (featureName ignored for gating). */
+    alwaysVisible?: boolean;
+};
+
+export const NAV_ITEMS: NavItemConfig[] = [
     {
         title: "Home",
         url: "/dashboard",
@@ -52,6 +63,13 @@ export const NAV_ITEMS: (NavItemSerializable & {
         ],
     },
     {
+        title: "Advance",
+        url: "/dashboard/advance",
+        iconName: "Advance",
+        featureName: "Advance",
+        alwaysVisible: true,
+    },
+    {
         title: "Expenses",
         url: "/dashboard/expenses",
         iconName: "Expenses",
@@ -73,14 +91,28 @@ export const NAV_ITEMS: (NavItemSerializable & {
 /**
  * Returns nav items the user has read permission for (serializable, no icon components).
  */
+function toSerializable(item: NavItemConfig): NavItemSerializable {
+    const { alwaysVisible: _a, ...rest } = item;
+    return rest;
+}
+
 export async function getVisibleNavItems(
     userId: string,
 ): Promise<NavItemSerializable[]> {
     const results = await Promise.all(
-        NAV_ITEMS.map(async (item) => ({
-            item,
-            hasAccess: await checkPermission(userId, item.featureName, "read"),
-        })),
+        NAV_ITEMS.map(async (item) => {
+            if (item.alwaysVisible) {
+                return { item, hasAccess: true as const };
+            }
+            return {
+                item,
+                hasAccess: await checkPermission(
+                    userId,
+                    item.featureName,
+                    "read",
+                ),
+            };
+        }),
     );
-    return results.filter((r) => r.hasAccess).map((r) => r.item);
+    return results.filter((r) => r.hasAccess).map((r) => toSerializable(r.item));
 }

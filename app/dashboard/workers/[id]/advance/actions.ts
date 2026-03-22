@@ -79,6 +79,7 @@ export async function createAdvance(
 
         revalidatePath("/dashboard/workers");
         revalidatePath(`/dashboard/workers/${workerId}/view`);
+        revalidatePath("/dashboard/advance");
 
         return { success: true };
     } catch (error) {

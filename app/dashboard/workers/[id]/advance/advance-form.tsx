@@ -39,8 +39,7 @@ const advanceFormSchema = z
             .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date"),
         repaymentDate: z
             .string()
-            .optional()
-            .transform((v) => (typeof v === "string" ? v.trim() : ""))
+            .transform((v) => v.trim())
             .refine((v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v), "Invalid date"),
     })
     .superRefine((values, ctx) => {
