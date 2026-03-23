@@ -186,13 +186,35 @@ export function PaymentVoucher({
               ? `Bank Transfer (${voucher.bankAccountNumber})`
               : baseMethod;
 
+    function handlePrint() {
+        const originalTitle = document.title;
+        const safeName = workerName.replace(/[/\\:*?"<>|]/g, "-");
+        const customTitle = `${safeName}: ${payroll.periodStart}-${payroll.periodEnd}`;
+
+        const beforePrint = () => {
+            document.title = customTitle;
+        };
+        const afterPrint = () => {
+            document.title = originalTitle;
+            window.removeEventListener("beforeprint", beforePrint);
+            window.removeEventListener("afterprint", afterPrint);
+        };
+
+        window.addEventListener("beforeprint", beforePrint);
+        window.addEventListener("afterprint", afterPrint);
+        document.title = customTitle;
+        requestAnimationFrame(() => {
+            setTimeout(() => window.print(), 100);
+        });
+    }
+
     return (
         <div className="space-y-3">
             <div className="flex justify-end print:hidden">
                 <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.print()}>
+                    onClick={handlePrint}>
                     <Printer className="mr-2 h-4 w-4" />
                     Print Voucher
                 </Button>
