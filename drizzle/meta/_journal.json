@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1773743565538,
+      "tag": "0000_yellow_ultimates",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1742288400000,
+      "tag": "0001_employment_decimal_rename",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1742302800000,
+      "tag": "0002_payroll_voucher",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1742389200000,
+      "tag": "0003_move_rest_days_to_voucher",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1742475600000,
+      "tag": "0004_rename_pay_to_rate",
+      "breakpoints": true
+    }
+  ]
+}

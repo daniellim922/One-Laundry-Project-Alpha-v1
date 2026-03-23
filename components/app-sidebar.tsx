@@ -1,79 +1,107 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import * as React from "react";
+import { usePathname } from "next/navigation";
 import {
-  Clock,
-  CreditCard,
-  LayoutDashboard,
-  Receipt,
-  Shield,
-  Users,
-} from "lucide-react"
+    Banknote,
+    DollarSign,
+    FileSpreadsheet,
+    Home,
+    Shield,
+    Shirt,
+    User,
+    Wallet,
+} from "lucide-react";
+
+import { NavMain } from "@/components/nav-main";
+import { NavUser } from "@/components/nav-user";
+import { SidebarModeToggle } from "@/components/theme-switcher";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar"
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+    SidebarRail,
+} from "@/components/ui/sidebar";
 
-const navItems = [
-  { title: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { title: "Workers", href: "/dashboard/workers", icon: Users },
-  { title: "Payrolls", href: "/dashboard/payrolls", icon: CreditCard },
-  { title: "Expenses", href: "/dashboard/expenses", icon: Receipt },
-  { title: "Timesheets", href: "/dashboard/timesheets", icon: Clock },
-  {
-    title: "Identity Access Management",
-    href: "/dashboard/iam",
-    icon: Shield,
-  },
-]
+const ICON_MAP = {
+    Home,
+    Workers: User,
+    Timesheet: FileSpreadsheet,
+    Payroll: Wallet,
+    Advance: Banknote,
+    Expenses: DollarSign,
+    IAM: Shield,
+} as const;
 
-export function AppSidebar() {
-  const pathname = usePathname()
 
-  return (
-    <Sidebar>
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard">
-                <span className="font-semibold">One Laundry</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarMenu>
-            {navItems.map((item) => {
-              const isActive = pathname === item.href
-              return (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={isActive}
-                    tooltip={item.title}
-                  >
-                    <Link href={item.href}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )
-            })}
-          </SidebarMenu>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
-  )
+export function AppSidebar({
+    items,
+    ...props
+}: React.ComponentProps<typeof Sidebar> & {
+    items: {
+        title: string;
+        url: string;
+        iconName:
+            | "Home"
+            | "Workers"
+            | "Timesheet"
+            | "Payroll"
+            | "Advance"
+            | "Expenses"
+            | "IAM";
+        featureName: string;
+        items?: { title: string; url: string }[];
+    }[];
+}) {
+    const pathname = usePathname();
+
+    const navItemsWithIcons = React.useMemo(() => {
+        return items.map((item) => {
+            const subItems = "items" in item ? item.items : undefined;
+            const isActive =
+                pathname === item.url ||
+                pathname.startsWith(item.url + "/") ||
+                (subItems?.some(
+                    (s) => pathname === s.url || pathname.startsWith(s.url + "/")
+                ) ?? false);
+            return {
+                ...item,
+                icon: ICON_MAP[item.iconName],
+                items: subItems,
+                isActive,
+            };
+        });
+    }, [items, pathname]);
+    return (
+        <Sidebar collapsible="icon" variant="inset" {...props}>
+            <SidebarHeader>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton size="lg" asChild>
+                            <div className="flex w-full items-center gap-2">
+                                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                                    <Shirt className="size-4" />
+                                </div>
+                                <span className="truncate font-medium">
+                                    One Laundry
+                                </span>
+                            </div>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarHeader>
+            <SidebarContent>
+                <NavMain items={navItemsWithIcons} />
+            </SidebarContent>
+            <SidebarFooter>
+                <SidebarModeToggle />
+                <NavUser />
+            </SidebarFooter>
+            <SidebarRail />
+        </Sidebar>
+    );
 }
