@@ -36,6 +36,7 @@ import {
 import { MoreHorizontal, Pencil } from "lucide-react";
 import { PayrollHeader } from "./payroll-header";
 import { PaymentVoucher } from "./payment-voucher";
+import { SummarizedTimesheet } from "./summarized-timesheet";
 import { VoucherEditableNumber } from "./voucher-editable-number";
 
 interface PageProps {
@@ -143,9 +144,11 @@ export default async function PayrollDetailPage({ params }: PageProps) {
 
     return (
         <div className="space-y-6">
-            <PayrollHeader payroll={payroll} workerName={worker.name} />
+            <div className="print:hidden">
+                <PayrollHeader payroll={payroll} workerName={worker.name} />
+            </div>
 
-            <Card>
+            <Card className="print:hidden">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0">
                     <CardTitle>Employment breakdown</CardTitle>
                     <DropdownMenu>
@@ -271,7 +274,7 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="print:hidden">
                 <CardHeader>
                     <CardTitle>Payroll Voucher</CardTitle>
                     <p className="text-muted-foreground text-sm">
@@ -613,7 +616,7 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="print:hidden">
                 <CardHeader>
                     <CardTitle>Timesheet</CardTitle>
                     <p className="text-muted-foreground text-sm">
@@ -720,11 +723,18 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                 </CardContent>
             </Card>
 
-            <PaymentVoucher
-                voucher={voucher}
-                payroll={payroll}
-                workerName={worker.name}
-            />
+            <div className="space-y-3 printable-payroll print:bg-white">
+                <PaymentVoucher
+                    voucher={voucher}
+                    payroll={payroll}
+                    workerName={worker.name}
+                />
+                <SummarizedTimesheet
+                    entries={entries}
+                    payroll={payroll}
+                    workerName={worker.name}
+                />
+            </div>
         </div>
     );
 }

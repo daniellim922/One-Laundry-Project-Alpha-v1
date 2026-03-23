@@ -29,17 +29,44 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { authClient } from "@/lib/auth-client"
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
-}) {
+function getInitials(name: string): string {
+  return (
+    name
+      .split(/\s+/)
+      .map((p) => p[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "?"
+  )
+}
+
+export function NavUser() {
   const { isMobile } = useSidebar()
+  const { data: session, isPending } = authClient.useSession()
+
+  if (isPending) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton size="lg" className="pointer-events-none">
+            <div className="size-8 animate-pulse rounded-lg bg-sidebar-accent" />
+            <div className="grid flex-1 gap-1">
+              <div className="h-3 w-24 animate-pulse rounded bg-sidebar-accent" />
+              <div className="h-2 w-32 animate-pulse rounded bg-sidebar-accent" />
+            </div>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    )
+  }
+
+  if (!session?.user) {
+    return null
+  }
+
+  const user = session.user
 
   return (
     <SidebarMenu>
@@ -51,8 +78,10 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarImage src={user.image ?? undefined} alt={user.name} />
+                <AvatarFallback className="rounded-lg">
+                  {getInitials(user.name)}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{user.name}</span>
@@ -70,8 +99,10 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarImage src={user.image ?? undefined} alt={user.name} />
+                  <AvatarFallback className="rounded-lg">
+                    {getInitials(user.name)}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>

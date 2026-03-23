@@ -4,27 +4,26 @@ import * as React from "react";
 import { usePathname } from "next/navigation";
 import {
     Banknote,
-    Command,
     DollarSign,
     FileSpreadsheet,
-    GalleryVerticalEnd,
     Home,
-    Layout,
     Shield,
+    Shirt,
     User,
     Wallet,
 } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
-import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
 import { SidebarModeToggle } from "@/components/theme-switcher";
-import { TeamSwitcher } from "@/components/team-switcher";
 import {
     Sidebar,
     SidebarContent,
     SidebarFooter,
     SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
     SidebarRail,
 } from "@/components/ui/sidebar";
 
@@ -38,30 +37,6 @@ const ICON_MAP = {
     IAM: Shield,
 } as const;
 
-const PROJECT_ICON_MAP = {
-    Layout,
-    Users: User,
-    DollarSign,
-    FileSpreadsheet,
-} as const;
-
-const PROJECTS = [
-    { name: "Design Engineering", url: "/dashboard", iconName: "Layout" as const },
-    { name: "Operations", url: "/dashboard/workers", iconName: "Users" as const },
-    { name: "Finance", url: "/dashboard/expenses", iconName: "DollarSign" as const },
-];
-
-const data = {
-    user: {
-        name: "shadcn",
-        email: "m@example.com",
-        avatar: "/avatars/shadcn.jpg",
-    },
-    teams: [
-        { name: "Acme Inc", logo: GalleryVerticalEnd, plan: "Enterprise" },
-        { name: "Acme Corp.", logo: Command, plan: "Startup" },
-    ],
-};
 
 export function AppSidebar({
     items,
@@ -101,27 +76,30 @@ export function AppSidebar({
             };
         });
     }, [items, pathname]);
-    const projectsWithIcons = React.useMemo(
-        () =>
-            PROJECTS.map((p) => ({
-                ...p,
-                icon: PROJECT_ICON_MAP[p.iconName],
-            })),
-        [],
-    );
-
     return (
         <Sidebar collapsible="icon" variant="inset" {...props}>
             <SidebarHeader>
-                <TeamSwitcher teams={data.teams} />
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton size="lg" asChild>
+                            <div className="flex w-full items-center gap-2">
+                                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                                    <Shirt className="size-4" />
+                                </div>
+                                <span className="truncate font-medium">
+                                    One Laundry
+                                </span>
+                            </div>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
             </SidebarHeader>
             <SidebarContent>
                 <NavMain items={navItemsWithIcons} />
-                <NavProjects projects={projectsWithIcons} />
             </SidebarContent>
             <SidebarFooter>
                 <SidebarModeToggle />
-                <NavUser user={data.user} />
+                <NavUser />
             </SidebarFooter>
             <SidebarRail />
         </Sidebar>
