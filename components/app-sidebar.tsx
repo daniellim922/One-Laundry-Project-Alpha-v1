@@ -18,6 +18,7 @@ import {
 import { NavMain } from "@/components/nav-main";
 import { NavProjects } from "@/components/nav-projects";
 import { NavUser } from "@/components/nav-user";
+import { SidebarModeToggle } from "@/components/theme-switcher";
 import { TeamSwitcher } from "@/components/team-switcher";
 import {
     Sidebar,
@@ -119,6 +120,7 @@ export function AppSidebar({
                 <NavProjects projects={projectsWithIcons} />
             </SidebarContent>
             <SidebarFooter>
+                <SidebarModeToggle />
                 <NavUser user={data.user} />
             </SidebarFooter>
             <SidebarRail />

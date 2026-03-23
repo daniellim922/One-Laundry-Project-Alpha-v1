@@ -16,10 +16,8 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
     InputGroup,
     InputGroupAddon,
@@ -38,6 +36,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import { SignaturePad } from "@/components/ui/signature-pad";
 import { cn } from "@/lib/utils";
 
 const formSchema = z
@@ -66,12 +65,18 @@ const formSchema = z
                     ),
             }),
         ),
-        acknowledged: z
-            .boolean()
-            .refine((v) => v === true, {
-                message:
-                    "You must acknowledge the terms to submit this request",
-            }),
+        employeeSignature: z.string().optional(),
+        managerSignature: z.string().optional(),
+        employeeSignatureDate: z
+            .string()
+            .transform((v) => v.trim())
+            .refine((v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v), "Invalid date")
+            .optional(),
+        managerSignatureDate: z
+            .string()
+            .transform((v) => v.trim())
+            .refine((v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v), "Invalid date")
+            .optional(),
     })
     .superRefine((values, ctx) => {
         values.installmentAmounts.forEach((row, i) => {
@@ -200,7 +205,10 @@ export function AdvanceRequestForm({
             amount: "",
             purpose: "",
             installmentAmounts: [{ amount: "", repaymentDate: "" }],
-            acknowledged: false,
+            employeeSignature: "",
+            managerSignature: "",
+            employeeSignatureDate: "",
+            managerSignatureDate: "",
         },
     });
 
@@ -540,13 +548,36 @@ export function AdvanceRequestForm({
                                     <p className="text-muted-foreground text-sm">
                                         Employee signature
                                     </p>
-                                    <div className="border-muted-foreground/40 h-8 border-b" />
+                                    <Controller
+                                        name="employeeSignature"
+                                        control={form.control}
+                                        render={({ field }) => (
+                                            <SignaturePad
+                                                value={field.value ?? ""}
+                                                onChange={field.onChange}
+                                                disabled={pending}
+                                                aria-label="Employee signature"
+                                            />
+                                        )}
+                                    />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-muted-foreground text-sm">
+                                    <FieldLabel htmlFor={`${formId}-employee-sig-date`} className="text-muted-foreground font-normal">
                                         Date
-                                    </p>
-                                    <div className="border-muted-foreground/40 h-8 border-b" />
+                                    </FieldLabel>
+                                    <Controller
+                                        name="employeeSignatureDate"
+                                        control={form.control}
+                                        render={({ field }) => (
+                                            <Input
+                                                {...field}
+                                                id={`${formId}-employee-sig-date`}
+                                                type="date"
+                                                disabled={pending}
+                                                value={field.value ?? ""}
+                                            />
+                                        )}
+                                    />
                                 </div>
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2">
@@ -554,47 +585,39 @@ export function AdvanceRequestForm({
                                     <p className="text-muted-foreground text-sm">
                                         Manager&apos;s signature
                                     </p>
-                                    <div className="border-muted-foreground/40 h-8 border-b" />
+                                    <Controller
+                                        name="managerSignature"
+                                        control={form.control}
+                                        render={({ field }) => (
+                                            <SignaturePad
+                                                value={field.value ?? ""}
+                                                onChange={field.onChange}
+                                                disabled={pending}
+                                                aria-label="Manager signature"
+                                            />
+                                        )}
+                                    />
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-muted-foreground text-sm">
+                                    <FieldLabel htmlFor={`${formId}-manager-sig-date`} className="text-muted-foreground font-normal">
                                         Date
-                                    </p>
-                                    <div className="border-muted-foreground/40 h-8 border-b" />
+                                    </FieldLabel>
+                                    <Controller
+                                        name="managerSignatureDate"
+                                        control={form.control}
+                                        render={({ field }) => (
+                                            <Input
+                                                {...field}
+                                                id={`${formId}-manager-sig-date`}
+                                                type="date"
+                                                disabled={pending}
+                                                value={field.value ?? ""}
+                                            />
+                                        )}
+                                    />
                                 </div>
                             </div>
                         </div>
-                        <Controller
-                            name="acknowledged"
-                            control={form.control}
-                            render={({ field, fieldState }) => (
-                                <Field
-                                    data-invalid={fieldState.invalid}
-                                    className="flex flex-row items-start gap-3">
-                                    <Checkbox
-                                        id={`${formId}-ack`}
-                                        checked={field.value === true}
-                                        onCheckedChange={(c) =>
-                                            field.onChange(c === true)
-                                        }
-                                        disabled={pending}
-                                        aria-invalid={fieldState.invalid}
-                                    />
-                                    <div className="grid gap-1.5 leading-none">
-                                        <Label
-                                            htmlFor={`${formId}-ack`}
-                                            className="cursor-pointer text-sm font-medium leading-snug">
-                                            I have read and agree to the above.
-                                        </Label>
-                                        {fieldState.invalid && (
-                                            <FieldError
-                                                errors={[fieldState.error]}
-                                            />
-                                        )}
-                                    </div>
-                                </Field>
-                            )}
-                        />
                     </CardContent>
                 </Card>
             </FieldGroup>

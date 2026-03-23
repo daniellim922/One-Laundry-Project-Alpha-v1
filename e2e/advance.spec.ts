@@ -54,10 +54,6 @@ test.describe("Advance dashboard", () => {
 
         await page.getByLabel("Amount requested").fill("777");
 
-        await page
-            .getByRole("checkbox", { name: /I have read and agree/i })
-            .click();
-
         await page.getByTestId("advance-request-submit").click();
 
         await expect(page).toHaveURL(/\/dashboard\/advance$/);
