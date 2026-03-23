@@ -2,6 +2,13 @@ import { notFound } from "next/navigation";
 import { eq, and, gte, lte } from "drizzle-orm";
 import Link from "next/link";
 
+import {
+    advanceDetailPath,
+    advanceStatusBadgeClass,
+    formatAdvanceAmount,
+    formatAdvanceDate,
+} from "@/lib/advance-display";
+import { getAdvancesForPayrollPeriod } from "@/lib/advances-queries";
 import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payroll/payrollTable";
@@ -127,6 +134,12 @@ export default async function PayrollDetailPage({ params }: PageProps) {
             cursor.setDate(cursor.getDate() + 1);
         }
     }
+
+    const advances = await getAdvancesForPayrollPeriod(
+        payroll.workerId,
+        payroll.periodStart,
+        payroll.periodEnd,
+    );
 
     return (
         <div className="space-y-6">
@@ -482,11 +495,78 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                     <Card className="border bg-muted/10 gap-2 py-3">
                         <CardHeader className="px-4 pb-0">
                             <CardTitle className="text-sm font-semibold">
+                                Advances
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="px-4 pt-1">
+                            {advances.length === 0 ? (
+                                <p className="text-muted-foreground text-sm">
+                                    No advances due in this period.
+                                </p>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>
+                                                Repayment Date
+                                            </TableHead>
+                                            <TableHead className="text-right">
+                                                Amount
+                                            </TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead>Advance Request</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {advances.map((adv) => (
+                                            <TableRow key={adv.id}>
+                                                <TableCell>
+                                                    {adv.repaymentDate
+                                                        ? formatAdvanceDate(
+                                                              adv.repaymentDate,
+                                                          )
+                                                        : "–"}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    {formatAdvanceAmount(
+                                                        adv.amount,
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <span
+                                                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                                                            advanceStatusBadgeClass[
+                                                                adv.status
+                                                            ] ?? ""
+                                                        }`}>
+                                                        {adv.status}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Link
+                                                        href={advanceDetailPath(
+                                                            adv.advanceRequestId,
+                                                        )}
+                                                        className="text-primary text-sm underline-offset-4 hover:underline">
+                                                        View
+                                                    </Link>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border bg-muted/10 gap-2 py-3">
+                        <CardHeader className="px-4 pb-0">
+                            <CardTitle className="text-sm font-semibold">
                                 Totals
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="px-4 pt-1">
-                            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                            <div className="grid grid-cols-4 gap-4">
                                 <div className="space-y-1">
                                     <p className="text-sm text-muted-foreground">
                                         Total Pay
@@ -507,7 +587,17 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                                             : "–"}
                                     </p>
                                 </div>
-                                <div className="space-y-1 md:col-span-2">
+                                <div className="space-y-1">
+                                    <p className="text-sm text-muted-foreground">
+                                        Advance
+                                    </p>
+                                    <p className="text-sm font-medium">
+                                        {voucher.advance != null
+                                            ? `$${voucher.advance}`
+                                            : "–"}
+                                    </p>
+                                </div>
+                                <div className="space-y-1">
                                     <p className="text-sm text-muted-foreground">
                                         Net Pay
                                     </p>
@@ -538,7 +628,7 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                                 {missingDateIns.map((k) => (
                                     <span
                                         key={k}
-                                        className="inline-flex items-center rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 dark:bg-amber-500/20 dark:text-amber-300">
+                                        className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-500/20 dark:text-blue-300">
                                         {formatDate(dateFromKey(k))}
                                     </span>
                                 ))}

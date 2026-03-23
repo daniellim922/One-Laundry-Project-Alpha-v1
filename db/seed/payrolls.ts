@@ -34,6 +34,7 @@ export type VoucherEntry = {
     publicHolidays: number;
     publicHolidayPay: number;
     cpf: number;
+    advance: number;
     totalPay: number;
     netPay: number;
     paymentMethod: string | null;
@@ -100,12 +101,13 @@ function generatePayrolls(): PayrollEntry[] {
         }
 
         const cpf = worker.cpf ?? 0;
+        const advance = 0;
         const hoursNotMetDeduction =
             hoursNotMet != null && hoursNotMet !== 0
                 ? -roundMoney(Math.max(0, -hoursNotMet) * (hourlyRate ?? 0))
                 : 0;
         totalPay = roundMoney(totalPay + hoursNotMetDeduction);
-        const netPay = roundMoney(totalPay - cpf);
+        const netPay = roundMoney(totalPay - cpf - advance);
 
         payrolls.push({
             workerIndex: wi,
@@ -131,6 +133,7 @@ function generatePayrolls(): PayrollEntry[] {
                 publicHolidays,
                 publicHolidayPay,
                 cpf,
+                advance,
                 totalPay,
                 netPay,
                 paymentMethod: worker.paymentMethod ?? null,

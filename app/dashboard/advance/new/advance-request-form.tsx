@@ -39,6 +39,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { SignaturePad } from "@/components/ui/signature-pad";
+import { formatAdvanceAmount } from "@/lib/advance-display";
 import { cn } from "@/lib/utils";
 
 const formSchema = z
@@ -82,6 +83,9 @@ const formSchema = z
     })
     .superRefine((values, ctx) => {
         let hasValidInstallment = false;
+        const amountRequested = Number(values.amount);
+        const validInstallmentAmounts: number[] = [];
+
         values.installmentAmounts.forEach((row, i) => {
             if (
                 row.repaymentDate &&
@@ -104,6 +108,19 @@ const formSchema = z
                     });
                 } else {
                     hasValidInstallment = true;
+                    validInstallmentAmounts.push(amt);
+
+                    if (
+                        Number.isInteger(amountRequested) &&
+                        amountRequested > 0 &&
+                        amt > amountRequested
+                    ) {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            path: ["installmentAmounts", i, "amount"],
+                            message: `Installment amount cannot exceed amount requested ($${amountRequested})`,
+                        });
+                    }
                 }
             }
         });
@@ -113,6 +130,21 @@ const formSchema = z
                 path: ["installmentAmounts"],
                 message: "At least one installment with amount and repayment date is required",
             });
+        } else if (
+            Number.isInteger(amountRequested) &&
+            amountRequested > 0
+        ) {
+            const totalInstallments = validInstallmentAmounts.reduce(
+                (sum, a) => sum + a,
+                0,
+            );
+            if (totalInstallments !== amountRequested) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["installmentAmounts"],
+                    message: `Total of installments ($${totalInstallments}) must equal amount requested ($${amountRequested})`,
+                });
+            }
         }
     });
 
@@ -249,6 +281,7 @@ export function AdvanceRequestForm({
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
+        mode: "onChange",
         defaultValues: initialData
             ? detailToDefaultValues(initialData)
             : {
@@ -316,11 +349,18 @@ export function AdvanceRequestForm({
         router.refresh();
     }
 
+    const scrollToFirstError = () => {
+        const firstError = document.querySelector(
+            '[data-slot="field-error"], [role="alert"]',
+        );
+        firstError?.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+
     return (
         <form
             id={formId}
             data-testid="advance-request-form"
-            onSubmit={form.handleSubmit(onSubmit)}
+            onSubmit={form.handleSubmit(onSubmit, scrollToFirstError)}
             className="space-y-6"
             autoComplete="off">
             {error ? (
@@ -586,6 +626,64 @@ export function AdvanceRequestForm({
                                 ))}
                             </div>
                         )}
+                        {(() => {
+                            const watchedAmount = form.watch("amount");
+                            const watchedInstallments =
+                                form.watch("installmentAmounts") ?? [];
+                            const amountRequested = Number(watchedAmount);
+                            const totalInstallments =
+                                watchedInstallments.reduce(
+                                    (sum, row) =>
+                                        sum +
+                                        (row.repaymentDate &&
+                                        /^\d{4}-\d{2}-\d{2}$/.test(
+                                            row.repaymentDate,
+                                        )
+                                            ? Number(row.amount) || 0
+                                            : 0),
+                                    0,
+                                );
+                            const hasValidInstallments =
+                                watchedInstallments.some(
+                                    (row) =>
+                                        row.repaymentDate &&
+                                        /^\d{4}-\d{2}-\d{2}$/.test(
+                                            row.repaymentDate,
+                                        ) &&
+                                        Number(row.amount) > 0,
+                                );
+                            if (
+                                !(
+                                    Number.isInteger(amountRequested) &&
+                                    amountRequested > 0 &&
+                                    hasValidInstallments
+                                )
+                            ) {
+                                return null;
+                            }
+                            const matches =
+                                totalInstallments === amountRequested;
+                            return (
+                                <p
+                                    className={`text-sm ${
+                                        matches
+                                            ? "text-emerald-600 dark:text-emerald-400"
+                                            : "text-destructive"
+                                    }`}>
+                                    Total: {formatAdvanceAmount(totalInstallments)}{" "}
+                                    / {formatAdvanceAmount(amountRequested)}{" "}
+                                    requested
+                                </p>
+                            );
+                        })()}
+                        {form.formState.errors.installmentAmounts?.message && (
+                            <p
+                                className="text-destructive text-sm"
+                                role="alert">
+                                {form.formState.errors.installmentAmounts
+                                    .message}
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -682,7 +780,16 @@ export function AdvanceRequestForm({
                 </Card>
             </FieldGroup>
 
-            <div className="flex justify-end">
+            <div className="flex flex-col items-end gap-3">
+                {(error ||
+                    form.formState.errors.installmentAmounts?.message) && (
+                    <p
+                        className="text-destructive text-sm w-full"
+                        role="alert">
+                        {error ??
+                            form.formState.errors.installmentAmounts?.message}
+                    </p>
+                )}
                 <Button
                     type="submit"
                     disabled={pending || workers.length === 0}

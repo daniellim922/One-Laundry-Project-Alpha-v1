@@ -3,6 +3,7 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
+import { recalculateVouchersForWorker } from "@/app/dashboard/payroll/actions";
 import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
 import { advanceRequestTable } from "@/db/tables/payroll/advanceRequestTable";
@@ -81,6 +82,25 @@ export async function updateAdvanceRequest(
     }
 
     for (const inst of validInstallments) {
+        if (inst.amount > amountRequested) {
+            return {
+                success: false,
+                error: `Installment amount ($${inst.amount}) cannot exceed amount requested ($${amountRequested})`,
+            };
+        }
+    }
+    const totalInstallments = validInstallments.reduce(
+        (sum, i) => sum + i.amount,
+        0,
+    );
+    if (totalInstallments !== amountRequested) {
+        return {
+            success: false,
+            error: `Total of installments ($${totalInstallments}) must equal amount requested ($${amountRequested})`,
+        };
+    }
+
+    for (const inst of validInstallments) {
         if (inst.repaymentDate < requestDate) {
             return {
                 success: false,
@@ -91,6 +111,13 @@ export async function updateAdvanceRequest(
 
     const employeeSignatureDate = parseDateString(input.employeeSignatureDate);
     const managerSignatureDate = parseDateString(input.managerSignatureDate);
+
+    const [existing] = await db
+        .select({ workerId: advanceRequestTable.workerId })
+        .from(advanceRequestTable)
+        .where(eq(advanceRequestTable.id, advanceRequestId))
+        .limit(1);
+    const oldWorkerId = existing?.workerId ?? null;
 
     const now = new Date();
 
@@ -129,8 +156,13 @@ export async function updateAdvanceRequest(
             await tx.insert(advanceTable).values(advanceInserts);
         });
 
+        await recalculateVouchersForWorker(input.workerId);
+        if (oldWorkerId && oldWorkerId !== input.workerId) {
+            await recalculateVouchersForWorker(oldWorkerId);
+        }
         revalidatePath("/dashboard/advance");
         revalidatePath(`/dashboard/advance/${advanceRequestId}`);
+        revalidatePath("/dashboard/payroll");
 
         return { success: true };
     } catch (error) {

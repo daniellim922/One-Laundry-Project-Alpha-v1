@@ -12,6 +12,7 @@ import {
     Table,
     TableBody,
     TableCell,
+    TableFooter,
     TableHead,
     TableHeader,
     TableRow,
@@ -34,7 +35,15 @@ export function AdvanceRequestView({
     detail,
     advanceRequestId,
 }: AdvanceRequestViewProps) {
-    const { request, advances, purpose, employeeSignature, employeeSignatureDate, managerSignature, managerSignatureDate } = detail;
+    const {
+        request,
+        advances,
+        purpose,
+        employeeSignature,
+        employeeSignatureDate,
+        managerSignature,
+        managerSignatureDate,
+    } = detail;
 
     return (
         <FieldGroup className="gap-6">
@@ -84,15 +93,17 @@ export function AdvanceRequestView({
 
                         <Field className="space-y-2">
                             <FieldLabel>Status</FieldLabel>
-                            <span
-                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                                    advanceRequestStatusBadgeClass[
-                                        request.status
-                                    ] ?? ""
-                                }`}
-                                data-testid="advance-detail-status">
-                                {request.status}
-                            </span>
+                            <div className="w-fit!">
+                                <span
+                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                        advanceRequestStatusBadgeClass[
+                                            request.status
+                                        ] ?? ""
+                                    }`}
+                                    data-testid="advance-detail-status">
+                                    {request.status}
+                                </span>
+                            </div>
                         </Field>
                     </div>
 
@@ -149,6 +160,20 @@ export function AdvanceRequestView({
                                 </TableRow>
                             ))}
                         </TableBody>
+                        <TableFooter>
+                            <TableRow>
+                                <TableCell>
+                                    {formatAdvanceAmount(
+                                        advances.reduce(
+                                            (sum, adv) => sum + adv.amount,
+                                            0,
+                                        ),
+                                    )}
+                                </TableCell>
+                                <TableCell />
+                                <TableCell />
+                            </TableRow>
+                        </TableFooter>
                     </Table>
                 </CardContent>
             </Card>
@@ -173,7 +198,7 @@ export function AdvanceRequestView({
                                     Employee signature
                                 </FieldLabel>
                                 {employeeSignature ? (
-                                    <div className="relative aspect-[3/1] max-w-xs overflow-hidden rounded border bg-muted/30">
+                                    <div className="relative aspect-3/1 max-w-xs overflow-hidden rounded border bg-muted/30">
                                         <Image
                                             src={employeeSignature}
                                             alt="Employee signature"
@@ -205,7 +230,7 @@ export function AdvanceRequestView({
                                     Manager&apos;s signature
                                 </FieldLabel>
                                 {managerSignature ? (
-                                    <div className="relative aspect-[3/1] max-w-xs overflow-hidden rounded border bg-muted/30">
+                                    <div className="relative aspect-3/1 max-w-xs overflow-hidden rounded border bg-muted/30">
                                         <Image
                                             src={managerSignature}
                                             alt="Manager signature"

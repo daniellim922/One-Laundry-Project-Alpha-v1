@@ -19,7 +19,9 @@ interface PaymentVoucherProps {
         publicHolidays: number | null;
         publicHolidayPay: number | null;
         cpf: number | null;
+        advance?: number | null;
         totalPay: number | null;
+        netPay: number | null;
         paymentMethod: string | null;
     };
     payroll: {
@@ -136,6 +138,13 @@ export function PaymentVoucher({
         items.push({
             description: "CPF",
             amount: -voucher.cpf,
+        });
+    }
+
+    if (voucher.advance != null && voucher.advance > 0) {
+        items.push({
+            description: "Advance",
+            amount: -voucher.advance,
         });
     }
 
@@ -273,7 +282,7 @@ export function PaymentVoucher({
                                 </td>
                                 <td className="py-3 pr-3 text-right font-bold">
                                     {currencyFmt.format(
-                                        voucher.totalPay ?? 0,
+                                        voucher.netPay ?? voucher.totalPay ?? 0,
                                     )}
                                 </td>
                             </tr>

@@ -1,4 +1,4 @@
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 
 import { advanceRequestTable } from "@/db/tables/payroll/advanceRequestTable";
 import { advanceTable } from "@/db/tables/payroll/advanceTable";
@@ -170,4 +170,52 @@ export async function getAdvanceRequestByIdWithWorker(
                 ? null
                 : normalizePgDate(req.managerSignatureDate),
     };
+}
+
+export type AdvanceForPayrollPeriod = {
+    id: string;
+    amount: number;
+    status: "loan" | "paid";
+    repaymentDate: string | null;
+    advanceRequestId: string;
+};
+
+export async function getAdvancesForPayrollPeriod(
+    workerId: string,
+    periodStart: string,
+    periodEnd: string,
+    database: typeof db = db,
+): Promise<AdvanceForPayrollPeriod[]> {
+    const rows = await database
+        .select({
+            id: advanceTable.id,
+            amount: advanceTable.amount,
+            status: advanceTable.status,
+            repaymentDate: advanceTable.repaymentDate,
+            advanceRequestId: advanceTable.advanceRequestId,
+        })
+        .from(advanceTable)
+        .innerJoin(
+            advanceRequestTable,
+            eq(advanceTable.advanceRequestId, advanceRequestTable.id),
+        )
+        .where(
+            and(
+                eq(advanceRequestTable.workerId, workerId),
+                gte(advanceTable.repaymentDate, periodStart),
+                lte(advanceTable.repaymentDate, periodEnd),
+            ),
+        )
+        .orderBy(advanceTable.repaymentDate);
+
+    return rows.map((r) => ({
+        id: r.id,
+        amount: r.amount,
+        status: r.status,
+        repaymentDate:
+            r.repaymentDate == null
+                ? null
+                : normalizePgDate(r.repaymentDate),
+        advanceRequestId: r.advanceRequestId,
+    }));
 }

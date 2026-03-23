@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { recalculateVouchersForWorker } from "@/app/dashboard/payroll/actions";
 import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
 import {
@@ -82,6 +83,25 @@ export async function createAdvanceRequest(
     }
 
     for (const inst of validInstallments) {
+        if (inst.amount > amountRequested) {
+            return {
+                success: false,
+                error: `Installment amount ($${inst.amount}) cannot exceed amount requested ($${amountRequested})`,
+            };
+        }
+    }
+    const totalInstallments = validInstallments.reduce(
+        (sum, i) => sum + i.amount,
+        0,
+    );
+    if (totalInstallments !== amountRequested) {
+        return {
+            success: false,
+            error: `Total of installments ($${totalInstallments}) must equal amount requested ($${amountRequested})`,
+        };
+    }
+
+    for (const inst of validInstallments) {
         if (inst.repaymentDate < requestDate) {
             return {
                 success: false,
@@ -132,7 +152,9 @@ export async function createAdvanceRequest(
             await tx.insert(advanceTable).values(advanceInserts);
         });
 
+        await recalculateVouchersForWorker(input.workerId);
         revalidatePath("/dashboard/advance");
+        revalidatePath("/dashboard/payroll");
 
         return { success: true };
     } catch (error) {

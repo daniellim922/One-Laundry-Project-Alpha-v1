@@ -28,6 +28,7 @@ export const payrollVoucherTable = pgTable("payroll_voucher", {
     publicHolidayPay: real("public_holiday_pay"),
 
     cpf: real("cpf"),
+    advance: real("advance"),
     totalPay: real("total_pay"),
     netPay: real("net_pay"),
 

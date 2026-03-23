@@ -3,6 +3,7 @@
 import { and, eq, gte, lte } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
+import { getAdvancesForPayrollPeriod } from "@/lib/advances-queries";
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payroll/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payroll/payrollVoucherTable";
@@ -41,8 +42,14 @@ function calcHoursNotMetDeduction(args: {
     return -roundMoney(Math.max(0, -hoursNotMet) * (hourlyRate ?? 0));
 }
 
-function calcNetPay(args: { totalPay: number; cpf: number | null }): number {
-    return roundMoney(args.totalPay - (args.cpf ?? 0));
+function calcNetPay(args: {
+    totalPay: number;
+    cpf: number | null;
+    advance?: number | null;
+}): number {
+    return roundMoney(
+        args.totalPay - (args.cpf ?? 0) - (args.advance ?? 0),
+    );
 }
 
 function toDateString(val: string): string {
@@ -109,7 +116,19 @@ export async function createPayroll(formData: FormData) {
         hourlyRate: employment.hourlyRate,
     });
     const totalPay = roundMoney(payCalc.totalPay + hoursNotMetDeduction);
-    const netPay = calcNetPay({ totalPay, cpf: employment.cpf });
+    const advances = await getAdvancesForPayrollPeriod(
+        workerId,
+        periodStart,
+        periodEnd,
+    );
+    const advanceTotal = advances
+        .filter((a) => a.status === "loan")
+        .reduce((sum, a) => sum + a.amount, 0);
+    const netPay = calcNetPay({
+        totalPay,
+        cpf: employment.cpf,
+        advance: advanceTotal,
+    });
 
     const now = isoNow();
 
@@ -133,6 +152,7 @@ export async function createPayroll(formData: FormData) {
             publicHolidays,
             publicHolidayPay: payCalc.publicHolidayPay,
             cpf: employment.cpf,
+            advance: advanceTotal,
             totalPay,
             netPay,
             paymentMethod: employment.paymentMethod,
@@ -221,7 +241,19 @@ export async function createPayrolls(formData: FormData) {
             hourlyRate: employment.hourlyRate,
         });
         const totalPay = roundMoney(payCalc.totalPay + hoursNotMetDeduction);
-        const netPay = calcNetPay({ totalPay, cpf: employment.cpf });
+        const advances = await getAdvancesForPayrollPeriod(
+            workerId,
+            periodStart,
+            periodEnd,
+        );
+        const advanceTotal = advances
+            .filter((a) => a.status === "loan")
+            .reduce((sum, a) => sum + a.amount, 0);
+        const netPay = calcNetPay({
+            totalPay,
+            cpf: employment.cpf,
+            advance: advanceTotal,
+        });
 
         const now = isoNow();
 
@@ -245,6 +277,7 @@ export async function createPayrolls(formData: FormData) {
                 publicHolidays,
                 publicHolidayPay: payCalc.publicHolidayPay,
                 cpf: employment.cpf,
+                advance: advanceTotal,
                 totalPay,
                 netPay,
                 paymentMethod: employment.paymentMethod,
@@ -345,7 +378,19 @@ export async function updatePayroll(payrollId: string, formData: FormData) {
         hourlyRate: employment.hourlyRate,
     });
     const totalPay = roundMoney(payCalc.totalPay + hoursNotMetDeduction);
-    const netPay = calcNetPay({ totalPay, cpf: employment.cpf });
+    const advances = await getAdvancesForPayrollPeriod(
+        existing.workerId,
+        periodStart,
+        periodEnd,
+    );
+    const advanceTotal = advances
+        .filter((a) => a.status === "loan")
+        .reduce((sum, a) => sum + a.amount, 0);
+    const netPay = calcNetPay({
+        totalPay,
+        cpf: employment.cpf,
+        advance: advanceTotal,
+    });
 
     const now = isoNow();
 
@@ -376,6 +421,7 @@ export async function updatePayroll(payrollId: string, formData: FormData) {
             restDayPay: payCalc.restDayPay,
             publicHolidayPay: payCalc.publicHolidayPay,
             cpf: employment.cpf,
+            advance: advanceTotal,
             totalPay,
             netPay,
             paymentMethod: employment.paymentMethod,
@@ -459,7 +505,19 @@ export async function recalculateVouchersForWorker(workerId: string) {
             hourlyRate: employment.hourlyRate,
         });
         const totalPay = roundMoney(payCalc.totalPay + hoursNotMetDeduction);
-        const netPay = calcNetPay({ totalPay, cpf: employment.cpf });
+        const advances = await getAdvancesForPayrollPeriod(
+            workerId,
+            payroll.periodStart,
+            payroll.periodEnd,
+        );
+        const advanceTotal = advances
+            .filter((a) => a.status === "loan")
+            .reduce((sum, a) => sum + a.amount, 0);
+        const netPay = calcNetPay({
+            totalPay,
+            cpf: employment.cpf,
+            advance: advanceTotal,
+        });
 
         await db
             .update(payrollVoucherTable)
@@ -471,6 +529,7 @@ export async function recalculateVouchersForWorker(workerId: string) {
                 overtimePay: payCalc.overtimePay,
                 restDayPay: payCalc.restDayPay,
                 publicHolidayPay: payCalc.publicHolidayPay,
+                advance: advanceTotal,
                 totalPay,
                 netPay,
                 updatedAt: new Date(),
@@ -500,6 +559,7 @@ export async function updateVoucherDays(input: {
             hourlyRate: payrollVoucherTable.hourlyRate,
             restDayRate: payrollVoucherTable.restDayRate,
             cpf: payrollVoucherTable.cpf,
+            advance: payrollVoucherTable.advance,
         })
         .from(payrollVoucherTable)
         .where(eq(payrollVoucherTable.id, voucherId))
@@ -534,6 +594,7 @@ export async function updateVoucherDays(input: {
     const netPay = calcNetPay({
         totalPay,
         cpf: voucher.cpf != null ? Number(voucher.cpf) : null,
+        advance: voucher.advance,
     });
 
     await db
