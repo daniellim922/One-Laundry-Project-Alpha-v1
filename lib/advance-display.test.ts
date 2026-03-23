@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
     advanceDetailPath,
+    advanceRequestStatusBadgeClass,
     advanceStatusBadgeClass,
     formatAdvanceAmount,
     formatAdvanceDate,
@@ -23,5 +24,10 @@ describe("advance-display", () => {
     it("advanceStatusBadgeClass covers loan and paid", () => {
         expect(advanceStatusBadgeClass.loan).toContain("amber");
         expect(advanceStatusBadgeClass.paid).toContain("emerald");
+    });
+
+    it("advanceRequestStatusBadgeClass covers loan and paid", () => {
+        expect(advanceRequestStatusBadgeClass.loan).toBeDefined();
+        expect(advanceRequestStatusBadgeClass.paid).toContain("emerald");
     });
 });

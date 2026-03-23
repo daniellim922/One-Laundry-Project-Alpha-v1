@@ -53,6 +53,8 @@ test.describe("Advance dashboard", () => {
             .click();
 
         await page.getByLabel("Amount requested").fill("777");
+        await page.getByLabel("Installment amount").first().fill("777");
+        await page.getByLabel("Expected repayment date").first().fill("2025-06-15");
 
         await page.getByTestId("advance-request-submit").click();
 

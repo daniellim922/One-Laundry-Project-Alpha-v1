@@ -2,7 +2,7 @@
 
 import type { Column, ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
-import { ArrowUpDown, Eye, MoreHorizontal } from "lucide-react";
+import { ArrowUpDown, Eye, MoreHorizontal, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -13,11 +13,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
     advanceDetailPath,
-    advanceStatusBadgeClass,
+    advanceRequestStatusBadgeClass,
     formatAdvanceAmount,
     formatAdvanceDate,
 } from "@/lib/advance-display";
-import type { AdvanceWithWorker } from "@/lib/advances-queries";
+import type { AdvanceRequestWithWorker } from "@/lib/advances-queries";
 
 function sortableHeader(label: string) {
     const Header = <TData, TValue>({
@@ -38,15 +38,15 @@ function sortableHeader(label: string) {
     return Header;
 }
 
-export const columns: ColumnDef<AdvanceWithWorker>[] = [
+export const columns: ColumnDef<AdvanceRequestWithWorker>[] = [
     {
         accessorKey: "workerName",
         header: sortableHeader("Worker"),
     },
     {
-        accessorKey: "amount",
-        header: sortableHeader("Amount"),
-        cell: ({ row }) => formatAdvanceAmount(row.original.amount),
+        accessorKey: "amountRequested",
+        header: sortableHeader("Amount requested"),
+        cell: ({ row }) => formatAdvanceAmount(row.original.amountRequested),
     },
     {
         accessorKey: "status",
@@ -56,7 +56,7 @@ export const columns: ColumnDef<AdvanceWithWorker>[] = [
             return (
                 <span
                     className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                        advanceStatusBadgeClass[value] ?? ""
+                        advanceRequestStatusBadgeClass[value] ?? ""
                     }`}>
                     {value}
                 </span>
@@ -64,23 +64,15 @@ export const columns: ColumnDef<AdvanceWithWorker>[] = [
         },
     },
     {
-        accessorKey: "loanDate",
-        header: sortableHeader("Loan date"),
-        cell: ({ row }) => formatAdvanceDate(row.original.loanDate),
-    },
-    {
-        accessorKey: "repaymentDate",
-        header: sortableHeader("Repayment date"),
-        cell: ({ row }) =>
-            row.original.repaymentDate
-                ? formatAdvanceDate(row.original.repaymentDate)
-                : "—",
+        accessorKey: "requestDate",
+        header: sortableHeader("Request date"),
+        cell: ({ row }) => formatAdvanceDate(row.original.requestDate),
     },
     {
         id: "actions",
         header: "",
         cell: ({ row }) => {
-            const advance = row.original;
+            const advanceRequest = row.original;
             return (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -94,10 +86,18 @@ export const columns: ColumnDef<AdvanceWithWorker>[] = [
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
                             <Link
-                                href={advanceDetailPath(advance.id)}
+                                href={advanceDetailPath(advanceRequest.id)}
                                 className="flex w-full items-center gap-2">
-                                <Eye className="h-4 w-4" />
+                                <Eye className="mr-2 h-4 w-4" />
                                 View
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                            <Link
+                                href={`/dashboard/advance/${advanceRequest.id}/edit`}
+                                className="flex w-full items-center gap-2">
+                                <Pencil className="h-4 w-4" />
+                                Edit
                             </Link>
                         </DropdownMenuItem>
                     </DropdownMenuContent>

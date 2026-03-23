@@ -7,7 +7,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Banknote, Check, ChevronsUpDown, Plus, Trash2 } from "lucide-react";
 
-import { createAdvance } from "@/app/dashboard/workers/[id]/advance/actions";
+import { createAdvanceRequest } from "@/app/dashboard/advance/new/actions";
+import { updateAdvanceRequest } from "@/app/dashboard/advance/[id]/edit/actions";
+import type { AdvanceRequestDetail } from "@/lib/advances-queries";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -79,6 +81,7 @@ const formSchema = z
             .optional(),
     })
     .superRefine((values, ctx) => {
+        let hasValidInstallment = false;
         values.installmentAmounts.forEach((row, i) => {
             if (
                 row.repaymentDate &&
@@ -91,7 +94,26 @@ const formSchema = z
                         "Expected repayment date must be on or after date of request",
                 });
             }
+            if (row.repaymentDate && /^\d{4}-\d{2}-\d{2}$/.test(row.repaymentDate)) {
+                const amt = Number(row.amount);
+                if (!Number.isInteger(amt) || amt <= 0) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: ["installmentAmounts", i, "amount"],
+                        message: "Amount is required when repayment date is set",
+                    });
+                } else {
+                    hasValidInstallment = true;
+                }
+            }
         });
+        if (!hasValidInstallment) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["installmentAmounts"],
+                message: "At least one installment with amount and repayment date is required",
+            });
+        }
     });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -188,28 +210,58 @@ function WorkerSearchSelect({
     );
 }
 
+function detailToDefaultValues(detail: AdvanceRequestDetail): FormValues {
+    const { request, advances, purpose, employeeSignature, employeeSignatureDate, managerSignature, managerSignatureDate } = detail;
+    return {
+        workerId: request.workerId,
+        loanDate: request.requestDate,
+        amount: String(request.amountRequested),
+        purpose: purpose ?? "",
+        installmentAmounts:
+            advances.length > 0
+                ? advances.map((a) => ({
+                      amount: String(a.amount),
+                      repaymentDate: a.repaymentDate ?? "",
+                  }))
+                : [{ amount: "", repaymentDate: "" }],
+        employeeSignature: employeeSignature ?? "",
+        managerSignature: managerSignature ?? "",
+        employeeSignatureDate: employeeSignatureDate ?? "",
+        managerSignatureDate: managerSignatureDate ?? "",
+    };
+}
+
 export function AdvanceRequestForm({
     workers,
+    initialWorkerId,
+    initialData,
+    advanceRequestId,
 }: {
     workers: AdvanceRequestWorkerOption[];
+    initialWorkerId?: string;
+    initialData?: AdvanceRequestDetail;
+    advanceRequestId?: string;
 }) {
     const router = useRouter();
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
+    const isEditMode = Boolean(initialData && advanceRequestId);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
-        defaultValues: {
-            workerId: "",
-            loanDate: todayIsoDate(),
-            amount: "",
-            purpose: "",
-            installmentAmounts: [{ amount: "", repaymentDate: "" }],
-            employeeSignature: "",
-            managerSignature: "",
-            employeeSignatureDate: "",
-            managerSignatureDate: "",
-        },
+        defaultValues: initialData
+            ? detailToDefaultValues(initialData)
+            : {
+                  workerId: initialWorkerId ?? "",
+                  loanDate: todayIsoDate(),
+                  amount: "",
+                  purpose: "",
+                  installmentAmounts: [{ amount: "", repaymentDate: "" }],
+                  employeeSignature: "",
+                  managerSignature: "",
+                  employeeSignatureDate: "",
+                  managerSignatureDate: "",
+              },
     });
 
     const { fields, insert, remove } = useFieldArray({
@@ -230,21 +282,29 @@ export function AdvanceRequestForm({
         setError(null);
         setPending(true);
 
-        const rowDates = data.installmentAmounts
-            .map((r) => r.repaymentDate.trim())
-            .filter((d) => /^\d{4}-\d{2}-\d{2}$/.test(d));
-        const repaymentDateForApi =
-            rowDates.length === 0
-                ? ""
-                : rowDates.reduce((a, b) => (a > b ? a : b));
-
-        const fd = new FormData();
-        fd.set("amount", data.amount);
-        fd.set("loanDate", data.loanDate);
-        fd.set("repaymentDate", repaymentDateForApi);
-        fd.set("status", "loan");
-
-        const result = await createAdvance(data.workerId, fd);
+        const result = isEditMode && advanceRequestId
+            ? await updateAdvanceRequest(advanceRequestId, {
+                  workerId: data.workerId,
+                  loanDate: data.loanDate,
+                  amount: data.amount,
+                  purpose: data.purpose,
+                  installmentAmounts: data.installmentAmounts,
+                  employeeSignature: data.employeeSignature,
+                  employeeSignatureDate: data.employeeSignatureDate,
+                  managerSignature: data.managerSignature,
+                  managerSignatureDate: data.managerSignatureDate,
+              })
+            : await createAdvanceRequest({
+                  workerId: data.workerId,
+                  loanDate: data.loanDate,
+                  amount: data.amount,
+                  purpose: data.purpose,
+                  installmentAmounts: data.installmentAmounts,
+                  employeeSignature: data.employeeSignature,
+                  employeeSignatureDate: data.employeeSignatureDate,
+                  managerSignature: data.managerSignature,
+                  managerSignatureDate: data.managerSignatureDate,
+              });
         setPending(false);
 
         if (!result.success) {
@@ -252,7 +312,7 @@ export function AdvanceRequestForm({
             return;
         }
 
-        router.push("/dashboard/advance");
+        router.push(isEditMode ? `/dashboard/advance/${advanceRequestId}` : "/dashboard/advance");
         router.refresh();
     }
 
@@ -419,12 +479,12 @@ export function AdvanceRequestForm({
                                 className="space-y-2"
                                 aria-busy="true"
                                 data-testid="installment-rows-ssr-placeholder">
-                                <div className="hidden gap-x-2 sm:grid sm:grid-cols-[minmax(0,1fr)_12rem_2.25rem] sm:items-end">
+                                <div className="hidden gap-x-2 sm:grid sm:grid-cols-[1fr_1fr_2.25rem] sm:items-end">
                                     <div className="bg-muted/30 h-4 w-32 max-w-full rounded" />
                                     <div className="bg-muted/30 h-4 w-36 max-w-full rounded" />
                                     <div className="size-9" aria-hidden />
                                 </div>
-                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_12rem_2.25rem] sm:items-center">
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_2.25rem] sm:items-center">
                                     <div className="bg-muted/30 h-9 w-full rounded-md border border-dashed border-muted-foreground/20" />
                                     <div className="bg-muted/30 h-9 w-full rounded-md border border-dashed border-muted-foreground/20" />
                                     <div className="bg-muted/30 size-9 shrink-0 rounded-md border border-dashed border-muted-foreground/20" />
@@ -432,7 +492,7 @@ export function AdvanceRequestForm({
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                <div className="hidden gap-x-2 text-sm leading-none font-medium sm:grid sm:grid-cols-[minmax(0,1fr)_12rem_2.25rem] sm:items-end">
+                                <div className="hidden gap-x-2 text-sm leading-none font-medium sm:grid sm:grid-cols-[1fr_1fr_2.25rem] sm:items-end">
                                     <span id={`${formId}-installment-col`}>
                                         Installment amount
                                     </span>
@@ -446,7 +506,7 @@ export function AdvanceRequestForm({
                                         key={row.id}
                                         role="group"
                                         aria-label={`Installment row ${index + 1}`}
-                                        className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_12rem_2.25rem] sm:items-start">
+                                        className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_2.25rem] sm:items-start">
                                         <Controller
                                             name={`installmentAmounts.${index}.amount`}
                                             control={form.control}
@@ -627,7 +687,13 @@ export function AdvanceRequestForm({
                     type="submit"
                     disabled={pending || workers.length === 0}
                     data-testid="advance-request-submit">
-                    {pending ? "Submitting…" : "Submit request"}
+                    {pending
+                        ? isEditMode
+                            ? "Saving…"
+                            : "Submitting…"
+                        : isEditMode
+                          ? "Save changes"
+                          : "Submit request"}
                 </Button>
             </div>
         </form>

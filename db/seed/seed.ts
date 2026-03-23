@@ -14,6 +14,10 @@ import {
     type InsertTimesheet,
 } from "@/db/tables/payroll/timesheetTable";
 import {
+    advanceRequestTable,
+    type InsertAdvanceRequest,
+} from "@/db/tables/payroll/advanceRequestTable";
+import {
     advanceTable,
     type InsertAdvance,
 } from "@/db/tables/payroll/advanceTable";
@@ -87,16 +91,31 @@ async function seedAdvances(
     insertedWorkers: { id: string }[],
 ): Promise<void> {
     const now = new Date();
-    const advanceInserts: InsertAdvance[] = advances.map((a) => ({
-        workerId: insertedWorkers[a.workerIndex]!.id,
-        amount: a.amount,
-        status: a.status,
-        loanDate: a.loanDate,
-        repaymentDate: a.repaymentDate,
-        createdAt: now,
-        updatedAt: now,
-    }));
-    await db.insert(advanceTable).values(advanceInserts);
+    for (const a of advances) {
+        const workerId = insertedWorkers[a.workerIndex]!.id;
+        const requestInsert: InsertAdvanceRequest = {
+            workerId,
+            status: a.status,
+            requestDate: a.loanDate,
+            amountRequested: a.amount,
+            createdAt: now,
+            updatedAt: now,
+        };
+        const [insertedRequest] = await db
+            .insert(advanceRequestTable)
+            .values(requestInsert)
+            .returning({ id: advanceRequestTable.id });
+
+        const advanceInsert: InsertAdvance = {
+            advanceRequestId: insertedRequest!.id,
+            amount: a.amount,
+            status: a.status,
+            repaymentDate: a.repaymentDate,
+            createdAt: now,
+            updatedAt: now,
+        };
+        await db.insert(advanceTable).values(advanceInsert);
+    }
 }
 
 async function seedPayrolls(

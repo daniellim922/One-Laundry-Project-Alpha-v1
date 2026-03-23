@@ -3,22 +3,22 @@ import { Suspense } from "react";
 
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
-import { listAdvancesWithWorkers } from "@/lib/advances-queries";
+import { listAdvanceRequestsWithWorkers } from "@/lib/advances-queries";
 import { Plus } from "lucide-react";
 
 import { columns } from "./columns";
 
 export default async function AdvanceListPage() {
-    const advances = await listAdvancesWithWorkers();
+    const advanceRequests = await listAdvanceRequestsWithWorkers();
 
     return (
         <div className="space-y-6">
             <div>
-                <h1
+                <h2
                     className="text-2xl font-semibold tracking-tight"
                     data-testid="advance-list-heading">
                     Advance loans
-                </h1>
+                </h2>
                 <p className="text-muted-foreground">
                     All advance loans across workers.
                 </p>
@@ -32,7 +32,7 @@ export default async function AdvanceListPage() {
                 }>
                 <DataTable
                     columns={columns}
-                    data={advances}
+                    data={advanceRequests}
                     searchKey="workerName"
                     searchParamKey="search"
                     actions={

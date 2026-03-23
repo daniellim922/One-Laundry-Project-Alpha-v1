@@ -6,7 +6,7 @@ import {
     integer,
     text,
 } from "drizzle-orm/pg-core";
-import { workerTable } from "./workerTable";
+import { advanceRequestTable } from "./advanceRequestTable";
 
 export const advanceTable = pgTable("advance", {
     id: uuid().primaryKey().defaultRandom(),
@@ -16,13 +16,11 @@ export const advanceTable = pgTable("advance", {
     })
         .notNull()
         .default("loan"),
-
-    loanDate: date("loan_date").notNull().defaultNow(),
     repaymentDate: date("repayment_date"),
 
-    workerId: uuid("worker_id")
+    advanceRequestId: uuid("advance_request_id")
         .notNull()
-        .references(() => workerTable.id, { onDelete: "cascade" }),
+        .references(() => advanceRequestTable.id, { onDelete: "cascade" }),
 
     createdAt: timestamp("created_at", { withTimezone: false })
         .notNull()

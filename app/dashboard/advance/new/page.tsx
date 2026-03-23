@@ -7,8 +7,14 @@ import { requirePermission } from "@/lib/require-permission";
 
 import { AdvanceRequestForm } from "./advance-request-form";
 
-export default async function AdvanceRequestPage() {
+export default async function AdvanceRequestPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ workerId?: string }>;
+}) {
     await requirePermission("Payroll", "create");
+
+    const { workerId: initialWorkerId } = await searchParams;
 
     const workers = await db
         .select({
@@ -39,7 +45,11 @@ export default async function AdvanceRequestPage() {
                     No workers yet. Add a worker first.
                 </p>
             ) : (
-                <AdvanceRequestForm workers={workers} />
+                <AdvanceRequestForm
+                    key={initialWorkerId ?? "new"}
+                    workers={workers}
+                    initialWorkerId={initialWorkerId ?? undefined}
+                />
             )}
         </div>
     );

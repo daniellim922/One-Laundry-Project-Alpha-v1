@@ -10,7 +10,6 @@ import {
     type WorkerWithEmployment,
 } from "../../worker-form";
 import { WorkerFormPageLayout } from "../../worker-form-page-layout";
-import { WorkerAdvances } from "../../worker-advances";
 
 interface PageProps {
     params: Promise<{
@@ -62,7 +61,6 @@ export default async function ViewWorkerPage({ params }: PageProps) {
             title="View worker"
             description="Worker details (read-only).">
             <WorkerForm worker={worker} disabled />
-            <WorkerAdvances workerId={id} />
         </WorkerFormPageLayout>
     );
 }

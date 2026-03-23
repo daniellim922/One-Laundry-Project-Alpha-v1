@@ -3,7 +3,7 @@
 import type { Column, ColumnDef } from "@tanstack/react-table";
 import type { WorkerWithEmployment } from "@/db/tables/payroll/workerTable";
 import Link from "next/link";
-import { ArrowUpDown, Banknote, Eye, MoreHorizontal, Pencil } from "lucide-react";
+import { ArrowUpDown, Eye, MoreHorizontal, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -171,14 +171,6 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
                                 className="flex w-full items-center gap-2">
                                 <Pencil className="h-4 w-4" />
                                 Edit
-                            </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                            <Link
-                                href={`/dashboard/workers/${worker.id}/advance`}
-                                className="flex w-full items-center gap-2">
-                                <Banknote className="h-4 w-4" />
-                                Advance
                             </Link>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
