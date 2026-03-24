@@ -35,14 +35,21 @@ export default async function AdvanceDetailPage({
                         </p>
                     </div>
                 </div>
-                <Button asChild variant="outline" size="sm">
-                    <Link
-                        href={`/dashboard/advance/${id}/edit`}
-                        className="flex items-center gap-2">
+                {detail.request.status === "paid" ? (
+                    <Button variant="outline" size="sm" disabled>
                         <Pencil className="h-4 w-4" />
                         Edit
-                    </Link>
-                </Button>
+                    </Button>
+                ) : (
+                    <Button asChild variant="outline" size="sm">
+                        <Link
+                            href={`/dashboard/advance/${id}/edit`}
+                            className="flex items-center gap-2">
+                            <Pencil className="h-4 w-4" />
+                            Edit
+                        </Link>
+                    </Button>
+                )}
             </div>
 
             <AdvanceRequestView detail={detail} advanceRequestId={id} />

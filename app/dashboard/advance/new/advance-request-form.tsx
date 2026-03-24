@@ -18,7 +18,12 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+    Field,
+    FieldError,
+    FieldGroup,
+    FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
     InputGroup,
@@ -39,7 +44,7 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { SignaturePad } from "@/components/ui/signature-pad";
-import { formatAdvanceAmount } from "@/lib/advance-display";
+import { advanceStatusBadgeClass, formatAdvanceAmount } from "@/lib/advance-display";
 import { cn } from "@/lib/utils";
 
 const formSchema = z
@@ -66,6 +71,7 @@ const formSchema = z
                         (v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v),
                         "Invalid date",
                     ),
+                status: z.enum(["loan", "paid"]).optional(),
             }),
         ),
         employeeSignature: z.string().optional(),
@@ -87,10 +93,22 @@ const formSchema = z
         const validInstallmentAmounts: number[] = [];
 
         values.installmentAmounts.forEach((row, i) => {
-            if (
-                row.repaymentDate &&
-                row.repaymentDate < values.loanDate
-            ) {
+            const repaymentDate = row.repaymentDate?.trim() ?? "";
+            const amountRaw = row.amount?.trim() ?? "";
+            const hasRepaymentDate = repaymentDate.length > 0;
+            const hasAmount = amountRaw.length > 0;
+            const amountValue = Number(amountRaw);
+            const hasValidAmount = Number.isInteger(amountValue) && amountValue > 0;
+
+            if (hasAmount && !hasRepaymentDate) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["installmentAmounts", i, "repaymentDate"],
+                    message: "Expected repayment date is required when amount is set",
+                });
+            }
+
+            if (hasRepaymentDate && repaymentDate < values.loanDate) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     path: ["installmentAmounts", i, "repaymentDate"],
@@ -98,22 +116,23 @@ const formSchema = z
                         "Expected repayment date must be on or after date of request",
                 });
             }
-            if (row.repaymentDate && /^\d{4}-\d{2}-\d{2}$/.test(row.repaymentDate)) {
-                const amt = Number(row.amount);
-                if (!Number.isInteger(amt) || amt <= 0) {
+
+            if (hasRepaymentDate && /^\d{4}-\d{2}-\d{2}$/.test(repaymentDate)) {
+                if (!hasValidAmount) {
                     ctx.addIssue({
                         code: z.ZodIssueCode.custom,
                         path: ["installmentAmounts", i, "amount"],
-                        message: "Amount is required when repayment date is set",
+                        message:
+                            "Amount is required when repayment date is set",
                     });
                 } else {
                     hasValidInstallment = true;
-                    validInstallmentAmounts.push(amt);
+                    validInstallmentAmounts.push(amountValue);
 
                     if (
                         Number.isInteger(amountRequested) &&
                         amountRequested > 0 &&
-                        amt > amountRequested
+                        amountValue > amountRequested
                     ) {
                         ctx.addIssue({
                             code: z.ZodIssueCode.custom,
@@ -128,12 +147,10 @@ const formSchema = z
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 path: ["installmentAmounts"],
-                message: "At least one installment with amount and repayment date is required",
+                message:
+                    "At least one installment with amount and repayment date is required",
             });
-        } else if (
-            Number.isInteger(amountRequested) &&
-            amountRequested > 0
-        ) {
+        } else if (Number.isInteger(amountRequested) && amountRequested > 0) {
             const totalInstallments = validInstallmentAmounts.reduce(
                 (sum, a) => sum + a,
                 0,
@@ -243,7 +260,15 @@ function WorkerSearchSelect({
 }
 
 function detailToDefaultValues(detail: AdvanceRequestDetail): FormValues {
-    const { request, advances, purpose, employeeSignature, employeeSignatureDate, managerSignature, managerSignatureDate } = detail;
+    const {
+        request,
+        advances,
+        purpose,
+        employeeSignature,
+        employeeSignatureDate,
+        managerSignature,
+        managerSignatureDate,
+    } = detail;
     return {
         workerId: request.workerId,
         loanDate: request.requestDate,
@@ -254,8 +279,9 @@ function detailToDefaultValues(detail: AdvanceRequestDetail): FormValues {
                 ? advances.map((a) => ({
                       amount: String(a.amount),
                       repaymentDate: a.repaymentDate ?? "",
+                      status: a.status,
                   }))
-                : [{ amount: "", repaymentDate: "" }],
+                : [{ amount: "", repaymentDate: "", status: "loan" }],
         employeeSignature: employeeSignature ?? "",
         managerSignature: managerSignature ?? "",
         employeeSignatureDate: employeeSignatureDate ?? "",
@@ -289,7 +315,9 @@ export function AdvanceRequestForm({
                   loanDate: todayIsoDate(),
                   amount: "",
                   purpose: "",
-                  installmentAmounts: [{ amount: "", repaymentDate: "" }],
+                  installmentAmounts: [
+                      { amount: "", repaymentDate: "", status: "loan" },
+                  ],
                   employeeSignature: "",
                   managerSignature: "",
                   employeeSignatureDate: "",
@@ -315,29 +343,30 @@ export function AdvanceRequestForm({
         setError(null);
         setPending(true);
 
-        const result = isEditMode && advanceRequestId
-            ? await updateAdvanceRequest(advanceRequestId, {
-                  workerId: data.workerId,
-                  loanDate: data.loanDate,
-                  amount: data.amount,
-                  purpose: data.purpose,
-                  installmentAmounts: data.installmentAmounts,
-                  employeeSignature: data.employeeSignature,
-                  employeeSignatureDate: data.employeeSignatureDate,
-                  managerSignature: data.managerSignature,
-                  managerSignatureDate: data.managerSignatureDate,
-              })
-            : await createAdvanceRequest({
-                  workerId: data.workerId,
-                  loanDate: data.loanDate,
-                  amount: data.amount,
-                  purpose: data.purpose,
-                  installmentAmounts: data.installmentAmounts,
-                  employeeSignature: data.employeeSignature,
-                  employeeSignatureDate: data.employeeSignatureDate,
-                  managerSignature: data.managerSignature,
-                  managerSignatureDate: data.managerSignatureDate,
-              });
+        const result =
+            isEditMode && advanceRequestId
+                ? await updateAdvanceRequest(advanceRequestId, {
+                      workerId: data.workerId,
+                      loanDate: data.loanDate,
+                      amount: data.amount,
+                      purpose: data.purpose,
+                      installmentAmounts: data.installmentAmounts,
+                      employeeSignature: data.employeeSignature,
+                      employeeSignatureDate: data.employeeSignatureDate,
+                      managerSignature: data.managerSignature,
+                      managerSignatureDate: data.managerSignatureDate,
+                  })
+                : await createAdvanceRequest({
+                      workerId: data.workerId,
+                      loanDate: data.loanDate,
+                      amount: data.amount,
+                      purpose: data.purpose,
+                      installmentAmounts: data.installmentAmounts,
+                      employeeSignature: data.employeeSignature,
+                      employeeSignatureDate: data.employeeSignatureDate,
+                      managerSignature: data.managerSignature,
+                      managerSignatureDate: data.managerSignatureDate,
+                  });
         setPending(false);
 
         if (!result.success) {
@@ -345,7 +374,11 @@ export function AdvanceRequestForm({
             return;
         }
 
-        router.push(isEditMode ? `/dashboard/advance/${advanceRequestId}` : "/dashboard/advance");
+        router.push(
+            isEditMode
+                ? `/dashboard/advance/${advanceRequestId}`
+                : "/dashboard/advance",
+        );
         router.refresh();
     }
 
@@ -385,7 +418,8 @@ export function AdvanceRequestForm({
                                     <Field
                                         data-invalid={fieldState.invalid}
                                         className="min-w-0 space-y-2">
-                                        <FieldLabel htmlFor={`${formId}-worker`}>
+                                        <FieldLabel
+                                            htmlFor={`${formId}-worker`}>
                                             Employee
                                         </FieldLabel>
                                         <WorkerSearchSelect
@@ -413,7 +447,8 @@ export function AdvanceRequestForm({
                                     <Field
                                         data-invalid={fieldState.invalid}
                                         className="min-w-0 space-y-2">
-                                        <FieldLabel htmlFor={`${formId}-loan-date`}>
+                                        <FieldLabel
+                                            htmlFor={`${formId}-loan-date`}>
                                             Date of request
                                         </FieldLabel>
                                         <Input
@@ -506,6 +541,7 @@ export function AdvanceRequestForm({
                                         insert(fields.length, {
                                             amount: "",
                                             repaymentDate: "",
+                                            status: "loan",
                                         })
                                     }>
                                     <Plus className="size-4" />
@@ -519,34 +555,47 @@ export function AdvanceRequestForm({
                                 className="space-y-2"
                                 aria-busy="true"
                                 data-testid="installment-rows-ssr-placeholder">
-                                <div className="hidden gap-x-2 sm:grid sm:grid-cols-[1fr_1fr_2.25rem] sm:items-end">
+                                <div className="hidden gap-x-2 sm:grid sm:grid-cols-[1fr_1fr_auto_2.25rem] sm:items-end">
                                     <div className="bg-muted/30 h-4 w-32 max-w-full rounded" />
                                     <div className="bg-muted/30 h-4 w-36 max-w-full rounded" />
+                                    <div className="bg-muted/30 h-4 w-16 max-w-full rounded" />
                                     <div className="size-9" aria-hidden />
                                 </div>
-                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_2.25rem] sm:items-center">
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto_2.25rem] sm:items-center">
                                     <div className="bg-muted/30 h-9 w-full rounded-md border border-dashed border-muted-foreground/20" />
                                     <div className="bg-muted/30 h-9 w-full rounded-md border border-dashed border-muted-foreground/20" />
+                                    <div className="bg-muted/30 h-6 w-16 rounded-full" />
                                     <div className="bg-muted/30 size-9 shrink-0 rounded-md border border-dashed border-muted-foreground/20" />
                                 </div>
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                <div className="hidden gap-x-2 text-sm leading-none font-medium sm:grid sm:grid-cols-[1fr_1fr_2.25rem] sm:items-end">
+                                <div className="hidden gap-x-2 text-sm leading-none font-medium sm:grid sm:grid-cols-[1fr_1fr_auto_2.25rem] sm:items-end">
                                     <span id={`${formId}-installment-col`}>
                                         Installment amount
                                     </span>
                                     <span id={`${formId}-repayment-col`}>
                                         Expected repayment date
                                     </span>
-                                    <span className="size-9 shrink-0" aria-hidden />
+                                    <span>Status</span>
+                                    <span
+                                        className="size-9 shrink-0"
+                                        aria-hidden
+                                    />
                                 </div>
                                 {fields.map((row, index) => (
+                                    (() => {
+                                        const isPaidInstallment =
+                                            form.getValues(
+                                                `installmentAmounts.${index}.status`,
+                                            ) === "paid";
+
+                                        return (
                                     <div
                                         key={row.id}
                                         role="group"
                                         aria-label={`Installment row ${index + 1}`}
-                                        className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_2.25rem] sm:items-start">
+                                        className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto_2.25rem] sm:items-start">
                                         <Controller
                                             name={`installmentAmounts.${index}.amount`}
                                             control={form.control}
@@ -563,7 +612,10 @@ export function AdvanceRequestForm({
                                                         min={0}
                                                         step={1}
                                                         inputMode="decimal"
-                                                        disabled={pending}
+                                                        disabled={
+                                                            pending ||
+                                                            isPaidInstallment
+                                                        }
                                                         aria-labelledby={`${formId}-installment-col`}
                                                         aria-invalid={
                                                             fieldState.invalid
@@ -582,10 +634,7 @@ export function AdvanceRequestForm({
                                         <Controller
                                             name={`installmentAmounts.${index}.repaymentDate`}
                                             control={form.control}
-                                            render={({
-                                                field,
-                                                fieldState,
-                                            }) => (
+                                            render={({ field, fieldState }) => (
                                                 <Field
                                                     data-invalid={
                                                         fieldState.invalid
@@ -595,7 +644,10 @@ export function AdvanceRequestForm({
                                                         {...field}
                                                         id={`${formId}-repayment-${index}`}
                                                         type="date"
-                                                        disabled={pending}
+                                                        disabled={
+                                                            pending ||
+                                                            isPaidInstallment
+                                                        }
                                                         aria-labelledby={`${formId}-repayment-col`}
                                                         aria-invalid={
                                                             fieldState.invalid
@@ -611,6 +663,25 @@ export function AdvanceRequestForm({
                                                 </Field>
                                             )}
                                         />
+                                        <Controller
+                                            name={`installmentAmounts.${index}.status`}
+                                            control={form.control}
+                                            render={({ field }) => {
+                                                const status = field.value ?? "loan";
+                                                return (
+                                                    <div className="flex h-9 items-center">
+                                                        <span
+                                                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                                                advanceStatusBadgeClass[
+                                                                    status
+                                                                ] ?? ""
+                                                            }`}>
+                                                            {status}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            }}
+                                        />
                                         <Button
                                             type="button"
                                             variant="destructive"
@@ -623,6 +694,8 @@ export function AdvanceRequestForm({
                                             <Trash2 className="size-4" />
                                         </Button>
                                     </div>
+                                        );
+                                    })()
                                 ))}
                             </div>
                         )}
@@ -635,21 +708,16 @@ export function AdvanceRequestForm({
                                 watchedInstallments.reduce(
                                     (sum, row) =>
                                         sum +
-                                        (row.repaymentDate &&
-                                        /^\d{4}-\d{2}-\d{2}$/.test(
-                                            row.repaymentDate,
-                                        )
-                                            ? Number(row.amount) || 0
-                                            : 0),
+                                (Number.isInteger(Number(row.amount)) &&
+                                Number(row.amount) > 0
+                                    ? Number(row.amount)
+                                    : 0),
                                     0,
                                 );
                             const hasValidInstallments =
                                 watchedInstallments.some(
                                     (row) =>
-                                        row.repaymentDate &&
-                                        /^\d{4}-\d{2}-\d{2}$/.test(
-                                            row.repaymentDate,
-                                        ) &&
+                                        Number.isInteger(Number(row.amount)) &&
                                         Number(row.amount) > 0,
                                 );
                             if (
@@ -670,8 +738,9 @@ export function AdvanceRequestForm({
                                             ? "text-emerald-600 dark:text-emerald-400"
                                             : "text-destructive"
                                     }`}>
-                                    Total: {formatAdvanceAmount(totalInstallments)}{" "}
-                                    / {formatAdvanceAmount(amountRequested)}{" "}
+                                    Total:{" "}
+                                    {formatAdvanceAmount(totalInstallments)} /{" "}
+                                    {formatAdvanceAmount(amountRequested)}{" "}
                                     requested
                                 </p>
                             );
@@ -680,8 +749,10 @@ export function AdvanceRequestForm({
                             <p
                                 className="text-destructive text-sm"
                                 role="alert">
-                                {form.formState.errors.installmentAmounts
-                                    .message}
+                                {
+                                    form.formState.errors.installmentAmounts
+                                        .message
+                                }
                             </p>
                         )}
                     </CardContent>
@@ -695,10 +766,10 @@ export function AdvanceRequestForm({
                     </CardHeader>
                     <CardContent className="space-y-4 pt-4">
                         <p className="text-muted-foreground text-sm leading-relaxed">
-                            I acknowledge that this advance is a loan and will be
-                            repaid according to the agreed terms. I authorize the
-                            company to deduct the repayment from my salary as
-                            specified.
+                            I acknowledge that this advance is a loan and will
+                            be repaid according to the agreed terms. I authorize
+                            the company to deduct the repayment from my salary
+                            as specified.
                         </p>
                         <div className="space-y-4">
                             <div className="grid gap-4 sm:grid-cols-2">
@@ -720,7 +791,9 @@ export function AdvanceRequestForm({
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <FieldLabel htmlFor={`${formId}-employee-sig-date`} className="text-muted-foreground font-normal">
+                                    <FieldLabel
+                                        htmlFor={`${formId}-employee-sig-date`}
+                                        className="text-muted-foreground font-normal">
                                         Date
                                     </FieldLabel>
                                     <Controller
@@ -757,7 +830,9 @@ export function AdvanceRequestForm({
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <FieldLabel htmlFor={`${formId}-manager-sig-date`} className="text-muted-foreground font-normal">
+                                    <FieldLabel
+                                        htmlFor={`${formId}-manager-sig-date`}
+                                        className="text-muted-foreground font-normal">
                                         Date
                                     </FieldLabel>
                                     <Controller
@@ -783,9 +858,7 @@ export function AdvanceRequestForm({
             <div className="flex flex-col items-end gap-3">
                 {(error ||
                     form.formState.errors.installmentAmounts?.message) && (
-                    <p
-                        className="text-destructive text-sm w-full"
-                        role="alert">
+                    <p className="text-destructive text-sm w-full" role="alert">
                         {error ??
                             form.formState.errors.installmentAmounts?.message}
                     </p>

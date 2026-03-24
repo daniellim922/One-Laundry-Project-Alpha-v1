@@ -73,6 +73,7 @@ export const columns: ColumnDef<AdvanceRequestWithWorker>[] = [
         header: "",
         cell: ({ row }) => {
             const advanceRequest = row.original;
+            const isPaid = advanceRequest.status === "paid";
             return (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -92,14 +93,23 @@ export const columns: ColumnDef<AdvanceRequestWithWorker>[] = [
                                 View
                             </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                            <Link
-                                href={`/dashboard/advance/${advanceRequest.id}/edit`}
+                        {isPaid ? (
+                            <DropdownMenuItem
+                                disabled
                                 className="flex w-full items-center gap-2">
                                 <Pencil className="h-4 w-4" />
                                 Edit
-                            </Link>
-                        </DropdownMenuItem>
+                            </DropdownMenuItem>
+                        ) : (
+                            <DropdownMenuItem asChild>
+                                <Link
+                                    href={`/dashboard/advance/${advanceRequest.id}/edit`}
+                                    className="flex w-full items-center gap-2">
+                                    <Pencil className="h-4 w-4" />
+                                    Edit
+                                </Link>
+                            </DropdownMenuItem>
+                        )}
                     </DropdownMenuContent>
                 </DropdownMenu>
             );

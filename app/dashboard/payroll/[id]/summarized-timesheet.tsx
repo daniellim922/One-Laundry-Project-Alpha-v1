@@ -52,20 +52,27 @@ export function SummarizedTimesheet({
 }: SummarizedTimesheetProps) {
     const start = dateFromKey(dateKey(payroll.periodStart));
     const end = dateFromKey(dateKey(payroll.periodEnd));
+    const entriesByDateIn = new Map<
+        string,
+        Pick<
+            SelectTimesheet,
+            "dateIn" | "timeIn" | "dateOut" | "timeOut" | "hours"
+        >[]
+    >();
+    for (const entry of entries) {
+        const key = dateKey(entry.dateIn);
+        const existing = entriesByDateIn.get(key);
+        if (existing) {
+            existing.push(entry);
+        } else {
+            entriesByDateIn.set(key, [entry]);
+        }
+    }
 
-    const entriesByDate = new Map(
-        entries.map((e) => [dateKey(e.dateIn), e]),
-    );
-
-    const days: { date: Date; key: string; entry?: (typeof entries)[0] }[] = [];
+    const periodDateKeys: string[] = [];
     const cursor = new Date(start);
     while (cursor <= end) {
-        const key = dateKey(cursor);
-        days.push({
-            date: new Date(cursor),
-            key,
-            entry: entriesByDate.get(key),
-        });
+        periodDateKeys.push(dateKey(cursor));
         cursor.setDate(cursor.getDate() + 1);
     }
 
@@ -106,58 +113,83 @@ export function SummarizedTimesheet({
                     <thead>
                         <tr className="border-y-2 border-black">
                             <th className="py-2 pl-2 text-left font-semibold print:py-1 print:pl-1">
-                                Date(s)
+                                Date In
                             </th>
                             <th className="py-2 text-center font-semibold print:py-1">
                                 Time in
                             </th>
                             <th className="py-2 text-center font-semibold print:py-1">
-                                Lunch Start
-                            </th>
-                            <th className="py-2 text-center font-semibold print:py-1">
-                                Lunch End
+                                Date Out
                             </th>
                             <th className="py-2 text-center font-semibold print:py-1">
                                 Time Out
                             </th>
-                            <th className="py-2 pr-2 text-right font-semibold print:py-1 print:pr-1">
-                                Hours Worked
+                            <th className="py-2 text-center font-semibold print:py-1">
+                                Hours
                             </th>
                         </tr>
                     </thead>
                     <tbody>
-                        {days.map(({ date, key, entry }) => (
-                            <tr
-                                key={key}
-                                className="border-b border-neutral-200">
-                                <td className="py-2 pl-2 font-medium print:py-0.5 print:pl-1">
-                                    {formatShortDate(date)}
-                                </td>
-                                <td className="py-2 text-center print:py-0.5">
-                                    {entry
-                                        ? formatTime24(String(entry.timeIn))
-                                        : ""}
-                                </td>
-                                <td className="py-2 text-center print:py-0.5" />
-                                <td className="py-2 text-center print:py-0.5" />
-                                <td className="py-2 text-center print:py-0.5">
-                                    {entry
-                                        ? formatTime24(String(entry.timeOut))
-                                        : ""}
-                                </td>
-                                <td className="py-2 pr-2 text-right print:py-0.5 print:pr-1">
-                                    {entry
-                                        ? `${Number(entry.hours).toFixed(2)} Hrs`
-                                        : "0.00 Hrs"}
-                                </td>
-                            </tr>
-                        ))}
+                        {periodDateKeys.map((dayKey) => {
+                            const dayEntries = entriesByDateIn.get(dayKey) ?? [];
+                            if (dayEntries.length === 0) {
+                                return (
+                                    <tr
+                                        key={`missing-${dayKey}`}
+                                        className="border-b border-neutral-200 text-neutral-500">
+                                        <td className="py-2 pl-2 font-medium print:py-0.5 print:pl-1">
+                                            {formatShortDate(dateFromKey(dayKey))}
+                                        </td>
+                                        <td className="py-2 text-center print:py-0.5">
+                                            -
+                                        </td>
+                                        <td className="py-2 text-center print:py-0.5">
+                                            -
+                                        </td>
+                                        <td className="py-2 text-center print:py-0.5">
+                                            -
+                                        </td>
+                                        <td className="py-2 pr-2 text-right print:py-0.5 print:pr-1">
+                                            0.00 Hrs
+                                        </td>
+                                    </tr>
+                                );
+                            }
+
+                            return dayEntries.map((entry, idx) => (
+                                <tr
+                                    key={`${dayKey}-${String(entry.timeIn)}-${String(entry.timeOut)}-${idx}`}
+                                    className="border-b border-neutral-200">
+                                    <td className="py-2 pl-2 font-medium print:py-0.5 print:pl-1">
+                                        {formatShortDate(
+                                            dateFromKey(dateKey(entry.dateIn)),
+                                        )}
+                                    </td>
+                                    <td className="py-2 text-center print:py-0.5">
+                                        {formatTime24(String(entry.timeIn))}
+                                    </td>
+                                    <td className="py-2 text-center print:py-0.5">
+                                        {formatShortDate(
+                                            dateFromKey(
+                                                dateKey(entry.dateOut),
+                                            ),
+                                        )}
+                                    </td>
+                                    <td className="py-2 text-center print:py-0.5">
+                                        {formatTime24(String(entry.timeOut))}
+                                    </td>
+                                    <td className="py-2 pr-2 text-right print:py-0.5 print:pr-1">
+                                        {Number(entry.hours).toFixed(2)} Hrs
+                                    </td>
+                                </tr>
+                            ));
+                        })}
                     </tbody>
                     <tfoot>
                         <tr className="border-t-2 border-black">
                             <td
                                 className="py-3 pl-2 font-semibold print:py-1 print:pl-1"
-                                colSpan={5}>
+                                colSpan={4}>
                                 Total Working Hours
                             </td>
                             <td className="py-3 pr-2 text-right font-semibold print:py-1 print:pr-1">

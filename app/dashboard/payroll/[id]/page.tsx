@@ -513,9 +513,7 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                                             <TableHead>
                                                 Repayment Date
                                             </TableHead>
-                                            <TableHead className="text-right">
-                                                Amount
-                                            </TableHead>
+                                            <TableHead>Amount</TableHead>
                                             <TableHead>Status</TableHead>
                                             <TableHead>Advance Request</TableHead>
                                         </TableRow>
@@ -530,7 +528,7 @@ export default async function PayrollDetailPage({ params }: PageProps) {
                                                           )
                                                         : "–"}
                                                 </TableCell>
-                                                <TableCell className="text-right">
+                                                <TableCell>
                                                     {formatAdvanceAmount(
                                                         adv.amount,
                                                     )}

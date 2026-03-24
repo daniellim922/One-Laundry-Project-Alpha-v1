@@ -38,7 +38,11 @@ export type UpdateAdvanceRequestInput = {
     loanDate: string;
     amount: string;
     purpose?: string;
-    installmentAmounts: Array<{ amount?: string; repaymentDate?: string }>;
+    installmentAmounts: Array<{
+        amount?: string;
+        repaymentDate?: string;
+        status?: "loan" | "paid";
+    }>;
     employeeSignature?: string;
     employeeSignatureDate?: string;
     managerSignature?: string;
@@ -65,14 +69,52 @@ export async function updateAdvanceRequest(
         return { success: false, error: "Date of request is required" };
     }
 
-    const validInstallments = input.installmentAmounts
-        .map((row) => {
-            const repaymentDate = parseDateString(row.repaymentDate);
-            const amount = parsePositiveInt(row.amount);
-            if (repaymentDate && amount != null) return { repaymentDate, amount };
-            return null;
-        })
-        .filter((r): r is { repaymentDate: string; amount: number } => r != null);
+    const validInstallments: Array<{
+        repaymentDate: string;
+        amount: number;
+        status: "loan" | "paid";
+    }> = [];
+    for (const row of input.installmentAmounts) {
+        const rawRepaymentDate = row.repaymentDate?.trim() ?? "";
+        const rawAmount = row.amount?.trim() ?? "";
+        const hasRepaymentDate = rawRepaymentDate.length > 0;
+        const hasAmount = rawAmount.length > 0;
+
+        if (!hasRepaymentDate && !hasAmount) continue;
+
+        if (hasAmount && !hasRepaymentDate) {
+            return {
+                success: false,
+                error: "Expected repayment date is required when installment amount is set",
+            };
+        }
+
+        if (hasRepaymentDate && !hasAmount) {
+            return {
+                success: false,
+                error: "Installment amount is required when repayment date is set",
+            };
+        }
+
+        const repaymentDate = parseDateString(rawRepaymentDate);
+        if (!repaymentDate) {
+            return {
+                success: false,
+                error: "Installment repayment date must be a valid date",
+            };
+        }
+
+        const amount = parsePositiveInt(rawAmount);
+        if (amount == null) {
+            return {
+                success: false,
+                error: "Installment amount must be a positive integer",
+            };
+        }
+
+        const status = row.status === "paid" ? "paid" : "loan";
+        validInstallments.push({ repaymentDate, amount, status });
+    }
 
     if (validInstallments.length === 0) {
         return {
@@ -146,7 +188,7 @@ export async function updateAdvanceRequest(
                 (inst) => ({
                     advanceRequestId,
                     amount: inst.amount,
-                    status: "loan" as const,
+                    status: inst.status,
                     repaymentDate: inst.repaymentDate,
                     createdAt: now,
                     updatedAt: now,
