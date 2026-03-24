@@ -78,6 +78,16 @@ export function PaymentVoucher({
         month: "2-digit",
         year: "numeric",
     });
+    const periodStartForTitle = periodStartDate.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+    });
+    const periodEndForTitle = periodEndDate.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+    });
 
     const earnings: LineItem[] = [];
     const deductions: LineItem[] = [];
@@ -174,10 +184,10 @@ export function PaymentVoucher({
     );
     const subtotalPay =
         voucher.totalPay ?? grossPay + (hoursNotMetItem?.amount ?? 0);
-    const netPay = voucher.netPay ?? voucher.totalPay ?? grossPay + totalDeductions;
+    const netPay =
+        voucher.netPay ?? voucher.totalPay ?? grossPay + totalDeductions;
 
-    const baseMethod =
-        voucher.paymentMethod ?? "Cheque / Cash / Bank Transfer";
+    const baseMethod = voucher.paymentMethod ?? "Cheque / Cash / Bank Transfer";
     const paymentMethodDisplay =
         voucher.paymentMethod === "PayNow" && voucher.payNowPhone
             ? `PayNow (${voucher.payNowPhone})`
@@ -189,7 +199,7 @@ export function PaymentVoucher({
     function handlePrint() {
         const originalTitle = document.title;
         const safeName = workerName.replace(/[/\\:*?"<>|]/g, "-");
-        const customTitle = `${safeName}: ${payroll.periodStart}-${payroll.periodEnd}`;
+        const customTitle = `${safeName} - ${periodStartForTitle}-${periodEndForTitle}`;
 
         const beforePrint = () => {
             document.title = customTitle;
@@ -211,10 +221,7 @@ export function PaymentVoucher({
     return (
         <div className="space-y-3">
             <div className="flex justify-end print:hidden">
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePrint}>
+                <Button variant="outline" size="sm" onClick={handlePrint}>
                     <Printer className="mr-2 h-4 w-4" />
                     Print Voucher
                 </Button>
