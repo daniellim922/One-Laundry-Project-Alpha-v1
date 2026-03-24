@@ -25,6 +25,7 @@ export type TimesheetEntryWithWorker = {
     timeIn: string;
     timeOut: string;
     hours: number;
+    status: "unpaid" | "paid";
     workerName: string;
 };
 
@@ -39,6 +40,16 @@ function formatDate(d: string): string {
 function formatTime(t: string): string {
     const s = String(t);
     return s.length >= 5 ? s.slice(0, 5) : s;
+}
+
+function formatStatus(status: "unpaid" | "paid"): string {
+    return status === "paid" ? "Paid" : "Unpaid";
+}
+
+function statusPillClass(status: "unpaid" | "paid"): string {
+    return status === "paid"
+        ? "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-800"
+        : "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-800";
 }
 
 const sortableHeader =
@@ -161,6 +172,15 @@ export const columns: ColumnDef<TimesheetEntryWithWorker>[] = [
         header: sortableHeader("Hours"),
         enableColumnFilter: false,
         cell: ({ row }) => row.original.hours.toFixed(2),
+    },
+    {
+        accessorKey: "status",
+        header: sortableHeader("Status"),
+        cell: ({ row }) => (
+            <span className={statusPillClass(row.original.status)}>
+                {formatStatus(row.original.status)}
+            </span>
+        ),
     },
     {
         id: "actions",

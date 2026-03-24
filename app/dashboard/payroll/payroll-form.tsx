@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 
-type Worker = { id: string; name: string };
+type Worker = { id: string; name: string; status: string };
 
 export function PayrollForm({ workers }: { workers: Worker[] }) {
     const router = useRouter();
@@ -66,6 +66,25 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
             {
                 accessorKey: "name",
                 header: "Worker",
+            },
+            {
+                accessorKey: "status",
+                header: "Status",
+                cell: ({ row }) => {
+                    const status = row.original.status;
+                    const isActive = status.toLowerCase() === "active";
+                    return (
+                        <span
+                            className={
+                                isActive
+                                    ? "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-800"
+                                    : "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-800"
+                            }
+                        >
+                            {status}
+                        </span>
+                    );
+                },
             },
         ],
         [],

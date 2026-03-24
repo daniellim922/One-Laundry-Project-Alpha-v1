@@ -6,13 +6,19 @@ import { workerTable } from "@/db/tables/payroll/workerTable";
 import { Button } from "@/components/ui/button";
 import { PayrollForm } from "../payroll-form";
 import { ArrowLeft } from "lucide-react";
+import { eq } from "drizzle-orm";
 
 export default async function NewPayrollPage() {
     await requirePermission("Payroll", "create");
 
     const workers = await db
-        .select({ id: workerTable.id, name: workerTable.name })
+        .select({
+            id: workerTable.id,
+            name: workerTable.name,
+            status: workerTable.status,
+        })
         .from(workerTable)
+        .where(eq(workerTable.status, "Active"))
         .orderBy(workerTable.name);
 
     return (

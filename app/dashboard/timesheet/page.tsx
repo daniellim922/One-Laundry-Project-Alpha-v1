@@ -29,6 +29,7 @@ export default async function TimesheetPage() {
         timeIn: String(r.entry.timeIn),
         timeOut: String(r.entry.timeOut),
         hours: Number(r.entry.hours),
+        status: r.entry.status,
         workerName: r.workerName,
     }));
 
