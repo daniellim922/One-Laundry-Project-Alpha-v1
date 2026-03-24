@@ -31,7 +31,7 @@ export default async function Page() {
         .from(payrollTable)
         .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id))
         .innerJoin(employmentTable, eq(workerTable.employmentId, employmentTable.id))
-        .orderBy(asc(workerTable.name), asc(payrollTable.status));
+        .orderBy(asc(payrollTable.status), asc(workerTable.name));
 
     const data: PayrollWithWorker[] = rows.map((r) => ({
         ...r.payroll,
