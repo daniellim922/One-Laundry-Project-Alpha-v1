@@ -153,7 +153,7 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
                             <Link
-                                href={`/dashboard/payroll/${payroll.id}`}
+                                href={`/dashboard/payroll/${payroll.id}/breakdown`}
                                 className="w-full">
                                 View
                             </Link>

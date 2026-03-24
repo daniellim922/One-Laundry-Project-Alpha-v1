@@ -431,7 +431,8 @@ export async function updatePayroll(payrollId: string, formData: FormData) {
         })
         .where(eq(payrollVoucherTable.id, existing.payrollVoucherId));
 
-    revalidatePath(`/dashboard/payroll/${payrollId}`);
+    revalidatePath(`/dashboard/payroll/${payrollId}/breakdown`);
+    revalidatePath(`/dashboard/payroll/${payrollId}/summary`);
     revalidatePath("/dashboard/payroll");
     return { success: true };
 }
@@ -522,16 +523,26 @@ export async function recalculateVouchersForWorker(workerId: string) {
         await db
             .update(payrollVoucherTable)
             .set({
+                employmentType: employment.employmentType,
+                employmentArrangement: employment.employmentArrangement,
+                monthlyPay: employment.monthlyPay,
+                minimumWorkingHours: employment.minimumWorkingHours,
                 totalHoursWorked,
                 hoursNotMet,
                 hoursNotMetDeduction,
                 overtimeHours: payCalc.overtimeHours,
+                hourlyRate: employment.hourlyRate,
                 overtimePay: payCalc.overtimePay,
+                restDayRate: employment.restDayRate,
                 restDayPay: payCalc.restDayPay,
                 publicHolidayPay: payCalc.publicHolidayPay,
+                cpf: employment.cpf,
                 advance: advanceTotal,
                 totalPay,
                 netPay,
+                paymentMethod: employment.paymentMethod,
+                payNowPhone: employment.payNowPhone,
+                bankAccountNumber: employment.bankAccountNumber,
                 updatedAt: new Date(),
             })
             .where(eq(payrollVoucherTable.id, payroll.payrollVoucherId));
@@ -614,7 +625,8 @@ export async function updateVoucherDays(input: {
         })
         .where(eq(payrollVoucherTable.id, voucherId));
 
-    revalidatePath(`/dashboard/payroll/${payrollId}`);
+    revalidatePath(`/dashboard/payroll/${payrollId}/breakdown`);
+    revalidatePath(`/dashboard/payroll/${payrollId}/summary`);
     revalidatePath("/dashboard/payroll");
     return { success: true };
 }

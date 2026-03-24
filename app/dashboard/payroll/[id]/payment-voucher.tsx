@@ -220,10 +220,13 @@ export function PaymentVoucher({
 
     return (
         <div className="space-y-3">
-            <div className="flex justify-end print:hidden">
-                <Button variant="outline" size="sm" onClick={handlePrint}>
+            <div className="w-full print:hidden">
+                <Button
+                    size="lg"
+                    className="h-12 w-full text-base"
+                    onClick={handlePrint}>
                     <Printer className="mr-2 h-4 w-4" />
-                    Print Voucher
+                    Print Summary
                 </Button>
             </div>
 

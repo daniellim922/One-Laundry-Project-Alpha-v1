@@ -12,6 +12,7 @@ import {
     employmentTable,
     type InsertEmployment,
 } from "@/db/tables/payroll/employmentTable";
+import { recalculateVouchersForWorker } from "@/app/dashboard/payroll/actions";
 
 function isoNow(): Date {
     return new Date();
@@ -220,7 +221,12 @@ export async function updateWorker(
             })
             .where(eq(workerTable.id, id));
 
+        await recalculateVouchersForWorker(id);
+
         revalidatePath("/dashboard/workers");
+        revalidatePath("/dashboard/payroll");
+        revalidatePath("/dashboard/payroll/[id]/summary", "page");
+        revalidatePath("/dashboard/payroll/[id]/breakdown", "page");
 
         return { success: true, id };
     } catch (error) {
