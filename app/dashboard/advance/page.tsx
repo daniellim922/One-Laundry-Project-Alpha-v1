@@ -1,50 +1,95 @@
 import Link from "next/link";
-import { Suspense } from "react";
+import { count, eq } from "drizzle-orm";
 
-import { DataTable } from "@/components/data-table";
+import { db } from "@/lib/db";
+import { advanceRequestTable } from "@/db/tables/payroll/advanceRequestTable";
 import { Button } from "@/components/ui/button";
-import { listAdvanceRequestsWithWorkers } from "@/lib/advances-queries";
-import { Plus } from "lucide-react";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { SimpleDonutChart } from "@/components/dashboard/simple-donut-chart";
+import { ArrowRight, Banknote, Plus } from "lucide-react";
 
-import { columns } from "./columns";
-
-export default async function AdvanceListPage() {
-    const advanceRequests = await listAdvanceRequestsWithWorkers();
+export default async function AdvanceOverviewPage() {
+    const [[{ total }], [{ loanCount }]] = await Promise.all([
+        db.select({ total: count() }).from(advanceRequestTable),
+        db
+            .select({ loanCount: count() })
+            .from(advanceRequestTable)
+            .where(eq(advanceRequestTable.status, "loan")),
+    ]);
+    const paidCount = Number(total) - Number(loanCount);
 
     return (
         <div className="space-y-6">
             <div>
-                <h2
-                    className="text-2xl font-semibold tracking-tight"
-                    data-testid="advance-list-heading">
-                    Advance loans
-                </h2>
+                <h1 className="text-2xl font-semibold tracking-tight">
+                    Advance
+                </h1>
                 <p className="text-muted-foreground">
-                    All advance loans across workers.
+                    Salary advances overview and quick actions
                 </p>
             </div>
 
-            <Suspense
-                fallback={
-                    <div className="rounded-md border p-6 text-sm text-muted-foreground">
-                        Loading...
-                    </div>
-                }>
-                <DataTable
-                    columns={columns}
-                    data={advanceRequests}
-                    searchKey="workerName"
-                    searchParamKey="search"
-                    actions={
-                        <Button asChild>
-                            <Link href="/dashboard/advance/new">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add Advance Request
-                            </Link>
-                        </Button>
-                    }
-                />
-            </Suspense>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                            Advance requests
+                        </CardTitle>
+                        <Banknote className="text-muted-foreground h-4 w-4" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{total}</div>
+                        <p className="text-muted-foreground text-xs">
+                            {loanCount} active loans
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+                <Button asChild>
+                    <Link href="/dashboard/advance/all">
+                        All advances
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                    <Link href="/dashboard/advance/new">
+                        <Plus className="mr-2 h-4 w-4" />
+                        New advance
+                    </Link>
+                </Button>
+            </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Advances</CardTitle>
+                    <CardDescription>Loan vs paid</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <SimpleDonutChart
+                        centerLabel="requests"
+                        segments={[
+                            {
+                                key: "loan",
+                                label: "Active loan",
+                                value: Number(loanCount),
+                            },
+                            {
+                                key: "paid",
+                                label: "Paid",
+                                value: paidCount,
+                            },
+                        ]}
+                    />
+                </CardContent>
+            </Card>
         </div>
     );
 }

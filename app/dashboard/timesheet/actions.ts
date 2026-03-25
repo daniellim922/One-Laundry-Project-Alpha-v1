@@ -82,7 +82,9 @@ export async function createTimesheetEntry(formData: FormData) {
     await recalculateVouchersForWorker(workerId);
 
     revalidatePath("/dashboard/timesheet");
+    revalidatePath("/dashboard/timesheet/all");
     revalidatePath("/dashboard/payroll");
+    revalidatePath("/dashboard/payroll/all");
     return { success: true };
 }
 
@@ -134,7 +136,9 @@ export async function updateTimesheetEntry(id: string, formData: FormData) {
     }
 
     revalidatePath("/dashboard/timesheet");
+    revalidatePath("/dashboard/timesheet/all");
     revalidatePath("/dashboard/payroll");
+    revalidatePath("/dashboard/payroll/all");
     return { success: true };
 }
 
@@ -152,7 +156,9 @@ export async function deleteTimesheetEntry(id: string) {
     if (entry) await recalculateVouchersForWorker(entry.workerId);
 
     revalidatePath("/dashboard/timesheet");
+    revalidatePath("/dashboard/timesheet/all");
     revalidatePath("/dashboard/payroll");
+    revalidatePath("/dashboard/payroll/all");
     return { success: true };
 }
 
@@ -222,7 +228,9 @@ export async function importTimesheetEntries(rows: ImportRow[]) {
     }
 
     revalidatePath("/dashboard/timesheet");
+    revalidatePath("/dashboard/timesheet/all");
     revalidatePath("/dashboard/payroll");
+    revalidatePath("/dashboard/payroll/all");
 
     return {
         imported: toInsert.length,
@@ -305,7 +313,9 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
     }
 
     revalidatePath("/dashboard/timesheet");
+    revalidatePath("/dashboard/timesheet/all");
     revalidatePath("/dashboard/payroll");
+    revalidatePath("/dashboard/payroll/all");
 
     return {
         imported: toInsert.length,

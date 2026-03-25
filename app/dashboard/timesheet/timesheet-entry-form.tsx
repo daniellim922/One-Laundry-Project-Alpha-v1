@@ -56,7 +56,7 @@ export function TimesheetEntryForm({
             setError(result.error);
             return;
         }
-        router.push("/dashboard/timesheet");
+        router.push("/dashboard/timesheet/all");
         router.refresh();
     }
 

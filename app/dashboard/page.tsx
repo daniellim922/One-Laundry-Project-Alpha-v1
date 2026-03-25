@@ -60,7 +60,7 @@ export default async function Page() {
                             Active workers in your workforce
                         </p>
                         <Button variant="link" className="h-auto p-0" asChild>
-                            <Link href="/dashboard/workers">
+                            <Link href="/dashboard/worker/all">
                                 View workers
                                 <ArrowRight className="ml-1 h-3 w-3" />
                             </Link>
@@ -84,7 +84,7 @@ export default async function Page() {
                             {expensesCount > 1 ? "s" : ""}
                         </p>
                         <Button variant="link" className="h-auto p-0" asChild>
-                            <Link href="/dashboard/expenses">
+                            <Link href="/dashboard/expenses/all">
                                 View expenses
                                 <ArrowRight className="ml-1 h-3 w-3" />
                             </Link>
@@ -125,7 +125,7 @@ export default async function Page() {
                             Explore all dashboard areas
                         </p>
                         <Button variant="link" className="h-auto p-0" asChild>
-                            <Link href="/dashboard/workers">
+                            <Link href="/dashboard/worker/all">
                                 View workers
                                 <ArrowRight className="ml-1 h-3 w-3" />
                             </Link>
@@ -143,7 +143,7 @@ export default async function Page() {
                 </CardHeader>
                 <CardContent className="flex flex-wrap gap-3">
                     <Button asChild>
-                        <Link href="/dashboard/workers/new">Add worker</Link>
+                        <Link href="/dashboard/worker/new">Add worker</Link>
                     </Button>
                     <Button variant="outline" asChild>
                         <Link href="/dashboard/expenses/new">Add expense</Link>
@@ -154,7 +154,7 @@ export default async function Page() {
                         </Link>
                     </Button>
                     <Button variant="outline" asChild>
-                        <Link href="/dashboard/iam">Manage IAM</Link>
+                        <Link href="/dashboard/iam/roles">Manage IAM</Link>
                     </Button>
                 </CardContent>
             </Card>

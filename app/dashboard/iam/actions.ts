@@ -80,7 +80,8 @@ export async function createRoleWithPermissions(
     }
 
     revalidatePath("/dashboard/iam");
-    redirect("/dashboard/iam");
+    revalidatePath("/dashboard/iam/roles");
+    redirect("/dashboard/iam/roles");
 }
 
 export async function updateRolePermissions(
@@ -131,7 +132,8 @@ export async function updateRolePermissions(
     }
 
     revalidatePath("/dashboard/iam");
-    redirect("/dashboard/iam");
+    revalidatePath("/dashboard/iam/roles");
+    redirect("/dashboard/iam/roles");
 }
 
 export async function createUser(data: {
@@ -196,7 +198,8 @@ export async function createUser(data: {
     }
 
     revalidatePath("/dashboard/iam");
-    redirect("/dashboard/iam");
+    revalidatePath("/dashboard/iam/roles");
+    redirect("/dashboard/iam/roles");
 }
 
 export async function updateUser(
@@ -227,7 +230,8 @@ export async function updateUser(
     }
 
     revalidatePath("/dashboard/iam");
-    redirect("/dashboard/iam");
+    revalidatePath("/dashboard/iam/roles");
+    redirect("/dashboard/iam/roles");
 }
 
 export async function banUser(
@@ -257,6 +261,7 @@ export async function banUser(
     await db.delete(session).where(eq(session.userId, userId));
 
     revalidatePath("/dashboard/iam");
+    revalidatePath("/dashboard/iam/roles");
     return {};
 }
 
@@ -282,5 +287,6 @@ export async function unbanUser(userId: string): Promise<{ error?: string }> {
         .where(eq(user.id, userId));
 
     revalidatePath("/dashboard/iam");
+    revalidatePath("/dashboard/iam/roles");
     return {};
 }

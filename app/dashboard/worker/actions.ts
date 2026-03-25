@@ -117,7 +117,8 @@ export async function createWorker(formData: FormData): Promise<ActionResult> {
             return { success: false, error: "Failed to create worker" };
         }
 
-        revalidatePath("/dashboard/workers");
+        revalidatePath("/dashboard/worker");
+        revalidatePath("/dashboard/worker/all");
 
         return { success: true, id: workerId };
     } catch (error) {
@@ -223,8 +224,10 @@ export async function updateWorker(
 
         await recalculateVouchersForWorker(id);
 
-        revalidatePath("/dashboard/workers");
+        revalidatePath("/dashboard/worker");
+        revalidatePath("/dashboard/worker/all");
         revalidatePath("/dashboard/payroll");
+        revalidatePath("/dashboard/payroll/all");
         revalidatePath("/dashboard/payroll/[id]/summary", "page");
         revalidatePath("/dashboard/payroll/[id]/breakdown", "page");
 

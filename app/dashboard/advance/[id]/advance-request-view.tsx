@@ -58,7 +58,7 @@ export function AdvanceRequestView({
                         <Field className="min-w-0 space-y-2">
                             <FieldLabel>Employee</FieldLabel>
                             <Link
-                                href={`/dashboard/workers/${request.workerId}/view`}
+                                href={`/dashboard/worker/${request.workerId}/view`}
                                 className="font-medium text-primary underline-offset-4 hover:underline">
                                 {request.workerName}
                             </Link>

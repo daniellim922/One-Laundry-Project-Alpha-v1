@@ -159,7 +159,7 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
                             <Link
-                                href={`/dashboard/workers/${worker.id}/view`}
+                                href={`/dashboard/worker/${worker.id}/view`}
                                 className="flex w-full items-center gap-2">
                                 <Eye className="h-4 w-4" />
                                 View
@@ -167,7 +167,7 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                             <Link
-                                href={`/dashboard/workers/${worker.id}/edit`}
+                                href={`/dashboard/worker/${worker.id}/edit`}
                                 className="flex w-full items-center gap-2">
                                 <Pencil className="h-4 w-4" />
                                 Edit

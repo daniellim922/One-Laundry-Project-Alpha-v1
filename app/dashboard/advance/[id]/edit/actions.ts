@@ -214,8 +214,10 @@ export async function updateAdvanceRequest(
             await recalculateVouchersForWorker(oldWorkerId);
         }
         revalidatePath("/dashboard/advance");
+        revalidatePath("/dashboard/advance/all");
         revalidatePath(`/dashboard/advance/${advanceRequestId}`);
         revalidatePath("/dashboard/payroll");
+        revalidatePath("/dashboard/payroll/all");
 
         return { success: true };
     } catch (error) {

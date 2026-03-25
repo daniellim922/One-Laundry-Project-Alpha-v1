@@ -111,8 +111,11 @@ describe("settlePayroll", () => {
         expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/payroll/payroll-1/breakdown");
         expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/payroll/payroll-1/summary");
         expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/payroll");
+        expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/payroll/all");
         expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/advance");
+        expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/advance/all");
         expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/timesheet");
+        expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/timesheet/all");
         expect(txUpdate).toHaveBeenCalled();
     });
 });

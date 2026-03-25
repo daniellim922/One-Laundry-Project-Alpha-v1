@@ -2,7 +2,7 @@ import Link from "next/link";
 import { count, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
+import { workerTable } from "@/db/tables/payroll/workerTable";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -12,25 +12,25 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { SimpleDonutChart } from "@/components/dashboard/simple-donut-chart";
-import { ArrowRight, FileSpreadsheet, Plus, Upload } from "lucide-react";
+import { ArrowRight, Plus, Users } from "lucide-react";
 
-export default async function TimesheetOverviewPage() {
-    const [[{ total }], [{ unpaid }]] = await Promise.all([
-        db.select({ total: count() }).from(timesheetTable),
+export default async function WorkerOverviewPage() {
+    const [[{ total }], [{ active }]] = await Promise.all([
+        db.select({ total: count() }).from(workerTable),
         db
-            .select({ unpaid: count() })
-            .from(timesheetTable)
-            .where(eq(timesheetTable.status, "unpaid")),
+            .select({ active: count() })
+            .from(workerTable)
+            .where(eq(workerTable.status, "Active")),
     ]);
+
+    const inactive = Number(total) - Number(active);
 
     return (
         <div className="space-y-6">
             <div>
-                <h1 className="text-2xl font-semibold tracking-tight">
-                    Timesheet
-                </h1>
+                <h1 className="text-2xl font-semibold tracking-tight">Worker</h1>
                 <p className="text-muted-foreground">
-                    Overview of entries and quick actions
+                    Overview of your workforce and quick actions
                 </p>
             </div>
 
@@ -38,15 +38,14 @@ export default async function TimesheetOverviewPage() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">
-                            Total entries
+                            Total workers
                         </CardTitle>
-                        <FileSpreadsheet className="text-muted-foreground h-4 w-4" />
+                        <Users className="text-muted-foreground h-4 w-4" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">{total}</div>
                         <p className="text-muted-foreground text-xs">
-                            {unpaid} unpaid ·{" "}
-                            {Number(total) - Number(unpaid)} paid
+                            {active} active, {inactive} inactive
                         </p>
                     </CardContent>
                 </Card>
@@ -54,43 +53,37 @@ export default async function TimesheetOverviewPage() {
 
             <div className="flex flex-wrap gap-2">
                 <Button asChild>
-                    <Link href="/dashboard/timesheet/all">
-                        All timesheets
+                    <Link href="/dashboard/worker/all">
+                        View all workers
                         <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                 </Button>
                 <Button variant="outline" asChild>
-                    <Link href="/dashboard/timesheet/new">
+                    <Link href="/dashboard/worker/new">
                         <Plus className="mr-2 h-4 w-4" />
-                        New timesheet
-                    </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                    <Link href="/dashboard/timesheet/import">
-                        <Upload className="mr-2 h-4 w-4" />
-                        Import timesheets
+                        New worker
                     </Link>
                 </Button>
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Payment status</CardTitle>
-                    <CardDescription>Unpaid vs paid entries</CardDescription>
+                    <CardTitle>Status breakdown</CardTitle>
+                    <CardDescription>Active vs inactive workers</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <SimpleDonutChart
-                        centerLabel="entries"
+                        centerLabel="workers"
                         segments={[
                             {
-                                key: "unpaid",
-                                label: "Unpaid",
-                                value: Number(unpaid),
+                                key: "active",
+                                label: "Active",
+                                value: Number(active),
                             },
                             {
-                                key: "paid",
-                                label: "Paid",
-                                value: Number(total) - Number(unpaid),
+                                key: "inactive",
+                                label: "Inactive",
+                                value: inactive,
                             },
                         ]}
                     />

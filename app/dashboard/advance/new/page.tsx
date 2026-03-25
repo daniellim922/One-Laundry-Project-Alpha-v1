@@ -27,7 +27,7 @@ export default async function AdvanceRequestPage({
     return (
         <div className="mx-auto max-w-4xl space-y-8">
             <div className="flex items-center gap-3">
-                <BackButton href="/dashboard/advance" />
+                <BackButton href="/dashboard/advance/all" />
                 <div>
                     <h1 className="text-xl font-semibold tracking-wide uppercase">
                         Employee advance request form

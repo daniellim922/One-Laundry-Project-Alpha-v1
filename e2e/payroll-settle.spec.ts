@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test.describe("Payroll settle flow", () => {
     test("settles a draft payroll from detail page", async ({ page }) => {
-        await page.goto("/dashboard/payroll");
+        await page.goto("/dashboard/payroll/all");
 
         const draftRow = page.getByRole("row").filter({ hasText: "draft" }).first();
         await expect(draftRow).toBeVisible();

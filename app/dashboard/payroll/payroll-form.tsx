@@ -136,7 +136,7 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
             setError(result.error);
             return;
         }
-        router.push("/dashboard/payroll");
+        router.push("/dashboard/payroll/all");
         router.refresh();
     }
 

@@ -25,7 +25,7 @@ export default async function NewPayrollPage() {
         <div className="space-y-4">
             <div className="flex items-center gap-4">
                 <Button variant="ghost" size="icon" asChild>
-                    <Link href="/dashboard/payroll">
+                    <Link href="/dashboard/payroll/all">
                         <ArrowLeft className="h-4 w-4" />
                     </Link>
                 </Button>

@@ -1,77 +1,95 @@
 import Link from "next/link";
-import { Suspense } from "react";
-import { asc, eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import {
-    payrollTable,
-    type SelectPayroll,
-} from "@/db/tables/payroll/payrollTable";
-import { workerTable } from "@/db/tables/payroll/workerTable";
-import { employmentTable } from "@/db/tables/payroll/employmentTable";
-import { columns } from "./columns";
-import { DataTable } from "@/components/data-table";
+import { payrollTable } from "@/db/tables/payroll/payrollTable";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { SimpleDonutChart } from "@/components/dashboard/simple-donut-chart";
+import { ArrowRight, Plus, Wallet } from "lucide-react";
 
-type PayrollWithWorker = SelectPayroll & {
-    workerName: string;
-    employmentType: string;
-    employmentArrangement: string;
-};
-
-export default async function Page() {
-    const rows = await db
-        .select({
-            payroll: payrollTable,
-            workerName: workerTable.name,
-            employmentType: employmentTable.employmentType,
-            employmentArrangement: employmentTable.employmentArrangement,
-        })
-        .from(payrollTable)
-        .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id))
-        .innerJoin(employmentTable, eq(workerTable.employmentId, employmentTable.id))
-        .orderBy(asc(payrollTable.status), asc(workerTable.name));
-
-    const data: PayrollWithWorker[] = rows.map((r) => ({
-        ...r.payroll,
-        workerName: r.workerName,
-        employmentType: r.employmentType,
-        employmentArrangement: r.employmentArrangement,
-    }));
+export default async function PayrollOverviewPage() {
+    const [[{ total }], [{ draftCount }]] = await Promise.all([
+        db.select({ total: count() }).from(payrollTable),
+        db
+            .select({ draftCount: count() })
+            .from(payrollTable)
+            .where(eq(payrollTable.status, "draft")),
+    ]);
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <div>
                 <h1 className="text-2xl font-semibold tracking-tight">
                     Payroll
                 </h1>
                 <p className="text-muted-foreground">
-                    View and manage your payroll records.
+                    Overview of payroll runs and quick actions
                 </p>
             </div>
 
-            <Suspense
-                fallback={
-                    <div className="rounded-md border p-6 text-sm text-muted-foreground">
-                        Loading...
-                    </div>
-                }>
-                <DataTable
-                    columns={columns}
-                    data={data}
-                    searchKey="workerName"
-                    searchParamKey="search"
-                    actions={
-                        <Button asChild>
-                            <Link href="/dashboard/payroll/new">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Generate payroll
-                            </Link>
-                        </Button>
-                    }
-                />
-            </Suspense>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                            Payroll records
+                        </CardTitle>
+                        <Wallet className="text-muted-foreground h-4 w-4" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{total}</div>
+                        <p className="text-muted-foreground text-xs">
+                            {draftCount} draft ·{" "}
+                            {Number(total) - Number(draftCount)} settled
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+                <Button asChild>
+                    <Link href="/dashboard/payroll/all">
+                        All payrolls
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                    <Link href="/dashboard/payroll/new">
+                        <Plus className="mr-2 h-4 w-4" />
+                        New payroll
+                    </Link>
+                </Button>
+            </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Payroll by status</CardTitle>
+                    <CardDescription>Draft vs settled</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <SimpleDonutChart
+                        centerLabel="runs"
+                        segments={[
+                            {
+                                key: "draft",
+                                label: "Draft",
+                                value: Number(draftCount),
+                            },
+                            {
+                                key: "settled",
+                                label: "Settled",
+                                value: Number(total) - Number(draftCount),
+                            },
+                        ]}
+                    />
+                </CardContent>
+            </Card>
         </div>
     );
 }

@@ -35,7 +35,7 @@ export default async function AdvanceEditPage({
     return (
         <div className="mx-auto w-full max-w-screen-2xl space-y-8">
             <div className="flex items-center gap-3">
-                <BackButton href="/dashboard/advance" />
+                <BackButton href="/dashboard/advance/all" />
                 <div>
                     <h1 className="text-xl font-semibold tracking-wide uppercase">
                         Edit advance request

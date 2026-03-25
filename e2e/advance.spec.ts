@@ -1,19 +1,21 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Advance dashboard", () => {
-    test("sidebar navigates to advance list", async ({ page }) => {
+    test("sidebar navigates to advance overview", async ({ page }) => {
         await page.goto("/dashboard");
         await page.getByRole("link", { name: "Advance" }).click();
         await expect(page).toHaveURL(/\/dashboard\/advance$/);
         await expect(
-            page.getByTestId("advance-list-heading"),
+            page
+                .locator("main")
+                .getByRole("heading", { name: "Advance", exact: true }),
         ).toBeVisible();
     });
 
     test("list shows seeded advance and View opens detail", async ({
         page,
     }) => {
-        await page.goto("/dashboard/advance");
+        await page.goto("/dashboard/advance/all");
 
         const dataRow = page
             .getByRole("row")
@@ -42,8 +44,8 @@ test.describe("Advance dashboard", () => {
     test("add advance request form submits and returns to list", async ({
         page,
     }) => {
-        await page.goto("/dashboard/advance");
-        await page.getByRole("link", { name: "Add advance request" }).click();
+        await page.goto("/dashboard/advance/all");
+        await page.getByRole("link", { name: "New advance" }).click();
         await expect(page).toHaveURL(/\/dashboard\/advance\/new$/);
         await expect(page.getByTestId("advance-request-form")).toBeVisible();
 
@@ -65,7 +67,7 @@ test.describe("Advance dashboard", () => {
 
         await page.getByTestId("advance-request-submit").click();
 
-        await expect(page).toHaveURL(/\/dashboard\/advance$/);
+        await expect(page).toHaveURL(/\/dashboard\/advance\/all$/);
         await expect(page.getByRole("cell", { name: "$777" }).first()).toBeVisible();
         await expect(
             page.getByRole("cell", { name: "Nguyen Thi Thao" }).first(),

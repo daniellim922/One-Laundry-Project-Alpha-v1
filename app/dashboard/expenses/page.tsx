@@ -1,27 +1,50 @@
 import Link from "next/link";
-import { Suspense } from "react";
 import { count, sum } from "drizzle-orm";
 
+import { SimpleDonutChart } from "@/components/dashboard/simple-donut-chart";
 import { db } from "@/lib/db";
-import { expensesTable, type SelectExpense } from "@/db/expensesTable";
-import { columns } from "./columns";
-import { DataTable } from "@/components/data-table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { expensesTable } from "@/db/expensesTable";
 import { Button } from "@/components/ui/button";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
 import { ArrowRight, DollarSign, Plus } from "lucide-react";
 
-export default async function Page() {
-    const [expenses, statsResult] = await Promise.all([
-        db.select().from(expensesTable),
+function slugCategory(cat: string | null): string {
+    const base = (cat ?? "uncategorized").toLowerCase().replace(/\s+/g, "_");
+    return base.replace(/[^a-z0-9_]/g, "") || "uncategorized";
+}
+
+export default async function ExpensesOverviewPage() {
+    const [[statsRow], categoryRows] = await Promise.all([
         db
             .select({
                 count: count(),
                 total: sum(expensesTable.amount),
             })
             .from(expensesTable),
+        db
+            .select({
+                category: expensesTable.category,
+                cnt: count(),
+            })
+            .from(expensesTable)
+            .groupBy(expensesTable.category),
     ]);
-    const expensesCount = statsResult[0]?.count ?? 0;
-    const expensesTotal = Number(statsResult[0]?.total ?? 0);
+    const expensesCount = statsRow?.count ?? 0;
+    const expensesTotal = Number(statsRow?.total ?? 0);
+
+    const categorySegments = categoryRows
+        .filter((r) => Number(r.cnt) > 0)
+        .map((r, i) => ({
+            key: `${slugCategory(r.category)}_${i}`,
+            label: r.category?.trim() || "Uncategorized",
+            value: Number(r.cnt),
+        }));
 
     return (
         <div className="space-y-6">
@@ -30,7 +53,7 @@ export default async function Page() {
                     Expenses
                 </h1>
                 <p className="text-muted-foreground">
-                    View and manage your expenses here.
+                    Overview of spending and quick actions
                 </p>
             </div>
 
@@ -38,7 +61,7 @@ export default async function Page() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">
-                            Total Amount
+                            Total amount
                         </CardTitle>
                         <DollarSign className="text-muted-foreground h-4 w-4" />
                     </CardHeader>
@@ -50,57 +73,43 @@ export default async function Page() {
                             {expensesCount} expense record
                             {expensesCount !== 1 ? "s" : ""}
                         </p>
-                        <Button variant="link" className="h-auto p-0" asChild>
-                            <Link href="/dashboard/expenses">
-                                View all expenses
-                                <ArrowRight className="ml-1 h-3 w-3" />
-                            </Link>
-                        </Button>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Quick Actions
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-2">
-                        <Button asChild size="sm">
-                            <Link href="/dashboard/expenses/new">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add expense
-                            </Link>
-                        </Button>
-                        <Button variant="outline" size="sm" asChild>
-                            <Link href="/dashboard/expenses">
-                                Browse expenses
-                            </Link>
-                        </Button>
                     </CardContent>
                 </Card>
             </div>
 
-            <Suspense
-                fallback={
-                    <div className="rounded-md border p-6 text-sm text-muted-foreground">
-                        Loading...
-                    </div>
-                }>
-                <DataTable
-                    columns={columns}
-                    data={expenses}
-                    searchKey="description"
-                    searchParamKey="search"
-                    actions={
-                        <Button asChild>
-                            <Link href="/dashboard/expenses/new">
-                                <Plus className="mr-2 h-4 w-4" />
-                                Add expense
-                            </Link>
-                        </Button>
-                    }
-                />
-            </Suspense>
+            <div className="flex flex-wrap gap-2">
+                <Button asChild>
+                    <Link href="/dashboard/expenses/all">
+                        All expenses
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                    <Link href="/dashboard/expenses/new">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add expense
+                    </Link>
+                </Button>
+            </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>By category</CardTitle>
+                    <CardDescription>Expense count per category</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {categorySegments.length > 0 ? (
+                        <SimpleDonutChart
+                            centerLabel="records"
+                            segments={categorySegments}
+                        />
+                    ) : (
+                        <p className="text-muted-foreground text-sm">
+                            No expenses yet.
+                        </p>
+                    )}
+                </CardContent>
+            </Card>
         </div>
     );
 }

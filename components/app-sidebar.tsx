@@ -29,7 +29,7 @@ import {
 
 const ICON_MAP = {
     Home,
-    Workers: User,
+    Worker: User,
     Timesheet: FileSpreadsheet,
     Payroll: Wallet,
     Advance: Banknote,
@@ -47,7 +47,7 @@ export function AppSidebar({
         url: string;
         iconName:
             | "Home"
-            | "Workers"
+            | "Worker"
             | "Timesheet"
             | "Payroll"
             | "Advance"

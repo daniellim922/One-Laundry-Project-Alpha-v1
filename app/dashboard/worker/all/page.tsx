@@ -8,7 +8,7 @@ import {
     type WorkerWithEmployment,
 } from "@/db/tables/payroll/workerTable";
 import { employmentTable } from "@/db/tables/payroll/employmentTable";
-import { columns } from "./columns";
+import { columns } from "../columns";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -47,7 +47,7 @@ export default async function Page() {
         <div className="space-y-6">
             <div>
                 <h1 className="text-2xl font-semibold tracking-tight">
-                    Workers
+                    All workers
                 </h1>
                 <p className="text-muted-foreground">
                     Manage and view your workers here.
@@ -67,7 +67,7 @@ export default async function Page() {
                     searchParamKey="search"
                     actions={
                         <Button asChild>
-                            <Link href="/dashboard/workers/new">
+                            <Link href="/dashboard/worker/new">
                                 <Plus className="mr-2 h-4 w-4" />
                                 Add worker
                             </Link>

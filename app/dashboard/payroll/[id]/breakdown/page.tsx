@@ -86,12 +86,12 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem asChild>
-                                    <Link href={`/dashboard/workers/${worker.id}/view`}>
+                                    <Link href={`/dashboard/worker/${worker.id}/view`}>
                                         View
                                     </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
-                                    <Link href={`/dashboard/workers/${worker.id}/edit`}>
+                                    <Link href={`/dashboard/worker/${worker.id}/edit`}>
                                         Edit
                                     </Link>
                                 </DropdownMenuItem>

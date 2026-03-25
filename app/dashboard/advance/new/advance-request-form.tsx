@@ -384,7 +384,7 @@ export function AdvanceRequestForm({
         router.push(
             isEditMode
                 ? `/dashboard/advance/${advanceRequestId}`
-                : "/dashboard/advance",
+                : "/dashboard/advance/all",
         );
         router.refresh();
     }

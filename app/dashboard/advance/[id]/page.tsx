@@ -25,7 +25,7 @@ export default async function AdvanceDetailPage({
             data-testid="advance-detail">
             <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                    <BackButton href="/dashboard/advance" />
+                    <BackButton href="/dashboard/advance/all" />
                     <div>
                         <h1 className="text-xl font-semibold tracking-wide uppercase">
                             Advance request

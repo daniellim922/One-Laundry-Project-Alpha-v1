@@ -46,7 +46,7 @@ export default async function ViewTimesheetEntryPage({ params }: PageProps) {
         <div className="mx-auto max-w-md space-y-4">
             <div className="flex items-center gap-4">
                 <Button variant="ghost" size="icon" asChild>
-                    <Link href="/dashboard/timesheet">
+                    <Link href="/dashboard/timesheet/all">
                         <ArrowLeft className="h-4 w-4" />
                     </Link>
                 </Button>

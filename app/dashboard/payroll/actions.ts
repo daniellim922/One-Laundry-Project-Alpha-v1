@@ -178,6 +178,7 @@ export async function createPayroll(formData: FormData) {
     });
 
     revalidatePath("/dashboard/payroll");
+    revalidatePath("/dashboard/payroll/all");
     return { success: true };
 }
 
@@ -305,6 +306,7 @@ export async function createPayrolls(formData: FormData) {
     }
 
     revalidatePath("/dashboard/payroll");
+    revalidatePath("/dashboard/payroll/all");
     return { success: true, created };
 }
 
@@ -437,6 +439,7 @@ export async function updatePayroll(payrollId: string, formData: FormData) {
     revalidatePath(`/dashboard/payroll/${payrollId}/breakdown`);
     revalidatePath(`/dashboard/payroll/${payrollId}/summary`);
     revalidatePath("/dashboard/payroll");
+    revalidatePath("/dashboard/payroll/all");
     return { success: true };
 }
 
@@ -573,8 +576,11 @@ export async function settlePayroll(payrollId: string) {
     revalidatePath(`/dashboard/payroll/${payrollId}/breakdown`);
     revalidatePath(`/dashboard/payroll/${payrollId}/summary`);
     revalidatePath("/dashboard/payroll");
+    revalidatePath("/dashboard/payroll/all");
     revalidatePath("/dashboard/advance");
+    revalidatePath("/dashboard/advance/all");
     revalidatePath("/dashboard/timesheet");
+    revalidatePath("/dashboard/timesheet/all");
     return { success: true };
 }
 
@@ -786,5 +792,6 @@ export async function updateVoucherDays(input: {
     revalidatePath(`/dashboard/payroll/${payrollId}/breakdown`);
     revalidatePath(`/dashboard/payroll/${payrollId}/summary`);
     revalidatePath("/dashboard/payroll");
+    revalidatePath("/dashboard/payroll/all");
     return { success: true };
 }

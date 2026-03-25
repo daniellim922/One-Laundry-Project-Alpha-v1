@@ -11,8 +11,8 @@ test.describe("Dashboard regression smoke", () => {
         await page.goto("/dashboard/timesheet");
         await expect(page).toHaveURL(/\/dashboard\/timesheet$/);
 
-        await page.goto("/dashboard/workers");
-        await expect(page).toHaveURL(/\/dashboard\/workers$/);
+        await page.goto("/dashboard/worker/all");
+        await expect(page).toHaveURL(/\/dashboard\/worker\/all$/);
 
         await page.goto("/dashboard/iam");
         await expect(page).toHaveURL(/\/dashboard\/iam$/);

@@ -165,7 +165,9 @@ export async function createAdvanceRequest(
 
         await recalculateVouchersForWorker(input.workerId);
         revalidatePath("/dashboard/advance");
+        revalidatePath("/dashboard/advance/all");
         revalidatePath("/dashboard/payroll");
+        revalidatePath("/dashboard/payroll/all");
 
         return { success: true };
     } catch (error) {

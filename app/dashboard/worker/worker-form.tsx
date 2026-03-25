@@ -286,7 +286,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
             return;
         }
 
-        router.push("/dashboard/workers");
+        router.push("/dashboard/worker/all");
         router.refresh();
     };
 
