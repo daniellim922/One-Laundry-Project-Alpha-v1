@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
@@ -19,7 +19,11 @@ export default async function TimesheetPage() {
         })
         .from(timesheetTable)
         .innerJoin(workerTable, eq(timesheetTable.workerId, workerTable.id))
-        .orderBy(timesheetTable.dateIn);
+        .orderBy(
+            desc(timesheetTable.status),
+            asc(workerTable.name),
+            asc(timesheetTable.dateIn),
+        );
 
     const data: TimesheetEntryWithWorker[] = rows.map((r) => ({
         id: r.entry.id,

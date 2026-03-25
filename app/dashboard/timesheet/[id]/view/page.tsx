@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 
 import { requirePermission } from "@/lib/require-permission";
@@ -16,8 +16,8 @@ interface PageProps {
     }>;
 }
 
-export default async function EditTimesheetEntryPage({ params }: PageProps) {
-    await requirePermission("Timesheet", "update");
+export default async function ViewTimesheetEntryPage({ params }: PageProps) {
+    await requirePermission("Timesheet", "read");
 
     const { id } = await params;
 
@@ -37,10 +37,6 @@ export default async function EditTimesheetEntryPage({ params }: PageProps) {
 
     if (!entry) notFound();
 
-    if (entry.status === "paid") {
-        redirect(`/dashboard/timesheet/${id}/view`);
-    }
-
     const workers = await db
         .select({ id: workerTable.id, name: workerTable.name })
         .from(workerTable)
@@ -56,15 +52,16 @@ export default async function EditTimesheetEntryPage({ params }: PageProps) {
                 </Button>
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight">
-                        Edit timesheet entry
+                        View timesheet entry
                     </h1>
                     <p className="text-muted-foreground">
-                        Update clock in/out and worker for this entry
+                        Clock in/out and worker for this entry (read-only)
                     </p>
                 </div>
             </div>
             <TimesheetEntryForm
                 workers={workers}
+                disabled
                 entry={{
                     id: entry.id,
                     workerId: entry.workerId,
@@ -78,4 +75,3 @@ export default async function EditTimesheetEntryPage({ params }: PageProps) {
         </div>
     );
 }
-

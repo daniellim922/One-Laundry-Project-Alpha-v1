@@ -9,6 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    formatTimesheetEntryStatus,
+    timesheetEntryStatusPillClass,
+    type TimesheetPaymentStatus,
+} from "./timesheet-entry-status";
 
 type Worker = { id: string; name: string };
 
@@ -19,14 +24,18 @@ type TimesheetEntry = {
     dateOut: string;
     timeIn: string;
     timeOut: string;
+    status?: TimesheetPaymentStatus;
 };
 
 export function TimesheetEntryForm({
     workers,
     entry,
+    disabled = false,
 }: {
     workers: Worker[];
     entry?: TimesheetEntry;
+    /** Read-only: same layout as edit, non-interactive fields */
+    disabled?: boolean;
 }) {
     const router = useRouter();
     const [pending, setPending] = React.useState(false);
@@ -71,84 +80,105 @@ export function TimesheetEntryForm({
         return (diffMs / 3_600_000).toFixed(2);
     }, [dateIn, dateOut, timeIn, timeOut]);
 
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>{entry ? "Edit entry" : "New entry"}</CardTitle>
-                <p className="text-muted-foreground text-sm">
-                    Worker name, date in/out, and clock in/out times
-                </p>
-            </CardHeader>
-            <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="workerId">Worker</Label>
-                        <SearchableWorkerSelect
-                            name="workerId"
-                            workers={workers}
-                            value={workerId}
-                            onChange={(id) => setWorkerId(id)}
-                            required
-                        />
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="dateIn">Date in</Label>
-                            <Input
-                                id="dateIn"
-                                name="dateIn"
-                                type="date"
-                                value={dateIn}
-                                onChange={(e) => setDateIn(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="dateOut">Date out</Label>
-                            <Input
-                                id="dateOut"
-                                name="dateOut"
-                                type="date"
-                                value={dateOut}
-                                onChange={(e) => setDateOut(e.target.value)}
-                                required
-                            />
-                        </div>
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="space-y-2">
-                            <Label htmlFor="timeIn">Time in</Label>
-                            <Input
-                                id="timeIn"
-                                name="timeIn"
-                                type="time"
-                                value={timeIn}
-                                onChange={(e) => setTimeIn(e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="timeOut">Time out</Label>
-                            <Input
-                                id="timeOut"
-                                name="timeOut"
-                                type="time"
-                                value={timeOut}
-                                onChange={(e) => setTimeOut(e.target.value)}
-                                required
-                            />
-                        </div>
-                    </div>
-                    {totalHours !== null && (
-                        <div className="rounded-md bg-muted px-4 py-3 text-sm">
-                            <span className="font-medium">Total hours:</span>{" "}
-                            <span className="text-lg font-semibold">{totalHours}</span>
-                        </div>
-                    )}
-                    {error && (
-                        <p className="text-destructive text-sm">{error}</p>
-                    )}
-                    <div className="flex gap-2">
+    const fieldsBody = (
+        <>
+            {entry?.status != null && (
+                <div>
+                    <span
+                        className={timesheetEntryStatusPillClass(entry.status)}
+                    >
+                        {formatTimesheetEntryStatus(entry.status)}
+                    </span>
+                </div>
+            )}
+            <div className="space-y-2">
+                <Label htmlFor="workerId">Worker</Label>
+                <SearchableWorkerSelect
+                    name="workerId"
+                    workers={workers}
+                    value={workerId}
+                    onChange={(id) => setWorkerId(id)}
+                    required={!disabled}
+                    disabled={disabled}
+                />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                    <Label htmlFor="dateIn">Date in</Label>
+                    <Input
+                        id="dateIn"
+                        name="dateIn"
+                        type="date"
+                        value={dateIn}
+                        onChange={(e) => setDateIn(e.target.value)}
+                        required={!disabled}
+                        disabled={disabled}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="dateOut">Date out</Label>
+                    <Input
+                        id="dateOut"
+                        name="dateOut"
+                        type="date"
+                        value={dateOut}
+                        onChange={(e) => setDateOut(e.target.value)}
+                        required={!disabled}
+                        disabled={disabled}
+                    />
+                </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                    <Label htmlFor="timeIn">Time in</Label>
+                    <Input
+                        id="timeIn"
+                        name="timeIn"
+                        type="time"
+                        value={timeIn}
+                        onChange={(e) => setTimeIn(e.target.value)}
+                        required={!disabled}
+                        disabled={disabled}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="timeOut">Time out</Label>
+                    <Input
+                        id="timeOut"
+                        name="timeOut"
+                        type="time"
+                        value={timeOut}
+                        onChange={(e) => setTimeOut(e.target.value)}
+                        required={!disabled}
+                        disabled={disabled}
+                    />
+                </div>
+            </div>
+            {totalHours !== null && (
+                <div className="rounded-md bg-muted px-4 py-3 text-sm">
+                    <span className="font-medium">Total hours:</span>{" "}
+                    <span className="text-lg font-semibold">{totalHours}</span>
+                </div>
+            )}
+            {!disabled && error && (
+                <p className="text-destructive text-sm">{error}</p>
+            )}
+            <div className="flex gap-2">
+                {disabled ? (
+                    <>
+                        <Button type="button" disabled>
+                            Save
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => router.back()}
+                        >
+                            Cancel
+                        </Button>
+                    </>
+                ) : (
+                    <>
                         <Button type="submit" disabled={pending}>
                             {pending ? "Saving..." : "Save"}
                         </Button>
@@ -159,8 +189,34 @@ export function TimesheetEntryForm({
                         >
                             Cancel
                         </Button>
-                    </div>
-                </form>
+                    </>
+                )}
+            </div>
+        </>
+    );
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>
+                    {disabled
+                        ? "View entry"
+                        : entry
+                          ? "Edit entry"
+                          : "New entry"}
+                </CardTitle>
+                <p className="text-muted-foreground text-sm">
+                    Worker name, date in/out, and clock in/out times
+                </p>
+            </CardHeader>
+            <CardContent>
+                {disabled ? (
+                    <div className="space-y-4">{fieldsBody}</div>
+                ) : (
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {fieldsBody}
+                    </form>
+                )}
             </CardContent>
         </Card>
     );

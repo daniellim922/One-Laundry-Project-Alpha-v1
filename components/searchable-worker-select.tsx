@@ -21,6 +21,7 @@ export function SearchableWorkerSelect({
     name,
     required,
     placeholder = "Select worker",
+    disabled = false,
 }: {
     workers: Worker[];
     value: string;
@@ -29,6 +30,7 @@ export function SearchableWorkerSelect({
     required?: boolean;
     /** Shown when no worker is selected (e.g. unmatched name from import) */
     placeholder?: string;
+    disabled?: boolean;
 }) {
     const [open, setOpen] = React.useState(false);
     const [search, setSearch] = React.useState("");
@@ -42,6 +44,22 @@ export function SearchableWorkerSelect({
     }, [workers, search]);
 
     const displayValue = selectedWorker?.name ?? "";
+
+    if (disabled) {
+        return (
+            <Button
+                type="button"
+                variant="outline"
+                disabled
+                aria-label="Worker"
+                className="flex h-9 w-full justify-between font-normal">
+                <span className="truncate">
+                    {displayValue || placeholder}
+                </span>
+                <ChevronDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+        );
+    }
 
     return (
         <Popover open={open} onOpenChange={setOpen}>

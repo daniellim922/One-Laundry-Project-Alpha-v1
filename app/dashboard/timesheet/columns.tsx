@@ -4,7 +4,7 @@ import * as React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpDown, Pencil, Trash2 } from "lucide-react";
+import { ArrowUpDown, Eye, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -13,9 +13,20 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { deleteTimesheetEntry } from "./actions";
+import {
+    formatTimesheetEntryStatus,
+    timesheetEntryStatusPillClass,
+    type TimesheetPaymentStatus,
+} from "./timesheet-entry-status";
+import { formatTimesheetRowDate, formatTimesheetRowTime } from "./timesheet-display-format";
 
 export type TimesheetEntryWithWorker = {
     id: string;
@@ -25,32 +36,9 @@ export type TimesheetEntryWithWorker = {
     timeIn: string;
     timeOut: string;
     hours: number;
-    status: "unpaid" | "paid";
+    status: TimesheetPaymentStatus;
     workerName: string;
 };
-
-function formatDate(d: string): string {
-    return new Date(d + "T00:00:00").toLocaleDateString("en-GB", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-    });
-}
-
-function formatTime(t: string): string {
-    const s = String(t);
-    return s.length >= 5 ? s.slice(0, 5) : s;
-}
-
-function formatStatus(status: "unpaid" | "paid"): string {
-    return status === "paid" ? "Paid" : "Unpaid";
-}
-
-function statusPillClass(status: "unpaid" | "paid"): string {
-    return status === "paid"
-        ? "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-800"
-        : "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-red-100 text-red-800";
-}
 
 const sortableHeader =
     (label: string) =>
@@ -73,11 +61,18 @@ const sortableHeader =
         </Button>
     );
 
-function TimesheetRowActions({ id }: { id: string }) {
+function TimesheetRowActions({
+    id,
+    status,
+}: {
+    id: string;
+    status: TimesheetPaymentStatus;
+}) {
     const router = useRouter();
-    const [open, setOpen] = React.useState(false);
+    const [deleteOpen, setDeleteOpen] = React.useState(false);
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
+    const isPaid = status === "paid";
 
     async function handleDelete() {
         setError(null);
@@ -88,26 +83,62 @@ function TimesheetRowActions({ id }: { id: string }) {
             setError(result.error);
             return;
         }
-        setOpen(false);
+        setDeleteOpen(false);
         router.refresh();
     }
 
     return (
-        <div className="flex items-center justify-end gap-1">
-            <Button variant="ghost" size="icon" asChild>
-                <Link href={`/dashboard/timesheet/${id}/edit`}>
-                    <Pencil className="h-4 w-4" />
-                    <span className="sr-only">Edit</span>
-                </Link>
-            </Button>
+        <>
+            <div className="flex justify-end">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            className="h-8 w-8 p-0"
+                            aria-label="Open row actions">
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                            <Link
+                                href={`/dashboard/timesheet/${id}/view`}
+                                className="flex w-full items-center gap-2">
+                                <Eye className="h-4 w-4" />
+                                View
+                            </Link>
+                        </DropdownMenuItem>
+                        {isPaid ? (
+                            <DropdownMenuItem
+                                disabled
+                                className="flex w-full items-center gap-2">
+                                <Pencil className="h-4 w-4" />
+                                Edit
+                            </DropdownMenuItem>
+                        ) : (
+                            <DropdownMenuItem asChild>
+                                <Link
+                                    href={`/dashboard/timesheet/${id}/edit`}
+                                    className="flex w-full items-center gap-2">
+                                    <Pencil className="h-4 w-4" />
+                                    Edit
+                                </Link>
+                            </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                            className="text-destructive focus:text-destructive flex w-full items-center gap-2"
+                            onSelect={(e) => {
+                                e.preventDefault();
+                                setDeleteOpen(true);
+                            }}>
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
 
-            <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                        <span className="sr-only">Delete</span>
-                    </Button>
-                </DialogTrigger>
+            <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Delete timesheet entry?</DialogTitle>
@@ -123,7 +154,7 @@ function TimesheetRowActions({ id }: { id: string }) {
                             type="button"
                             variant="outline"
                             disabled={pending}
-                            onClick={() => setOpen(false)}
+                            onClick={() => setDeleteOpen(false)}
                         >
                             Cancel
                         </Button>
@@ -138,7 +169,7 @@ function TimesheetRowActions({ id }: { id: string }) {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </>
     );
 }
 
@@ -150,22 +181,22 @@ export const columns: ColumnDef<TimesheetEntryWithWorker>[] = [
     {
         accessorKey: "dateIn",
         header: sortableHeader("Date in"),
-        cell: ({ row }) => formatDate(row.original.dateIn),
+        cell: ({ row }) => formatTimesheetRowDate(row.original.dateIn),
     },
     {
         accessorKey: "dateOut",
         header: sortableHeader("Date out"),
-        cell: ({ row }) => formatDate(row.original.dateOut),
+        cell: ({ row }) => formatTimesheetRowDate(row.original.dateOut),
     },
     {
         accessorKey: "timeIn",
         header: sortableHeader("Time in"),
-        cell: ({ row }) => formatTime(row.original.timeIn),
+        cell: ({ row }) => formatTimesheetRowTime(row.original.timeIn),
     },
     {
         accessorKey: "timeOut",
         header: sortableHeader("Time out"),
-        cell: ({ row }) => formatTime(row.original.timeOut),
+        cell: ({ row }) => formatTimesheetRowTime(row.original.timeOut),
     },
     {
         id: "hours",
@@ -177,16 +208,21 @@ export const columns: ColumnDef<TimesheetEntryWithWorker>[] = [
         accessorKey: "status",
         header: sortableHeader("Status"),
         cell: ({ row }) => (
-            <span className={statusPillClass(row.original.status)}>
-                {formatStatus(row.original.status)}
+            <span className={timesheetEntryStatusPillClass(row.original.status)}>
+                {formatTimesheetEntryStatus(row.original.status)}
             </span>
         ),
     },
     {
         id: "actions",
-        header: () => <div className="text-right">Actions</div>,
+        header: "",
         enableSorting: false,
         enableColumnFilter: false,
-        cell: ({ row }) => <TimesheetRowActions id={row.original.id} />,
+        cell: ({ row }) => (
+            <TimesheetRowActions
+                id={row.original.id}
+                status={row.original.status}
+            />
+        ),
     },
 ];

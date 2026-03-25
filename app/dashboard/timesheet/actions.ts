@@ -98,10 +98,20 @@ export async function updateTimesheetEntry(id: string, formData: FormData) {
     }
 
     const [oldEntry] = await db
-        .select({ workerId: timesheetTable.workerId })
+        .select({
+            workerId: timesheetTable.workerId,
+            status: timesheetTable.status,
+        })
         .from(timesheetTable)
         .where(eq(timesheetTable.id, id))
         .limit(1);
+
+    if (!oldEntry) {
+        return { error: "Timesheet entry not found" };
+    }
+    if (oldEntry.status === "paid") {
+        return { error: "Paid timesheet entries cannot be edited" };
+    }
 
     const hours = calculateHoursFromDateTimes(dateIn, timeIn, dateOut, timeOut);
 
