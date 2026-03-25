@@ -337,6 +337,7 @@ export function AdvanceRequestForm({
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const isEditMode = Boolean(initialData && advanceRequestId);
+    const showInstallmentStatusColumn = isEditMode;
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
@@ -594,23 +595,30 @@ export function AdvanceRequestForm({
                                     <div className="bg-muted/30 h-4 w-16 max-w-full rounded" />
                                     <div className="size-9" aria-hidden />
                                 </div>
-                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto_2.25rem] sm:items-center">
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_2.25rem] sm:items-center">
                                     <div className="bg-muted/30 h-9 w-full rounded-md border border-dashed border-muted-foreground/20" />
                                     <div className="bg-muted/30 h-9 w-full rounded-md border border-dashed border-muted-foreground/20" />
-                                    <div className="bg-muted/30 h-6 w-16 rounded-full" />
                                     <div className="bg-muted/30 size-9 shrink-0 rounded-md border border-dashed border-muted-foreground/20" />
                                 </div>
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                <div className="hidden gap-x-2 text-sm leading-none font-medium sm:grid sm:grid-cols-[1fr_1fr_auto_2.25rem] sm:items-end">
+                                <div
+                                    className={cn(
+                                        "hidden gap-x-2 text-sm leading-none font-medium sm:grid sm:items-end",
+                                        showInstallmentStatusColumn
+                                            ? "sm:grid-cols-[1fr_1fr_auto_2.25rem]"
+                                            : "sm:grid-cols-[1fr_1fr_2.25rem]",
+                                    )}>
                                     <span id={`${formId}-installment-col`}>
                                         Installment amount
                                     </span>
                                     <span id={`${formId}-repayment-col`}>
                                         Expected repayment date
                                     </span>
-                                    <span>Status</span>
+                                    {showInstallmentStatusColumn ? (
+                                        <span>Status</span>
+                                    ) : null}
                                     <span
                                         className="size-9 shrink-0"
                                         aria-hidden
@@ -628,7 +636,12 @@ export function AdvanceRequestForm({
                                         key={row.id}
                                         role="group"
                                         aria-label={`Installment row ${index + 1}`}
-                                        className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto_2.25rem] sm:items-start">
+                                        className={cn(
+                                            "grid grid-cols-1 gap-2 sm:items-start",
+                                            showInstallmentStatusColumn
+                                                ? "sm:grid-cols-[1fr_1fr_auto_2.25rem]"
+                                                : "sm:grid-cols-[1fr_1fr_2.25rem]",
+                                        )}>
                                         <Controller
                                             name={`installmentAmounts.${index}.amount`}
                                             control={form.control}
@@ -701,25 +714,28 @@ export function AdvanceRequestForm({
                                                 </Field>
                                             )}
                                         />
-                                        <Controller
-                                            name={`installmentAmounts.${index}.status`}
-                                            control={form.control}
-                                            render={({ field }) => {
-                                                const status = field.value ?? "loan";
-                                                return (
-                                                    <div className="flex h-9 items-center">
-                                                        <span
-                                                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                                                                advanceStatusBadgeClass[
-                                                                    status
-                                                                ] ?? ""
-                                                            }`}>
-                                                            {status}
-                                                        </span>
-                                                    </div>
-                                                );
-                                            }}
-                                        />
+                                        {showInstallmentStatusColumn ? (
+                                            <Controller
+                                                name={`installmentAmounts.${index}.status`}
+                                                control={form.control}
+                                                render={({ field }) => {
+                                                    const status =
+                                                        field.value ?? "loan";
+                                                    return (
+                                                        <div className="flex h-9 items-center">
+                                                            <span
+                                                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                                                    advanceStatusBadgeClass[
+                                                                        status
+                                                                    ] ?? ""
+                                                                }`}>
+                                                                {status}
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                }}
+                                            />
+                                        ) : null}
                                         <Button
                                             type="button"
                                             variant="destructive"

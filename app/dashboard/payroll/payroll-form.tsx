@@ -3,12 +3,16 @@
 import * as React from "react";
 import {
     ColumnDef,
+    ColumnFiltersState,
     flexRender,
     getCoreRowModel,
     getFilteredRowModel,
+    getSortedRowModel,
+    SortingState,
     useReactTable,
 } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
+import { ArrowUpDown } from "lucide-react";
 
 import { createPayrolls } from "./actions";
 import { Button } from "@/components/ui/button";
@@ -25,19 +29,48 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 
-type Worker = { id: string; name: string; status: string };
+type Worker = {
+    id: string;
+    name: string;
+    status: string;
+    employmentType: string;
+    employmentArrangement: string;
+};
+
+const sortableHeader =
+    (label: string) =>
+    ({
+        column,
+    }: {
+        column: {
+            toggleSorting: (asc: boolean) => void;
+            getIsSorted: () => false | "asc" | "desc";
+        };
+    }) => (
+        <Button
+            type="button"
+            variant="ghost"
+            className="px-0 font-semibold"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+            {label}
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+    );
 
 export function PayrollForm({ workers }: { workers: Worker[] }) {
     const router = useRouter();
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const [rowSelection, setRowSelection] = React.useState<Record<string, boolean>>({});
-    const [globalFilter, setGlobalFilter] = React.useState("");
+    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
+    const [sorting, setSorting] = React.useState<SortingState>([]);
 
     const columns: ColumnDef<Worker>[] = React.useMemo(
         () => [
             {
                 id: "select",
+                enableSorting: false,
+                enableColumnFilter: false,
                 header: ({ table }) => (
                     <Checkbox
                         checked={
@@ -65,11 +98,50 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
             },
             {
                 accessorKey: "name",
-                header: "Worker",
+                header: sortableHeader("Worker"),
+            },
+            {
+                accessorKey: "employmentArrangement",
+                header: sortableHeader("Arrangement"),
+                cell: ({ row }) => {
+                    const arrangement = row.original.employmentArrangement;
+                    const isForeign =
+                        arrangement.toLowerCase() === "foreign worker";
+                    return (
+                        <span
+                            className={
+                                isForeign
+                                    ? "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200"
+                                    : "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-sky-100 text-sky-900 dark:bg-sky-900/30 dark:text-sky-200"
+                            }>
+                            {arrangement}
+                        </span>
+                    );
+                },
+            },
+            {
+                accessorKey: "employmentType",
+                header: sortableHeader("Type"),
+                cell: ({ row }) => {
+                    const type = row.original.employmentType;
+                    const isFullTime = type.toLowerCase() === "full time";
+                    return (
+                        <span
+                            className={
+                                isFullTime
+                                    ? "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200"
+                                    : "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-violet-100 text-violet-900 dark:bg-violet-900/30 dark:text-violet-200"
+                            }>
+                            {type}
+                        </span>
+                    );
+                },
             },
             {
                 accessorKey: "status",
                 header: "Status",
+                enableSorting: false,
+                enableColumnFilter: false,
                 cell: ({ row }) => {
                     const status = row.original.status;
                     const isActive = status.toLowerCase() === "active";
@@ -95,19 +167,17 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
         columns,
         state: {
             rowSelection,
-            globalFilter,
+            columnFilters,
+            sorting,
         },
         enableRowSelection: true,
         onRowSelectionChange: setRowSelection,
-        onGlobalFilterChange: setGlobalFilter,
+        onColumnFiltersChange: setColumnFilters,
+        onSortingChange: setSorting,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
+        getSortedRowModel: getSortedRowModel(),
         getRowId: (row) => row.id,
-        globalFilterFn: (row, _columnId, filterValue) => {
-            if (!filterValue) return true;
-            const search = String(filterValue).toLowerCase();
-            return row.original.name.toLowerCase().includes(search);
-        },
     });
 
     const selectedCount = table.getSelectedRowModel().rows.length;
@@ -187,14 +257,6 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
                     <div className="space-y-2">
                         <div className="flex items-center justify-between gap-2">
                             <Label>Workers</Label>
-                            <Input
-                                placeholder="Search workers..."
-                                value={globalFilter ?? ""}
-                                onChange={(e) =>
-                                    setGlobalFilter(e.target.value)
-                                }
-                                className="max-w-xs"
-                            />
                         </div>
                         <div className="rounded-md border">
                             <Table>
@@ -215,6 +277,32 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
                                             ))}
                                         </TableRow>
                                     ))}
+                                    <TableRow>
+                                        {table
+                                            .getHeaderGroups()
+                                            .at(-1)
+                                            ?.headers.map((header) => (
+                                                <TableHead
+                                                    key={`${header.id}-filter`}
+                                                    className="px-2 py-1">
+                                                    {header.column.getCanFilter() ? (
+                                                        <Input
+                                                            placeholder="Filter..."
+                                                            value={
+                                                                (header.column.getFilterValue() as string) ??
+                                                                ""
+                                                            }
+                                                            onChange={(e) =>
+                                                                header.column.setFilterValue(
+                                                                    e.target.value || undefined,
+                                                                )
+                                                            }
+                                                            className="h-8 text-xs"
+                                                        />
+                                                    ) : null}
+                                                </TableHead>
+                                            ))}
+                                    </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {table.getRowModel().rows?.length ? (

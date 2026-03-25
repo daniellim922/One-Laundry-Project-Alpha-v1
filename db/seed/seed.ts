@@ -88,15 +88,27 @@ async function seedTimesheets(
     await db.insert(timesheetTable).values(timesheetInserts);
 }
 
-async function seedAdvances(insertedWorkers: { id: string }[]): Promise<void> {
+async function seedAdvances(
+    insertedWorkers: { id: string; name: string }[],
+): Promise<void> {
     const now = new Date();
+    const workerIdByName = new Map(
+        insertedWorkers.map((w) => [w.name.toLowerCase(), w.id] as const),
+    );
+
     for (const a of advances) {
-        const workerId = insertedWorkers[a.workerIndex]!.id;
+        const workerId = workerIdByName.get(a.workerName.toLowerCase());
+        if (!workerId) {
+            throw new Error(
+                `seedAdvances: worker not found for workerName "${a.workerName}"`,
+            );
+        }
         const requestInsert: InsertAdvanceRequest = {
             workerId,
             status: a.status,
-            requestDate: a.loanDate,
+            requestDate: a.dateRequested,
             amountRequested: a.amount,
+            purpose: a.purpose,
             createdAt: now,
             updatedAt: now,
         };
@@ -105,15 +117,15 @@ async function seedAdvances(insertedWorkers: { id: string }[]): Promise<void> {
             .values(requestInsert)
             .returning({ id: advanceRequestTable.id });
 
-        const advanceInsert: InsertAdvance = {
+        const advanceInserts: InsertAdvance[] = a.repaymentTerms.map((t) => ({
             advanceRequestId: insertedRequest!.id,
-            amount: a.amount,
+            amount: t.installmentAmt,
             status: a.status,
-            repaymentDate: a.repaymentDate,
+            repaymentDate: t.installmentDate,
             createdAt: now,
             updatedAt: now,
-        };
-        await db.insert(advanceTable).values(advanceInsert);
+        }));
+        await db.insert(advanceTable).values(advanceInserts);
     }
 }
 
@@ -195,8 +207,8 @@ async function seed() {
     await seedTimesheets(insertedWorkers);
     console.log("New timesheet entries created!");
 
-    // await seedAdvances(insertedWorkers);
-    // console.log("New advance entries created!");
+    await seedAdvances(insertedWorkers);
+    console.log("New advance entries created!");
 
     // await seedPayrolls(insertedWorkers);
     // console.log("New payroll entries created!");

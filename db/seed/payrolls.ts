@@ -55,7 +55,10 @@ function generatePayrolls(): PayrollEntry[] {
     const hoursMap = new Map<number, number>();
 
     for (const t of timesheets) {
-        hoursMap.set(t.workerIndex, (hoursMap.get(t.workerIndex) ?? 0) + t.hours);
+        hoursMap.set(
+            t.workerIndex,
+            (hoursMap.get(t.workerIndex) ?? 0) + t.hours,
+        );
     }
 
     const statusForIndex = (i: number): "draft" | "settled" => {
@@ -67,16 +70,30 @@ function generatePayrolls(): PayrollEntry[] {
 
     for (let wi = 0; wi < workers.length; wi++) {
         const worker = workers[wi];
-        const totalHoursWorked = Math.round((hoursMap.get(wi) ?? 0) * 100) / 100;
+        const totalHoursWorked =
+            Math.round((hoursMap.get(wi) ?? 0) * 100) / 100;
 
         const minimumWorkingHours = worker.minimumWorkingHours ?? null;
-        const overtimeHours = minimumWorkingHours != null
-            ? Math.max(0, Math.round((totalHoursWorked - minimumWorkingHours) * 100) / 100)
-            : 0;
-        const rawHoursNotMet = minimumWorkingHours != null
-            ? Math.round((totalHoursWorked - minimumWorkingHours) * 100) / 100
-            : null;
-        const hoursNotMet = rawHoursNotMet == null ? null : rawHoursNotMet > 0 ? 0 : rawHoursNotMet;
+        const overtimeHours =
+            minimumWorkingHours != null
+                ? Math.max(
+                      0,
+                      Math.round(
+                          (totalHoursWorked - minimumWorkingHours) * 100,
+                      ) / 100,
+                  )
+                : 0;
+        const rawHoursNotMet =
+            minimumWorkingHours != null
+                ? Math.round((totalHoursWorked - minimumWorkingHours) * 100) /
+                  100
+                : null;
+        const hoursNotMet =
+            rawHoursNotMet == null
+                ? null
+                : rawHoursNotMet > 0
+                  ? 0
+                  : rawHoursNotMet;
 
         const hourlyRate = worker.hourlyRate ?? null;
         const monthlyPay = worker.monthlyPay ?? null;
@@ -90,7 +107,9 @@ function generatePayrolls(): PayrollEntry[] {
         const publicHolidayPay = 0;
 
         if (isPartTime) {
-            totalPay = roundMoney((hourlyRate ?? 0) * totalHoursWorked) + publicHolidayPay;
+            totalPay =
+                roundMoney((hourlyRate ?? 0) * totalHoursWorked) +
+                publicHolidayPay;
         } else {
             overtimePay = roundMoney((hourlyRate ?? 0) * overtimeHours);
             restDayPay = roundMoney((restDayRate ?? 0) * REST_DAYS_MARCH_2025);
@@ -110,9 +129,9 @@ function generatePayrolls(): PayrollEntry[] {
 
         payrolls.push({
             workerIndex: wi,
-            periodStart: "2025-03-01",
-            periodEnd: "2025-03-31",
-            payrollDate: "2025-04-05",
+            periodStart: "2026-03-01",
+            periodEnd: "2026-03-31",
+            payrollDate: "2026-04-05",
             status: statusForIndex(wi),
             voucher: {
                 voucherNumber: parseInt(crypto.randomUUID().slice(0, 8), 16),

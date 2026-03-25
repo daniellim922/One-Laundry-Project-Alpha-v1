@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { PayrollForm } from "../payroll-form";
 import { ArrowLeft } from "lucide-react";
 import { eq } from "drizzle-orm";
+import { employmentTable } from "@/db/tables/payroll/employmentTable";
 
 export default async function NewPayrollPage() {
     await requirePermission("Payroll", "create");
@@ -16,8 +17,14 @@ export default async function NewPayrollPage() {
             id: workerTable.id,
             name: workerTable.name,
             status: workerTable.status,
+            employmentType: employmentTable.employmentType,
+            employmentArrangement: employmentTable.employmentArrangement,
         })
         .from(workerTable)
+        .innerJoin(
+            employmentTable,
+            eq(workerTable.employmentId, employmentTable.id),
+        )
         .where(eq(workerTable.status, "Active"))
         .orderBy(workerTable.name);
 
