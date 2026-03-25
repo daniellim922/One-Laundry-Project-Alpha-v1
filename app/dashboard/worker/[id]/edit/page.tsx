@@ -26,6 +26,7 @@ export default async function EditWorkerPage({ params }: PageProps) {
         .select({
             id: workerTable.id,
             name: workerTable.name,
+            nric: workerTable.nric,
             email: workerTable.email,
             phone: workerTable.phone,
             status: workerTable.status,

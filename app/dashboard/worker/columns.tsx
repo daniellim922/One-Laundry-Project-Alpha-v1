@@ -67,6 +67,11 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
         header: sortableHeader("Name"),
     },
     {
+        accessorKey: "nric",
+        header: sortableHeader("NRIC"),
+        cell: ({ row }) => row.original.nric ?? "—",
+    },
+    {
         accessorKey: "status",
         header: sortableHeader("Status"),
         cell: ({ row }) => {

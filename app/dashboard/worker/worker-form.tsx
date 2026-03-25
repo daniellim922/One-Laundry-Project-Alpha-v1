@@ -50,6 +50,7 @@ import { createWorker, updateWorker } from "./actions";
 const workerFormSchema = z
     .object({
         name: z.string().min(1, "Name is required"),
+        nric: z.string().optional(),
         email: z.string().optional(),
         phone: z.string().optional(),
         status: z.enum(["Active", "Inactive"]),
@@ -195,6 +196,7 @@ type WorkerFormValues = z.infer<typeof workerFormSchema>;
 export type WorkerWithEmployment = {
     id: string;
     name: string;
+    nric: string | null;
     email: string | null;
     phone: string | null;
     status: string;
@@ -219,6 +221,7 @@ function getDefaultValues(
 ): WorkerFormValues {
     return {
         name: worker?.name ?? "",
+        nric: worker?.nric ?? "",
         email: worker?.email ?? "",
         phone: worker?.phone ?? "",
         status: (worker?.status === "On Leave"
@@ -307,6 +310,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                     <CardDescription className="space-y-1 text-sm">
                         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                             <span>ID: {worker.id}</span>
+                            {worker.nric ? <span>NRIC: {worker.nric}</span> : null}
                         </div>
                         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                             <span>
@@ -347,7 +351,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                         <div
                             className={cn(
                                 "grid gap-4",
-                                isCreate ? "md:grid-cols-1" : "md:grid-cols-2",
+                                isCreate ? "md:grid-cols-2" : "md:grid-cols-2",
                             )}>
                             <Controller
                                 name="name"
@@ -370,6 +374,35 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             />
                                             <InputGroupAddon>
                                                 <User className="size-4 text-muted-foreground" />
+                                            </InputGroupAddon>
+                                        </InputGroup>
+                                        {fieldState.invalid && (
+                                            <FieldError
+                                                errors={[fieldState.error]}
+                                            />
+                                        )}
+                                    </Field>
+                                )}
+                            />
+                            <Controller
+                                name="nric"
+                                control={form.control}
+                                render={({ field, fieldState }) => (
+                                    <Field
+                                        data-invalid={fieldState.invalid}
+                                        className="space-y-2">
+                                        <FieldLabel htmlFor={`${formId}-nric`}>
+                                            NRIC
+                                        </FieldLabel>
+                                        <InputGroup>
+                                            <InputGroupInput
+                                                {...field}
+                                                id={`${formId}-nric`}
+                                                aria-invalid={fieldState.invalid}
+                                                disabled={disabled}
+                                            />
+                                            <InputGroupAddon>
+                                                <UserCircle2 className="size-4 text-muted-foreground" />
                                             </InputGroupAddon>
                                         </InputGroup>
                                         {fieldState.invalid && (

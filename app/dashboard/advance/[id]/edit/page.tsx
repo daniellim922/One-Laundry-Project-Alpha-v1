@@ -14,7 +14,7 @@ export default async function AdvanceEditPage({
 }: {
     params: Promise<{ id: string }>;
 }) {
-    await requirePermission("Payroll", "update");
+    await requirePermission("Advance", "update");
 
     const { id } = await params;
     const [detail, workers] = await Promise.all([

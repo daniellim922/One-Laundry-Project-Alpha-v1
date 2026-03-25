@@ -40,7 +40,7 @@ function formatTime(h: number, m: number): string {
 }
 
 function formatDate(day: number): string {
-    return `2025-03-${pad(day)}`;
+    return `2026-03-${pad(day)}`;
 }
 
 function generateTimesheets(): TimesheetEntry[] {
@@ -75,7 +75,8 @@ function generateTimesheets(): TimesheetEntry[] {
             const clockIn = roundTo15(420 + Math.floor(rand() * 91));
             // Duration 8-10 hrs (480-600 min)
             const duration = roundTo15(480 + Math.floor(rand() * 121));
-            const outMin = clockIn.h * 60 + clockIn.m + duration.h * 60 + duration.m;
+            const outMin =
+                clockIn.h * 60 + clockIn.m + duration.h * 60 + duration.m;
             const clockOut = { h: Math.floor(outMin / 60), m: outMin % 60 };
 
             const hours = (duration.h * 60 + duration.m) / 60;
@@ -101,7 +102,8 @@ function generateTimesheets(): TimesheetEntry[] {
             const clockIn = roundTo15(480 + Math.floor(rand() * 121));
             // Duration 4-6 hrs (240-360 min)
             const duration = roundTo15(240 + Math.floor(rand() * 121));
-            const outMin = clockIn.h * 60 + clockIn.m + duration.h * 60 + duration.m;
+            const outMin =
+                clockIn.h * 60 + clockIn.m + duration.h * 60 + duration.m;
             const clockOut = { h: Math.floor(outMin / 60), m: outMin % 60 };
 
             const hours = (duration.h * 60 + duration.m) / 60;

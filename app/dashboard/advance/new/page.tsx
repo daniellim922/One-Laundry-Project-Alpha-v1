@@ -12,7 +12,7 @@ export default async function AdvanceRequestPage({
 }: {
     searchParams: Promise<{ workerId?: string }>;
 }) {
-    await requirePermission("Payroll", "create");
+    await requirePermission("Advance", "create");
 
     const { workerId: initialWorkerId } = await searchParams;
 

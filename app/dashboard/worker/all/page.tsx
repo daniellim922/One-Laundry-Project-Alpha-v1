@@ -18,6 +18,7 @@ export default async function Page() {
         .select({
             id: workerTable.id,
             name: workerTable.name,
+            nric: workerTable.nric,
             email: workerTable.email,
             phone: workerTable.phone,
             status: workerTable.status,

@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/ui/button";
 import { getAdvanceRequestByIdWithWorker } from "@/lib/advances-queries";
+import { requirePermission } from "@/lib/require-permission";
+import { checkPermission } from "@/lib/permissions";
 import { Pencil } from "lucide-react";
 
 import { AdvanceRequestView } from "./advance-request-view";
@@ -13,6 +15,9 @@ export default async function AdvanceDetailPage({
 }: {
     params: Promise<{ id: string }>;
 }) {
+    const { userId } = await requirePermission("Advance", "read");
+    const canUpdate = await checkPermission(userId, "Advance", "update");
+
     const { id } = await params;
     const detail = await getAdvanceRequestByIdWithWorker(id);
     if (!detail) {
@@ -35,7 +40,7 @@ export default async function AdvanceDetailPage({
                         </p>
                     </div>
                 </div>
-                {detail.request.status === "paid" ? (
+                {!canUpdate || detail.request.status === "paid" ? (
                     <Button variant="outline" size="sm" disabled>
                         <Pencil className="h-4 w-4" />
                         Edit

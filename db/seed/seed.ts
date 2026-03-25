@@ -32,7 +32,7 @@ import {
 import { featuresTable } from "../tables/auth/featuresTable";
 import { rolesTable } from "@/db/tables/auth/rolesTable";
 import { rolePermissionsTable } from "@/db/tables/auth/rolePermissionsTable";
-import { workers } from "./workers";
+import { workers } from "@/db/seed/workers";
 import { timesheets } from "./timesheet";
 import { advances } from "./advances";
 import { payrolls } from "./payrolls";
@@ -60,6 +60,7 @@ function splitWorkerSeed(seed: any): SplitWorkerSeed {
 
     const worker: Omit<InsertWorker, "employmentId"> = {
         name: seed.name,
+        nric: seed.nric ?? null,
         email: seed.email ?? null,
         phone: seed.phone ?? null,
         status: seed.status ?? "Active",
@@ -87,9 +88,7 @@ async function seedTimesheets(
     await db.insert(timesheetTable).values(timesheetInserts);
 }
 
-async function seedAdvances(
-    insertedWorkers: { id: string }[],
-): Promise<void> {
+async function seedAdvances(insertedWorkers: { id: string }[]): Promise<void> {
     const now = new Date();
     for (const a of advances) {
         const workerId = insertedWorkers[a.workerIndex]!.id;
@@ -118,9 +117,7 @@ async function seedAdvances(
     }
 }
 
-async function seedPayrolls(
-    insertedWorkers: { id: string }[],
-): Promise<void> {
+async function seedPayrolls(insertedWorkers: { id: string }[]): Promise<void> {
     const now = new Date();
 
     for (const p of payrolls) {
@@ -198,11 +195,11 @@ async function seed() {
     await seedTimesheets(insertedWorkers);
     console.log("New timesheet entries created!");
 
-    await seedAdvances(insertedWorkers);
-    console.log("New advance entries created!");
+    // await seedAdvances(insertedWorkers);
+    // console.log("New advance entries created!");
 
-    await seedPayrolls(insertedWorkers);
-    console.log("New payroll entries created!");
+    // await seedPayrolls(insertedWorkers);
+    // console.log("New payroll entries created!");
 
     // Seed IAM roles, features, permissions, and admin user
     await db.insert(rolesTable).values(ROLES);

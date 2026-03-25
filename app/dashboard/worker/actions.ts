@@ -14,6 +14,17 @@ import {
 } from "@/db/tables/payroll/employmentTable";
 import { recalculateVouchersForWorker } from "@/app/dashboard/payroll/actions";
 
+function isUniqueViolation(error: unknown): boolean {
+    const anyErr = error as any;
+    return anyErr?.code === "23505";
+}
+
+function isNricUniqueViolation(error: unknown): boolean {
+    const anyErr = error as any;
+    const constraint = anyErr?.constraint ?? anyErr?.detail ?? anyErr?.message ?? "";
+    return typeof constraint === "string" && constraint.includes("worker_nric_unique");
+}
+
 function isoNow(): Date {
     return new Date();
 }
@@ -37,6 +48,7 @@ export async function createWorker(formData: FormData): Promise<ActionResult> {
         return { success: false, error: "Name is required" };
     }
 
+    const nric = (formData.get("nric") ?? "").toString().trim() || null;
     const email = (formData.get("email") ?? "").toString().trim() || null;
     const phone = (formData.get("phone") ?? "").toString().trim() || null;
     const status =
@@ -101,6 +113,7 @@ export async function createWorker(formData: FormData): Promise<ActionResult> {
             .insert(workerTable)
             .values({
                 name,
+                nric,
                 email,
                 phone,
                 status,
@@ -122,6 +135,9 @@ export async function createWorker(formData: FormData): Promise<ActionResult> {
 
         return { success: true, id: workerId };
     } catch (error) {
+        if (isUniqueViolation(error) && isNricUniqueViolation(error)) {
+            return { success: false, error: "NRIC already exists" };
+        }
         console.error("Error creating worker", error);
         return { success: false, error: "Failed to create worker" };
     }
@@ -140,6 +156,7 @@ export async function updateWorker(
         return { success: false, error: "Name is required" };
     }
 
+    const nric = (formData.get("nric") ?? "").toString().trim() || null;
     const email = (formData.get("email") ?? "").toString().trim() || null;
     const phone = (formData.get("phone") ?? "").toString().trim() || null;
     const status =
@@ -213,6 +230,7 @@ export async function updateWorker(
             .update(workerTable)
             .set({
                 name,
+                nric,
                 email,
                 phone,
                 status,
@@ -233,6 +251,9 @@ export async function updateWorker(
 
         return { success: true, id };
     } catch (error) {
+        if (isUniqueViolation(error) && isNricUniqueViolation(error)) {
+            return { success: false, error: "NRIC already exists" };
+        }
         console.error("Error updating worker", error);
         return { success: false, error: "Failed to update worker" };
     }

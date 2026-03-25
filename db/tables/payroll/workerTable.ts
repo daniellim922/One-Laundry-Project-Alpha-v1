@@ -4,6 +4,7 @@ import { employmentTable, type SelectEmployment } from "./employmentTable";
 export const workerTable = pgTable("worker", {
     id: uuid().primaryKey().defaultRandom(),
     name: text("name").notNull(),
+    nric: text("nric"),
     email: text("email"),
     phone: text("phone"),
     status: text("status").notNull(),

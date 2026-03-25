@@ -54,7 +54,7 @@ export async function updateAdvanceRequest(
     advanceRequestId: string,
     input: UpdateAdvanceRequestInput,
 ): Promise<ActionResult> {
-    await requirePermission("Payroll", "update");
+    await requirePermission("Advance", "update");
 
     if (!input.workerId) {
         return { success: false, error: "Worker ID is required" };

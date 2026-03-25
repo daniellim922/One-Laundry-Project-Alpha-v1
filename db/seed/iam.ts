@@ -7,6 +7,7 @@ export const FEATURES: InsertFeature[] = [
     { name: "Timesheet" },
     { name: "Payroll" },
     { name: "Expenses" },
+    { name: "Advance" },
     { name: "IAM (Identity and Access Management)" },
 ];
 export const ROLES: InsertRole[] = [{ name: "Admin" }];
@@ -38,6 +39,13 @@ export const ROLE_PERMISSIONS = [
             },
             {
                 featureName: "Payroll",
+                create: true,
+                read: true,
+                update: true,
+                delete: true,
+            },
+            {
+                featureName: "Advance",
                 create: true,
                 read: true,
                 update: true,

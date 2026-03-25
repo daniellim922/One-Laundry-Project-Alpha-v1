@@ -97,7 +97,6 @@ export const DASHBOARD_NAV_FEATURES: DashboardNavFeature[] = [
         ],
         featureName: "Advance",
         iconName: "Advance",
-        alwaysVisible: true,
     },
     {
         name: "Expenses",

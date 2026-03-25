@@ -51,7 +51,7 @@ export type CreateAdvanceRequestInput = {
 export async function createAdvanceRequest(
     input: CreateAdvanceRequestInput,
 ): Promise<ActionResult> {
-    await requirePermission("Payroll", "create");
+    await requirePermission("Advance", "create");
 
     if (!input.workerId) {
         return { success: false, error: "Worker ID is required" };
