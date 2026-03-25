@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MoreHorizontal, Pencil } from "lucide-react";
+import { Eye, MoreHorizontal, Pencil } from "lucide-react";
 
 import {
     advanceDetailPath,
@@ -24,6 +24,11 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    formatTimesheetEntryStatus,
+    timesheetEntryStatusPillClass,
+    type TimesheetPaymentStatus,
+} from "@/app/dashboard/timesheet/timesheet-entry-status";
 import { getPayrollDetailData } from "../payroll-detail-data";
 import { PayrollHeader } from "../payroll-header";
 import { PayrollStepProgress } from "../payroll-step-progress";
@@ -562,54 +567,93 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Date In</TableHead>
-                                        <TableHead>Time In</TableHead>
-                                        <TableHead>Date Out</TableHead>
-                                        <TableHead>Time Out</TableHead>
-                                        <TableHead className="text-right">
+                                        <TableHead className="text-center">
+                                            Status
+                                        </TableHead>
+                                        <TableHead className="text-center">
+                                            Date In
+                                        </TableHead>
+                                        <TableHead className="text-center">
+                                            Time In
+                                        </TableHead>
+                                        <TableHead className="text-center">
+                                            Date Out
+                                        </TableHead>
+                                        <TableHead className="text-center">
+                                            Time Out
+                                        </TableHead>
+                                        <TableHead className="text-center">
                                             Hours
                                         </TableHead>
-                                        <TableHead className="text-right">
+                                        <TableHead className="text-center">
                                             Actions
                                         </TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {entries.map((e) => (
-                                        <TableRow key={e.id}>
-                                            <TableCell>{formatDate(e.dateIn)}</TableCell>
-                                            <TableCell>
-                                                {formatTime(String(e.timeIn))}
-                                            </TableCell>
-                                            <TableCell>{formatDate(e.dateOut)}</TableCell>
-                                            <TableCell>
-                                                {formatTime(String(e.timeOut))}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                {Number(e.hours).toFixed(2)}
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="ghost" size="icon" asChild>
-                                                    <Link
-                                                        href={`/dashboard/timesheet/${e.id}/edit`}>
-                                                        <Pencil className="h-4 w-4" />
-                                                        <span className="sr-only">
-                                                            Edit
-                                                        </span>
-                                                    </Link>
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
+                                    {entries.map((e) => {
+                                        const paid = e.status === "paid";
+                                        const status = e.status as TimesheetPaymentStatus;
+                                        return (
+                                            <TableRow key={e.id}>
+                                                <TableCell className="text-center">
+                                                    <span
+                                                        className={timesheetEntryStatusPillClass(
+                                                            status,
+                                                        )}>
+                                                        {formatTimesheetEntryStatus(status)}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    {formatDate(e.dateIn)}
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    {formatTime(String(e.timeIn))}
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    {formatDate(e.dateOut)}
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    {formatTime(String(e.timeOut))}
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    {Number(e.hours).toFixed(2)}
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        asChild>
+                                                        <Link
+                                                            href={
+                                                                paid
+                                                                    ? `/dashboard/timesheet/${e.id}/view`
+                                                                    : `/dashboard/timesheet/${e.id}/edit`
+                                                            }>
+                                                            {paid ? (
+                                                                <Eye className="h-4 w-4" />
+                                                            ) : (
+                                                                <Pencil className="h-4 w-4" />
+                                                            )}
+                                                            <span className="sr-only">
+                                                                {paid ? "View" : "Edit"}
+                                                            </span>
+                                                        </Link>
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
                                 </TableBody>
                                 <TableFooter>
                                     <TableRow>
+                                        <TableCell />
                                         <TableCell
                                             colSpan={4}
-                                            className="text-right font-medium">
+                                            className="text-center font-medium">
                                             Total Working Hours
                                         </TableCell>
-                                        <TableCell className="text-right font-medium">
+                                        <TableCell className="text-center font-medium">
                                             {entries
                                                 .reduce((sum, e) => sum + Number(e.hours), 0)
                                                 .toFixed(2)}
