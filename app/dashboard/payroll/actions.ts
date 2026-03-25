@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { getAdvancesForPayrollPeriod } from "@/lib/advances-queries";
@@ -10,7 +10,10 @@ import { payrollVoucherTable } from "@/db/tables/payroll/payrollVoucherTable";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { employmentTable } from "@/db/tables/payroll/employmentTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
+import { advanceTable } from "@/db/tables/payroll/advanceTable";
+import { advanceRequestTable } from "@/db/tables/payroll/advanceRequestTable";
 import { calculatePay, type PayCalcInput } from "@/lib/payroll-utils";
+import { requirePermission } from "@/lib/require-permission";
 
 function isoNow(): Date {
     return new Date();
@@ -437,6 +440,144 @@ export async function updatePayroll(payrollId: string, formData: FormData) {
     return { success: true };
 }
 
+export async function settlePayroll(payrollId: string) {
+    await requirePermission("Payroll", "update");
+
+    const [payroll] = await db
+        .select()
+        .from(payrollTable)
+        .where(eq(payrollTable.id, payrollId))
+        .limit(1);
+
+    if (!payroll) return { error: "Payroll not found" };
+    if (payroll.status !== "draft") {
+        return { error: "Only draft payrolls can be settled" };
+    }
+
+    const now = isoNow();
+
+    try {
+        await db.transaction(async (tx) => {
+            await tx
+                .update(payrollTable)
+                .set({
+                    status: "settled",
+                    updatedAt: now,
+                })
+                .where(eq(payrollTable.id, payrollId));
+
+            const advancesInPeriod = await tx
+                .select({
+                    id: advanceTable.id,
+                    advanceRequestId: advanceTable.advanceRequestId,
+                    status: advanceTable.status,
+                })
+                .from(advanceTable)
+                .innerJoin(
+                    advanceRequestTable,
+                    eq(advanceTable.advanceRequestId, advanceRequestTable.id),
+                )
+                .where(
+                    and(
+                        eq(advanceRequestTable.workerId, payroll.workerId),
+                        gte(advanceTable.repaymentDate, payroll.periodStart),
+                        lte(advanceTable.repaymentDate, payroll.periodEnd),
+                    ),
+                );
+
+            const loanAdvanceIds = advancesInPeriod
+                .filter((advance) => advance.status === "loan")
+                .map((advance) => advance.id);
+
+            if (loanAdvanceIds.length > 0) {
+                await tx
+                    .update(advanceTable)
+                    .set({
+                        status: "paid",
+                        updatedAt: now,
+                    })
+                    .where(inArray(advanceTable.id, loanAdvanceIds));
+            }
+
+            const requestIds = Array.from(
+                new Set(advancesInPeriod.map((advance) => advance.advanceRequestId)),
+            );
+
+            if (requestIds.length > 0) {
+                const requestAdvances = await tx
+                    .select({
+                        advanceRequestId: advanceTable.advanceRequestId,
+                        status: advanceTable.status,
+                    })
+                    .from(advanceTable)
+                    .where(inArray(advanceTable.advanceRequestId, requestIds));
+
+                const byRequestId = requestAdvances.reduce<
+                    Record<string, Array<{ status: "loan" | "paid" }>>
+                >((acc, row) => {
+                    if (!acc[row.advanceRequestId]) acc[row.advanceRequestId] = [];
+                    acc[row.advanceRequestId]!.push({ status: row.status });
+                    return acc;
+                }, {});
+
+                const fullyPaidRequestIds = requestIds.filter((requestId) => {
+                    const advances = byRequestId[requestId] ?? [];
+                    return advances.length > 0 && advances.every((a) => a.status === "paid");
+                });
+
+                const notFullyPaidRequestIds = requestIds.filter(
+                    (requestId) => !fullyPaidRequestIds.includes(requestId),
+                );
+
+                if (fullyPaidRequestIds.length > 0) {
+                    await tx
+                        .update(advanceRequestTable)
+                        .set({
+                            status: "paid",
+                            updatedAt: now,
+                        })
+                        .where(inArray(advanceRequestTable.id, fullyPaidRequestIds));
+                }
+
+                if (notFullyPaidRequestIds.length > 0) {
+                    await tx
+                        .update(advanceRequestTable)
+                        .set({
+                            status: "loan",
+                            updatedAt: now,
+                        })
+                        .where(inArray(advanceRequestTable.id, notFullyPaidRequestIds));
+                }
+            }
+
+            await tx
+                .update(timesheetTable)
+                .set({
+                    status: "paid",
+                    updatedAt: now,
+                })
+                .where(
+                    and(
+                        eq(timesheetTable.workerId, payroll.workerId),
+                        gte(timesheetTable.dateIn, payroll.periodStart),
+                        lte(timesheetTable.dateOut, payroll.periodEnd),
+                        eq(timesheetTable.status, "unpaid"),
+                    ),
+                );
+        });
+    } catch (error) {
+        console.error("Error settling payroll", error);
+        return { error: "Failed to settle payroll" };
+    }
+
+    revalidatePath(`/dashboard/payroll/${payrollId}/breakdown`);
+    revalidatePath(`/dashboard/payroll/${payrollId}/summary`);
+    revalidatePath("/dashboard/payroll");
+    revalidatePath("/dashboard/advance");
+    revalidatePath("/dashboard/timesheet");
+    return { success: true };
+}
+
 export async function recalculateVouchersForWorker(workerId: string) {
     const drafts = await db
         .select()
@@ -560,6 +701,23 @@ export async function updateVoucherDays(input: {
     if (!Number.isFinite(restDays) || restDays < 0) return { error: "Invalid restDays" };
     if (!Number.isFinite(publicHolidays) || publicHolidays < 0)
         return { error: "Invalid publicHolidays" };
+
+    const [payrollRow] = await db
+        .select({
+            status: payrollTable.status,
+            payrollVoucherId: payrollTable.payrollVoucherId,
+        })
+        .from(payrollTable)
+        .where(eq(payrollTable.id, payrollId))
+        .limit(1);
+
+    if (!payrollRow) return { error: "Payroll not found" };
+    if (payrollRow.payrollVoucherId !== voucherId) {
+        return { error: "Voucher does not belong to this payroll" };
+    }
+    if (payrollRow.status !== "draft") {
+        return { error: "Only draft payrolls can edit voucher days" };
+    }
 
     const [voucher] = await db
         .select({

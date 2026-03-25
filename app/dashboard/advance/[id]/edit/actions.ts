@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { recalculateVouchersForWorker } from "@/app/dashboard/payroll/actions";
+import { localIsoDateYmd } from "@/lib/local-iso-date";
 import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
 import { advanceRequestTable } from "@/db/tables/payroll/advanceRequestTable";
@@ -147,6 +148,16 @@ export async function updateAdvanceRequest(
             return {
                 success: false,
                 error: "Repayment date must be on or after date of request",
+            };
+        }
+    }
+
+    const today = localIsoDateYmd();
+    for (const inst of validInstallments) {
+        if (inst.status !== "paid" && inst.repaymentDate < today) {
+            return {
+                success: false,
+                error: "Expected repayment date cannot be before today",
             };
         }
     }

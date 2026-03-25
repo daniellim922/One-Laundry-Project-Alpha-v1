@@ -1,6 +1,8 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -12,21 +14,45 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import { settlePayroll } from "../actions";
 
 interface PayrollStepProgressProps {
     className?: string;
     payrollId: string;
+    payrollStatus: string;
     activeStep: 1 | 2 | 3;
 }
 
 export function PayrollStepProgress({
     className,
     payrollId,
+    payrollStatus,
     activeStep,
 }: PayrollStepProgressProps) {
+    const router = useRouter();
     const step1Active = activeStep === 1;
     const step2Active = activeStep === 2;
     const step3Active = activeStep === 3;
+    const [open, setOpen] = React.useState(false);
+    const [pending, setPending] = React.useState(false);
+    const [error, setError] = React.useState<string | null>(null);
+    const isSettled = payrollStatus === "settled";
+
+    async function handleSettle() {
+        setError(null);
+        setPending(true);
+
+        const result = await settlePayroll(payrollId);
+
+        setPending(false);
+        if (result?.error) {
+            setError(result.error);
+            return;
+        }
+
+        setOpen(false);
+        router.push(`/dashboard/payroll/${payrollId}/summary?print=1`);
+    }
 
     return (
         <div className={className}>
@@ -99,37 +125,57 @@ export function PayrollStepProgress({
                             }`}>
                             3
                         </div>
-                        <Dialog>
-                            <DialogTrigger asChild>
-                                <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="sm"
-                                    className="cursor-pointer">
-                                    Settle
-                                </Button>
-                            </DialogTrigger>
-                            <DialogContent className="[&_button]:cursor-pointer">
-                                <DialogHeader>
-                                    <DialogTitle>Confirm settlement</DialogTitle>
-                                    <DialogDescription>
-                                        Are you sure you want to settle this payroll?
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <DialogFooter>
-                                    <DialogClose asChild>
-                                        <Button type="button" variant="outline">
-                                            Cancel
+                        {isSettled ? (
+                            <Button type="button" variant="outline" size="sm" disabled>
+                                Settled
+                            </Button>
+                        ) : (
+                            <Dialog
+                                open={open}
+                                onOpenChange={(nextOpen) => {
+                                    setOpen(nextOpen);
+                                    if (!nextOpen) setError(null);
+                                }}>
+                                <DialogTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="sm"
+                                        disabled={pending}
+                                        className="cursor-pointer">
+                                        Settle
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="[&_button]:cursor-pointer">
+                                    <DialogHeader>
+                                        <DialogTitle>Confirm settlement</DialogTitle>
+                                        <DialogDescription>
+                                            Are you sure you want to settle this payroll?
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    {error ? (
+                                        <p className="text-sm text-destructive">{error}</p>
+                                    ) : null}
+                                    <DialogFooter>
+                                        <DialogClose asChild>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                disabled={pending}>
+                                                Cancel
+                                            </Button>
+                                        </DialogClose>
+                                        <Button
+                                            type="button"
+                                            variant="destructive"
+                                            disabled={pending}
+                                            onClick={handleSettle}>
+                                            {pending ? "Settling..." : "Yes, settle"}
                                         </Button>
-                                    </DialogClose>
-                                    <DialogClose asChild>
-                                        <Button type="button" variant="destructive">
-                                            Yes, settle
-                                        </Button>
-                                    </DialogClose>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        )}
                     </div>
                 </div>
             </div>

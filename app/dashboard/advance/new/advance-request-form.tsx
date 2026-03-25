@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/popover";
 import { SignaturePad } from "@/components/ui/signature-pad";
 import { advanceStatusBadgeClass, formatAdvanceAmount } from "@/lib/advance-display";
+import { localIsoDateYmd } from "@/lib/local-iso-date";
 import { cn } from "@/lib/utils";
 
 const formSchema = z
@@ -117,6 +118,20 @@ const formSchema = z
                 });
             }
 
+            const today = localIsoDateYmd();
+            if (
+                hasRepaymentDate &&
+                row.status !== "paid" &&
+                /^\d{4}-\d{2}-\d{2}$/.test(repaymentDate) &&
+                repaymentDate < today
+            ) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["installmentAmounts", i, "repaymentDate"],
+                    message: "Expected repayment date cannot be before today",
+                });
+            }
+
             if (hasRepaymentDate && /^\d{4}-\d{2}-\d{2}$/.test(repaymentDate)) {
                 if (!hasValidAmount) {
                     ctx.addIssue({
@@ -166,14 +181,6 @@ const formSchema = z
     });
 
 type FormValues = z.infer<typeof formSchema>;
-
-function todayIsoDate(): string {
-    const d = new Date();
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
-}
 
 const textareaClass = cn(
     "placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex min-h-[100px] w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none md:text-sm",
@@ -312,7 +319,7 @@ export function AdvanceRequestForm({
             ? detailToDefaultValues(initialData)
             : {
                   workerId: initialWorkerId ?? "",
-                  loanDate: todayIsoDate(),
+                  loanDate: localIsoDateYmd(),
                   amount: "",
                   purpose: "",
                   installmentAmounts: [
@@ -644,6 +651,11 @@ export function AdvanceRequestForm({
                                                         {...field}
                                                         id={`${formId}-repayment-${index}`}
                                                         type="date"
+                                                        min={
+                                                            isPaidInstallment
+                                                                ? undefined
+                                                                : localIsoDateYmd()
+                                                        }
                                                         disabled={
                                                             pending ||
                                                             isPaidInstallment

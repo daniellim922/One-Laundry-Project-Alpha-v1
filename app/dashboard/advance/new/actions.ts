@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { recalculateVouchersForWorker } from "@/app/dashboard/payroll/actions";
+import { localIsoDateYmd } from "@/lib/local-iso-date";
 import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
 import {
@@ -106,6 +107,16 @@ export async function createAdvanceRequest(
             return {
                 success: false,
                 error: "Repayment date must be on or after date of request",
+            };
+        }
+    }
+
+    const today = localIsoDateYmd();
+    for (const inst of validInstallments) {
+        if (inst.repaymentDate < today) {
+            return {
+                success: false,
+                error: "Expected repayment date cannot be before today",
             };
         }
     }

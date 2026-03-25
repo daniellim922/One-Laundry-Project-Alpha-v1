@@ -52,9 +52,16 @@ test.describe("Advance dashboard", () => {
             .getByRole("option", { name: "Nguyen Thi Thao" })
             .click();
 
+        const future = new Date();
+        future.setDate(future.getDate() + 30);
+        const y = future.getFullYear();
+        const m = String(future.getMonth() + 1).padStart(2, "0");
+        const d = String(future.getDate()).padStart(2, "0");
+        const repaymentIso = `${y}-${m}-${d}`;
+
         await page.getByLabel("Amount requested").fill("777");
         await page.getByLabel("Installment amount").first().fill("777");
-        await page.getByLabel("Expected repayment date").first().fill("2025-06-15");
+        await page.getByLabel("Expected repayment date").first().fill(repaymentIso);
 
         await page.getByTestId("advance-request-submit").click();
 

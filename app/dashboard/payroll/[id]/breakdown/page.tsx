@@ -62,6 +62,7 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
             <PayrollStepProgress
                 className="print:hidden"
                 payrollId={payroll.id}
+                payrollStatus={payroll.status}
                 activeStep={1}
             />
 
@@ -377,6 +378,7 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                         field="restDays"
                                         restDays={voucher.restDays}
                                         publicHolidays={voucher.publicHolidays}
+                                        readOnly={payroll.status !== "draft"}
                                     />
                                     <div className="space-y-1">
                                         <p className="text-sm text-muted-foreground">
@@ -395,6 +397,7 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                         field="publicHolidays"
                                         restDays={voucher.restDays}
                                         publicHolidays={voucher.publicHolidays}
+                                        readOnly={payroll.status !== "draft"}
                                     />
                                     <div className="space-y-1">
                                         <p className="text-sm text-muted-foreground">

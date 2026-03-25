@@ -1,6 +1,9 @@
+import { Suspense } from "react";
+
 import { PayrollHeader } from "../payroll-header";
 import { PaymentVoucher } from "../payment-voucher";
 import { PayrollStepProgress } from "../payroll-step-progress";
+import { PayrollSummaryPrintTrigger } from "../payroll-summary-print-trigger";
 import { SummarizedTimesheet } from "../summarized-timesheet";
 import { getPayrollDetailData } from "../payroll-detail-data";
 
@@ -14,6 +17,13 @@ export default async function PayrollSummaryPage({ params }: PageProps) {
 
     return (
         <div className="space-y-6">
+            <Suspense fallback={null}>
+                <PayrollSummaryPrintTrigger
+                    workerName={worker.name}
+                    periodStart={payroll.periodStart}
+                    periodEnd={payroll.periodEnd}
+                />
+            </Suspense>
             <div className="print:hidden">
                 <PayrollHeader payroll={payroll} workerName={worker.name} />
             </div>
@@ -21,6 +31,7 @@ export default async function PayrollSummaryPage({ params }: PageProps) {
             <PayrollStepProgress
                 className="print:hidden"
                 payrollId={payroll.id}
+                payrollStatus={payroll.status}
                 activeStep={2}
             />
 

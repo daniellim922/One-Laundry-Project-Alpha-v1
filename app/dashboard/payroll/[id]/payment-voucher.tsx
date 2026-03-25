@@ -2,6 +2,7 @@
 
 import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { printPayrollSummary } from "@/lib/payroll-print-summary";
 
 interface PaymentVoucherProps {
     voucher: {
@@ -78,17 +79,6 @@ export function PaymentVoucher({
         month: "2-digit",
         year: "numeric",
     });
-    const periodStartForTitle = periodStartDate.toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-    });
-    const periodEndForTitle = periodEndDate.toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-    });
-
     const earnings: LineItem[] = [];
     const deductions: LineItem[] = [];
     const isPartTime = voucher.employmentType === "Part Time";
@@ -197,24 +187,10 @@ export function PaymentVoucher({
               : baseMethod;
 
     function handlePrint() {
-        const originalTitle = document.title;
-        const safeName = workerName.replace(/[/\\:*?"<>|]/g, "-");
-        const customTitle = `${safeName} - ${periodStartForTitle}-${periodEndForTitle}`;
-
-        const beforePrint = () => {
-            document.title = customTitle;
-        };
-        const afterPrint = () => {
-            document.title = originalTitle;
-            window.removeEventListener("beforeprint", beforePrint);
-            window.removeEventListener("afterprint", afterPrint);
-        };
-
-        window.addEventListener("beforeprint", beforePrint);
-        window.addEventListener("afterprint", afterPrint);
-        document.title = customTitle;
-        requestAnimationFrame(() => {
-            setTimeout(() => window.print(), 100);
+        printPayrollSummary({
+            workerName,
+            periodStart: payroll.periodStart,
+            periodEnd: payroll.periodEnd,
         });
     }
 

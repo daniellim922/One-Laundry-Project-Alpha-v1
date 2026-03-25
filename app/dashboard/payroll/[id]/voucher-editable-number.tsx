@@ -11,6 +11,7 @@ type Props = {
     field: "restDays" | "publicHolidays";
     restDays: number | null;
     publicHolidays: number | null;
+    readOnly?: boolean;
 };
 
 function parseNumber(text: string): number | null {
@@ -28,6 +29,7 @@ export function VoucherEditableNumber({
     field,
     restDays,
     publicHolidays,
+    readOnly = false,
 }: Props) {
     const currentValue = field === "restDays" ? restDays : publicHolidays;
     const initial = useMemo(
@@ -39,6 +41,7 @@ export function VoucherEditableNumber({
     const [error, setError] = useState<string | null>(null);
 
     const commit = () => {
+        if (readOnly) return;
         const parsed = parseNumber(text);
         const numeric = parsed ?? 0;
         if (numeric < 0) {
@@ -73,7 +76,8 @@ export function VoucherEditableNumber({
                     aria-label={label}
                     inputMode="decimal"
                     value={text}
-                    disabled={isPending}
+                    readOnly={readOnly}
+                    disabled={readOnly || isPending}
                     className="h-8 w-24 text-right text-sm font-medium tabular-nums"
                     onChange={(e) => setText(e.currentTarget.value)}
                     onBlur={commit}

@@ -14,7 +14,7 @@ export const payrollTable = pgTable("payroll", {
     periodEnd: date("period_end").notNull(),
     payrollDate: date("payroll_date").notNull(),
     status: text("status", {
-        enum: ["draft", "paid"] as const,
+        enum: ["draft", "settled"] as const,
     })
         .notNull()
         .default("draft"),
