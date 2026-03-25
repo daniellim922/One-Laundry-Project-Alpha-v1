@@ -89,6 +89,7 @@ const formSchema = z
             .optional(),
     })
     .superRefine((values, ctx) => {
+        const today = localIsoDateYmd();
         let hasValidInstallment = false;
         const amountRequested = Number(values.amount);
         const validInstallmentAmounts: number[] = [];
@@ -118,7 +119,6 @@ const formSchema = z
                 });
             }
 
-            const today = localIsoDateYmd();
             if (
                 hasRepaymentDate &&
                 row.status !== "paid" &&
@@ -158,6 +158,32 @@ const formSchema = z
                 }
             }
         });
+
+        const employeeSigDate = values.employeeSignatureDate?.trim() ?? "";
+        if (
+            employeeSigDate &&
+            /^\d{4}-\d{2}-\d{2}$/.test(employeeSigDate) &&
+            employeeSigDate < today
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["employeeSignatureDate"],
+                message: "Employee signature date cannot be before today",
+            });
+        }
+
+        const managerSigDate = values.managerSignatureDate?.trim() ?? "";
+        if (
+            managerSigDate &&
+            /^\d{4}-\d{2}-\d{2}$/.test(managerSigDate) &&
+            managerSigDate < today
+        ) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["managerSignatureDate"],
+                message: "Manager signature date cannot be before today",
+            });
+        }
         if (!hasValidInstallment) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
@@ -816,6 +842,7 @@ export function AdvanceRequestForm({
                                                 {...field}
                                                 id={`${formId}-employee-sig-date`}
                                                 type="date"
+                                                min={localIsoDateYmd()}
                                                 disabled={pending}
                                                 value={field.value ?? ""}
                                             />
@@ -855,6 +882,7 @@ export function AdvanceRequestForm({
                                                 {...field}
                                                 id={`${formId}-manager-sig-date`}
                                                 type="date"
+                                                min={localIsoDateYmd()}
                                                 disabled={pending}
                                                 value={field.value ?? ""}
                                             />

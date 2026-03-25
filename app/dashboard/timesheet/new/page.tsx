@@ -16,7 +16,7 @@ export default async function NewTimesheetEntryPage() {
         .orderBy(workerTable.name);
 
     return (
-        <div className="mx-auto max-w-md space-y-4">
+        <div className="w-full mx-auto max-w-6xl space-y-4">
             <div className="flex items-center gap-4">
                 <Button variant="ghost" size="icon" asChild>
                     <Link href="/dashboard/timesheet/all">
@@ -25,7 +25,7 @@ export default async function NewTimesheetEntryPage() {
                 </Button>
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight">
-                        Add timesheet entry
+                        Add new timesheet
                     </h1>
                     <p className="text-muted-foreground">
                         Record clock in and clock out for a worker

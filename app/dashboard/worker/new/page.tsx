@@ -6,7 +6,7 @@ export default async function NewWorkerPage() {
     await requirePermission("Workers", "create");
     return (
         <WorkerFormPageLayout
-            title="Add worker"
+            title="Add New Worker"
             description="Create a new worker with the form below.">
             <WorkerForm />
         </WorkerFormPageLayout>

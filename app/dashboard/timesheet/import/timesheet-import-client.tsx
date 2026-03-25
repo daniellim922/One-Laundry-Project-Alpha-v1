@@ -14,6 +14,7 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { BackButton } from "@/components/back-button";
 import {
     Table,
     TableBody,
@@ -436,14 +437,17 @@ export function TimesheetImportClient({ workers }: { workers: Worker[] }) {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-semibold tracking-tight">
-                    Import timesheet
-                </h1>
-                <p className="text-muted-foreground">
-                    Upload an AttendRecord-style Excel file to import timesheet
-                    data
-                </p>
+            <div className="flex items-center gap-4">
+                <BackButton href="/dashboard/timesheet/all" />
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight">
+                        Import timesheet
+                    </h1>
+                    <p className="text-muted-foreground">
+                        Upload an AttendRecord-style Excel file to import
+                        timesheet data
+                    </p>
+                </div>
             </div>
 
             <Card>

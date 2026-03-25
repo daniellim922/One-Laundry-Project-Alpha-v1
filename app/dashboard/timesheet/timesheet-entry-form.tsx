@@ -8,7 +8,7 @@ import { SearchableWorkerSelect } from "@/components/searchable-worker-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
     formatTimesheetEntryStatus,
     timesheetEntryStatusPillClass,
@@ -180,7 +180,7 @@ export function TimesheetEntryForm({
                 ) : (
                     <>
                         <Button type="submit" disabled={pending}>
-                            {pending ? "Saving..." : "Save"}
+                            {pending ? "Adding..." : "Add"}
                         </Button>
                         <Button
                             type="button"
@@ -196,19 +196,7 @@ export function TimesheetEntryForm({
     );
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>
-                    {disabled
-                        ? "View entry"
-                        : entry
-                          ? "Edit entry"
-                          : "New entry"}
-                </CardTitle>
-                <p className="text-muted-foreground text-sm">
-                    Worker name, date in/out, and clock in/out times
-                </p>
-            </CardHeader>
+        <Card className="w-full">
             <CardContent>
                 {disabled ? (
                     <div className="space-y-4">{fieldsBody}</div>

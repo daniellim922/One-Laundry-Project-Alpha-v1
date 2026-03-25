@@ -63,7 +63,7 @@ export default async function TimesheetAllPage() {
                         <Button asChild>
                             <Link href="/dashboard/timesheet/new">
                                 <Plus className="mr-2 h-4 w-4" />
-                                Add entry
+                                Add new timesheet
                             </Link>
                         </Button>
                     }

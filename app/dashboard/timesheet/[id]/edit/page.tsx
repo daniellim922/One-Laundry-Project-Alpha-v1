@@ -47,7 +47,7 @@ export default async function EditTimesheetEntryPage({ params }: PageProps) {
         .orderBy(workerTable.name);
 
     return (
-        <div className="mx-auto max-w-md space-y-4">
+        <div className="w-full mx-auto max-w-6xl space-y-4">
             <div className="flex items-center gap-4">
                 <Button variant="ghost" size="icon" asChild>
                     <Link href="/dashboard/timesheet/all">

@@ -1075,7 +1075,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             ? "Adding..."
                                             : "Saving..."
                                         : isCreate
-                                          ? "Add worker"
+                                          ? "Add New Worker"
                                           : "Save changes"}
                                 </Button>
                             </div>

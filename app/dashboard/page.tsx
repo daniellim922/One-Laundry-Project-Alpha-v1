@@ -143,7 +143,7 @@ export default async function Page() {
                 </CardHeader>
                 <CardContent className="flex flex-wrap gap-3">
                     <Button asChild>
-                        <Link href="/dashboard/worker/new">Add worker</Link>
+                        <Link href="/dashboard/worker/new">New worker</Link>
                     </Button>
                     <Button variant="outline" asChild>
                         <Link href="/dashboard/expenses/new">Add expense</Link>

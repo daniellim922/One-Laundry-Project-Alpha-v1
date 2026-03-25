@@ -1,8 +1,12 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 
 import { requirePermission } from "@/lib/require-permission";
+import { checkPermission } from "@/lib/permissions";
+import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
+import { Pencil } from "lucide-react";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { employmentTable } from "@/db/tables/payroll/employmentTable";
 import {
@@ -18,7 +22,7 @@ interface PageProps {
 }
 
 export default async function ViewWorkerPage({ params }: PageProps) {
-    await requirePermission("Workers", "read");
+    const { userId } = await requirePermission("Workers", "read");
 
     const { id } = await params;
 
@@ -56,10 +60,29 @@ export default async function ViewWorkerPage({ params }: PageProps) {
         notFound();
     }
 
+    const canEdit = await checkPermission(userId, "Workers", "update");
+
     return (
         <WorkerFormPageLayout
             title="View worker"
-            description="Worker details (read-only).">
+            description="Worker details (read-only)."
+            actions={
+                canEdit ? (
+                    <Button asChild variant="outline" size="sm">
+                        <Link
+                            href={`/dashboard/worker/${id}/edit`}
+                            className="flex items-center gap-2">
+                            <Pencil className="h-4 w-4" />
+                            Edit
+                        </Link>
+                    </Button>
+                ) : (
+                    <Button variant="outline" size="sm" disabled>
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                    </Button>
+                )
+            }>
             <WorkerForm worker={worker} disabled />
         </WorkerFormPageLayout>
     );

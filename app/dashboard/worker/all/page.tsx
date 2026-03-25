@@ -69,7 +69,7 @@ export default async function Page() {
                         <Button asChild>
                             <Link href="/dashboard/worker/new">
                                 <Plus className="mr-2 h-4 w-4" />
-                                Add worker
+                                New worker
                             </Link>
                         </Button>
                     }
