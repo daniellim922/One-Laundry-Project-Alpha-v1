@@ -9,10 +9,13 @@ import { PayrollSummaryCapture } from "../payroll-summary-capture";
 
 interface PageProps {
     params: Promise<{ id: string }>;
+    searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export default async function PayrollSummaryPage({ params }: PageProps) {
+export default async function PayrollSummaryPage({ params, searchParams }: PageProps) {
     const { id } = await params;
+    const sp = (await searchParams) ?? {};
+    const mode = typeof sp.mode === "string" ? sp.mode : undefined;
     const { payroll, worker, voucher, entries } = await getPayrollDetailData(id);
 
     return (
@@ -30,6 +33,7 @@ export default async function PayrollSummaryPage({ params }: PageProps) {
 
             <section className="min-h-[calc(100vh-10rem)] print:min-h-0">
                 <PayrollSummaryCapture
+                    payrollId={payroll.id}
                     workerName={worker.name}
                     periodStart={payroll.periodStart}
                     periodEnd={payroll.periodEnd}>
@@ -39,11 +43,13 @@ export default async function PayrollSummaryPage({ params }: PageProps) {
                         workerName={worker.name}
                         showDownloadButton={false}
                     />
-                    <SummarizedTimesheet
-                        entries={entries}
-                        payroll={payroll}
-                        workerName={worker.name}
-                    />
+                    {mode !== "voucher" ? (
+                        <SummarizedTimesheet
+                            entries={entries}
+                            payroll={payroll}
+                            workerName={worker.name}
+                        />
+                    ) : null}
                 </PayrollSummaryCapture>
             </section>
         </div>

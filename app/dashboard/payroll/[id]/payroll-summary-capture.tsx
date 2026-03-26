@@ -5,38 +5,46 @@ import { Download } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { downloadPayrollVoucherAndTimesheetPdf } from "@/lib/payroll-download-summary";
 
 export function PayrollSummaryCapture(props: {
+    payrollId: string;
     workerName: string;
     periodStart: string;
     periodEnd: string;
     children: React.ReactNode;
 }) {
-    const { workerName, periodStart, periodEnd, children } = props;
+    const { payrollId, workerName, periodStart, periodEnd, children } = props;
     const rootRef = useRef<HTMLDivElement | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    async function handleDownloadPdf() {
-        const root = rootRef.current;
-        if (!root || isGenerating) return;
+    function isoToDdmmyyyy(iso: string): string {
+        const s = String(iso).slice(0, 10);
+        const [y, m, d] = s.split("-");
+        if (!y || !m || !d) return s;
+        return `${d}_${m}_${y}`;
+    }
 
-        const voucherElement = root.querySelector<HTMLElement>(".voucher-print-root");
-        const timesheetElement =
-            root.querySelector<HTMLElement>(".timesheet-print-compact");
-        if (!voucherElement || !timesheetElement) return;
+    async function handleDownloadPdf() {
+        if (isGenerating) return;
 
         setIsGenerating(true);
         try {
-            await downloadPayrollVoucherAndTimesheetPdf({
-                voucherElement,
-                timesheetElement,
-                workerName,
-                periodStart,
-                periodEnd,
+            const res = await fetch(`/api/payroll/${payrollId}/pdf?mode=summary`, {
+                method: "GET",
+                cache: "no-store",
             });
+            if (!res.ok) throw new Error(`PDF download failed (${res.status})`);
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${workerName} - ${isoToDdmmyyyy(periodStart)}-${isoToDdmmyyyy(periodEnd)}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
         } finally {
             setIsGenerating(false);
         }

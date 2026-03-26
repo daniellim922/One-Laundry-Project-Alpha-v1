@@ -48,6 +48,7 @@ export function SettleAllDraftPayrollsButton() {
     const router = useRouter();
     const [open, setOpen] = React.useState(false);
     const [pending, setPending] = React.useState(false);
+    const [downloadingZip, setDownloadingZip] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const [loadingDrafts, setLoadingDrafts] = React.useState(false);
     const [drafts, setDrafts] = React.useState<
@@ -107,6 +108,34 @@ export function SettleAllDraftPayrollsButton() {
         });
     }, [open]);
 
+    function getDownloadFilenameFromContentDisposition(
+        header: string | null,
+    ): string | null {
+        if (!header) return null;
+
+        // Prefer RFC5987 `filename*=UTF-8''...`
+        const star = header.match(/filename\*\s*=\s*([^;]+)/i);
+        if (star?.[1]) {
+            const raw = star[1].trim();
+            const unquoted = raw.replace(/^"(.*)"$/, "$1");
+            const parts = unquoted.split("''");
+            const encoded = parts.length === 2 ? parts[1] : unquoted;
+            try {
+                return decodeURIComponent(encoded);
+            } catch {
+                return encoded;
+            }
+        }
+
+        // Fallback to `filename="..."`
+        const plain = header.match(/filename\s*=\s*([^;]+)/i);
+        if (plain?.[1]) {
+            return plain[1].trim().replace(/^"(.*)"$/, "$1");
+        }
+
+        return null;
+    }
+
     async function handleSettleAll() {
         setError(null);
         setPending(true);
@@ -117,6 +146,40 @@ export function SettleAllDraftPayrollsButton() {
         if (result?.error) {
             setError(result.error);
             return;
+        }
+
+        const ids = result?.settledPayrollIds ?? [];
+        if (ids.length > 0) {
+            setDownloadingZip(true);
+            try {
+                const res = await fetch("/api/payroll/settled-zip", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ payrollIds: ids }),
+                });
+                if (!res.ok) {
+                    throw new Error(`ZIP download failed (${res.status})`);
+                }
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download =
+                    getDownloadFilenameFromContentDisposition(
+                        res.headers.get("content-disposition"),
+                    ) ?? `payrolls-${new Date().toISOString().slice(0, 10)}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            } catch (e) {
+                console.error(e);
+                setError("Failed to download payroll PDFs ZIP");
+                setDownloadingZip(false);
+                return;
+            } finally {
+                setDownloadingZip(false);
+            }
         }
 
         setOpen(false);
@@ -226,7 +289,10 @@ export function SettleAllDraftPayrollsButton() {
                 }
             }}>
             <DialogTrigger asChild>
-                <Button type="button" variant="destructive" disabled={pending}>
+                <Button
+                    type="button"
+                    variant="destructive"
+                    disabled={pending || downloadingZip}>
                     Settle all draft payrolls
                 </Button>
             </DialogTrigger>
@@ -557,16 +623,20 @@ export function SettleAllDraftPayrollsButton() {
                         <Button
                             type="button"
                             variant="outline"
-                            disabled={pending}>
+                            disabled={pending || downloadingZip}>
                             Cancel
                         </Button>
                     </DialogClose>
                     <Button
                         type="button"
                         variant="destructive"
-                        disabled={pending || loadingDrafts || draftCount === 0}
+                        disabled={pending || downloadingZip || loadingDrafts || draftCount === 0}
                         onClick={handleSettleAll}>
-                        {pending ? "Settling..." : "Yes, settle all"}
+                        {pending
+                            ? "Settling..."
+                            : downloadingZip
+                              ? "Preparing ZIP..."
+                              : "Yes, settle all"}
                     </Button>
                 </DialogFooter>
             </DialogContent>

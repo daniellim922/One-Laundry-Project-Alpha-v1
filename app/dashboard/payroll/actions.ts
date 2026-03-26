@@ -641,7 +641,7 @@ export async function settleAllDraftPayrolls() {
     revalidatePath("/dashboard/timesheet");
     revalidatePath("/dashboard/timesheet/all");
 
-    return { success: true, settled: settledPayrollIds.length };
+    return { success: true, settled: settledPayrollIds.length, settledPayrollIds };
 }
 
 export async function getDraftPayrollsForSettlement() {

@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { downloadPayrollSummaryPdf } from "@/lib/payroll-download-summary";
 
 interface PaymentVoucherProps {
     voucher: {
@@ -31,6 +30,7 @@ interface PaymentVoucherProps {
         bankAccountNumber?: string | null;
     };
     payroll: {
+        id: string;
         periodStart: string;
         periodEnd: string;
         payrollDate: string;
@@ -65,6 +65,13 @@ export function PaymentVoucher({
 }: PaymentVoucherProps) {
     const voucherRootRef = useRef<HTMLDivElement | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
+
+    function isoToDdmmyyyy(iso: string): string {
+        const s = String(iso).slice(0, 10);
+        const [y, m, d] = s.split("-");
+        if (!y || !m || !d) return s;
+        return `${d}_${m}_${y}`;
+    }
 
     const periodStartDate = new Date(payroll.periodStart + "T00:00:00");
     const periodEndDate = new Date(payroll.periodEnd + "T00:00:00");
@@ -193,17 +200,24 @@ export function PaymentVoucher({
               : baseMethod;
 
     async function handleDownloadPdf() {
-        const element = voucherRootRef.current;
-        if (!element || isGenerating) return;
+        if (isGenerating) return;
 
         setIsGenerating(true);
         try {
-            await downloadPayrollSummaryPdf({
-                element,
-                workerName,
-                periodStart: payroll.periodStart,
-                periodEnd: payroll.periodEnd,
+            const res = await fetch(`/api/payroll/${payroll.id}/pdf?mode=voucher`, {
+                method: "GET",
+                cache: "no-store",
             });
+            if (!res.ok) throw new Error(`PDF download failed (${res.status})`);
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${workerName} - ${isoToDdmmyyyy(payroll.periodStart)}-${isoToDdmmyyyy(payroll.periodEnd)}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
         } finally {
             setIsGenerating(false);
         }
