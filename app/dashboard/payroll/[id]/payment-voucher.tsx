@@ -1,8 +1,9 @@
 "use client";
 
-import { Printer } from "lucide-react";
+import { useRef, useState } from "react";
+import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { printPayrollSummary } from "@/lib/payroll-print-summary";
+import { downloadPayrollSummaryPdf } from "@/lib/payroll-download-summary";
 
 interface PaymentVoucherProps {
     voucher: {
@@ -35,6 +36,7 @@ interface PaymentVoucherProps {
         payrollDate: string;
     };
     workerName: string;
+    showDownloadButton?: boolean;
 }
 
 const currencyFmt = new Intl.NumberFormat("en-US", {
@@ -59,7 +61,11 @@ export function PaymentVoucher({
     voucher,
     payroll,
     workerName,
+    showDownloadButton = true,
 }: PaymentVoucherProps) {
+    const voucherRootRef = useRef<HTMLDivElement | null>(null);
+    const [isGenerating, setIsGenerating] = useState(false);
+
     const periodStartDate = new Date(payroll.periodStart + "T00:00:00");
     const periodEndDate = new Date(payroll.periodEnd + "T00:00:00");
     const periodLabel = `${periodStartDate.toLocaleDateString("en-GB", {
@@ -186,27 +192,41 @@ export function PaymentVoucher({
               ? `Bank Transfer (${voucher.bankAccountNumber})`
               : baseMethod;
 
-    function handlePrint() {
-        printPayrollSummary({
-            workerName,
-            periodStart: payroll.periodStart,
-            periodEnd: payroll.periodEnd,
-        });
+    async function handleDownloadPdf() {
+        const element = voucherRootRef.current;
+        if (!element || isGenerating) return;
+
+        setIsGenerating(true);
+        try {
+            await downloadPayrollSummaryPdf({
+                element,
+                workerName,
+                periodStart: payroll.periodStart,
+                periodEnd: payroll.periodEnd,
+            });
+        } finally {
+            setIsGenerating(false);
+        }
     }
 
     return (
         <div className="space-y-3">
-            <div className="w-full print:hidden">
-                <Button
-                    size="lg"
-                    className="h-12 w-full text-base"
-                    onClick={handlePrint}>
-                    <Printer className="mr-2 h-4 w-4" />
-                    Print Summary
-                </Button>
-            </div>
+            {showDownloadButton ? (
+                <div className="w-full print:hidden">
+                    <Button
+                        size="lg"
+                        className="h-12 w-full text-base"
+                        onClick={handleDownloadPdf}
+                        disabled={isGenerating}>
+                        <Download className="mr-2 h-4 w-4" />
+                        {isGenerating ? "Generating…" : "Download PDF"}
+                    </Button>
+                </div>
+            ) : null}
 
-            <div className="voucher-print-root overflow-hidden border border-neutral-300 bg-white text-black print:border-black print:break-inside-avoid print:page-break-after-always">
+            <div
+                ref={voucherRootRef}
+                className="voucher-print-root overflow-hidden border border-neutral-300 bg-white text-black print:border-black print:break-inside-avoid print:page-break-after-always">
                 {/* Header */}
                 <div className="border-b border-neutral-300 px-8 pt-6 pb-4 print:border-black">
                     <h2 className="text-center text-xl font-bold tracking-[0.2em] text-neutral-900">

@@ -73,7 +73,8 @@ function generatePayrolls(): PayrollEntry[] {
         const totalHoursWorked =
             Math.round((hoursMap.get(wi) ?? 0) * 100) / 100;
 
-        const minimumWorkingHours = worker.minimumWorkingHours ?? null;
+        const minimumWorkingHours =
+            "minimumWorkingHours" in worker ? worker.minimumWorkingHours ?? null : null;
         const overtimeHours =
             minimumWorkingHours != null
                 ? Math.max(
@@ -95,9 +96,10 @@ function generatePayrolls(): PayrollEntry[] {
                   ? 0
                   : rawHoursNotMet;
 
-        const hourlyRate = worker.hourlyRate ?? null;
-        const monthlyPay = worker.monthlyPay ?? null;
-        const restDayRate = worker.restDayRate ?? null;
+        const hourlyRate = "hourlyRate" in worker ? worker.hourlyRate ?? null : null;
+        const monthlyPay = "monthlyPay" in worker ? worker.monthlyPay ?? null : null;
+        const restDayRate =
+            "restDayRate" in worker ? worker.restDayRate ?? null : null;
         const isPartTime = worker.employmentType === "Part Time";
 
         let totalPay = 0;
@@ -118,7 +120,7 @@ function generatePayrolls(): PayrollEntry[] {
             );
         }
 
-        const cpf = worker.cpf ?? 0;
+        const cpf = "cpf" in worker ? worker.cpf ?? 0 : 0;
         const advance = 0;
         const hoursNotMetDeduction =
             hoursNotMet != null && hoursNotMet !== 0
@@ -155,8 +157,11 @@ function generatePayrolls(): PayrollEntry[] {
                 totalPay,
                 netPay,
                 paymentMethod: worker.paymentMethod ?? null,
-                payNowPhone: worker.payNowPhone ?? null,
-                bankAccountNumber: worker.bankAccountNumber ?? null,
+                payNowPhone:
+                    (worker as { payNowPhone?: string | null }).payNowPhone ?? null,
+                bankAccountNumber:
+                    (worker as { bankAccountNumber?: string | null })
+                        .bankAccountNumber ?? null,
             },
         });
     }

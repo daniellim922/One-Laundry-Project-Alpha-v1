@@ -51,7 +51,7 @@ export function PayrollStepProgress({
         }
 
         setOpen(false);
-        router.push(`/dashboard/payroll/${payrollId}/summary?print=1`);
+        router.push(`/dashboard/payroll/${payrollId}/summary?download=1`);
     }
 
     return (

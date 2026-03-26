@@ -29,6 +29,7 @@ import {
     timesheetEntryStatusPillClass,
     type TimesheetPaymentStatus,
 } from "@/app/dashboard/timesheet/timesheet-entry-status";
+import { cn } from "@/lib/utils";
 import { getPayrollDetailData } from "../payroll-detail-data";
 import { PayrollHeader } from "../payroll-header";
 import { PayrollStepProgress } from "../payroll-step-progress";
@@ -330,7 +331,13 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                         <p className="text-sm text-muted-foreground">
                                             Hours Not Met
                                         </p>
-                                        <p className="text-sm font-medium">
+                                        <p
+                                            className={cn(
+                                                "text-sm font-medium",
+                                                voucher.hoursNotMet != null &&
+                                                    Number(voucher.hoursNotMet) !== 0 &&
+                                                    "text-red-600",
+                                            )}>
                                             {voucher.hoursNotMet ?? "–"}
                                         </p>
                                     </div>
@@ -338,7 +345,13 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                         <p className="text-sm text-muted-foreground">
                                             Hours Not Met Deduction
                                         </p>
-                                        <p className="text-sm font-medium">
+                                        <p
+                                            className={cn(
+                                                "text-sm font-medium",
+                                                voucher.hoursNotMetDeduction != null &&
+                                                    Number(voucher.hoursNotMetDeduction) !== 0 &&
+                                                    "text-red-600",
+                                            )}>
                                             {voucher.hoursNotMetDeduction != null
                                                 ? voucher.hoursNotMetDeduction < 0
                                                     ? `-$${Math.abs(voucher.hoursNotMetDeduction)}`
@@ -350,7 +363,13 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                         <p className="text-sm text-muted-foreground">
                                             Overtime Hours
                                         </p>
-                                        <p className="text-sm font-medium">
+                                        <p
+                                            className={cn(
+                                                "text-sm font-medium",
+                                                voucher.overtimeHours != null &&
+                                                    Number(voucher.overtimeHours) !== 0 &&
+                                                    "text-emerald-600",
+                                            )}>
                                             {voucher.overtimeHours ?? "–"}
                                         </p>
                                     </div>
@@ -358,7 +377,13 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                         <p className="text-sm text-muted-foreground">
                                             Overtime Pay
                                         </p>
-                                        <p className="text-sm font-medium">
+                                        <p
+                                            className={cn(
+                                                "text-sm font-medium",
+                                                voucher.overtimePay != null &&
+                                                    Number(voucher.overtimePay) !== 0 &&
+                                                    "text-emerald-600",
+                                            )}>
                                             {voucher.overtimePay != null
                                                 ? `$${voucher.overtimePay}`
                                                 : "–"}

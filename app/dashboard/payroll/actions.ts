@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, lte } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 import { getAdvancesForPayrollPeriod } from "@/lib/advances-queries";
@@ -443,6 +443,132 @@ export async function updatePayroll(payrollId: string, formData: FormData) {
     return { success: true };
 }
 
+async function settlePayrollInTx(
+    tx: any,
+    payroll: {
+        id: string;
+        workerId: string;
+        periodStart: string;
+        periodEnd: string;
+    },
+    now: Date,
+) {
+    type AdvanceInPeriodRow = {
+        id: string;
+        advanceRequestId: string;
+        status: "loan" | "paid";
+    };
+    type RequestAdvanceRow = {
+        advanceRequestId: string;
+        status: "loan" | "paid";
+    };
+
+    await tx
+        .update(payrollTable)
+        .set({
+            status: "settled",
+            updatedAt: now,
+        })
+        .where(eq(payrollTable.id, payroll.id));
+
+    const advancesInPeriod: AdvanceInPeriodRow[] = await tx
+        .select({
+            id: advanceTable.id,
+            advanceRequestId: advanceTable.advanceRequestId,
+            status: advanceTable.status,
+        })
+        .from(advanceTable)
+        .innerJoin(
+            advanceRequestTable,
+            eq(advanceTable.advanceRequestId, advanceRequestTable.id),
+        )
+        .where(
+            and(
+                eq(advanceRequestTable.workerId, payroll.workerId),
+                gte(advanceTable.repaymentDate, payroll.periodStart),
+                lte(advanceTable.repaymentDate, payroll.periodEnd),
+            ),
+        );
+
+    const loanAdvanceIds = advancesInPeriod
+        .filter((advance) => advance.status === "loan")
+        .map((advance) => advance.id);
+
+    if (loanAdvanceIds.length > 0) {
+        await tx
+            .update(advanceTable)
+            .set({
+                status: "paid",
+                updatedAt: now,
+            })
+            .where(inArray(advanceTable.id, loanAdvanceIds));
+    }
+
+    const requestIds: string[] = Array.from(
+        new Set(advancesInPeriod.map((advance) => advance.advanceRequestId)),
+    );
+
+    if (requestIds.length > 0) {
+        const requestAdvances: RequestAdvanceRow[] = await tx
+            .select({
+                advanceRequestId: advanceTable.advanceRequestId,
+                status: advanceTable.status,
+            })
+            .from(advanceTable)
+            .where(inArray(advanceTable.advanceRequestId, requestIds));
+
+        const byRequestId = requestAdvances.reduce((acc, row) => {
+            if (!acc[row.advanceRequestId]) acc[row.advanceRequestId] = [];
+            acc[row.advanceRequestId]!.push({ status: row.status });
+            return acc;
+        }, {} as Record<string, Array<{ status: "loan" | "paid" }>>);
+
+        const fullyPaidRequestIds = requestIds.filter((requestId: string) => {
+            const advances = byRequestId[requestId] ?? [];
+            return advances.length > 0 && advances.every((a) => a.status === "paid");
+        });
+
+        const notFullyPaidRequestIds = requestIds.filter(
+            (requestId: string) => !fullyPaidRequestIds.includes(requestId),
+        );
+
+        if (fullyPaidRequestIds.length > 0) {
+            await tx
+                .update(advanceRequestTable)
+                .set({
+                    status: "paid",
+                    updatedAt: now,
+                })
+                .where(inArray(advanceRequestTable.id, fullyPaidRequestIds));
+        }
+
+        if (notFullyPaidRequestIds.length > 0) {
+            await tx
+                .update(advanceRequestTable)
+                .set({
+                    status: "loan",
+                    updatedAt: now,
+                })
+                .where(inArray(advanceRequestTable.id, notFullyPaidRequestIds));
+        }
+    }
+
+    await tx
+        .update(timesheetTable)
+        .set({
+            status: "paid",
+            updatedAt: now,
+        })
+        .where(
+            and(
+                eq(timesheetTable.workerId, payroll.workerId),
+                gte(timesheetTable.dateIn, payroll.periodStart),
+                lte(timesheetTable.dateOut, payroll.periodEnd),
+                eq(timesheetTable.status, "unpaid"),
+            ),
+        );
+}
+
 export async function settlePayroll(payrollId: string) {
     await requirePermission("Payroll", "update");
 
@@ -461,112 +587,7 @@ export async function settlePayroll(payrollId: string) {
 
     try {
         await db.transaction(async (tx) => {
-            await tx
-                .update(payrollTable)
-                .set({
-                    status: "settled",
-                    updatedAt: now,
-                })
-                .where(eq(payrollTable.id, payrollId));
-
-            const advancesInPeriod = await tx
-                .select({
-                    id: advanceTable.id,
-                    advanceRequestId: advanceTable.advanceRequestId,
-                    status: advanceTable.status,
-                })
-                .from(advanceTable)
-                .innerJoin(
-                    advanceRequestTable,
-                    eq(advanceTable.advanceRequestId, advanceRequestTable.id),
-                )
-                .where(
-                    and(
-                        eq(advanceRequestTable.workerId, payroll.workerId),
-                        gte(advanceTable.repaymentDate, payroll.periodStart),
-                        lte(advanceTable.repaymentDate, payroll.periodEnd),
-                    ),
-                );
-
-            const loanAdvanceIds = advancesInPeriod
-                .filter((advance) => advance.status === "loan")
-                .map((advance) => advance.id);
-
-            if (loanAdvanceIds.length > 0) {
-                await tx
-                    .update(advanceTable)
-                    .set({
-                        status: "paid",
-                        updatedAt: now,
-                    })
-                    .where(inArray(advanceTable.id, loanAdvanceIds));
-            }
-
-            const requestIds = Array.from(
-                new Set(advancesInPeriod.map((advance) => advance.advanceRequestId)),
-            );
-
-            if (requestIds.length > 0) {
-                const requestAdvances = await tx
-                    .select({
-                        advanceRequestId: advanceTable.advanceRequestId,
-                        status: advanceTable.status,
-                    })
-                    .from(advanceTable)
-                    .where(inArray(advanceTable.advanceRequestId, requestIds));
-
-                const byRequestId = requestAdvances.reduce<
-                    Record<string, Array<{ status: "loan" | "paid" }>>
-                >((acc, row) => {
-                    if (!acc[row.advanceRequestId]) acc[row.advanceRequestId] = [];
-                    acc[row.advanceRequestId]!.push({ status: row.status });
-                    return acc;
-                }, {});
-
-                const fullyPaidRequestIds = requestIds.filter((requestId) => {
-                    const advances = byRequestId[requestId] ?? [];
-                    return advances.length > 0 && advances.every((a) => a.status === "paid");
-                });
-
-                const notFullyPaidRequestIds = requestIds.filter(
-                    (requestId) => !fullyPaidRequestIds.includes(requestId),
-                );
-
-                if (fullyPaidRequestIds.length > 0) {
-                    await tx
-                        .update(advanceRequestTable)
-                        .set({
-                            status: "paid",
-                            updatedAt: now,
-                        })
-                        .where(inArray(advanceRequestTable.id, fullyPaidRequestIds));
-                }
-
-                if (notFullyPaidRequestIds.length > 0) {
-                    await tx
-                        .update(advanceRequestTable)
-                        .set({
-                            status: "loan",
-                            updatedAt: now,
-                        })
-                        .where(inArray(advanceRequestTable.id, notFullyPaidRequestIds));
-                }
-            }
-
-            await tx
-                .update(timesheetTable)
-                .set({
-                    status: "paid",
-                    updatedAt: now,
-                })
-                .where(
-                    and(
-                        eq(timesheetTable.workerId, payroll.workerId),
-                        gte(timesheetTable.dateIn, payroll.periodStart),
-                        lte(timesheetTable.dateOut, payroll.periodEnd),
-                        eq(timesheetTable.status, "unpaid"),
-                    ),
-                );
+            await settlePayrollInTx(tx, payroll, now);
         });
     } catch (error) {
         console.error("Error settling payroll", error);
@@ -582,6 +603,69 @@ export async function settlePayroll(payrollId: string) {
     revalidatePath("/dashboard/timesheet");
     revalidatePath("/dashboard/timesheet/all");
     return { success: true };
+}
+
+export async function settleAllDraftPayrolls() {
+    await requirePermission("Payroll", "update");
+
+    const now = isoNow();
+
+    let settledPayrollIds: string[] = [];
+    try {
+        settledPayrollIds = await db.transaction(async (tx) => {
+            const drafts = await tx
+                .select()
+                .from(payrollTable)
+                .where(eq(payrollTable.status, "draft"));
+
+            for (const payroll of drafts) {
+                await settlePayrollInTx(tx, payroll, now);
+            }
+
+            return drafts.map((p) => p.id);
+        });
+    } catch (error) {
+        console.error("Error settling all draft payrolls", error);
+        return { error: "Failed to settle draft payrolls" };
+    }
+
+    for (const payrollId of settledPayrollIds) {
+        revalidatePath(`/dashboard/payroll/${payrollId}/breakdown`);
+        revalidatePath(`/dashboard/payroll/${payrollId}/summary`);
+    }
+
+    revalidatePath("/dashboard/payroll");
+    revalidatePath("/dashboard/payroll/all");
+    revalidatePath("/dashboard/advance");
+    revalidatePath("/dashboard/advance/all");
+    revalidatePath("/dashboard/timesheet");
+    revalidatePath("/dashboard/timesheet/all");
+
+    return { success: true, settled: settledPayrollIds.length };
+}
+
+export async function getDraftPayrollsForSettlement() {
+    await requirePermission("Payroll", "read");
+
+    const rows = await db
+        .select({
+            payroll: payrollTable,
+            workerName: workerTable.name,
+            employmentType: employmentTable.employmentType,
+            employmentArrangement: employmentTable.employmentArrangement,
+        })
+        .from(payrollTable)
+        .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id))
+        .innerJoin(employmentTable, eq(workerTable.employmentId, employmentTable.id))
+        .where(eq(payrollTable.status, "draft"))
+        .orderBy(asc(workerTable.name), asc(payrollTable.periodStart));
+
+    return rows.map((r) => ({
+        ...r.payroll,
+        workerName: r.workerName,
+        employmentType: r.employmentType,
+        employmentArrangement: r.employmentArrangement,
+    }));
 }
 
 export async function recalculateVouchersForWorker(workerId: string) {
