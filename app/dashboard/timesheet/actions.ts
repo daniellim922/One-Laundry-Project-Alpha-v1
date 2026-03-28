@@ -8,7 +8,10 @@ import type { AttendRecordOutput } from "@/lib/parse-attendrecord";
 import { calculateHoursFromDateTimes } from "@/lib/payroll-utils";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
-import { recalculateVouchersForWorker } from "@/app/dashboard/payroll/actions";
+import { createPayrollDomainService } from "@/app/domain/payroll/service";
+import { drizzlePayrollSyncRepository } from "@/app/domain/payroll/drizzle-payroll-sync-repo";
+
+const payrollDomainService = createPayrollDomainService(drizzlePayrollSyncRepository);
 
 function isoNow(): Date {
     return new Date();
@@ -79,7 +82,7 @@ export async function createTimesheetEntry(formData: FormData) {
         updatedAt: isoNow(),
     });
 
-    await recalculateVouchersForWorker(workerId);
+    await payrollDomainService.synchronizeWorkerDrafts({ workerId });
 
     revalidatePath("/dashboard/timesheet");
     revalidatePath("/dashboard/timesheet/all");
@@ -130,9 +133,11 @@ export async function updateTimesheetEntry(id: string, formData: FormData) {
         })
         .where(eq(timesheetTable.id, id));
 
-    await recalculateVouchersForWorker(workerId);
+    await payrollDomainService.synchronizeWorkerDrafts({ workerId });
     if (oldEntry && oldEntry.workerId !== workerId) {
-        await recalculateVouchersForWorker(oldEntry.workerId);
+        await payrollDomainService.synchronizeWorkerDrafts({
+            workerId: oldEntry.workerId,
+        });
     }
 
     revalidatePath("/dashboard/timesheet");
@@ -153,7 +158,11 @@ export async function deleteTimesheetEntry(id: string) {
 
     await db.delete(timesheetTable).where(eq(timesheetTable.id, id));
 
-    if (entry) await recalculateVouchersForWorker(entry.workerId);
+    if (entry) {
+        await payrollDomainService.synchronizeWorkerDrafts({
+            workerId: entry.workerId,
+        });
+    }
 
     revalidatePath("/dashboard/timesheet");
     revalidatePath("/dashboard/timesheet/all");
@@ -223,7 +232,7 @@ export async function importTimesheetEntries(rows: ImportRow[]) {
 
         const affectedWorkerIds = [...new Set(toInsert.map((r) => r.workerId))];
         for (const wid of affectedWorkerIds) {
-            await recalculateVouchersForWorker(wid);
+            await payrollDomainService.synchronizeWorkerDrafts({ workerId: wid });
         }
     }
 
@@ -308,7 +317,7 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
 
         const affectedWorkerIds = [...new Set(toInsert.map((r) => r.workerId))];
         for (const wid of affectedWorkerIds) {
-            await recalculateVouchersForWorker(wid);
+            await payrollDomainService.synchronizeWorkerDrafts({ workerId: wid });
         }
     }
 

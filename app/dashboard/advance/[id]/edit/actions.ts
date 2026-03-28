@@ -3,7 +3,8 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
-import { recalculateVouchersForWorker } from "@/app/dashboard/payroll/actions";
+import { createPayrollDomainService } from "@/app/domain/payroll/service";
+import { drizzlePayrollSyncRepository } from "@/app/domain/payroll/drizzle-payroll-sync-repo";
 import { localIsoDateYmd } from "@/lib/local-iso-date";
 import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
@@ -14,6 +15,7 @@ import {
 } from "@/db/tables/payroll/advanceTable";
 
 type ActionResult = { success: true } | { success: false; error: string };
+const payrollDomainService = createPayrollDomainService(drizzlePayrollSyncRepository);
 
 function parsePositiveInt(val: string | null | undefined): number | null {
     if (val == null) return null;
@@ -209,9 +211,13 @@ export async function updateAdvanceRequest(
             await tx.insert(advanceTable).values(advanceInserts);
         });
 
-        await recalculateVouchersForWorker(input.workerId);
+        await payrollDomainService.synchronizeWorkerDrafts({
+            workerId: input.workerId,
+        });
         if (oldWorkerId && oldWorkerId !== input.workerId) {
-            await recalculateVouchersForWorker(oldWorkerId);
+            await payrollDomainService.synchronizeWorkerDrafts({
+                workerId: oldWorkerId,
+            });
         }
         revalidatePath("/dashboard/advance");
         revalidatePath("/dashboard/advance/all");

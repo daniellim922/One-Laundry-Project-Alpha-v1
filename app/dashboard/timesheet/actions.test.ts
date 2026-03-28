@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
     revalidatePath: vi.fn(),
+    synchronizeWorkerDrafts: vi.fn(),
     db: {
         select: vi.fn(),
         update: vi.fn(),
@@ -16,8 +17,15 @@ vi.mock("@/lib/db", () => ({
     db: mocks.db,
 }));
 
-vi.mock("@/app/dashboard/payroll/actions", () => ({
-    recalculateVouchersForWorker: vi.fn(),
+vi.mock("@/app/domain/payroll/service", () => ({
+    createPayrollDomainService: vi.fn(() => ({
+        synchronizeWorkerDrafts: (...args: unknown[]) =>
+            mocks.synchronizeWorkerDrafts(...args),
+    })),
+}));
+
+vi.mock("@/app/domain/payroll/drizzle-payroll-sync-repo", () => ({
+    drizzlePayrollSyncRepository: {},
 }));
 
 import { updateTimesheetEntry } from "./actions";

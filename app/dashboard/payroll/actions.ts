@@ -15,6 +15,8 @@ import { advanceRequestTable } from "@/db/tables/payroll/advanceRequestTable";
 import { calculatePay, type PayCalcInput } from "@/lib/payroll-utils";
 import { requirePermission } from "@/lib/require-permission";
 
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 function isoNow(): Date {
     return new Date();
 }
@@ -444,7 +446,7 @@ export async function updatePayroll(payrollId: string, formData: FormData) {
 }
 
 async function settlePayrollInTx(
-    tx: any,
+    tx: DbTransaction,
     payroll: {
         id: string;
         workerId: string;
@@ -666,118 +668,6 @@ export async function getDraftPayrollsForSettlement() {
         employmentType: r.employmentType,
         employmentArrangement: r.employmentArrangement,
     }));
-}
-
-export async function recalculateVouchersForWorker(workerId: string) {
-    const drafts = await db
-        .select()
-        .from(payrollTable)
-        .where(
-            and(
-                eq(payrollTable.workerId, workerId),
-                eq(payrollTable.status, "draft"),
-            ),
-        );
-
-    if (drafts.length === 0) return;
-
-    const [row] = await db
-        .select({ employment: employmentTable })
-        .from(workerTable)
-        .innerJoin(
-            employmentTable,
-            eq(workerTable.employmentId, employmentTable.id),
-        )
-        .where(eq(workerTable.id, workerId))
-        .limit(1);
-    if (!row) return;
-    const { employment } = row;
-
-    for (const payroll of drafts) {
-        const entries = await db
-            .select()
-            .from(timesheetTable)
-            .where(
-                and(
-                    eq(timesheetTable.workerId, workerId),
-                    gte(timesheetTable.dateIn, payroll.periodStart),
-                    lte(timesheetTable.dateOut, payroll.periodEnd),
-                ),
-            );
-        const totalHoursWorked = entries.reduce(
-            (sum, e) => sum + Number(e.hours),
-            0,
-        );
-
-        const [currentVoucher] = await db
-            .select({
-                restDays: payrollVoucherTable.restDays,
-                publicHolidays: payrollVoucherTable.publicHolidays,
-            })
-            .from(payrollVoucherTable)
-            .where(eq(payrollVoucherTable.id, payroll.payrollVoucherId))
-            .limit(1);
-
-        const payCalc = calculatePay({
-            employmentType: employment.employmentType,
-            totalHoursWorked,
-            minimumWorkingHours: employment.minimumWorkingHours,
-            monthlyPay: employment.monthlyPay,
-            hourlyRate: employment.hourlyRate,
-            restDayRate: employment.restDayRate,
-            restDays: currentVoucher?.restDays ?? 0,
-            publicHolidays: currentVoucher?.publicHolidays ?? 0,
-        });
-        const hoursNotMet =
-            employment.minimumWorkingHours != null
-                ? clampHoursNotMet(roundHours(totalHoursWorked - employment.minimumWorkingHours))
-                : null;
-        const hoursNotMetDeduction = calcHoursNotMetDeduction({
-            hoursNotMet,
-            hourlyRate: employment.hourlyRate,
-        });
-        const totalPay = roundMoney(payCalc.totalPay + hoursNotMetDeduction);
-        const advances = await getAdvancesForPayrollPeriod(
-            workerId,
-            payroll.periodStart,
-            payroll.periodEnd,
-        );
-        const advanceTotal = advances
-            .filter((a) => a.status === "loan")
-            .reduce((sum, a) => sum + a.amount, 0);
-        const netPay = calcNetPay({
-            totalPay,
-            cpf: employment.cpf,
-            advance: advanceTotal,
-        });
-
-        await db
-            .update(payrollVoucherTable)
-            .set({
-                employmentType: employment.employmentType,
-                employmentArrangement: employment.employmentArrangement,
-                monthlyPay: employment.monthlyPay,
-                minimumWorkingHours: employment.minimumWorkingHours,
-                totalHoursWorked,
-                hoursNotMet,
-                hoursNotMetDeduction,
-                overtimeHours: payCalc.overtimeHours,
-                hourlyRate: employment.hourlyRate,
-                overtimePay: payCalc.overtimePay,
-                restDayRate: employment.restDayRate,
-                restDayPay: payCalc.restDayPay,
-                publicHolidayPay: payCalc.publicHolidayPay,
-                cpf: employment.cpf,
-                advance: advanceTotal,
-                totalPay,
-                netPay,
-                paymentMethod: employment.paymentMethod,
-                payNowPhone: employment.payNowPhone,
-                bankAccountNumber: employment.bankAccountNumber,
-                updatedAt: new Date(),
-            })
-            .where(eq(payrollVoucherTable.id, payroll.payrollVoucherId));
-    }
 }
 
 export async function updateVoucherDays(input: {

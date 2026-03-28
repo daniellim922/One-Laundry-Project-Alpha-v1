@@ -12,16 +12,22 @@ import {
     employmentTable,
     type InsertEmployment,
 } from "@/db/tables/payroll/employmentTable";
-import { recalculateVouchersForWorker } from "@/app/dashboard/payroll/actions";
+import { createPayrollDomainService } from "@/app/domain/payroll/service";
+import { drizzlePayrollSyncRepository } from "@/app/domain/payroll/drizzle-payroll-sync-repo";
 
 function isUniqueViolation(error: unknown): boolean {
-    const anyErr = error as any;
-    return anyErr?.code === "23505";
+    if (!error || typeof error !== "object") return false;
+    const code = Reflect.get(error, "code");
+    return code === "23505";
 }
 
 function isNricUniqueViolation(error: unknown): boolean {
-    const anyErr = error as any;
-    const constraint = anyErr?.constraint ?? anyErr?.detail ?? anyErr?.message ?? "";
+    if (!error || typeof error !== "object") return false;
+    const constraint =
+        (Reflect.get(error, "constraint") as string | undefined) ??
+        (Reflect.get(error, "detail") as string | undefined) ??
+        (Reflect.get(error, "message") as string | undefined) ??
+        "";
     return typeof constraint === "string" && constraint.includes("worker_nric_unique");
 }
 
@@ -41,6 +47,7 @@ function toNumber(val: FormDataEntryValue | null): number | null {
 type ActionResult =
     | { success: true; id: string }
     | { success: false; error: string };
+const payrollDomainService = createPayrollDomainService(drizzlePayrollSyncRepository);
 
 export async function createWorker(formData: FormData): Promise<ActionResult> {
     const name = (formData.get("name") ?? "").toString().trim();
@@ -240,7 +247,7 @@ export async function updateWorker(
             })
             .where(eq(workerTable.id, id));
 
-        await recalculateVouchersForWorker(id);
+        await payrollDomainService.synchronizeWorkerDrafts({ workerId: id });
 
         revalidatePath("/dashboard/worker");
         revalidatePath("/dashboard/worker/all");
