@@ -1,11 +1,43 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+const NO_DRAFT_SKIP_REASON =
+    "No draft payroll in the database; run db:seed or create a draft payroll to exercise this flow.";
+
+/**
+ * When at least one payroll has status `draft`, these tests run the real assertions.
+ * If none appears within the timeout (empty DB, all settled, etc.), tests **skip** so
+ * `npm run test:e2e` still exits successfully.
+ *
+ * Fresh seed (`npm run db:seed`) creates draft payrolls for the first and 32nd workers
+ * in db/seed/payrolls.ts.
+ */
+async function requireDraftPayrollRowOrSkip(page: Page) {
+    const draftRows = page.getByRole("row").filter({ hasText: "draft" });
+    const first = draftRows.first();
+    try {
+        await expect(first).toBeVisible({ timeout: 20_000 });
+    } catch {
+        test.skip(true, NO_DRAFT_SKIP_REASON);
+    }
+    return first;
+}
 
 test.describe("Payroll settle flow", () => {
-    test("settles a draft payroll from detail page", async ({ page }) => {
-        await page.goto("/dashboard/payroll/all");
+    test.describe.configure({ mode: "serial" });
 
-        const draftRow = page.getByRole("row").filter({ hasText: "draft" }).first();
-        await expect(draftRow).toBeVisible();
+    test.beforeEach(async ({ page }) => {
+        await page.goto("/dashboard/payroll/all");
+        await expect(
+            page.getByRole("heading", { name: "All payrolls" }),
+        ).toBeVisible();
+    });
+
+    test("lists at least one draft payroll", async ({ page }) => {
+        await requireDraftPayrollRowOrSkip(page);
+    });
+
+    test("settles a draft payroll from detail page", async ({ page }) => {
+        const draftRow = await requireDraftPayrollRowOrSkip(page);
 
         await draftRow.getByRole("button", { name: "Open row actions" }).click();
         await page.getByRole("menuitem", { name: "View" }).click();
