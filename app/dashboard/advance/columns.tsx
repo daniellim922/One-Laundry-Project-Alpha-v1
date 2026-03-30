@@ -12,9 +12,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-    advanceDetailPath,
     advanceRequestStatusBadgeClass,
-    formatAdvanceAmount,
     formatAdvanceDate,
 } from "@/app/dashboard/advance/_presentation/advance-display";
 import type { AdvanceRequestWithWorker } from "@/lib/advances-queries";
@@ -28,7 +26,9 @@ function sortableHeader(label: string) {
         <Button
             variant="ghost"
             className="px-0 font-semibold"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
+            onClick={() =>
+                column.toggleSorting(column.getIsSorted() === "asc")
+            }>
             {label}
             <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
@@ -46,7 +46,7 @@ export const columns: ColumnDef<AdvanceRequestWithWorker>[] = [
     {
         accessorKey: "amountRequested",
         header: sortableHeader("Amount requested"),
-        cell: ({ row }) => formatAdvanceAmount(row.original.amountRequested),
+        cell: ({ row }) => `$${row.original.amountRequested}`,
     },
     {
         accessorKey: "status",
@@ -87,7 +87,7 @@ export const columns: ColumnDef<AdvanceRequestWithWorker>[] = [
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
                             <Link
-                                href={advanceDetailPath(advanceRequest.id)}
+                                href={`/dashboard/advance/${advanceRequest.id}`}
                                 className="flex w-full items-center gap-2">
                                 <Eye className="mr-2 h-4 w-4" />
                                 View

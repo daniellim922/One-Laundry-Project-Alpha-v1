@@ -20,7 +20,6 @@ import {
 import {
     advanceRequestStatusBadgeClass,
     advanceStatusBadgeClass,
-    formatAdvanceAmount,
     formatAdvanceDate,
 } from "@/app/dashboard/advance/_presentation/advance-display";
 import type { AdvanceRequestDetail } from "@/lib/advances-queries";
@@ -79,9 +78,7 @@ export function AdvanceRequestView({
                                 <InputGroupInput
                                     type="text"
                                     readOnly
-                                    value={formatAdvanceAmount(
-                                        request.amountRequested,
-                                    )}
+                                    value={`$${request.amountRequested}`}
                                     className="bg-muted/50"
                                     data-testid="advance-detail-amount"
                                 />
@@ -138,7 +135,7 @@ export function AdvanceRequestView({
                             {advances.map((adv) => (
                                 <TableRow key={adv.id}>
                                     <TableCell>
-                                        {formatAdvanceAmount(adv.amount)}
+                                        {`$${adv.amount}`}
                                     </TableCell>
                                     <TableCell>
                                         {adv.repaymentDate
@@ -163,12 +160,10 @@ export function AdvanceRequestView({
                         <TableFooter>
                             <TableRow>
                                 <TableCell>
-                                    {formatAdvanceAmount(
-                                        advances.reduce(
-                                            (sum, adv) => sum + adv.amount,
-                                            0,
-                                        ),
-                                    )}
+                                    {`$${advances.reduce(
+                                        (sum, adv) => sum + adv.amount,
+                                        0,
+                                    )}`}
                                 </TableCell>
                                 <TableCell />
                                 <TableCell />

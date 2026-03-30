@@ -18,11 +18,3 @@ export function formatAdvanceDate(d: string | Date): string {
         day: "2-digit",
     });
 }
-
-export function formatAdvanceAmount(amount: number): string {
-    return `$${amount}`;
-}
-
-export function advanceDetailPath(id: string): string {
-    return `/dashboard/advance/${id}`;
-}
