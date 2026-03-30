@@ -12,8 +12,7 @@ import {
     employmentTable,
     type InsertEmployment,
 } from "@/db/tables/payroll/employmentTable";
-import { createPayrollDomainService } from "@/app/domain/payroll/service";
-import { drizzlePayrollSyncRepository } from "@/app/domain/payroll/drizzle-payroll-sync-repo";
+import { synchronizeWorkerDraftPayrolls } from "@/app/dashboard/payroll/actions";
 
 function isUniqueViolation(error: unknown): boolean {
     if (!error || typeof error !== "object") return false;
@@ -47,7 +46,6 @@ function toNumber(val: FormDataEntryValue | null): number | null {
 type ActionResult =
     | { success: true; id: string }
     | { success: false; error: string };
-const payrollDomainService = createPayrollDomainService(drizzlePayrollSyncRepository);
 
 export async function createWorker(formData: FormData): Promise<ActionResult> {
     const name = (formData.get("name") ?? "").toString().trim();
@@ -247,7 +245,10 @@ export async function updateWorker(
             })
             .where(eq(workerTable.id, id));
 
-        await payrollDomainService.synchronizeWorkerDrafts({ workerId: id });
+        const sync = await synchronizeWorkerDraftPayrolls({ workerId: id });
+        if ("error" in sync) {
+            return { success: false, error: sync.error };
+        }
 
         revalidatePath("/dashboard/worker");
         revalidatePath("/dashboard/worker/all");

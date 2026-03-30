@@ -63,6 +63,153 @@ function toDateString(val: string): string {
     return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Recalculates draft payroll vouchers for a worker from timesheets, advances, and current employment.
+ * Call after timesheet/worker/advance changes so draft vouchers stay in sync.
+ */
+export async function synchronizeWorkerDraftPayrolls(input: {
+    workerId: string;
+}): Promise<{ success: true } | { error: string }> {
+    const { workerId } = input;
+    if (!workerId?.trim()) {
+        return { error: "Missing workerId" };
+    }
+
+    try {
+        const drafts = await db
+            .select()
+            .from(payrollTable)
+            .where(
+                and(eq(payrollTable.workerId, workerId), eq(payrollTable.status, "draft")),
+            );
+
+        if (drafts.length === 0) {
+            return { success: true };
+        }
+
+        const [employmentRow] = await db
+            .select({ employment: employmentTable })
+            .from(workerTable)
+            .innerJoin(employmentTable, eq(workerTable.employmentId, employmentTable.id))
+            .where(eq(workerTable.id, workerId))
+            .limit(1);
+
+        const employment = employmentRow?.employment ?? null;
+        if (!employment) {
+            return { success: true };
+        }
+
+        for (const payroll of drafts) {
+            const entryRows = await db
+                .select({ hours: timesheetTable.hours })
+                .from(timesheetTable)
+                .where(
+                    and(
+                        eq(timesheetTable.workerId, workerId),
+                        gte(timesheetTable.dateIn, payroll.periodStart),
+                        lte(timesheetTable.dateOut, payroll.periodEnd),
+                    ),
+                );
+            const totalHoursWorked = entryRows.reduce(
+                (sum, entry) => sum + Number(entry.hours),
+                0,
+            );
+
+            const [currentVoucher] = await db
+                .select({
+                    restDays: payrollVoucherTable.restDays,
+                    publicHolidays: payrollVoucherTable.publicHolidays,
+                })
+                .from(payrollVoucherTable)
+                .where(eq(payrollVoucherTable.id, payroll.payrollVoucherId))
+                .limit(1);
+
+            const payCalc = calculatePay({
+                employmentType: employment.employmentType,
+                totalHoursWorked,
+                minimumWorkingHours: employment.minimumWorkingHours,
+                monthlyPay: employment.monthlyPay,
+                hourlyRate: employment.hourlyRate,
+                restDayRate: employment.restDayRate,
+                restDays: currentVoucher?.restDays ?? 0,
+                publicHolidays: currentVoucher?.publicHolidays ?? 0,
+            });
+
+            const hoursNotMet =
+                employment.minimumWorkingHours != null
+                    ? clampHoursNotMet(
+                          roundHours(
+                              totalHoursWorked - employment.minimumWorkingHours,
+                          ),
+                      )
+                    : null;
+            const hoursNotMetDeduction = calcHoursNotMetDeduction({
+                hoursNotMet,
+                hourlyRate: employment.hourlyRate,
+            });
+            const totalPay = roundMoney(payCalc.totalPay + hoursNotMetDeduction);
+
+            const advanceRows = await db
+                .select({
+                    amount: advanceTable.amount,
+                    status: advanceTable.status,
+                })
+                .from(advanceTable)
+                .innerJoin(
+                    advanceRequestTable,
+                    eq(advanceTable.advanceRequestId, advanceRequestTable.id),
+                )
+                .where(
+                    and(
+                        eq(advanceRequestTable.workerId, workerId),
+                        gte(advanceTable.repaymentDate, payroll.periodStart),
+                        lte(advanceTable.repaymentDate, payroll.periodEnd),
+                    ),
+                );
+            const advanceTotal = advanceRows
+                .filter((advance) => advance.status === "loan")
+                .reduce((sum, advance) => sum + advance.amount, 0);
+            const netPay = calcNetPay({
+                totalPay,
+                cpf: employment.cpf,
+                advance: advanceTotal,
+            });
+
+            await db
+                .update(payrollVoucherTable)
+                .set({
+                    employmentType: employment.employmentType,
+                    employmentArrangement: employment.employmentArrangement,
+                    monthlyPay: employment.monthlyPay,
+                    minimumWorkingHours: employment.minimumWorkingHours,
+                    totalHoursWorked,
+                    hoursNotMet,
+                    hoursNotMetDeduction,
+                    overtimeHours: payCalc.overtimeHours,
+                    hourlyRate: employment.hourlyRate,
+                    overtimePay: payCalc.overtimePay,
+                    restDayRate: employment.restDayRate,
+                    restDayPay: payCalc.restDayPay,
+                    publicHolidayPay: payCalc.publicHolidayPay,
+                    cpf: employment.cpf,
+                    advance: advanceTotal,
+                    totalPay,
+                    netPay,
+                    paymentMethod: employment.paymentMethod,
+                    payNowPhone: employment.payNowPhone,
+                    bankAccountNumber: employment.bankAccountNumber,
+                    updatedAt: isoNow(),
+                })
+                .where(eq(payrollVoucherTable.id, payroll.payrollVoucherId));
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error synchronizing worker draft payrolls", error);
+        return { error: "Failed to synchronize draft payrolls" };
+    }
+}
+
 export async function createPayroll(formData: FormData) {
     const workerId = formData.get("workerId") as string;
     const periodStart = toDateString(formData.get("periodStart") as string);

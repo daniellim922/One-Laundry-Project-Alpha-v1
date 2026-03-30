@@ -3,8 +3,7 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
-import { createPayrollDomainService } from "@/app/domain/payroll/service";
-import { drizzlePayrollSyncRepository } from "@/app/domain/payroll/drizzle-payroll-sync-repo";
+import { synchronizeWorkerDraftPayrolls } from "@/app/dashboard/payroll/actions";
 import { localIsoDateYmd } from "@/lib/local-iso-date";
 import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
@@ -15,7 +14,6 @@ import {
 } from "@/db/tables/payroll/advanceTable";
 
 type ActionResult = { success: true } | { success: false; error: string };
-const payrollDomainService = createPayrollDomainService(drizzlePayrollSyncRepository);
 
 function parsePositiveInt(val: string | null | undefined): number | null {
     if (val == null) return null;
@@ -211,13 +209,19 @@ export async function updateAdvanceRequest(
             await tx.insert(advanceTable).values(advanceInserts);
         });
 
-        await payrollDomainService.synchronizeWorkerDrafts({
+        const sync = await synchronizeWorkerDraftPayrolls({
             workerId: input.workerId,
         });
+        if ("error" in sync) {
+            return { success: false, error: sync.error };
+        }
         if (oldWorkerId && oldWorkerId !== input.workerId) {
-            await payrollDomainService.synchronizeWorkerDrafts({
+            const syncOld = await synchronizeWorkerDraftPayrolls({
                 workerId: oldWorkerId,
             });
+            if ("error" in syncOld) {
+                return { success: false, error: syncOld.error };
+            }
         }
         revalidatePath("/dashboard/advance");
         revalidatePath("/dashboard/advance/all");

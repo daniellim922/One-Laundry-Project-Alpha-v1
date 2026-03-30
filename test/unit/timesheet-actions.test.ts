@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
     revalidatePath: vi.fn(),
-    synchronizeWorkerDrafts: vi.fn(),
+    synchronizeWorkerDraftPayrolls: vi.fn(),
     db: {
         select: vi.fn(),
         update: vi.fn(),
@@ -17,15 +17,9 @@ vi.mock("@/lib/db", () => ({
     db: mocks.db,
 }));
 
-vi.mock("@/app/domain/payroll/service", () => ({
-    createPayrollDomainService: vi.fn(() => ({
-        synchronizeWorkerDrafts: (...args: unknown[]) =>
-            mocks.synchronizeWorkerDrafts(...args),
-    })),
-}));
-
-vi.mock("@/app/domain/payroll/drizzle-payroll-sync-repo", () => ({
-    drizzlePayrollSyncRepository: {},
+vi.mock("@/app/dashboard/payroll/actions", () => ({
+    synchronizeWorkerDraftPayrolls: (...args: unknown[]) =>
+        mocks.synchronizeWorkerDraftPayrolls(...args),
 }));
 
 import { updateTimesheetEntry } from "@/app/dashboard/timesheet/actions";
@@ -43,6 +37,7 @@ function mockSelectResolved(rows: unknown[]) {
 describe("updateTimesheetEntry", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({ success: true });
     });
 
     it("returns error and does not update when entry is paid", async () => {

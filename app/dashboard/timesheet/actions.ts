@@ -8,10 +8,7 @@ import type { AttendRecordOutput } from "@/lib/parse-attendrecord";
 import { calculateHoursFromDateTimes } from "@/lib/payroll-utils";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
-import { createPayrollDomainService } from "@/app/domain/payroll/service";
-import { drizzlePayrollSyncRepository } from "@/app/domain/payroll/drizzle-payroll-sync-repo";
-
-const payrollDomainService = createPayrollDomainService(drizzlePayrollSyncRepository);
+import { synchronizeWorkerDraftPayrolls } from "@/app/dashboard/payroll/actions";
 
 function isoNow(): Date {
     return new Date();
@@ -82,7 +79,10 @@ export async function createTimesheetEntry(formData: FormData) {
         updatedAt: isoNow(),
     });
 
-    await payrollDomainService.synchronizeWorkerDrafts({ workerId });
+    const sync = await synchronizeWorkerDraftPayrolls({ workerId });
+    if ("error" in sync) {
+        return { error: sync.error };
+    }
 
     revalidatePath("/dashboard/timesheet");
     revalidatePath("/dashboard/timesheet/all");
@@ -133,11 +133,17 @@ export async function updateTimesheetEntry(id: string, formData: FormData) {
         })
         .where(eq(timesheetTable.id, id));
 
-    await payrollDomainService.synchronizeWorkerDrafts({ workerId });
+    const sync = await synchronizeWorkerDraftPayrolls({ workerId });
+    if ("error" in sync) {
+        return { error: sync.error };
+    }
     if (oldEntry && oldEntry.workerId !== workerId) {
-        await payrollDomainService.synchronizeWorkerDrafts({
+        const syncOld = await synchronizeWorkerDraftPayrolls({
             workerId: oldEntry.workerId,
         });
+        if ("error" in syncOld) {
+            return { error: syncOld.error };
+        }
     }
 
     revalidatePath("/dashboard/timesheet");
@@ -159,9 +165,12 @@ export async function deleteTimesheetEntry(id: string) {
     await db.delete(timesheetTable).where(eq(timesheetTable.id, id));
 
     if (entry) {
-        await payrollDomainService.synchronizeWorkerDrafts({
+        const sync = await synchronizeWorkerDraftPayrolls({
             workerId: entry.workerId,
         });
+        if ("error" in sync) {
+            return { error: sync.error };
+        }
     }
 
     revalidatePath("/dashboard/timesheet");
@@ -232,7 +241,13 @@ export async function importTimesheetEntries(rows: ImportRow[]) {
 
         const affectedWorkerIds = [...new Set(toInsert.map((r) => r.workerId))];
         for (const wid of affectedWorkerIds) {
-            await payrollDomainService.synchronizeWorkerDrafts({ workerId: wid });
+            const sync = await synchronizeWorkerDraftPayrolls({ workerId: wid });
+            if ("error" in sync) {
+                return {
+                    imported: toInsert.length,
+                    errors: [...errors, sync.error],
+                };
+            }
         }
     }
 
@@ -317,7 +332,13 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
 
         const affectedWorkerIds = [...new Set(toInsert.map((r) => r.workerId))];
         for (const wid of affectedWorkerIds) {
-            await payrollDomainService.synchronizeWorkerDrafts({ workerId: wid });
+            const sync = await synchronizeWorkerDraftPayrolls({ workerId: wid });
+            if ("error" in sync) {
+                return {
+                    imported: toInsert.length,
+                    errors: [...errors, sync.error],
+                };
+            }
         }
     }
 
