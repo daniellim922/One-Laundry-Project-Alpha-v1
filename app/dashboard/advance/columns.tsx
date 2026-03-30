@@ -16,7 +16,7 @@ import {
     advanceRequestStatusBadgeClass,
     formatAdvanceAmount,
     formatAdvanceDate,
-} from "@/lib/advance-display";
+} from "@/app/dashboard/advance/_presentation/advance-display";
 import type { AdvanceRequestWithWorker } from "@/lib/advances-queries";
 
 function sortableHeader(label: string) {

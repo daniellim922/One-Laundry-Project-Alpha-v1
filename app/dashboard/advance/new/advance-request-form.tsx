@@ -44,7 +44,10 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { SignaturePad } from "@/components/ui/signature-pad";
-import { advanceStatusBadgeClass, formatAdvanceAmount } from "@/lib/advance-display";
+import {
+    advanceStatusBadgeClass,
+    formatAdvanceAmount,
+} from "@/app/dashboard/advance/_presentation/advance-display";
 import { localIsoDateYmd } from "@/lib/local-iso-date";
 import { cn } from "@/lib/utils";
 

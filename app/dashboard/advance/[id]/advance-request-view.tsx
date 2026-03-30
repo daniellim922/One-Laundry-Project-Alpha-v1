@@ -22,7 +22,7 @@ import {
     advanceStatusBadgeClass,
     formatAdvanceAmount,
     formatAdvanceDate,
-} from "@/lib/advance-display";
+} from "@/app/dashboard/advance/_presentation/advance-display";
 import type { AdvanceRequestDetail } from "@/lib/advances-queries";
 import { Banknote } from "lucide-react";
 

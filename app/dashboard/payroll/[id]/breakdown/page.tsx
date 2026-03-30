@@ -6,7 +6,7 @@ import {
     advanceStatusBadgeClass,
     formatAdvanceAmount,
     formatAdvanceDate,
-} from "@/lib/advance-display";
+} from "@/app/dashboard/advance/_presentation/advance-display";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
