@@ -2,11 +2,11 @@ import Link from "next/link";
 import { Eye, MoreHorizontal, Pencil } from "lucide-react";
 
 import {
-    advanceDetailPath,
-    advanceStatusBadgeClass,
-    formatAdvanceAmount,
-    formatAdvanceDate,
-} from "@/app/dashboard/advance/_presentation/advance-display";
+    formatPayrollAdvanceAmount,
+    formatPayrollAdvanceDate,
+    payrollAdvanceRequestHref,
+    payrollAdvanceStatusBadgeClass,
+} from "./payroll-advance-display";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -471,18 +471,18 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                                 <TableRow key={adv.id}>
                                                     <TableCell>
                                                         {adv.repaymentDate
-                                                            ? formatAdvanceDate(
+                                                            ? formatPayrollAdvanceDate(
                                                                   adv.repaymentDate,
                                                               )
                                                             : "–"}
                                                     </TableCell>
                                                     <TableCell>
-                                                        {formatAdvanceAmount(adv.amount)}
+                                                        {`$${adv.amount}`}
                                                     </TableCell>
                                                     <TableCell>
                                                         <span
                                                             className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                                                                advanceStatusBadgeClass[
+                                                                payrollAdvanceStatusBadgeClass[
                                                                     adv.status
                                                                 ] ?? ""
                                                             }`}>
@@ -491,9 +491,7 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                                     </TableCell>
                                                     <TableCell>
                                                         <Link
-                                                            href={advanceDetailPath(
-                                                                adv.advanceRequestId,
-                                                            )}
+                                                            href={`/dashboard/advance/${adv.advanceRequestId}`}
                                                             className="text-primary text-sm underline-offset-4 hover:underline">
                                                             View
                                                         </Link>
