@@ -6,7 +6,7 @@ import {
     getAdvanceRequestByIdWithWorker,
     listAdvanceRequestsWithWorkers,
     type AdvanceRequestWithWorker,
-} from "./advances-queries";
+} from "@/lib/advances-queries";
 
 function mockDbForList(
     rows: Omit<AdvanceRequestWithWorker, "status">[],

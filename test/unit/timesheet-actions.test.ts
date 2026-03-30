@@ -28,7 +28,7 @@ vi.mock("@/app/domain/payroll/drizzle-payroll-sync-repo", () => ({
     drizzlePayrollSyncRepository: {},
 }));
 
-import { updateTimesheetEntry } from "./actions";
+import { updateTimesheetEntry } from "@/app/dashboard/timesheet/actions";
 
 function mockSelectResolved(rows: unknown[]) {
     mocks.db.select.mockReturnValue({

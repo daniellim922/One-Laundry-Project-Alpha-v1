@@ -3,7 +3,9 @@ import { defineConfig, devices } from "@playwright/test";
 const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL ?? "http://127.0.0.1:3000";
 
 export default defineConfig({
-    testDir: "e2e",
+    testDir: "test/e2e",
+    testMatch: ["**/*.spec.ts", "**/auth.setup.ts"],
+    outputDir: "test/results",
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,
@@ -19,7 +21,7 @@ export default defineConfig({
             name: "chromium",
             use: {
                 ...devices["Desktop Chrome"],
-                storageState: "e2e/.auth/user.json",
+                storageState: "test/e2e/.auth/user.json",
             },
             dependencies: ["setup"],
             testIgnore: /auth\.setup\.ts/,

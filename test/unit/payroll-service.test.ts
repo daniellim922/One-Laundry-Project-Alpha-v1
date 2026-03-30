@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createPayrollDomainService } from "./service";
-import type { PayrollSyncRepository } from "./ports";
+import { createPayrollDomainService } from "@/app/domain/payroll/service";
+import type { PayrollSyncRepository } from "@/app/domain/payroll/ports";
 
 function makeRepo(overrides: Partial<PayrollSyncRepository> = {}): PayrollSyncRepository {
     return {

@@ -6,7 +6,7 @@ import {
     advanceStatusBadgeClass,
     formatAdvanceAmount,
     formatAdvanceDate,
-} from "./advance-display";
+} from "@/lib/advance-display";
 
 describe("advance-display", () => {
     it("formatAdvanceDate formats ISO date string in en-GB", () => {

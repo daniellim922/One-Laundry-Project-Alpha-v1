@@ -23,7 +23,7 @@ vi.mock("@/lib/db", () => ({
     db: mocks.db,
 }));
 
-import { settlePayroll } from "./actions";
+import { settlePayroll } from "@/app/dashboard/payroll/actions";
 
 describe("settlePayroll", () => {
     beforeEach(() => {

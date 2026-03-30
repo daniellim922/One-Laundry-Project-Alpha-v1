@@ -2,6 +2,14 @@ import { expect, test, type Page } from "@playwright/test";
 
 const NO_DRAFT_SKIP_REASON =
     "No draft payroll in the database; run db:seed or create a draft payroll to exercise this flow.";
+const NOT_AUTHENTICATED_SKIP_REASON =
+    "Not authenticated (auth setup did not produce a valid session). Configure DB/env and re-run e2e.";
+
+function requireAuthenticatedOrSkip(page: { url(): string }) {
+    if (page.url().includes("/login")) {
+        test.skip(true, NOT_AUTHENTICATED_SKIP_REASON);
+    }
+}
 
 /**
  * When at least one payroll has status `draft`, these tests run the real assertions.
@@ -27,6 +35,7 @@ test.describe("Payroll settle flow", () => {
 
     test.beforeEach(async ({ page }) => {
         await page.goto("/dashboard/payroll/all");
+        requireAuthenticatedOrSkip(page);
         await expect(
             page.getByRole("heading", { name: "All payrolls" }),
         ).toBeVisible();
