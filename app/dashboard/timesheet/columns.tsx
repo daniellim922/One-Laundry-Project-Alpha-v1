@@ -4,7 +4,7 @@ import * as React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpDown, Eye, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Eye, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -27,6 +27,7 @@ import {
     type TimesheetPaymentStatus,
 } from "./timesheet-entry-status";
 import { formatTimesheetRowDate, formatTimesheetRowTime } from "./timesheet-display-format";
+import { createBadgeCell, createSortableHeader } from "@/components/data-table/column-builders";
 
 export type TimesheetEntryWithWorker = {
     id: string;
@@ -39,27 +40,6 @@ export type TimesheetEntryWithWorker = {
     status: TimesheetPaymentStatus;
     workerName: string;
 };
-
-const sortableHeader =
-    (label: string) =>
-    ({
-        column,
-    }: {
-        column: {
-            toggleSorting: (asc: boolean) => void;
-            getIsSorted: () => false | "asc" | "desc";
-        };
-    }) => (
-        <Button
-            variant="ghost"
-            className="px-0 font-semibold"
-            onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-            }>
-            {label}
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-    );
 
 function TimesheetRowActions({
     id,
@@ -176,42 +156,43 @@ function TimesheetRowActions({
 export const columns: ColumnDef<TimesheetEntryWithWorker>[] = [
     {
         accessorKey: "workerName",
-        header: sortableHeader("Worker"),
+        header: createSortableHeader("Worker"),
+        meta: { globalSearch: true },
     },
     {
         accessorKey: "dateIn",
-        header: sortableHeader("Date in"),
+        header: createSortableHeader("Date in"),
         cell: ({ row }) => formatTimesheetRowDate(row.original.dateIn),
     },
     {
         accessorKey: "dateOut",
-        header: sortableHeader("Date out"),
+        header: createSortableHeader("Date out"),
         cell: ({ row }) => formatTimesheetRowDate(row.original.dateOut),
     },
     {
         accessorKey: "timeIn",
-        header: sortableHeader("Time in"),
+        header: createSortableHeader("Time in"),
         cell: ({ row }) => formatTimesheetRowTime(row.original.timeIn),
     },
     {
         accessorKey: "timeOut",
-        header: sortableHeader("Time out"),
+        header: createSortableHeader("Time out"),
         cell: ({ row }) => formatTimesheetRowTime(row.original.timeOut),
     },
     {
-        id: "hours",
-        header: sortableHeader("Hours"),
-        enableColumnFilter: false,
+        accessorKey: "hours",
+        header: createSortableHeader("Hours"),
         cell: ({ row }) => row.original.hours.toFixed(2),
     },
     {
         accessorKey: "status",
-        header: sortableHeader("Status"),
-        cell: ({ row }) => (
-            <span className={timesheetEntryStatusPillClass(row.original.status)}>
-                {formatTimesheetEntryStatus(row.original.status)}
-            </span>
-        ),
+        header: createSortableHeader("Status"),
+        meta: { globalSearch: true },
+        cell: createBadgeCell<TimesheetEntryWithWorker>({
+            value: (r) => formatTimesheetEntryStatus(r.status),
+            variant: "outline",
+            toneClassNameFor: (r) => timesheetEntryStatusPillClass(r.status),
+        }),
     },
     {
         id: "actions",

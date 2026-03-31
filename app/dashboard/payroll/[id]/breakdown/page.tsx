@@ -2,9 +2,7 @@ import Link from "next/link";
 import { Eye, MoreHorizontal, Pencil } from "lucide-react";
 
 import {
-    formatPayrollAdvanceAmount,
     formatPayrollAdvanceDate,
-    payrollAdvanceRequestHref,
     payrollAdvanceStatusBadgeClass,
 } from "./payroll-advance-display";
 import { Button } from "@/components/ui/button";

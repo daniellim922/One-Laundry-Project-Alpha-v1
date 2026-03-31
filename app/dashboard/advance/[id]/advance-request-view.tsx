@@ -18,7 +18,8 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { localDateDmy } from "@/lib/local-iso-date";
-import { loanPaidToneClassName, StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
+import { loanPaidToneClassName } from "@/types/tones";
 import type { AdvanceRequestDetail } from "@/lib/advances-queries";
 import { Banknote } from "lucide-react";
 
@@ -88,13 +89,14 @@ export function AdvanceRequestView({
                         <Field className="space-y-2">
                             <FieldLabel>Status</FieldLabel>
                             <div className="w-fit!">
-                                <StatusBadge
-                                    label={request.status}
-                                    toneClassName={
+                                <Badge
+                                    variant="outline"
+                                    className={
                                         loanPaidToneClassName[request.status]
                                     }
-                                    data-testid="advance-detail-status"
-                                />
+                                    data-testid="advance-detail-status">
+                                    {request.status}
+                                </Badge>
                             </div>
                         </Field>
                     </div>
@@ -129,23 +131,22 @@ export function AdvanceRequestView({
                         <TableBody>
                             {advances.map((adv) => (
                                 <TableRow key={adv.id}>
-                                    <TableCell>
-                                        {`$${adv.amount}`}
-                                    </TableCell>
+                                    <TableCell>{`$${adv.amount}`}</TableCell>
                                     <TableCell>
                                         {adv.repaymentDate
-                                            ? localDateDmy(
-                                                  adv.repaymentDate,
-                                              )
+                                            ? localDateDmy(adv.repaymentDate)
                                             : "—"}
                                     </TableCell>
                                     <TableCell>
-                                        <StatusBadge
-                                            label={adv.status}
-                                            toneClassName={
-                                                loanPaidToneClassName[adv.status]
-                                            }
-                                        />
+                                        <Badge
+                                            variant="outline"
+                                            className={
+                                                loanPaidToneClassName[
+                                                    adv.status
+                                                ]
+                                            }>
+                                            {adv.status}
+                                        </Badge>
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -238,9 +239,7 @@ export function AdvanceRequestView({
                                     </span>
                                     <span className="text-sm font-medium">
                                         {managerSignatureDate
-                                            ? localDateDmy(
-                                                  managerSignatureDate,
-                                              )
+                                            ? localDateDmy(managerSignatureDate)
                                             : "—"}
                                     </span>
                                 </div>

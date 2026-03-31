@@ -3,14 +3,13 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { SelectPayroll } from "@/db/tables/payroll/payrollTable";
 import Link from "next/link";
-import { ArrowUpDown, MoreHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+    createActionsColumn,
+    createBadgeCell,
+    createSortableHeader,
+    RowActionsMenu,
+} from "@/components/data-table/column-builders";
 
 type PayrollWithWorker = SelectPayroll & {
     workerName: string;
@@ -26,27 +25,6 @@ function formatDate(d: string | Date): string {
         day: "2-digit",
     });
 }
-
-const sortableHeader =
-    (label: string) =>
-    ({
-        column,
-    }: {
-        column: {
-            toggleSorting: (asc: boolean) => void;
-            getIsSorted: () => false | "asc" | "desc";
-        };
-    }) => (
-        <Button
-            variant="ghost"
-            className="px-0 font-semibold"
-            onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-            }>
-            {label}
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-    );
 
 const employmentTypeStyles: Record<string, string> = {
     "Full Time":
@@ -71,95 +49,63 @@ const statusStyles: Record<string, string> = {
 export const columns: ColumnDef<PayrollWithWorker>[] = [
     {
         accessorKey: "workerName",
-        header: sortableHeader("Worker"),
+        header: createSortableHeader("Worker"),
+        meta: { globalSearch: true },
     },
     {
         accessorKey: "status",
-        header: sortableHeader("Status"),
-        cell: ({ row }) => {
-            const value = row.original.status;
-            return (
-                <span
-                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                        statusStyles[value ?? "draft"] ?? ""
-                    }`}>
-                    {value}
-                </span>
-            );
-        },
+        header: createSortableHeader("Status"),
+        meta: { globalSearch: true },
+        cell: createBadgeCell<PayrollWithWorker>({
+            value: (r) => r.status ?? "draft",
+            variant: "outline",
+            toneClassNameFor: (r) => statusStyles[r.status ?? "draft"],
+        }),
     },
     {
         accessorKey: "employmentType",
-        header: sortableHeader("Employment Type"),
-        cell: ({ row }) => {
-            const value = row.original.employmentType;
-            return (
-                <span
-                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                        employmentTypeStyles[value] ?? ""
-                    }`}>
-                    {value}
-                </span>
-            );
-        },
+        header: createSortableHeader("Employment Type"),
+        meta: { globalSearch: true },
+        cell: createBadgeCell<PayrollWithWorker>({
+            value: (r) => r.employmentType,
+            variant: "outline",
+            toneClassNameFor: (r) => employmentTypeStyles[r.employmentType],
+        }),
     },
     {
         accessorKey: "employmentArrangement",
-        header: sortableHeader("Arrangement"),
-        cell: ({ row }) => {
-            const value = row.original.employmentArrangement;
-            return (
-                <span
-                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                        arrangementStyles[value] ?? ""
-                    }`}>
-                    {value}
-                </span>
-            );
-        },
+        header: createSortableHeader("Arrangement"),
+        meta: { globalSearch: true },
+        cell: createBadgeCell<PayrollWithWorker>({
+            value: (r) => r.employmentArrangement,
+            variant: "outline",
+            toneClassNameFor: (r) => arrangementStyles[r.employmentArrangement],
+        }),
     },
     {
         accessorKey: "periodStart",
-        header: sortableHeader("Period Start"),
+        header: createSortableHeader("Period Start"),
         cell: ({ row }) => formatDate(row.original.periodStart),
     },
     {
         accessorKey: "periodEnd",
-        header: sortableHeader("Period End"),
+        header: createSortableHeader("Period End"),
         cell: ({ row }) => formatDate(row.original.periodEnd),
     },
     {
         accessorKey: "payrollDate",
-        header: sortableHeader("Payroll Date"),
+        header: createSortableHeader("Payroll Date"),
         cell: ({ row }) => formatDate(row.original.payrollDate),
     },
-    {
-        id: "actions",
-        header: "",
-        enableColumnFilter: false,
-        cell: ({ row }) => {
-            const payroll = row.original;
-            return (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            className="h-8 w-8 p-0"
-                            aria-label="Open row actions">
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                            <Link
-                                href={`/dashboard/payroll/${payroll.id}/breakdown`}
-                                className="w-full">
-                                View
-                            </Link>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            );
-        },
-    },
+    createActionsColumn<PayrollWithWorker>({
+        cell: (payroll) => (
+            <RowActionsMenu>
+                <DropdownMenuItem asChild>
+                    <Link href={`/dashboard/payroll/${payroll.id}/breakdown`} className="w-full">
+                        View
+                    </Link>
+                </DropdownMenuItem>
+            </RowActionsMenu>
+        ),
+    }),
 ];

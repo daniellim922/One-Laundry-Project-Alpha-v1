@@ -44,7 +44,8 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 import { SignaturePad } from "@/components/ui/signature-pad";
-import { loanPaidToneClassName, StatusBadge } from "@/components/ui/status-badge";
+import { Badge } from "@/components/ui/badge";
+import { loanPaidToneClassName } from "@/types/tones";
 import { localIsoDateYmd } from "@/lib/local-iso-date";
 import { cn } from "@/lib/utils";
 
@@ -723,14 +724,12 @@ export function AdvanceRequestForm({
                                                         field.value ?? "loan";
                                                     return (
                                                         <div className="flex h-9 items-center">
-                                                            <StatusBadge
-                                                                label={status}
-                                                                toneClassName={
-                                                                    loanPaidToneClassName[
-                                                                        status
-                                                                    ]
-                                                                }
-                                                            />
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={loanPaidToneClassName[status]}
+                                                            >
+                                                                {status}
+                                                            </Badge>
                                                         </div>
                                                     );
                                                 }}

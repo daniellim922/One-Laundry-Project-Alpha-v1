@@ -1,31 +1,16 @@
 "use client";
 
-import type { Column, ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef } from "@tanstack/react-table";
 import type { WorkerWithEmployment } from "@/db/tables/payroll/workerTable";
 import Link from "next/link";
-import { ArrowUpDown, Eye, MoreHorizontal, Pencil } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Eye, Pencil } from "lucide-react";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-function sortableHeader(label: string) {
-    const Header = <TData, TValue>({ column }: { column: Column<TData, TValue> }) => (
-        <Button
-            variant="ghost"
-            className="px-0 font-semibold"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-            {label}
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-    );
-
-    Header.displayName = `SortableHeader(${label})`;
-    return Header;
-}
+    createActionsColumn,
+    createBadgeCell,
+    createSortableHeader,
+    RowActionsMenu,
+} from "@/components/data-table/column-builders";
 
 const statusStyles: Record<string, string> = {
     Active: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
@@ -64,123 +49,102 @@ const paymentMethodStyles: Record<
 export const columns: ColumnDef<WorkerWithEmployment>[] = [
     {
         accessorKey: "name",
-        header: sortableHeader("Name"),
+        header: createSortableHeader("Name"),
+        meta: { globalSearch: true },
     },
     {
         accessorKey: "nric",
-        header: sortableHeader("NRIC"),
+        header: createSortableHeader("NRIC"),
+        meta: { globalSearch: true },
         cell: ({ row }) => row.original.nric ?? "—",
     },
     {
         accessorKey: "status",
-        header: sortableHeader("Status"),
-        cell: ({ row }) => {
-            const value = row.original.status;
-            return (
-                <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                        statusStyles[value] ?? ""
-                    }`}>
-                    {value}
-                </span>
-            );
-        },
+        header: createSortableHeader("Status"),
+        meta: { globalSearch: true },
+        cell: createBadgeCell<WorkerWithEmployment>({
+            value: (r) => r.status,
+            variant: "outline",
+            toneClassNameFor: (r) => statusStyles[r.status],
+        }),
     },
     {
         accessorKey: "employmentType",
-        header: sortableHeader("Employment Type"),
-        cell: ({ row }) => {
-            const value = row.original.employmentType;
-            return (
-                <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${employmentTypeStyles[value] ?? ""}`}>
-                    {value}
-                </span>
-            );
-        },
+        header: createSortableHeader("Employment Type"),
+        meta: { globalSearch: true },
+        cell: createBadgeCell<WorkerWithEmployment>({
+            value: (r) => r.employmentType,
+            variant: "outline",
+            toneClassNameFor: (r) => employmentTypeStyles[r.employmentType],
+        }),
     },
     {
         accessorKey: "employmentArrangement",
-        header: sortableHeader("Employment Arrangement"),
-        cell: ({ row }) => {
-            const value = row.original.employmentArrangement;
-            return (
-                <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${employmentArrangementStyles[value] ?? ""}`}>
-                    {value}
-                </span>
-            );
-        },
+        header: createSortableHeader("Employment Arrangement"),
+        meta: { globalSearch: true },
+        cell: createBadgeCell<WorkerWithEmployment>({
+            value: (r) => r.employmentArrangement,
+            variant: "outline",
+            toneClassNameFor: (r) =>
+                employmentArrangementStyles[r.employmentArrangement],
+        }),
     },
     {
         accessorKey: "phone",
-        header: sortableHeader("Phone"),
+        header: createSortableHeader("Phone"),
+        meta: { globalSearch: true },
         cell: ({ row }) => row.original.phone ?? "—",
     },
     {
         accessorKey: "monthlyPay",
-        header: sortableHeader("Monthly Pay"),
+        header: createSortableHeader("Monthly Pay"),
         cell: ({ row }) =>
-            row.original.monthlyPay != null
-                ? `$${row.original.monthlyPay}`
-                : "—",
+            row.original.monthlyPay != null ? `$${row.original.monthlyPay}` : "—",
     },
     {
         accessorKey: "hourlyRate",
-        header: sortableHeader("Hourly Rate"),
+        header: createSortableHeader("Hourly Rate"),
         cell: ({ row }) =>
             row.original.hourlyRate != null ? `$${row.original.hourlyRate}` : "—",
     },
     {
         accessorKey: "paymentMethod",
-        header: sortableHeader("Payment Method"),
+        header: createSortableHeader("Payment Method"),
+        meta: { globalSearch: true },
         cell: ({ row }) => {
             const value = row.original.paymentMethod;
             if (!value) return "—";
-            return (
-                <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${paymentMethodStyles[value] ?? ""}`}>
-                    {value}
-                </span>
-            );
+            const badgeCell = createBadgeCell<WorkerWithEmployment>({
+                value: (r) => r.paymentMethod ?? "—",
+                variant: "outline",
+                toneClassNameFor: (r) =>
+                    r.paymentMethod
+                        ? paymentMethodStyles[r.paymentMethod]
+                        : undefined,
+            });
+            return badgeCell({ row });
         },
     },
-    {
-        id: "actions",
-        header: "",
-        cell: ({ row }) => {
-            const worker = row.original;
-
-            return (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            className="h-8 w-8 p-0"
-                            aria-label="Open row actions">
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                            <Link
-                                href={`/dashboard/worker/${worker.id}/view`}
-                                className="flex w-full items-center gap-2">
-                                <Eye className="h-4 w-4" />
-                                View
-                            </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                            <Link
-                                href={`/dashboard/worker/${worker.id}/edit`}
-                                className="flex w-full items-center gap-2">
-                                <Pencil className="h-4 w-4" />
-                                Edit
-                            </Link>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            );
-        },
-    },
+    createActionsColumn<WorkerWithEmployment>({
+        cell: (worker) => (
+            <RowActionsMenu>
+                <DropdownMenuItem asChild>
+                    <Link
+                        href={`/dashboard/worker/${worker.id}/view`}
+                        className="flex w-full items-center gap-2">
+                        <Eye className="h-4 w-4" />
+                        View
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link
+                        href={`/dashboard/worker/${worker.id}/edit`}
+                        className="flex w-full items-center gap-2">
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                    </Link>
+                </DropdownMenuItem>
+            </RowActionsMenu>
+        ),
+    }),
 ];

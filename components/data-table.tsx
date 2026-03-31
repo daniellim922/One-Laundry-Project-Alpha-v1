@@ -4,6 +4,7 @@ import * as React from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
+  FilterFn,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
@@ -28,52 +29,117 @@ import {
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  /** Key in the data used for simple text filtering (e.g. "name") */
+  /** Legacy prop (ignored). Global search is driven by column meta. */
   searchKey?: keyof TData & string;
   /** Name of the URL search param to sync the filter with (e.g. "search"). */
   searchParamKey?: string;
   /** Optional actions to render next to the search input (e.g. "Add" button) */
   actions?: React.ReactNode;
+  /** Pagination size (defaults to 20). */
+  pageSize?: number;
+}
+
+type ColumnMeta = { globalSearch?: boolean };
+
+function formatEnGbDate(d: Date): string {
+  return d.toLocaleDateString("en-GB", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
+
+function looksLikeIsoDateString(s: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(s);
+}
+
+function filterHaystacksFromValue(v: unknown): string[] {
+  if (v == null) return [];
+
+  if (v instanceof Date) {
+    return [v.toISOString(), formatEnGbDate(v)].map((x) => x.toLowerCase());
+  }
+
+  const s = String(v);
+  const out = [s.toLowerCase()];
+
+  // Common case in this app: dates stored as ISO calendar strings (YYYY-MM-DD)
+  // but displayed as DD/MM/YYYY. Let users filter using the displayed format.
+  if (typeof v === "string" && looksLikeIsoDateString(v)) {
+    const d = new Date(`${v}T00:00:00`);
+    if (!Number.isNaN(d.getTime())) {
+      out.push(formatEnGbDate(d).toLowerCase());
+    }
+  }
+
+  return out;
+}
+
+function collectGlobalSearchColumnIds<TData, TValue>(
+  defs: ColumnDef<TData, TValue>[],
+  out: string[] = [],
+): string[] {
+  for (const def of defs) {
+    const maybeGroup = def as unknown as { columns?: ColumnDef<TData, TValue>[] };
+    if (Array.isArray(maybeGroup.columns)) {
+      collectGlobalSearchColumnIds(maybeGroup.columns, out);
+      continue;
+    }
+
+    const meta = (def as unknown as { meta?: ColumnMeta }).meta;
+    if (!meta?.globalSearch) continue;
+
+    const id =
+      (def as unknown as { id?: string }).id ??
+      ((def as unknown as { accessorKey?: unknown }).accessorKey as string | undefined);
+    if (id) out.push(id);
+  }
+  return out;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   searchKey,
   searchParamKey,
   actions,
+  pageSize = 20,
 }: DataTableProps<TData, TValue>) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
 
+  const effectiveSearchParamKey = searchParamKey ?? "search";
+  const globalSearchColumnIds = React.useMemo(
+    () => collectGlobalSearchColumnIds(columns),
+    [columns],
+  );
+
   const initialFilter = React.useMemo(() => {
-    if (!searchParamKey) return "";
-    return searchParams.get(searchParamKey) ?? "";
-  }, [searchParams, searchParamKey]);
+    return searchParams.get(effectiveSearchParamKey) ?? "";
+  }, [effectiveSearchParamKey, searchParams]);
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = React.useState(initialFilter);
 
   React.useEffect(() => {
-    if (!searchParamKey) return;
-    const currentValue = searchParams.get(searchParamKey) ?? "";
+    const currentValue = searchParams.get(effectiveSearchParamKey) ?? "";
     setGlobalFilter((prev) => (prev === currentValue ? prev : currentValue));
-  }, [searchParamKey, searchParams]);
+  }, [effectiveSearchParamKey, searchParams]);
 
   const updateUrlFilter = React.useCallback(
     (value: string) => {
-      if (!searchParamKey) return;
       const params = new URLSearchParams(searchParams.toString());
       if (value) {
-        params.set(searchParamKey, value);
+        params.set(effectiveSearchParamKey, value);
       } else {
-        params.delete(searchParamKey);
+        params.delete(effectiveSearchParamKey);
       }
       router.replace(`${pathname}?${params.toString()}`);
     },
-    [pathname, router, searchParamKey, searchParams],
+    [effectiveSearchParamKey, pathname, router, searchParams],
   );
 
   const handleFilterChange = (value: string) => {
@@ -81,12 +147,24 @@ export function DataTable<TData, TValue>({
     updateUrlFilter(value);
   };
 
+  const containsCi: FilterFn<TData> = React.useCallback(
+    (row, columnId, filterValue) => {
+      const search = String(filterValue ?? "").trim().toLowerCase();
+      if (!search) return true;
+      const v = row.getValue(columnId);
+      const haystacks = filterHaystacksFromValue(v);
+      if (haystacks.length === 0) return false;
+      return haystacks.some((h) => h.includes(search));
+    },
+    [],
+  );
+
   const table = useReactTable({
     data,
     columns,
     initialState: {
       pagination: {
-        pageSize: 20,
+        pageSize,
       },
     },
     state: {
@@ -101,36 +179,32 @@ export function DataTable<TData, TValue>({
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    defaultColumn: {
+      filterFn: containsCi,
+    },
     globalFilterFn: (row, _columnId, filterValue) => {
       if (!filterValue) return true;
-      const search = String(filterValue).toLowerCase();
-      const values = Object.values(row.original ?? {});
+      if (globalSearchColumnIds.length === 0) return true;
 
-      return values.some((value) => {
-        if (value == null) return false;
+      const search = String(filterValue).trim().toLowerCase();
+      if (!search) return true;
 
-        if (
-          typeof value === "string" ||
-          typeof value === "number" ||
-          typeof value === "boolean"
-        ) {
-          return String(value).toLowerCase().includes(search);
-        }
-
-        if (value instanceof Date) {
-          return value.toISOString().toLowerCase().includes(search);
-        }
-
-        return false;
+      return globalSearchColumnIds.some((columnId) => {
+        const v = row.getValue(columnId);
+        const haystacks = filterHaystacksFromValue(v);
+        if (haystacks.length === 0) return false;
+        return haystacks.some((h) => h.includes(search));
       });
     },
   });
 
+  const showSearch = globalSearchColumnIds.length > 0;
+
   return (
     <div className="space-y-4">
-      {searchKey || actions ? (
+      {showSearch || actions ? (
         <div className="flex items-center justify-between gap-2">
-          {searchKey ? (
+          {showSearch ? (
             <Input
               placeholder="Search..."
               value={globalFilter ?? ""}

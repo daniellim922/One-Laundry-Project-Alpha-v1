@@ -2,38 +2,17 @@
 
 import type { ColumnDef } from "@tanstack/react-table";
 import type { SelectExpense } from "@/db/expensesTable";
-import { ArrowUpDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
-
-const sortableHeader =
-    (label: string) =>
-    ({
-        column,
-    }: {
-        column: {
-            toggleSorting: (asc: boolean) => void;
-            getIsSorted: () => false | "asc" | "desc";
-        };
-    }) => (
-        <Button
-            variant="ghost"
-            className="px-0 font-semibold"
-            onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-            }>
-            {label}
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-    );
+import { createSortableHeader } from "@/components/data-table/column-builders";
 
 export const columns: ColumnDef<SelectExpense>[] = [
     {
         accessorKey: "description",
-        header: sortableHeader("Description"),
+        header: createSortableHeader("Description"),
+        meta: { globalSearch: true },
     },
     {
         accessorKey: "amount",
-        header: sortableHeader("Amount"),
+        header: createSortableHeader("Amount"),
         cell: ({ row }) =>
             row.original.amount != null
                 ? `$${(row.original.amount / 100).toFixed(2)}`
@@ -41,12 +20,13 @@ export const columns: ColumnDef<SelectExpense>[] = [
     },
     {
         accessorKey: "category",
-        header: sortableHeader("Category"),
+        header: createSortableHeader("Category"),
+        meta: { globalSearch: true },
         cell: ({ row }) => row.original.category ?? "—",
     },
     {
         accessorKey: "date",
-        header: sortableHeader("Date"),
+        header: createSortableHeader("Date"),
         cell: ({ row }) => {
             const d =
                 row.original.date instanceof Date
