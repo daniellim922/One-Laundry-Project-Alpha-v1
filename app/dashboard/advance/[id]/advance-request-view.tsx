@@ -17,11 +17,8 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import {
-    advanceRequestStatusBadgeClass,
-    advanceStatusBadgeClass,
-    formatAdvanceDate,
-} from "@/app/dashboard/advance/_presentation/advance-display";
+import { formatAdvanceDate } from "@/app/dashboard/advance/_presentation/advance-display";
+import { loanPaidToneClassName, StatusBadge } from "@/components/ui/status-badge";
 import type { AdvanceRequestDetail } from "@/lib/advances-queries";
 import { Banknote } from "lucide-react";
 
@@ -91,15 +88,13 @@ export function AdvanceRequestView({
                         <Field className="space-y-2">
                             <FieldLabel>Status</FieldLabel>
                             <div className="w-fit!">
-                                <span
-                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                                        advanceRequestStatusBadgeClass[
-                                            request.status
-                                        ] ?? ""
-                                    }`}
-                                    data-testid="advance-detail-status">
-                                    {request.status}
-                                </span>
+                                <StatusBadge
+                                    label={request.status}
+                                    toneClassName={
+                                        loanPaidToneClassName[request.status]
+                                    }
+                                    data-testid="advance-detail-status"
+                                />
                             </div>
                         </Field>
                     </div>
@@ -145,14 +140,12 @@ export function AdvanceRequestView({
                                             : "—"}
                                     </TableCell>
                                     <TableCell>
-                                        <span
-                                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                                                advanceStatusBadgeClass[
-                                                    adv.status
-                                                ] ?? ""
-                                            }`}>
-                                            {adv.status}
-                                        </span>
+                                        <StatusBadge
+                                            label={adv.status}
+                                            toneClassName={
+                                                loanPaidToneClassName[adv.status]
+                                            }
+                                        />
                                     </TableCell>
                                 </TableRow>
                             ))}

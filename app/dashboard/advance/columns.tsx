@@ -11,10 +11,11 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { formatAdvanceDate } from "@/app/dashboard/advance/_presentation/advance-display";
 import {
-    advanceRequestStatusBadgeClass,
-    formatAdvanceDate,
-} from "@/app/dashboard/advance/_presentation/advance-display";
+    loanPaidToneClassName,
+    StatusBadge,
+} from "@/components/ui/status-badge";
 import type { AdvanceRequestWithWorker } from "@/lib/advances-queries";
 
 function sortableHeader(label: string) {
@@ -51,17 +52,12 @@ export const columns: ColumnDef<AdvanceRequestWithWorker>[] = [
     {
         accessorKey: "status",
         header: sortableHeader("Status"),
-        cell: ({ row }) => {
-            const value = row.original.status;
-            return (
-                <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                        advanceRequestStatusBadgeClass[value] ?? ""
-                    }`}>
-                    {value}
-                </span>
-            );
-        },
+        cell: ({ row }) => (
+            <StatusBadge
+                label={row.original.status}
+                toneClassName={loanPaidToneClassName[row.original.status]}
+            />
+        ),
     },
     {
         accessorKey: "requestDate",
