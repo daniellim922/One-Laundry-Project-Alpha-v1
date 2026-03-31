@@ -12,8 +12,8 @@ import {
     RowActionsMenu,
 } from "@/components/data-table/column-builders";
 import {
-    workerEmploymentArrangementBadgeTone,
-    workerEmploymentTypeBadgeTone,
+    employmentArrangementBadgeTone,
+    employmentTypeBadgeTone,
     workerPaymentMethodBadgeTone,
     workerStatusBadgeTone,
 } from "@/types/badge-tones";
@@ -51,8 +51,8 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
             value: (r) => r.employmentType,
             variant: "outline",
             toneClassNameFor: (r) =>
-                workerEmploymentTypeBadgeTone[
-                    r.employmentType as keyof typeof workerEmploymentTypeBadgeTone
+                employmentTypeBadgeTone[
+                    r.employmentType as keyof typeof employmentTypeBadgeTone
                 ],
         }),
     },
@@ -64,8 +64,8 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
             value: (r) => r.employmentArrangement,
             variant: "outline",
             toneClassNameFor: (r) =>
-                workerEmploymentArrangementBadgeTone[
-                    r.employmentArrangement as keyof typeof workerEmploymentArrangementBadgeTone
+                employmentArrangementBadgeTone[
+                    r.employmentArrangement as keyof typeof employmentArrangementBadgeTone
                 ],
         }),
     },

@@ -11,8 +11,8 @@ import {
     RowActionsMenu,
 } from "@/components/data-table/column-builders";
 import {
-    payrollEmploymentArrangementBadgeTone,
-    payrollEmploymentTypeBadgeTone,
+    employmentArrangementBadgeTone,
+    employmentTypeBadgeTone,
     payrollStatusBadgeTone,
 } from "@/types/badge-tones";
 import type { PayrollStatus, WorkerEmploymentArrangement, WorkerEmploymentType } from "@/types/status";
@@ -56,7 +56,7 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
         cell: createBadgeCell<PayrollWithWorker>({
             value: (r) => r.employmentType,
             variant: "outline",
-            toneClassNameFor: (r) => payrollEmploymentTypeBadgeTone[r.employmentType],
+            toneClassNameFor: (r) => employmentTypeBadgeTone[r.employmentType],
         }),
     },
     {
@@ -67,7 +67,7 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
             value: (r) => r.employmentArrangement,
             variant: "outline",
             toneClassNameFor: (r) =>
-                payrollEmploymentArrangementBadgeTone[r.employmentArrangement],
+                employmentArrangementBadgeTone[r.employmentArrangement],
         }),
     },
     {
