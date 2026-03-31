@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import { localDateDmy } from "@/lib/local-iso-date";
 import { Badge } from "@/components/ui/badge";
-import { loanPaidToneClassName } from "@/types/tones";
+import { loanPaidToneClassName } from "@/types/badge-tones";
 import type { AdvanceRequestDetail } from "@/lib/advances-queries";
 import { Banknote } from "lucide-react";
 

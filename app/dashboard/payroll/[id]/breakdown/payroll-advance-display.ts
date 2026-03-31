@@ -1,9 +1,5 @@
-export type PayrollAdvanceStatus = "loan" | "paid";
-
-export const payrollAdvanceStatusBadgeClass: Record<PayrollAdvanceStatus, string> = {
-    loan: "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300",
-    paid: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
-};
+export { loanPaidToneClassName as payrollAdvanceStatusBadgeClass } from "@/types/badge-tones";
+export type { LoanPaidStatus as PayrollAdvanceStatus } from "@/types/status";
 
 export function formatPayrollAdvanceDate(d: string | Date): string {
     const date = d instanceof Date ? d : new Date(d + "T00:00:00");

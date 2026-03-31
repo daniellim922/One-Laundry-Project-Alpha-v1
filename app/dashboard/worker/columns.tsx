@@ -11,40 +11,12 @@ import {
     createSortableHeader,
     RowActionsMenu,
 } from "@/components/data-table/column-builders";
-
-const statusStyles: Record<string, string> = {
-    Active: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
-    Inactive: "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300",
-};
-
-const employmentTypeStyles: Record<
-    WorkerWithEmployment["employmentType"],
-    string
-> = {
-    "Full Time":
-        "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
-    "Part Time": "bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300",
-};
-
-const employmentArrangementStyles: Record<
-    WorkerWithEmployment["employmentArrangement"],
-    string
-> = {
-    "Foreign Worker":
-        "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300",
-    "Local Worker":
-        "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300",
-};
-
-const paymentMethodStyles: Record<
-    NonNullable<WorkerWithEmployment["paymentMethod"]>,
-    string
-> = {
-    PayNow: "bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300",
-    "Bank Transfer":
-        "bg-indigo-100 text-indigo-800 dark:bg-indigo-500/20 dark:text-indigo-300",
-    Cash: "bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300",
-};
+import {
+    workerEmploymentArrangementBadgeTone,
+    workerEmploymentTypeBadgeTone,
+    workerPaymentMethodBadgeTone,
+    workerStatusBadgeTone,
+} from "@/types/badge-tones";
 
 export const columns: ColumnDef<WorkerWithEmployment>[] = [
     {
@@ -65,7 +37,10 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
         cell: createBadgeCell<WorkerWithEmployment>({
             value: (r) => r.status,
             variant: "outline",
-            toneClassNameFor: (r) => statusStyles[r.status],
+            toneClassNameFor: (r) =>
+                workerStatusBadgeTone[
+                    r.status as keyof typeof workerStatusBadgeTone
+                ],
         }),
     },
     {
@@ -75,7 +50,10 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
         cell: createBadgeCell<WorkerWithEmployment>({
             value: (r) => r.employmentType,
             variant: "outline",
-            toneClassNameFor: (r) => employmentTypeStyles[r.employmentType],
+            toneClassNameFor: (r) =>
+                workerEmploymentTypeBadgeTone[
+                    r.employmentType as keyof typeof workerEmploymentTypeBadgeTone
+                ],
         }),
     },
     {
@@ -86,7 +64,9 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
             value: (r) => r.employmentArrangement,
             variant: "outline",
             toneClassNameFor: (r) =>
-                employmentArrangementStyles[r.employmentArrangement],
+                workerEmploymentArrangementBadgeTone[
+                    r.employmentArrangement as keyof typeof workerEmploymentArrangementBadgeTone
+                ],
         }),
     },
     {
@@ -119,7 +99,9 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
                 variant: "outline",
                 toneClassNameFor: (r) =>
                     r.paymentMethod
-                        ? paymentMethodStyles[r.paymentMethod]
+                        ? workerPaymentMethodBadgeTone[
+                              r.paymentMethod as keyof typeof workerPaymentMethodBadgeTone
+                          ]
                         : undefined,
             });
             return badgeCell({ row });

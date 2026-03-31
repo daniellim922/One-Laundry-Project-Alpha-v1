@@ -10,11 +10,18 @@ import {
     createSortableHeader,
     RowActionsMenu,
 } from "@/components/data-table/column-builders";
+import {
+    payrollEmploymentArrangementBadgeTone,
+    payrollEmploymentTypeBadgeTone,
+    payrollStatusBadgeTone,
+} from "@/types/badge-tones";
+import type { PayrollStatus, WorkerEmploymentArrangement, WorkerEmploymentType } from "@/types/status";
 
-type PayrollWithWorker = SelectPayroll & {
+export type PayrollWithWorker = SelectPayroll & {
     workerName: string;
-    employmentType: string;
-    employmentArrangement: string;
+    status: PayrollStatus | null;
+    employmentType: WorkerEmploymentType;
+    employmentArrangement: WorkerEmploymentArrangement;
 };
 
 function formatDate(d: string | Date): string {
@@ -25,26 +32,6 @@ function formatDate(d: string | Date): string {
         day: "2-digit",
     });
 }
-
-const employmentTypeStyles: Record<string, string> = {
-    "Full Time":
-        "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300",
-    "Part Time":
-        "bg-violet-100 text-violet-800 dark:bg-violet-500/20 dark:text-violet-300",
-};
-
-const arrangementStyles: Record<string, string> = {
-    "Foreign Worker":
-        "bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300",
-    "Local Worker":
-        "bg-teal-100 text-teal-800 dark:bg-teal-500/20 dark:text-teal-300",
-};
-
-const statusStyles: Record<string, string> = {
-    draft: "bg-slate-100 text-slate-800 dark:bg-slate-500/20 dark:text-slate-300",
-    settled:
-        "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
-};
 
 export const columns: ColumnDef<PayrollWithWorker>[] = [
     {
@@ -59,7 +46,7 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
         cell: createBadgeCell<PayrollWithWorker>({
             value: (r) => r.status ?? "draft",
             variant: "outline",
-            toneClassNameFor: (r) => statusStyles[r.status ?? "draft"],
+            toneClassNameFor: (r) => payrollStatusBadgeTone[r.status ?? "draft"],
         }),
     },
     {
@@ -69,7 +56,7 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
         cell: createBadgeCell<PayrollWithWorker>({
             value: (r) => r.employmentType,
             variant: "outline",
-            toneClassNameFor: (r) => employmentTypeStyles[r.employmentType],
+            toneClassNameFor: (r) => payrollEmploymentTypeBadgeTone[r.employmentType],
         }),
     },
     {
@@ -79,7 +66,8 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
         cell: createBadgeCell<PayrollWithWorker>({
             value: (r) => r.employmentArrangement,
             variant: "outline",
-            toneClassNameFor: (r) => arrangementStyles[r.employmentArrangement],
+            toneClassNameFor: (r) =>
+                payrollEmploymentArrangementBadgeTone[r.employmentArrangement],
         }),
     },
     {

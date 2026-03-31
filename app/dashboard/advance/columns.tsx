@@ -8,9 +8,7 @@ import {
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { localDateDmy } from "@/lib/local-iso-date";
-import {
-    loanPaidToneClassName,
-} from "@/types/tones";
+import { loanPaidToneClassName } from "@/types/badge-tones";
 import type { AdvanceRequestWithWorker } from "@/lib/advances-queries";
 import {
     createActionsColumn,

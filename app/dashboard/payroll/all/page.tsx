@@ -9,16 +9,10 @@ import {
 } from "@/db/tables/payroll/payrollTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { employmentTable } from "@/db/tables/payroll/employmentTable";
-import { columns } from "../columns";
+import { columns, type PayrollWithWorker } from "../columns";
 import { DataTable } from "@/components/data-table";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-
-type PayrollWithWorker = SelectPayroll & {
-    workerName: string;
-    employmentType: string;
-    employmentArrangement: string;
-};
 
 export default async function PayrollAllPage() {
     const rows = await db

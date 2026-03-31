@@ -45,7 +45,7 @@ import {
 } from "@/components/ui/popover";
 import { SignaturePad } from "@/components/ui/signature-pad";
 import { Badge } from "@/components/ui/badge";
-import { loanPaidToneClassName } from "@/types/tones";
+import { loanPaidToneClassName } from "@/types/badge-tones";
 import { localIsoDateYmd } from "@/lib/local-iso-date";
 import { cn } from "@/lib/utils";
 
