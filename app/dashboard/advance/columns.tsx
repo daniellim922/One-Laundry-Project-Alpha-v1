@@ -11,7 +11,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { formatAdvanceDate } from "@/app/dashboard/advance/_presentation/advance-display";
+import { localDateDmy } from "@/lib/local-iso-date";
 import {
     loanPaidToneClassName,
     StatusBadge,
@@ -62,7 +62,7 @@ export const columns: ColumnDef<AdvanceRequestWithWorker>[] = [
     {
         accessorKey: "requestDate",
         header: sortableHeader("Request date"),
-        cell: ({ row }) => formatAdvanceDate(row.original.requestDate),
+        cell: ({ row }) => localDateDmy(row.original.requestDate),
     },
     {
         id: "actions",

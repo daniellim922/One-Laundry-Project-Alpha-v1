@@ -1,9 +1,8 @@
 import * as React from "react";
 
 import { Badge } from "@/components/ui/badge";
+import type { LoanPaidStatus } from "@/types/status";
 import { cn } from "@/lib/utils";
-
-export type LoanPaidStatus = "loan" | "paid";
 
 export const loanPaidToneClassName: Record<LoanPaidStatus, string> = {
     loan: "bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300",

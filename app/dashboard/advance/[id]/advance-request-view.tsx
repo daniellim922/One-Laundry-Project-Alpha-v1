@@ -17,7 +17,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { formatAdvanceDate } from "@/app/dashboard/advance/_presentation/advance-display";
+import { localDateDmy } from "@/lib/local-iso-date";
 import { loanPaidToneClassName, StatusBadge } from "@/components/ui/status-badge";
 import type { AdvanceRequestDetail } from "@/lib/advances-queries";
 import { Banknote } from "lucide-react";
@@ -63,7 +63,7 @@ export function AdvanceRequestView({
                         <Field className="min-w-0 space-y-2">
                             <FieldLabel>Date of request</FieldLabel>
                             <p data-testid="advance-detail-loan-date">
-                                {formatAdvanceDate(request.requestDate)}
+                                {localDateDmy(request.requestDate)}
                             </p>
                         </Field>
                     </div>
@@ -134,7 +134,7 @@ export function AdvanceRequestView({
                                     </TableCell>
                                     <TableCell>
                                         {adv.repaymentDate
-                                            ? formatAdvanceDate(
+                                            ? localDateDmy(
                                                   adv.repaymentDate,
                                               )
                                             : "—"}
@@ -206,7 +206,7 @@ export function AdvanceRequestView({
                                     </span>
                                     <span className="text-sm font-medium">
                                         {employeeSignatureDate
-                                            ? formatAdvanceDate(
+                                            ? localDateDmy(
                                                   employeeSignatureDate,
                                               )
                                             : "—"}
@@ -238,7 +238,7 @@ export function AdvanceRequestView({
                                     </span>
                                     <span className="text-sm font-medium">
                                         {managerSignatureDate
-                                            ? formatAdvanceDate(
+                                            ? localDateDmy(
                                                   managerSignatureDate,
                                               )
                                             : "—"}

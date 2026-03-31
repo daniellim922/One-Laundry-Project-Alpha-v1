@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { formatAdvanceDate } from "@/app/dashboard/advance/_presentation/advance-display";
+import { localDateDmy } from "@/lib/local-iso-date";
 
-describe("advance-display", () => {
-    it("formatAdvanceDate formats ISO date string in en-GB", () => {
-        expect(formatAdvanceDate("2025-03-03")).toMatch(/03\/03\/2025/);
+describe("local-iso-date", () => {
+    it("localDateDmy formats ISO date string in en-GB", () => {
+        expect(localDateDmy("2025-03-03")).toMatch(/03\/03\/2025/);
     });
 });
