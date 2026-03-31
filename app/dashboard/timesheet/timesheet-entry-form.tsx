@@ -9,11 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-    formatTimesheetEntryStatus,
-    timesheetEntryStatusPillClass,
-    type TimesheetPaymentStatus,
-} from "./timesheet-entry-status";
+import { Badge } from "@/components/ui/badge";
+import type { TimesheetPaymentStatus } from "@/types/status";
+import { timesheetPaymentStatusBadgeTone } from "@/types/badge-tones";
 
 type Worker = { id: string; name: string };
 
@@ -84,11 +82,12 @@ export function TimesheetEntryForm({
         <>
             {entry?.status != null && (
                 <div>
-                    <span
-                        className={timesheetEntryStatusPillClass(entry.status)}
-                    >
-                        {formatTimesheetEntryStatus(entry.status)}
-                    </span>
+                    <Badge
+                        className={
+                            timesheetPaymentStatusBadgeTone[entry.status]
+                        }>
+                        {entry.status}
+                    </Badge>
                 </div>
             )}
             <div className="space-y-2">
@@ -172,8 +171,7 @@ export function TimesheetEntryForm({
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => router.back()}
-                        >
+                            onClick={() => router.back()}>
                             Cancel
                         </Button>
                     </>
@@ -185,8 +183,7 @@ export function TimesheetEntryForm({
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => router.back()}
-                        >
+                            onClick={() => router.back()}>
                             Cancel
                         </Button>
                     </>

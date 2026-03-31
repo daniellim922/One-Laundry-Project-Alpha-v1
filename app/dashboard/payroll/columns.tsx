@@ -15,7 +15,12 @@ import {
     employmentTypeBadgeTone,
     payrollStatusBadgeTone,
 } from "@/types/badge-tones";
-import type { PayrollStatus, WorkerEmploymentArrangement, WorkerEmploymentType } from "@/types/status";
+import type {
+    PayrollStatus,
+    WorkerEmploymentArrangement,
+    WorkerEmploymentType,
+} from "@/types/status";
+import { Eye, Pencil } from "lucide-react";
 
 export type PayrollWithWorker = SelectPayroll & {
     workerName: string;
@@ -46,7 +51,8 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
         cell: createBadgeCell<PayrollWithWorker>({
             value: (r) => r.status ?? "draft",
             variant: "outline",
-            toneClassNameFor: (r) => payrollStatusBadgeTone[r.status ?? "draft"],
+            toneClassNameFor: (r) =>
+                payrollStatusBadgeTone[r.status ?? "draft"],
         }),
     },
     {
@@ -89,7 +95,10 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
         cell: (payroll) => (
             <RowActionsMenu>
                 <DropdownMenuItem asChild>
-                    <Link href={`/dashboard/payroll/${payroll.id}/breakdown`} className="w-full">
+                    <Link
+                        href={`/dashboard/payroll/${payroll.id}/breakdown`}
+                        className="w-full">
+                        <Eye className="h-4 w-4" />
                         View
                     </Link>
                 </DropdownMenuItem>

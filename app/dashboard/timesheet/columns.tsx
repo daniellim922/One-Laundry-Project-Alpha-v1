@@ -21,13 +21,14 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { deleteTimesheetEntry } from "./actions";
+import type { TimesheetPaymentStatus } from "@/types/status";
+import { timesheetPaymentStatusBadgeTone } from "@/types/badge-tones";
+import { localDateDmy } from "@/lib/local-iso-date";
+import { localTimeHm } from "@/lib/local-time";
 import {
-    formatTimesheetEntryStatus,
-    timesheetEntryStatusPillClass,
-    type TimesheetPaymentStatus,
-} from "./timesheet-entry-status";
-import { formatTimesheetRowDate, formatTimesheetRowTime } from "./timesheet-display-format";
-import { createBadgeCell, createSortableHeader } from "@/components/data-table/column-builders";
+    createBadgeCell,
+    createSortableHeader,
+} from "@/components/data-table/column-builders";
 
 export type TimesheetEntryWithWorker = {
     id: string;
@@ -134,16 +135,14 @@ function TimesheetRowActions({
                             type="button"
                             variant="outline"
                             disabled={pending}
-                            onClick={() => setDeleteOpen(false)}
-                        >
+                            onClick={() => setDeleteOpen(false)}>
                             Cancel
                         </Button>
                         <Button
                             type="button"
                             variant="destructive"
                             disabled={pending}
-                            onClick={handleDelete}
-                        >
+                            onClick={handleDelete}>
                             {pending ? "Deleting..." : "Delete"}
                         </Button>
                     </DialogFooter>
@@ -162,22 +161,22 @@ export const columns: ColumnDef<TimesheetEntryWithWorker>[] = [
     {
         accessorKey: "dateIn",
         header: createSortableHeader("Date in"),
-        cell: ({ row }) => formatTimesheetRowDate(row.original.dateIn),
+        cell: ({ row }) => localDateDmy(row.original.dateIn),
     },
     {
         accessorKey: "dateOut",
         header: createSortableHeader("Date out"),
-        cell: ({ row }) => formatTimesheetRowDate(row.original.dateOut),
+        cell: ({ row }) => localDateDmy(row.original.dateOut),
     },
     {
         accessorKey: "timeIn",
         header: createSortableHeader("Time in"),
-        cell: ({ row }) => formatTimesheetRowTime(row.original.timeIn),
+        cell: ({ row }) => localTimeHm(row.original.timeIn),
     },
     {
         accessorKey: "timeOut",
         header: createSortableHeader("Time out"),
-        cell: ({ row }) => formatTimesheetRowTime(row.original.timeOut),
+        cell: ({ row }) => localTimeHm(row.original.timeOut),
     },
     {
         accessorKey: "hours",
@@ -189,9 +188,9 @@ export const columns: ColumnDef<TimesheetEntryWithWorker>[] = [
         header: createSortableHeader("Status"),
         meta: { globalSearch: true },
         cell: createBadgeCell<TimesheetEntryWithWorker>({
-            value: (r) => formatTimesheetEntryStatus(r.status),
+            value: (r) => r.status,
             variant: "outline",
-            toneClassNameFor: (r) => timesheetEntryStatusPillClass(r.status),
+            toneClassNameFor: (r) => timesheetPaymentStatusBadgeTone[r.status],
         }),
     },
     {

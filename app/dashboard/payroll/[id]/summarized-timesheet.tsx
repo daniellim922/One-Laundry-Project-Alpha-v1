@@ -1,4 +1,5 @@
 import type { SelectTimesheet } from "@/db/tables/payroll/timesheetTable";
+import { localTimeHm } from "@/lib/local-time";
 
 interface SummarizedTimesheetProps {
     entries: Pick<SelectTimesheet, "dateIn" | "timeIn" | "dateOut" | "timeOut" | "hours">[];
@@ -29,12 +30,6 @@ function formatShortDate(d: Date): string {
         day: "numeric",
         month: "short",
     });
-}
-
-function formatTime24(t: string): string {
-    const s = String(t);
-    if (s.length >= 5) return s.slice(0, 5);
-    return s;
 }
 
 function formatPeriod(d: Date): string {
@@ -166,7 +161,7 @@ export function SummarizedTimesheet({
                                         )}
                                     </td>
                                     <td className="py-2 text-center print:py-0.5">
-                                        {formatTime24(String(entry.timeIn))}
+                                        {localTimeHm(entry.timeIn)}
                                     </td>
                                     <td className="py-2 text-center print:py-0.5">
                                         {formatShortDate(
@@ -176,7 +171,7 @@ export function SummarizedTimesheet({
                                         )}
                                     </td>
                                     <td className="py-2 text-center print:py-0.5">
-                                        {formatTime24(String(entry.timeOut))}
+                                        {localTimeHm(entry.timeOut)}
                                     </td>
                                     <td className="py-2 pr-2 text-right print:py-0.5 print:pr-1">
                                         {Number(entry.hours).toFixed(2)} Hrs

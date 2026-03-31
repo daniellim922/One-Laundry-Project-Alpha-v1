@@ -22,40 +22,35 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-    formatTimesheetEntryStatus,
-    timesheetEntryStatusPillClass,
-    type TimesheetPaymentStatus,
-} from "@/app/dashboard/timesheet/timesheet-entry-status";
+import type { TimesheetPaymentStatus } from "@/types/status";
+import { timesheetPaymentStatusBadgeTone } from "@/types/badge-tones";
+import { localDateDmy } from "@/lib/local-iso-date";
+import { localTimeHm } from "@/lib/local-time";
 import { cn } from "@/lib/utils";
 import { getPayrollDetailData } from "../payroll-detail-data";
 import { PayrollHeader } from "../payroll-header";
 import { PayrollStepProgress } from "../payroll-step-progress";
 import { VoucherEditableNumber } from "../voucher-editable-number";
+import { Badge } from "@/components/ui/badge";
 
 interface PageProps {
     params: Promise<{ id: string }>;
 }
 
-function formatDate(d: string | Date): string {
-    const date = d instanceof Date ? d : new Date(d + "T00:00:00");
-    return date.toLocaleDateString("en-GB", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-    });
-}
-
-function formatTime(t: string): string {
-    const s = String(t);
-    if (s.length >= 5) return s.slice(0, 5);
-    return s;
-}
+const formatDate = localDateDmy;
+const formatTime = localTimeHm;
 
 export default async function PayrollBreakdownPage({ params }: PageProps) {
     const { id } = await params;
-    const { payroll, worker, employment, voucher, entries, missingDateIns, advances } =
-        await getPayrollDetailData(id);
+    const {
+        payroll,
+        worker,
+        employment,
+        voucher,
+        entries,
+        missingDateIns,
+        advances,
+    } = await getPayrollDetailData(id);
 
     return (
         <div className="space-y-6">
@@ -85,12 +80,16 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem asChild>
-                                    <Link href={`/dashboard/worker/${worker.id}/view`}>
+                                    <Link
+                                        href={`/dashboard/worker/${worker.id}/view`}>
+                                        <Eye className="h-4 w-4" />
                                         View
                                     </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
-                                    <Link href={`/dashboard/worker/${worker.id}/edit`}>
+                                    <Link
+                                        href={`/dashboard/worker/${worker.id}/edit`}>
+                                        <Pencil className="h-4 w-4" />
                                         Edit
                                     </Link>
                                 </DropdownMenuItem>
@@ -224,7 +223,8 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                             Employment Arrangement
                                         </p>
                                         <p className="text-sm font-medium">
-                                            {voucher.employmentArrangement ?? "–"}
+                                            {voucher.employmentArrangement ??
+                                                "–"}
                                         </p>
                                     </div>
                                     <div className="space-y-1">
@@ -249,7 +249,8 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                                 ? (voucher.payNowPhone ?? "–")
                                                 : voucher.paymentMethod ===
                                                     "Bank Transfer"
-                                                  ? (voucher.bankAccountNumber ?? "–")
+                                                  ? (voucher.bankAccountNumber ??
+                                                    "–")
                                                   : (voucher.payNowPhone ??
                                                     voucher.bankAccountNumber ??
                                                     "–")}
@@ -333,7 +334,9 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                             className={cn(
                                                 "text-sm font-medium",
                                                 voucher.hoursNotMet != null &&
-                                                    Number(voucher.hoursNotMet) !== 0 &&
+                                                    Number(
+                                                        voucher.hoursNotMet,
+                                                    ) !== 0 &&
                                                     "text-red-600",
                                             )}>
                                             {voucher.hoursNotMet ?? "–"}
@@ -346,12 +349,17 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                         <p
                                             className={cn(
                                                 "text-sm font-medium",
-                                                voucher.hoursNotMetDeduction != null &&
-                                                    Number(voucher.hoursNotMetDeduction) !== 0 &&
+                                                voucher.hoursNotMetDeduction !=
+                                                    null &&
+                                                    Number(
+                                                        voucher.hoursNotMetDeduction,
+                                                    ) !== 0 &&
                                                     "text-red-600",
                                             )}>
-                                            {voucher.hoursNotMetDeduction != null
-                                                ? voucher.hoursNotMetDeduction < 0
+                                            {voucher.hoursNotMetDeduction !=
+                                            null
+                                                ? voucher.hoursNotMetDeduction <
+                                                  0
                                                     ? `-$${Math.abs(voucher.hoursNotMetDeduction)}`
                                                     : `$${voucher.hoursNotMetDeduction}`
                                                 : "–"}
@@ -365,7 +373,9 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                             className={cn(
                                                 "text-sm font-medium",
                                                 voucher.overtimeHours != null &&
-                                                    Number(voucher.overtimeHours) !== 0 &&
+                                                    Number(
+                                                        voucher.overtimeHours,
+                                                    ) !== 0 &&
                                                     "text-emerald-600",
                                             )}>
                                             {voucher.overtimeHours ?? "–"}
@@ -379,7 +389,9 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                             className={cn(
                                                 "text-sm font-medium",
                                                 voucher.overtimePay != null &&
-                                                    Number(voucher.overtimePay) !== 0 &&
+                                                    Number(
+                                                        voucher.overtimePay,
+                                                    ) !== 0 &&
                                                     "text-emerald-600",
                                             )}>
                                             {voucher.overtimePay != null
@@ -461,7 +473,9 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                                 </TableHead>
                                                 <TableHead>Amount</TableHead>
                                                 <TableHead>Status</TableHead>
-                                                <TableHead>Advance Request</TableHead>
+                                                <TableHead>
+                                                    Advance Request
+                                                </TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -525,7 +539,9 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                             CPF
                                         </p>
                                         <p className="text-sm font-medium">
-                                            {voucher.cpf != null ? `$${voucher.cpf}` : "–"}
+                                            {voucher.cpf != null
+                                                ? `$${voucher.cpf}`
+                                                : "–"}
                                         </p>
                                     </div>
                                     <div className="space-y-1">
@@ -543,7 +559,9 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                             Net Pay
                                         </p>
                                         <p className="text-sm font-medium">
-                                            {voucher.netPay != null ? `$${voucher.netPay}` : "–"}
+                                            {voucher.netPay != null
+                                                ? `$${voucher.netPay}`
+                                                : "–"}
                                         </p>
                                     </div>
                                 </div>
@@ -568,7 +586,9 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                         <span
                                             key={k}
                                             className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-500/20 dark:text-blue-300">
-                                            {formatDate(new Date(`${k}T00:00:00`))}
+                                            {formatDate(
+                                                new Date(`${k}T00:00:00`),
+                                            )}
                                         </span>
                                     ))}
                                 </div>
@@ -614,28 +634,35 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                 <TableBody>
                                     {entries.map((e) => {
                                         const paid = e.status === "paid";
-                                        const status = e.status as TimesheetPaymentStatus;
+                                        const status =
+                                            e.status as TimesheetPaymentStatus;
                                         return (
                                             <TableRow key={e.id}>
                                                 <TableCell className="text-center">
-                                                    <span
-                                                        className={timesheetEntryStatusPillClass(
-                                                            status,
-                                                        )}>
-                                                        {formatTimesheetEntryStatus(status)}
-                                                    </span>
+                                                    <Badge
+                                                        className={
+                                                            timesheetPaymentStatusBadgeTone[
+                                                                status
+                                                            ]
+                                                        }>
+                                                        {status}
+                                                    </Badge>
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                     {formatDate(e.dateIn)}
                                                 </TableCell>
                                                 <TableCell className="text-center">
-                                                    {formatTime(String(e.timeIn))}
+                                                    {formatTime(
+                                                        String(e.timeIn),
+                                                    )}
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                     {formatDate(e.dateOut)}
                                                 </TableCell>
                                                 <TableCell className="text-center">
-                                                    {formatTime(String(e.timeOut))}
+                                                    {formatTime(
+                                                        String(e.timeOut),
+                                                    )}
                                                 </TableCell>
                                                 <TableCell className="text-center">
                                                     {Number(e.hours).toFixed(2)}
@@ -657,7 +684,9 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                                                 <Pencil className="h-4 w-4" />
                                                             )}
                                                             <span className="sr-only">
-                                                                {paid ? "View" : "Edit"}
+                                                                {paid
+                                                                    ? "View"
+                                                                    : "Edit"}
                                                             </span>
                                                         </Link>
                                                     </Button>
@@ -676,7 +705,11 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                         </TableCell>
                                         <TableCell className="text-center font-medium">
                                             {entries
-                                                .reduce((sum, e) => sum + Number(e.hours), 0)
+                                                .reduce(
+                                                    (sum, e) =>
+                                                        sum + Number(e.hours),
+                                                    0,
+                                                )
                                                 .toFixed(2)}
                                         </TableCell>
                                         <TableCell />
