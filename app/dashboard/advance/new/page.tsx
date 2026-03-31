@@ -1,6 +1,7 @@
 import { asc } from "drizzle-orm";
 
-import { BackButton } from "@/components/back-button";
+import { PageBackButton } from "@/components/page-back-button";
+import { FormPageLayout } from "@/components/form-page-layout";
 import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { requirePermission } from "@/lib/require-permission";
@@ -25,21 +26,10 @@ export default async function AdvanceRequestPage({
         .orderBy(asc(workerTable.name));
 
     return (
-        <div className="mx-auto max-w-4xl space-y-8">
-            <div className="flex items-center gap-3">
-                <BackButton href="/dashboard/advance/all" />
-                <div>
-                    <h1 className="text-xl font-semibold tracking-wide uppercase">
-                        Employee advance request form
-                    </h1>
-                    <p className="text-muted-foreground text-sm">
-                        Complete all sections. Advance details (amount and dates)
-                        are stored; other fields match the paper form for your
-                        records.
-                    </p>
-                </div>
-            </div>
-
+        <FormPageLayout
+            title="Employee advance request form"
+            subtitle="Complete all sections. Advance details (amount and dates) are stored; other fields match the paper form for your records."
+            maxWidthClassName="max-w-4xl">
             {workers.length === 0 ? (
                 <p className="text-muted-foreground text-sm">
                     No workers yet. Add a worker first.
@@ -51,6 +41,6 @@ export default async function AdvanceRequestPage({
                     initialWorkerId={initialWorkerId ?? undefined}
                 />
             )}
-        </div>
+        </FormPageLayout>
     );
 }

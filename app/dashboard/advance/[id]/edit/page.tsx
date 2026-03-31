@@ -1,7 +1,8 @@
 import { asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 
-import { BackButton } from "@/components/back-button";
+import { PageBackButton } from "@/components/page-back-button";
+import { FormPageLayout } from "@/components/form-page-layout";
 import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { requirePermission } from "@/lib/require-permission";
@@ -33,19 +34,10 @@ export default async function AdvanceEditPage({
     }
 
     return (
-        <div className="mx-auto w-full max-w-screen-2xl space-y-8">
-            <div className="flex items-center gap-3">
-                <BackButton href="/dashboard/advance/all" />
-                <div>
-                    <h1 className="text-xl font-semibold tracking-wide uppercase">
-                        Edit advance request
-                    </h1>
-                    <p className="text-muted-foreground text-sm">
-                        Detail for worker {detail.request.workerName}
-                    </p>
-                </div>
-            </div>
-
+        <FormPageLayout
+            title="Edit advance request"
+            subtitle={`Detail for worker ${detail.request.workerName}`}
+            maxWidthClassName="max-w-screen-2xl">
             {workers.length === 0 ? (
                 <p className="text-muted-foreground text-sm">
                     No workers yet. Add a worker first.
@@ -58,6 +50,6 @@ export default async function AdvanceEditPage({
                     advanceRequestId={id}
                 />
             )}
-        </div>
+        </FormPageLayout>
     );
 }

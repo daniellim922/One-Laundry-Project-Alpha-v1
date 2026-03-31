@@ -1,33 +1,35 @@
 import type { ReactNode } from "react";
+import { PageBackButton } from "./page-back-button";
 
-import { BackButton } from "@/components/back-button";
-
-interface WorkerFormPageLayoutProps {
+type FormPageLayoutProps = {
     title: string;
-    description: string;
+    subtitle: ReactNode;
     /** e.g. primary action aligned to the far right of the header row */
     actions?: ReactNode;
     children: ReactNode;
-}
+    /** Controls the inner container max width. */
+    maxWidthClassName?: string;
+};
 
-export function WorkerFormPageLayout({
+export function FormPageLayout({
     title,
-    description,
+    subtitle,
     actions,
     children,
-}: WorkerFormPageLayoutProps) {
+    maxWidthClassName = "max-w-6xl",
+}: FormPageLayoutProps) {
     return (
         <div className="flex min-h-[calc(100vh-4rem)] items-start justify-center">
-            <div className="w-full max-w-6xl space-y-6 py-8">
+            <div className={`w-full ${maxWidthClassName} space-y-6 py-8`}>
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex min-w-0 flex-1 items-center gap-3">
-                        <BackButton />
+                        <PageBackButton />
                         <div className="min-w-0">
                             <h1 className="text-xl font-semibold tracking-wide uppercase">
                                 {title}
                             </h1>
                             <p className="text-muted-foreground text-sm">
-                                {description}
+                                {subtitle}
                             </p>
                         </div>
                     </div>

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { BackButton } from "@/components/back-button";
 import { Button } from "@/components/ui/button";
+import { FormPageLayout } from "@/components/form-page-layout";
 import { getAdvanceRequestByIdWithWorker } from "@/lib/advances-queries";
 import { requirePermission } from "@/lib/require-permission";
 import { checkPermission } from "@/lib/permissions";
@@ -25,39 +25,30 @@ export default async function AdvanceDetailPage({
     }
 
     return (
-        <div
-            className="mx-auto w-full max-w-screen-2xl space-y-8"
-            data-testid="advance-detail">
-            <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                    <BackButton href="/dashboard/advance/all" />
-                    <div>
-                        <h1 className="text-xl font-semibold tracking-wide uppercase">
-                            Advance request
-                        </h1>
-                        <p className="text-muted-foreground text-sm">
-                            Detail for worker {detail.request.workerName}
-                        </p>
-                    </div>
-                </div>
-                {!canUpdate || detail.request.status === "paid" ? (
-                    <Button variant="outline" size="sm" disabled>
-                        <Pencil className="h-4 w-4" />
-                        Edit
-                    </Button>
-                ) : (
-                    <Button asChild variant="outline" size="sm">
-                        <Link
-                            href={`/dashboard/advance/${id}/edit`}
-                            className="flex items-center gap-2">
+        <div data-testid="advance-detail">
+            <FormPageLayout
+                title="Advance request"
+                subtitle={`Detail for worker ${detail.request.workerName}`}
+                actions={
+                    !canUpdate || detail.request.status === "paid" ? (
+                        <Button variant="outline" size="sm" disabled>
                             <Pencil className="h-4 w-4" />
                             Edit
-                        </Link>
-                    </Button>
-                )}
-            </div>
-
-            <AdvanceRequestView detail={detail} advanceRequestId={id} />
+                        </Button>
+                    ) : (
+                        <Button asChild variant="outline" size="sm">
+                            <Link
+                                href={`/dashboard/advance/${id}/edit`}
+                                className="flex items-center gap-2">
+                                <Pencil className="h-4 w-4" />
+                                Edit
+                            </Link>
+                        </Button>
+                    )
+                }
+                maxWidthClassName="max-w-screen-2xl">
+                <AdvanceRequestView detail={detail} advanceRequestId={id} />
+            </FormPageLayout>
         </div>
     );
 }

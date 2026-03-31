@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 
 import { requirePermission } from "@/lib/require-permission";
+import { PageBackButton } from "@/components/page-back-button";
+import { FormPageLayout } from "@/components/form-page-layout";
 import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { employmentTable } from "@/db/tables/payroll/employmentTable";
@@ -9,7 +11,6 @@ import {
     WorkerForm,
     type WorkerWithEmployment,
 } from "../../worker-form";
-import { WorkerFormPageLayout } from "../../worker-form-page-layout";
 
 interface PageProps {
     params: Promise<{
@@ -58,10 +59,10 @@ export default async function EditWorkerPage({ params }: PageProps) {
     }
 
     return (
-        <WorkerFormPageLayout
+        <FormPageLayout
             title="Edit worker"
-            description="Update this worker's details.">
+            subtitle="Update this worker's details.">
             <WorkerForm worker={worker} />
-        </WorkerFormPageLayout>
+        </FormPageLayout>
     );
 }

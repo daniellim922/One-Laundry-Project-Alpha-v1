@@ -1,14 +1,15 @@
 import { requirePermission } from "@/lib/require-permission";
-import { WorkerFormPageLayout } from "../worker-form-page-layout";
+import { PageBackButton } from "@/components/page-back-button";
+import { FormPageLayout } from "@/components/form-page-layout";
 import { WorkerForm } from "../worker-form";
 
 export default async function NewWorkerPage() {
     await requirePermission("Workers", "create");
     return (
-        <WorkerFormPageLayout
+        <FormPageLayout
             title="Add New Worker"
-            description="Create a new worker with the form below.">
+            subtitle="Create a new worker with the form below.">
             <WorkerForm />
-        </WorkerFormPageLayout>
+        </FormPageLayout>
     );
 }

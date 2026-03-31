@@ -8,7 +8,8 @@ import { db } from "@/lib/db";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { Button } from "@/components/ui/button";
-import { BackButton } from "@/components/back-button";
+import { PageBackButton } from "@/components/page-back-button";
+import { FormPageLayout } from "@/components/form-page-layout";
 import { Pencil } from "lucide-react";
 import { TimesheetEntryForm } from "../../timesheet-entry-form";
 
@@ -49,20 +50,11 @@ export default async function ViewTimesheetEntryPage({ params }: PageProps) {
         .orderBy(workerTable.name);
 
     return (
-        <div className="w-full mx-auto max-w-6xl space-y-4">
-            <div className="flex items-center justify-between gap-4">
-                <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <BackButton href="/dashboard/timesheet/all" />
-                    <div className="min-w-0">
-                        <h1 className="text-xl font-semibold tracking-wide uppercase">
-                            Timesheet entry
-                        </h1>
-                        <p className="text-muted-foreground text-sm">
-                            Clock in/out and worker for this entry (read-only)
-                        </p>
-                    </div>
-                </div>
-                {canEdit ? (
+        <FormPageLayout
+            title="Timesheet entry"
+            subtitle="Clock in/out and worker for this entry (read-only)"
+            actions={
+                canEdit ? (
                     <Button asChild variant="outline" size="sm">
                         <Link
                             href={`/dashboard/timesheet/${id}/edit`}
@@ -76,8 +68,8 @@ export default async function ViewTimesheetEntryPage({ params }: PageProps) {
                         <Pencil className="h-4 w-4" />
                         Edit
                     </Button>
-                )}
-            </div>
+                )
+            }>
             <TimesheetEntryForm
                 workers={workers}
                 disabled
@@ -91,6 +83,6 @@ export default async function ViewTimesheetEntryPage({ params }: PageProps) {
                     status: entry.status,
                 }}
             />
-        </div>
+        </FormPageLayout>
     );
 }

@@ -4,6 +4,8 @@ import { eq } from "drizzle-orm";
 
 import { requirePermission } from "@/lib/require-permission";
 import { checkPermission } from "@/lib/permissions";
+import { PageBackButton } from "@/components/page-back-button";
+import { FormPageLayout } from "@/components/form-page-layout";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { Pencil } from "lucide-react";
@@ -13,7 +15,6 @@ import {
     WorkerForm,
     type WorkerWithEmployment,
 } from "../../worker-form";
-import { WorkerFormPageLayout } from "../../worker-form-page-layout";
 
 interface PageProps {
     params: Promise<{
@@ -64,9 +65,9 @@ export default async function ViewWorkerPage({ params }: PageProps) {
     const canEdit = await checkPermission(userId, "Workers", "update");
 
     return (
-        <WorkerFormPageLayout
+        <FormPageLayout
             title="View worker"
-            description="Worker details (read-only)."
+            subtitle="Worker details (read-only)."
             actions={
                 canEdit ? (
                     <Button asChild variant="outline" size="sm">
@@ -85,6 +86,6 @@ export default async function ViewWorkerPage({ params }: PageProps) {
                 )
             }>
             <WorkerForm worker={worker} disabled />
-        </WorkerFormPageLayout>
+        </FormPageLayout>
     );
 }
