@@ -25,30 +25,28 @@ export default async function AdvanceDetailPage({
     }
 
     return (
-        <div data-testid="advance-detail">
-            <FormPageLayout
-                title="Advance request"
-                subtitle={`Detail for worker ${detail.request.workerName}`}
-                actions={
-                    !canUpdate || detail.request.status === "paid" ? (
-                        <Button variant="outline" size="sm" disabled>
+        <FormPageLayout
+            title="Advance request"
+            subtitle={`Detail for worker ${detail.request.workerName}`}
+            actions={
+                !canUpdate || detail.request.status === "paid" ? (
+                    <Button variant="outline" size="sm" disabled>
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                    </Button>
+                ) : (
+                    <Button asChild variant="outline" size="sm">
+                        <Link
+                            href={`/dashboard/advance/${id}/edit`}
+                            className="flex items-center gap-2">
                             <Pencil className="h-4 w-4" />
                             Edit
-                        </Button>
-                    ) : (
-                        <Button asChild variant="outline" size="sm">
-                            <Link
-                                href={`/dashboard/advance/${id}/edit`}
-                                className="flex items-center gap-2">
-                                <Pencil className="h-4 w-4" />
-                                Edit
-                            </Link>
-                        </Button>
-                    )
-                }
-                maxWidthClassName="max-w-screen-2xl">
-                <AdvanceRequestView detail={detail} advanceRequestId={id} />
-            </FormPageLayout>
-        </div>
+                        </Link>
+                    </Button>
+                )
+            }
+            maxWidthClassName="max-w-screen-2xl">
+            <AdvanceRequestView detail={detail} advanceRequestId={id} />
+        </FormPageLayout>
     );
 }

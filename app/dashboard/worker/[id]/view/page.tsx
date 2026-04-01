@@ -4,7 +4,6 @@ import { eq } from "drizzle-orm";
 
 import { requirePermission } from "@/lib/require-permission";
 import { checkPermission } from "@/lib/permissions";
-import { PageBackButton } from "@/components/page-back-button";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";

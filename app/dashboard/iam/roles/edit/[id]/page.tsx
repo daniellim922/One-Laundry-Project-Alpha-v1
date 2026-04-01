@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { rolesTable } from "@/db/tables/auth/rolesTable";
 import { rolePermissionsTable } from "@/db/tables/auth/rolePermissionsTable";
 import { featuresTable } from "@/db/tables/auth/featuresTable";
+import { FormPageLayout } from "@/components/form-page-layout";
 import { RoleForm } from "../../../role-form";
 
 interface PageProps {
@@ -75,25 +76,17 @@ export default async function EditRolePage({ params }: PageProps) {
     }
 
     return (
-        <div className="flex min-h-[calc(100vh-4rem)] items-start justify-center">
-            <div className="w-full max-w-3xl space-y-6 py-8">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                        Edit role
-                    </h1>
-                    <p className="text-muted-foreground">
-                        Update permissions for {role.name}.
-                    </p>
-                </div>
-
-                <RoleForm
-                    features={features}
-                    mode="edit"
-                    roleId={id}
-                    initialName={role.name}
-                    initialPermissions={initialPermissions}
-                />
-            </div>
-        </div>
+        <FormPageLayout
+            title="Edit role"
+            subtitle={`Update permissions for ${role.name}.`}
+            maxWidthClassName="max-w-3xl">
+            <RoleForm
+                features={features}
+                mode="edit"
+                roleId={id}
+                initialName={role.name}
+                initialPermissions={initialPermissions}
+            />
+        </FormPageLayout>
     );
 }

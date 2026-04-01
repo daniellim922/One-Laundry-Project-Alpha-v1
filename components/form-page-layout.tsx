@@ -19,26 +19,26 @@ export function FormPageLayout({
     maxWidthClassName = "max-w-6xl",
 }: FormPageLayoutProps) {
     return (
-        <div className="flex min-h-[calc(100vh-4rem)] items-start justify-center">
-            <div className={`w-full ${maxWidthClassName} space-y-6 py-8`}>
-                <div className="flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                        <PageBackButton />
-                        <div className="min-w-0">
-                            <h1 className="text-xl font-semibold tracking-wide uppercase">
-                                {title}
-                            </h1>
-                            <p className="text-muted-foreground text-sm">
-                                {subtitle}
-                            </p>
-                        </div>
-                    </div>
-                    {actions != null ? (
-                        <div className="shrink-0">{actions}</div>
-                    ) : null}
+        <div>
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+                <PageBackButton />
+                <div className="min-w-0">
+                    <h1 className="text-xl font-semibold tracking-wide uppercase">
+                        {title}
+                    </h1>
+                    <p className="text-muted-foreground text-sm">{subtitle}</p>
                 </div>
+            </div>
+            <div className="flex min-h-[calc(100vh-4rem)] items-start justify-center">
+                <div className={`w-full ${maxWidthClassName} space-y-6 py-8`}>
+                    <div className="flex items-center justify-between gap-3">
+                        {actions != null ? (
+                            <div className="shrink-0">{actions}</div>
+                        ) : null}
+                    </div>
 
-                {children}
+                    {children}
+                </div>
             </div>
         </div>
     );

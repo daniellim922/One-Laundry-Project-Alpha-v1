@@ -1,5 +1,4 @@
 import { requirePermission } from "@/lib/require-permission";
-import { PageBackButton } from "@/components/page-back-button";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { WorkerForm } from "../worker-form";
 

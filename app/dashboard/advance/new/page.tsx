@@ -1,6 +1,5 @@
 import { asc } from "drizzle-orm";
 
-import { PageBackButton } from "@/components/page-back-button";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/payroll/workerTable";

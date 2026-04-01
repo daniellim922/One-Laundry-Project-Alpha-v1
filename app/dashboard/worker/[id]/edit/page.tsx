@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 
 import { requirePermission } from "@/lib/require-permission";
-import { PageBackButton } from "@/components/page-back-button";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/payroll/workerTable";

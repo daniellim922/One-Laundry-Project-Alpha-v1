@@ -1,4 +1,5 @@
 import { requirePermission } from "@/lib/require-permission";
+import { FormPageLayout } from "@/components/form-page-layout";
 import { CreateUserForm } from "@/app/dashboard/iam/user-form";
 
 interface PageProps {
@@ -11,21 +12,15 @@ export default async function NewUserPage({ searchParams }: PageProps) {
     const { roleId } = await searchParams;
 
     return (
-        <div className="flex min-h-[calc(100vh-4rem)] items-start justify-center">
-            <div className="w-full max-w-2xl space-y-6 py-8">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                        Add user
-                    </h1>
-                    <p className="text-muted-foreground">
-                        {roleId
-                            ? "Create a new user with email and password. The user will be assigned the selected role."
-                            : "Create a new user with email and password."}
-                    </p>
-                </div>
-
-                <CreateUserForm roleId={roleId} />
-            </div>
-        </div>
+        <FormPageLayout
+            title="Add user"
+            subtitle={
+                roleId
+                    ? "Create a new user with email and password. The user will be assigned the selected role."
+                    : "Create a new user with email and password."
+            }
+            maxWidthClassName="max-w-2xl">
+            <CreateUserForm roleId={roleId} />
+        </FormPageLayout>
     );
 }
