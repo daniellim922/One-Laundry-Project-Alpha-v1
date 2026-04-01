@@ -9,7 +9,7 @@ import {
 } from "@/db/tables/payroll/payrollTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { employmentTable } from "@/db/tables/payroll/employmentTable";
-import { columns, type PayrollWithWorker } from "../columns";
+import { columns, type PayrollWithWorker } from "./columns";
 import { DataTable } from "@/components/data-table";
 import { DataTableSkeleton } from "@/components/data-table-skeleton";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,10 @@ export default async function PayrollAllPage() {
         })
         .from(payrollTable)
         .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id))
-        .innerJoin(employmentTable, eq(workerTable.employmentId, employmentTable.id))
+        .innerJoin(
+            employmentTable,
+            eq(workerTable.employmentId, employmentTable.id),
+        )
         .orderBy(asc(payrollTable.status), asc(workerTable.name));
 
     const data: PayrollWithWorker[] = rows.map((r) => ({
@@ -46,10 +49,7 @@ export default async function PayrollAllPage() {
                 </p>
             </div>
 
-            <Suspense
-                fallback={
-                    <DataTableSkeleton />
-                }>
+            <Suspense fallback={<DataTableSkeleton />}>
                 <DataTable
                     columns={columns}
                     data={data}

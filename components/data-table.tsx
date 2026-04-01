@@ -35,6 +35,8 @@ interface DataTableProps<TData, TValue> {
     searchKey?: keyof TData & string;
     /** Name of the URL search param to sync the filter with (e.g. "search"). */
     searchParamKey?: string;
+    /** Whether the global search should sync to the URL (defaults to true). */
+    syncSearchToUrl?: boolean;
     /** Optional actions to render next to the search input (e.g. "Add" button) */
     actions?: React.ReactNode;
     /** Pagination size (defaults to 20). */
@@ -90,6 +92,7 @@ export function DataTable<TData, TValue>({
     data,
     searchKey: _searchKey,
     searchParamKey,
+    syncSearchToUrl = true,
     actions,
     pageSize = 20,
     enableRowSelection,
@@ -104,8 +107,9 @@ export function DataTable<TData, TValue>({
     const effectiveSearchParamKey = searchParamKey ?? "search";
 
     const initialFilter = React.useMemo(() => {
+        if (!syncSearchToUrl) return "";
         return searchParams.get(effectiveSearchParamKey) ?? "";
-    }, [effectiveSearchParamKey, searchParams]);
+    }, [effectiveSearchParamKey, searchParams, syncSearchToUrl]);
 
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [columnFilters, setColumnFilters] =
@@ -113,14 +117,16 @@ export function DataTable<TData, TValue>({
     const [globalFilter, setGlobalFilter] = React.useState(initialFilter);
 
     React.useEffect(() => {
+        if (!syncSearchToUrl) return;
         const currentValue = searchParams.get(effectiveSearchParamKey) ?? "";
         setGlobalFilter((prev) =>
             prev === currentValue ? prev : currentValue,
         );
-    }, [effectiveSearchParamKey, searchParams]);
+    }, [effectiveSearchParamKey, searchParams, syncSearchToUrl]);
 
     const updateUrlFilter = React.useCallback(
         (value: string) => {
+            if (!syncSearchToUrl) return;
             const params = new URLSearchParams(searchParams.toString());
             if (value) {
                 params.set(effectiveSearchParamKey, value);
@@ -129,7 +135,7 @@ export function DataTable<TData, TValue>({
             }
             router.replace(`${pathname}?${params.toString()}`);
         },
-        [effectiveSearchParamKey, pathname, router, searchParams],
+        [effectiveSearchParamKey, pathname, router, searchParams, syncSearchToUrl],
     );
 
     const handleFilterChange = (value: string) => {
