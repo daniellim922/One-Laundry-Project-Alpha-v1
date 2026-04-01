@@ -13,6 +13,7 @@ import {
     type InsertEmployment,
 } from "@/db/tables/payroll/employmentTable";
 import { synchronizeWorkerDraftPayrolls } from "@/app/dashboard/payroll/actions";
+import type { WorkerStatus } from "@/types/status";
 
 function isUniqueViolation(error: unknown): boolean {
     if (!error || typeof error !== "object") return false;
@@ -42,6 +43,11 @@ function toNumber(val: FormDataEntryValue | null): number | null {
     return n;
 }
 
+function coerceWorkerStatus(input: unknown): WorkerStatus {
+    const s = (input ?? "Active").toString().trim();
+    return s === "Inactive" ? "Inactive" : "Active";
+}
+
 type ActionResult =
     | { success: true; id: string }
     | { success: false; error: string };
@@ -55,8 +61,9 @@ export async function createWorker(formData: FormData): Promise<ActionResult> {
     const nric = (formData.get("nric") ?? "").toString().trim() || null;
     const email = (formData.get("email") ?? "").toString().trim() || null;
     const phone = (formData.get("phone") ?? "").toString().trim() || null;
-    const status =
-        (formData.get("status") ?? "Active").toString().trim() || "Active";
+    const status: InsertWorker["status"] = coerceWorkerStatus(
+        formData.get("status"),
+    );
     const countryOfOrigin =
         (formData.get("countryOfOrigin") ?? "").toString().trim() || null;
     const race = (formData.get("race") ?? "").toString().trim() || null;
@@ -161,8 +168,9 @@ export async function updateWorker(
     const nric = (formData.get("nric") ?? "").toString().trim() || null;
     const email = (formData.get("email") ?? "").toString().trim() || null;
     const phone = (formData.get("phone") ?? "").toString().trim() || null;
-    const status =
-        (formData.get("status") ?? "Active").toString().trim() || "Active";
+    const status: InsertWorker["status"] = coerceWorkerStatus(
+        formData.get("status"),
+    );
     const countryOfOrigin =
         (formData.get("countryOfOrigin") ?? "").toString().trim() || null;
     const race = (formData.get("race") ?? "").toString().trim() || null;

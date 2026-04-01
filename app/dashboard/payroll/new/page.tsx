@@ -2,7 +2,7 @@ import { requirePermission } from "@/lib/require-permission";
 import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { FormPageLayout } from "@/components/form-page-layout";
-import { PayrollForm } from "../payroll-form";
+import { PayrollForm } from "./payroll-form";
 import { eq } from "drizzle-orm";
 import { employmentTable } from "@/db/tables/payroll/employmentTable";
 

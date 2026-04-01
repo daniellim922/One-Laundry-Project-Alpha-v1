@@ -11,6 +11,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export function createSortableHeader(label: string) {
     const Header = <TData, TValue>({
@@ -32,6 +33,45 @@ export function createSortableHeader(label: string) {
 
     Header.displayName = `SortableHeader(${label})`;
     return Header;
+}
+
+export function createRowSelectionColumn<TData>({
+    ariaLabelForRow,
+}: {
+    ariaLabelForRow?: (row: TData) => string;
+}): ColumnDef<TData> {
+    return {
+        id: "select",
+        enableSorting: false,
+        enableColumnFilter: false,
+        header: ({ table }) => (
+            <Checkbox
+                checked={
+                    table.getIsAllRowsSelected()
+                        ? true
+                        : table.getIsSomeRowsSelected()
+                          ? "indeterminate"
+                          : false
+                }
+                onCheckedChange={(checked) =>
+                    table.toggleAllRowsSelected(!!checked)
+                }
+                aria-label="Select all"
+            />
+        ),
+        cell: ({ row }) => (
+            <Checkbox
+                checked={row.getIsSelected()}
+                onCheckedChange={(checked) => row.toggleSelected(!!checked)}
+                aria-label={
+                    ariaLabelForRow
+                        ? ariaLabelForRow(row.original)
+                        : "Select row"
+                }
+            />
+        ),
+        meta: { globalSearch: false },
+    };
 }
 
 export function RowActionsMenu({

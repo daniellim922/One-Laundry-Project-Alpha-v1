@@ -10,6 +10,8 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  type OnChangeFn,
+  type RowSelectionState,
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
@@ -37,6 +39,14 @@ interface DataTableProps<TData, TValue> {
   actions?: React.ReactNode;
   /** Pagination size (defaults to 20). */
   pageSize?: number;
+  /** Enable TanStack row selection. */
+  enableRowSelection?: boolean;
+  /** Controlled row selection state. */
+  rowSelection?: RowSelectionState;
+  /** Controlled row selection change handler. */
+  onRowSelectionChange?: OnChangeFn<RowSelectionState>;
+  /** Stable row id accessor (required for controlled selection with non-index IDs). */
+  getRowId?: (originalRow: TData, index: number) => string;
 }
 
 type ColumnMeta = { globalSearch?: boolean };
@@ -105,6 +115,10 @@ export function DataTable<TData, TValue>({
   searchParamKey,
   actions,
   pageSize = 20,
+  enableRowSelection,
+  rowSelection,
+  onRowSelectionChange,
+  getRowId,
 }: DataTableProps<TData, TValue>) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -171,11 +185,17 @@ export function DataTable<TData, TValue>({
       sorting,
       columnFilters,
       globalFilter,
+      ...(enableRowSelection
+        ? { rowSelection: rowSelection ?? {} }
+        : undefined),
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getSortedRowModel: getSortedRowModel(),
     onGlobalFilterChange: handleFilterChange,
+    ...(enableRowSelection
+      ? { enableRowSelection: true, onRowSelectionChange, getRowId }
+      : undefined),
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),

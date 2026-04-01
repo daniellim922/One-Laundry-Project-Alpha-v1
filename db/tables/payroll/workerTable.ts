@@ -7,7 +7,7 @@ export const workerTable = pgTable("worker", {
     nric: text("nric"),
     email: text("email"),
     phone: text("phone"),
-    status: text("status").notNull(),
+    status: text("status", { enum: ["Active", "Inactive"] as const }).notNull(),
     countryOfOrigin: text("country_of_origin"),
     race: text("race"),
 
