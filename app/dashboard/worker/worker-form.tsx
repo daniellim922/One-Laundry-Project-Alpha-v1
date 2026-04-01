@@ -45,6 +45,7 @@ import {
     FieldLabel,
 } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
+import { localDateDmy } from "@/lib/local-iso-date";
 import { createWorker, updateWorker } from "./actions";
 
 const workerFormSchema = z
@@ -78,7 +79,11 @@ const workerFormSchema = z
 
         if (isFullTime) {
             const payFields: Array<{
-                key: "monthlyPay" | "hourlyRate" | "restDayRate" | "minimumWorkingHours";
+                key:
+                    | "monthlyPay"
+                    | "hourlyRate"
+                    | "restDayRate"
+                    | "minimumWorkingHours";
                 requiredMessage: string;
                 positiveMessage: string;
             }> = [
@@ -86,22 +91,19 @@ const workerFormSchema = z
                     key: "monthlyPay",
                     requiredMessage:
                         "Monthly pay is required for full time workers",
-                    positiveMessage:
-                        "Monthly pay must be a positive number",
+                    positiveMessage: "Monthly pay must be a positive number",
                 },
                 {
                     key: "hourlyRate",
                     requiredMessage:
                         "Hourly rate is required for full time workers",
-                    positiveMessage:
-                        "Hourly rate must be a positive number",
+                    positiveMessage: "Hourly rate must be a positive number",
                 },
                 {
                     key: "restDayRate",
                     requiredMessage:
                         "Rest day rate is required for full time workers",
-                    positiveMessage:
-                        "Rest day rate must be a positive number",
+                    positiveMessage: "Rest day rate must be a positive number",
                 },
                 {
                     key: "minimumWorkingHours",
@@ -114,7 +116,8 @@ const workerFormSchema = z
 
             for (const field of payFields) {
                 const rawValue = values[field.key];
-                const value = typeof rawValue === "string" ? rawValue.trim() : "";
+                const value =
+                    typeof rawValue === "string" ? rawValue.trim() : "";
 
                 if (!value) {
                     ctx.addIssue({
@@ -144,8 +147,7 @@ const workerFormSchema = z
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     path: ["hourlyRate"],
-                    message:
-                        "Hourly rate is required for part time workers",
+                    message: "Hourly rate is required for part time workers",
                 });
             } else {
                 const numericValue = Number(value);
@@ -153,8 +155,7 @@ const workerFormSchema = z
                     ctx.addIssue({
                         code: z.ZodIssueCode.custom,
                         path: ["hourlyRate"],
-                        message:
-                            "Hourly rate must be a positive number",
+                        message: "Hourly rate must be a positive number",
                     });
                 }
             }
@@ -178,8 +179,7 @@ const workerFormSchema = z
 
         if (isPayNow) {
             const rawPhone = values.payNowPhone;
-            const phone =
-                typeof rawPhone === "string" ? rawPhone.trim() : "";
+            const phone = typeof rawPhone === "string" ? rawPhone.trim() : "";
 
             if (!phone) {
                 ctx.addIssue({
@@ -302,43 +302,79 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
     return (
         <Card>
             <CardHeader>
-                {isCreate ? (
-                    <CardDescription>
-                        Fill in the details for the new worker.
-                    </CardDescription>
-                ) : (
-                    <CardDescription className="space-y-1 text-sm">
-                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                            <span>ID: {worker.id}</span>
-                            {worker.nric ? <span>NRIC: {worker.nric}</span> : null}
-                        </div>
-                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                            <span>
-                                Created:{" "}
-                                {new Date(worker.createdAt).toLocaleDateString(
-                                    "en-CA",
-                                    {
-                                        year: "numeric",
-                                        month: "2-digit",
-                                        day: "2-digit",
-                                    },
-                                )}
-                            </span>
-                        </div>
-                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                            <span>
-                                Updated:{" "}
-                                {new Date(worker.updatedAt).toLocaleDateString(
-                                    "en-CA",
-                                    {
-                                        year: "numeric",
-                                        month: "2-digit",
-                                        day: "2-digit",
-                                    },
-                                )}
-                            </span>
-                        </div>
-                    </CardDescription>
+                {!isCreate && (
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <CardDescription className="space-y-1 text-sm">
+                            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                <span>ID: {worker.id}</span>
+                                {worker.nric ? (
+                                    <span>NRIC: {worker.nric}</span>
+                                ) : null}
+                            </div>
+                            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                <span>
+                                    Created: {localDateDmy(worker.createdAt)}
+                                </span>
+                            </div>
+                            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                <span>
+                                    Updated: {localDateDmy(worker.updatedAt)}
+                                </span>
+                            </div>
+                        </CardDescription>
+
+                        <Controller
+                            name="status"
+                            control={form.control}
+                            render={({ field }) => (
+                                <div className="w-full sm:w-auto">
+                                    <div
+                                        role="group"
+                                        aria-label="Status"
+                                        className="flex gap-2 sm:justify-end">
+                                        <button
+                                            type="button"
+                                            disabled={disabled}
+                                            aria-pressed={
+                                                field.value === "Active"
+                                            }
+                                            onClick={() =>
+                                                field.onChange("Active")
+                                            }
+                                            className={cn(
+                                                "flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors sm:flex-none",
+                                                field.value === "Active"
+                                                    ? "border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/50"
+                                                    : "border-input bg-muted/50 text-muted-foreground hover:border-emerald-300 hover:bg-emerald-50/50 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10",
+                                                disabled &&
+                                                    "cursor-not-allowed opacity-50",
+                                            )}>
+                                            Active
+                                        </button>
+                                        <button
+                                            type="button"
+                                            disabled={disabled}
+                                            aria-pressed={
+                                                field.value === "Inactive"
+                                            }
+                                            onClick={() =>
+                                                field.onChange("Inactive")
+                                            }
+                                            className={cn(
+                                                "flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors sm:flex-none",
+                                                field.value === "Inactive"
+                                                    ? "border-red-500 bg-red-50 text-red-800 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/50"
+                                                    : "border-input bg-muted/50 text-muted-foreground hover:border-red-300 hover:bg-red-50/50 dark:hover:border-red-500/30 dark:hover:bg-red-500/10",
+                                                disabled &&
+                                                    "cursor-not-allowed opacity-50",
+                                            )}>
+                                            Inactive
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        />
+                    </div>
                 )}
             </CardHeader>
             <CardContent>
@@ -398,7 +434,9 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             <InputGroupInput
                                                 {...field}
                                                 id={`${formId}-nric`}
-                                                aria-invalid={fieldState.invalid}
+                                                aria-invalid={
+                                                    fieldState.invalid
+                                                }
                                                 disabled={disabled}
                                             />
                                             <InputGroupAddon>
@@ -413,76 +451,6 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                     </Field>
                                 )}
                             />
-                            {!isCreate && (
-                                <Controller
-                                    name="status"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                            className="space-y-2">
-                                            <FieldLabel>
-                                                <span className="flex items-center gap-2">
-                                                    <UserCircle2 className="size-4" />
-                                                    Status
-                                                </span>
-                                            </FieldLabel>
-                                            <div
-                                                role="group"
-                                                aria-label="Status"
-                                                className="flex gap-2">
-                                                <button
-                                                    type="button"
-                                                    disabled={disabled}
-                                                    aria-pressed={
-                                                        field.value === "Active"
-                                                    }
-                                                    onClick={() =>
-                                                        field.onChange("Active")
-                                                    }
-                                                    className={cn(
-                                                        "flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors",
-                                                        field.value === "Active"
-                                                            ? "border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/50"
-                                                            : "border-input bg-muted/50 text-muted-foreground hover:border-emerald-300 hover:bg-emerald-50/50 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10",
-                                                        disabled &&
-                                                            "cursor-not-allowed opacity-50",
-                                                    )}>
-                                                    Active
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    disabled={disabled}
-                                                    aria-pressed={
-                                                        field.value ===
-                                                        "Inactive"
-                                                    }
-                                                    onClick={() =>
-                                                        field.onChange(
-                                                            "Inactive",
-                                                        )
-                                                    }
-                                                    className={cn(
-                                                        "flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors",
-                                                        field.value ===
-                                                            "Inactive"
-                                                            ? "border-red-500 bg-red-50 text-red-800 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/50"
-                                                            : "border-input bg-muted/50 text-muted-foreground hover:border-red-300 hover:bg-red-50/50 dark:hover:border-red-500/30 dark:hover:bg-red-500/10",
-                                                        disabled &&
-                                                            "cursor-not-allowed opacity-50",
-                                                    )}>
-                                                    Inactive
-                                                </button>
-                                            </div>
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
-                                            )}
-                                        </Field>
-                                    )}
-                                />
-                            )}
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-2">
@@ -770,17 +738,17 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                 Monthly Pay
                                             </FieldLabel>
                                             <InputGroup>
-                                            <InputGroupInput
-                                                {...field}
-                                                id={`${formId}-monthlyPay`}
-                                                type="number"
-                                                step="any"
-                                                min={0}
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
-                                                disabled={disabled}
-                                            />
+                                                <InputGroupInput
+                                                    {...field}
+                                                    id={`${formId}-monthlyPay`}
+                                                    type="number"
+                                                    step="any"
+                                                    min={0}
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                    disabled={disabled}
+                                                />
                                                 <InputGroupAddon>
                                                     <Banknote className="size-4 text-muted-foreground" />
                                                 </InputGroupAddon>
@@ -829,42 +797,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                     </Field>
                                 )}
                             />
-                            {employmentArrangement === "Local Worker" && (
-                                <Controller
-                                    name="cpf"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                            className="space-y-2">
-                                            <FieldLabel
-                                                htmlFor={`${formId}-cpf`}>
-                                                CPF
-                                            </FieldLabel>
-                                            <InputGroup>
-                                                <InputGroupInput
-                                                    {...field}
-                                                    id={`${formId}-cpf`}
-                                                    type="number"
-                                                    min={0}
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    disabled={disabled}
-                                                />
-                                                <InputGroupAddon>
-                                                    <Banknote className="size-4 text-muted-foreground" />
-                                                </InputGroupAddon>
-                                            </InputGroup>
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
-                                            )}
-                                        </Field>
-                                    )}
-                                />
-                            )}
+
                             {employmentType === "Full Time" && (
                                 <Controller
                                     name="restDayRate"
@@ -878,17 +811,17 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                 Rest Day Rate
                                             </FieldLabel>
                                             <InputGroup>
-                                            <InputGroupInput
-                                                {...field}
-                                                id={`${formId}-restDayRate`}
-                                                type="number"
-                                                step="any"
-                                                min={0}
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
-                                                disabled={disabled}
-                                            />
+                                                <InputGroupInput
+                                                    {...field}
+                                                    id={`${formId}-restDayRate`}
+                                                    type="number"
+                                                    step="any"
+                                                    min={0}
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                    disabled={disabled}
+                                                />
                                                 <InputGroupAddon>
                                                     <Banknote className="size-4 text-muted-foreground" />
                                                 </InputGroupAddon>
@@ -915,19 +848,55 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                 Minimum Working Hours
                                             </FieldLabel>
                                             <InputGroup>
-                                            <InputGroupInput
-                                                {...field}
-                                                id={`${formId}-minimumWorkingHours`}
-                                                type="number"
-                                                step="any"
-                                                min={0}
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
-                                                disabled={disabled}
-                                            />
+                                                <InputGroupInput
+                                                    {...field}
+                                                    id={`${formId}-minimumWorkingHours`}
+                                                    type="number"
+                                                    step="any"
+                                                    min={0}
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                    disabled={disabled}
+                                                />
                                                 <InputGroupAddon>
                                                     <Clock className="size-4 text-muted-foreground" />
+                                                </InputGroupAddon>
+                                            </InputGroup>
+                                            {fieldState.invalid && (
+                                                <FieldError
+                                                    errors={[fieldState.error]}
+                                                />
+                                            )}
+                                        </Field>
+                                    )}
+                                />
+                            )}
+                            {employmentArrangement === "Local Worker" && (
+                                <Controller
+                                    name="cpf"
+                                    control={form.control}
+                                    render={({ field, fieldState }) => (
+                                        <Field
+                                            data-invalid={fieldState.invalid}
+                                            className="space-y-2">
+                                            <FieldLabel
+                                                htmlFor={`${formId}-cpf`}>
+                                                CPF
+                                            </FieldLabel>
+                                            <InputGroup>
+                                                <InputGroupInput
+                                                    {...field}
+                                                    id={`${formId}-cpf`}
+                                                    type="number"
+                                                    min={0}
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                    disabled={disabled}
+                                                />
+                                                <InputGroupAddon>
+                                                    <Banknote className="size-4 text-muted-foreground" />
                                                 </InputGroupAddon>
                                             </InputGroup>
                                             {fieldState.invalid && (

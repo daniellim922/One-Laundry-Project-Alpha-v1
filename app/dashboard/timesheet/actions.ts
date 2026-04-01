@@ -10,10 +10,6 @@ import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { synchronizeWorkerDraftPayrolls } from "@/app/dashboard/payroll/actions";
 
-function isoNow(): Date {
-    return new Date();
-}
-
 function toTimeString(val: string): string {
     const s = String(val).trim();
     if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) {
@@ -75,8 +71,8 @@ export async function createTimesheetEntry(formData: FormData) {
         dateOut,
         timeOut,
         hours,
-        createdAt: isoNow(),
-        updatedAt: isoNow(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
     });
 
     const sync = await synchronizeWorkerDraftPayrolls({ workerId });
@@ -129,7 +125,7 @@ export async function updateTimesheetEntry(id: string, formData: FormData) {
             dateOut,
             timeOut,
             hours,
-            updatedAt: isoNow(),
+            updatedAt: new Date(),
         })
         .where(eq(timesheetTable.id, id));
 
@@ -231,8 +227,8 @@ export async function importTimesheetEntries(rows: ImportRow[]) {
             dateOut: date,
             timeOut,
             hours,
-            createdAt: isoNow(),
-            updatedAt: isoNow(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
         });
     }
 
@@ -241,7 +237,9 @@ export async function importTimesheetEntries(rows: ImportRow[]) {
 
         const affectedWorkerIds = [...new Set(toInsert.map((r) => r.workerId))];
         for (const wid of affectedWorkerIds) {
-            const sync = await synchronizeWorkerDraftPayrolls({ workerId: wid });
+            const sync = await synchronizeWorkerDraftPayrolls({
+                workerId: wid,
+            });
             if ("error" in sync) {
                 return {
                     imported: toInsert.length,
@@ -321,8 +319,8 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
                 dateOut,
                 timeOut,
                 hours,
-                createdAt: isoNow(),
-                updatedAt: isoNow(),
+                createdAt: new Date(),
+                updatedAt: new Date(),
             });
         }
     }
@@ -332,7 +330,9 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
 
         const affectedWorkerIds = [...new Set(toInsert.map((r) => r.workerId))];
         for (const wid of affectedWorkerIds) {
-            const sync = await synchronizeWorkerDraftPayrolls({ workerId: wid });
+            const sync = await synchronizeWorkerDraftPayrolls({
+                workerId: wid,
+            });
             if ("error" in sync) {
                 return {
                     imported: toInsert.length,

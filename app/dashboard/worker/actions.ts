@@ -27,11 +27,10 @@ function isNricUniqueViolation(error: unknown): boolean {
         (Reflect.get(error, "detail") as string | undefined) ??
         (Reflect.get(error, "message") as string | undefined) ??
         "";
-    return typeof constraint === "string" && constraint.includes("worker_nric_unique");
-}
-
-function isoNow(): Date {
-    return new Date();
+    return (
+        typeof constraint === "string" &&
+        constraint.includes("worker_nric_unique")
+    );
 }
 
 function toNumber(val: FormDataEntryValue | null): number | null {
@@ -88,7 +87,7 @@ export async function createWorker(formData: FormData): Promise<ActionResult> {
     const bankAccountNumber =
         (formData.get("bankAccountNumber") ?? "").toString().trim() || null;
 
-    const now = isoNow();
+    const now = new Date();
 
     try {
         const [employment] = await db
@@ -196,7 +195,7 @@ export async function updateWorker(
     const bankAccountNumber =
         (formData.get("bankAccountNumber") ?? "").toString().trim() || null;
 
-    const now = isoNow();
+    const now = new Date();
 
     try {
         const [existing] = await db
@@ -266,4 +265,3 @@ export async function updateWorker(
         return { success: false, error: "Failed to update worker" };
     }
 }
-
