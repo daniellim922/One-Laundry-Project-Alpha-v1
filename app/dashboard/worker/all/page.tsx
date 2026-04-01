@@ -10,6 +10,7 @@ import {
 import { employmentTable } from "@/db/tables/payroll/employmentTable";
 import { columns } from "../columns";
 import { DataTable } from "@/components/data-table";
+import { DataTableSkeleton } from "@/components/data-table-skeleton";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
@@ -57,9 +58,7 @@ export default async function Page() {
 
             <Suspense
                 fallback={
-                    <div className="rounded-md border p-6 text-sm text-muted-foreground">
-                        Loading...
-                    </div>
+                    <DataTableSkeleton />
                 }>
                 <DataTable
                     columns={columns}

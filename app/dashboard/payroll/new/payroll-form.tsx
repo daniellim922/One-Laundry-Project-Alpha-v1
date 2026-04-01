@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,10 +9,16 @@ import * as z from "zod";
 
 import { createPayrolls } from "../actions";
 import { DataTable } from "@/components/data-table";
+import { DataTableSkeleton } from "@/components/data-table-skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+    Field,
+    FieldError,
+    FieldGroup,
+    FieldLabel,
+} from "@/components/ui/field";
 import { columns, type WorkerForPayrollSelection as Worker } from "./columns";
 
 const formSchema = z
@@ -87,7 +94,7 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
     }
 
     return (
-        <Card className="mx-auto max-w-2xl">
+        <Card className="mx-auto max-w-4xl">
             <CardHeader>
                 <CardTitle>New payroll</CardTitle>
                 <p className="text-muted-foreground text-sm">
@@ -179,19 +186,20 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
                         />
                     </FieldGroup>
 
-                    <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-2">
-                            <FieldLabel>Workers</FieldLabel>
-                        </div>
-                        <DataTable
-                            columns={columns}
-                            data={workers}
-                            enableRowSelection
-                            rowSelection={rowSelection}
-                            onRowSelectionChange={setRowSelection}
-                            getRowId={(row) => row.id}
-                            pageSize={20}
-                        />
+                    <div className="space-y-2 mt-8">
+                        <Suspense fallback={<DataTableSkeleton />}>
+                            <DataTable
+                                columns={columns}
+                                searchKey="name"
+                                searchParamKey="search"
+                                data={workers}
+                                enableRowSelection
+                                rowSelection={rowSelection}
+                                onRowSelectionChange={setRowSelection}
+                                getRowId={(row) => row.id}
+                                pageSize={20}
+                            />
+                        </Suspense>
                         {selectedCount > 0 && (
                             <p className="text-muted-foreground text-sm">
                                 {selectedCount} worker

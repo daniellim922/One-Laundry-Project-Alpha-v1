@@ -28,7 +28,8 @@ export default async function NewPayrollPage() {
     return (
         <FormPageLayout
             title="Generate payroll"
-            subtitle="Create a payroll record for a worker. Total hours and pay are calculated from timesheet entries.">
+            subtitle="Create a payroll record for a worker. Total hours and pay are calculated from timesheet entries."
+            maxWidthClassName="max-w-6xl">
             <PayrollForm workers={workers} />
         </FormPageLayout>
     );

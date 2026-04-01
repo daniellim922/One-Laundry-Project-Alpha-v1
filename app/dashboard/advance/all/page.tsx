@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { DataTable } from "@/components/data-table";
+import { DataTableSkeleton } from "@/components/data-table-skeleton";
 import { Button } from "@/components/ui/button";
 import { listAdvanceRequestsWithWorkers } from "@/lib/advances-queries";
 import { requirePermission } from "@/lib/require-permission";
@@ -31,9 +32,7 @@ export default async function AdvanceAllPage() {
 
             <Suspense
                 fallback={
-                    <div className="rounded-md border p-6 text-sm text-muted-foreground">
-                        Loading...
-                    </div>
+                    <DataTableSkeleton />
                 }>
                 <DataTable
                     columns={columns}

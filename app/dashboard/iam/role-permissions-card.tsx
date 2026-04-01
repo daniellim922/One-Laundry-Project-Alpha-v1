@@ -1,9 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
 import { Pencil, Plus } from "lucide-react";
 import { columns, type IAMUserRow } from "./columns";
 import { DataTable } from "@/components/data-table";
+import { DataTableSkeleton } from "@/components/data-table-skeleton";
 import {
     Card,
     CardContent,
@@ -94,19 +96,22 @@ export function RolePermissionsCard({
 
                 <div className="mt-6">
                     <h3 className="mb-2 text-sm font-medium">Users with this role</h3>
-                    <DataTable
-                        columns={columns}
-                        data={users}
-                        searchKey="name"
-                        actions={
-                            <Button size="sm" asChild>
-                                <Link href={`/dashboard/iam/users/new?roleId=${roleId}`}>
-                                    <Plus className="mr-2 size-4" />
-                                    Add user
-                                </Link>
-                            </Button>
-                        }
-                    />
+                    <Suspense fallback={<DataTableSkeleton />}>
+                        <DataTable
+                            columns={columns}
+                            data={users}
+                            searchKey="name"
+                            actions={
+                                <Button size="sm" asChild>
+                                    <Link
+                                        href={`/dashboard/iam/users/new?roleId=${roleId}`}>
+                                        <Plus className="mr-2 size-4" />
+                                        Add user
+                                    </Link>
+                                </Button>
+                            }
+                        />
+                    </Suspense>
                 </div>
             </CardContent>
         </Card>
