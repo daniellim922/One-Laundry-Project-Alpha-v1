@@ -118,7 +118,8 @@ export function SettleAllDraftPayrollsButton() {
                 a.download =
                     getDownloadFilenameFromContentDisposition(
                         res.headers.get("content-disposition"),
-                    ) ?? `payrolls-${new Date().toISOString().slice(0, 10)}.zip`;
+                    ) ??
+                    `payrolls-${new Date().toISOString().slice(0, 10)}.zip`;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
@@ -159,19 +160,14 @@ export function SettleAllDraftPayrollsButton() {
                 <DialogHeader>
                     <DialogTitle>Confirm settlement</DialogTitle>
                     <DialogDescription>
-                        Are you sure you want to settle all draft payrolls?
+                        Are you sure you want to settle{" "}
+                        {loadingDrafts ? "Loading..." : `${draftCount}`} draft
+                        payrolls?
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-2">
                     <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm text-muted-foreground">
-                            Draft payrolls to settle
-                        </p>
-                        <p className="text-sm font-medium tabular-nums">
-                            {loadingDrafts
-                                ? "Loading..."
-                                : `${draftCount} total`}
-                        </p>
+                        <p className="text-sm font-medium tabular-nums"></p>
                     </div>
 
                     {loadingDrafts ? (
@@ -202,7 +198,12 @@ export function SettleAllDraftPayrollsButton() {
                     <Button
                         type="button"
                         variant="destructive"
-                        disabled={pending || downloadingZip || loadingDrafts || draftCount === 0}
+                        disabled={
+                            pending ||
+                            downloadingZip ||
+                            loadingDrafts ||
+                            draftCount === 0
+                        }
                         onClick={handleSettleAll}>
                         {pending
                             ? "Settling..."

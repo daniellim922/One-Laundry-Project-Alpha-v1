@@ -321,12 +321,7 @@ export function TimesheetImportClient({ workers }: { workers: Worker[] }) {
     const updateEditableRow = React.useCallback(
         (
             rowIndex: number,
-            field:
-                | "workerName"
-                | "dateIn"
-                | "dateOut"
-                | "timeIn"
-                | "timeOut",
+            field: "workerName" | "dateIn" | "dateOut" | "timeIn" | "timeOut",
             value: string,
         ) => {
             setEditableRows((prev) => {
@@ -553,7 +548,9 @@ export function TimesheetImportClient({ workers }: { workers: Worker[] }) {
                                                         )}>
                                                         {isFirstInGroup ? (
                                                             <SearchableWorkerSelect
-                                                                workers={workers}
+                                                                workers={
+                                                                    workers
+                                                                }
                                                                 value={workerIdForName(
                                                                     row.workerName,
                                                                 )}
