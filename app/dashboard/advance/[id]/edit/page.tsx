@@ -7,7 +7,7 @@ import { workerTable } from "@/db/tables/payroll/workerTable";
 import { requirePermission } from "@/lib/require-permission";
 import { getAdvanceRequestByIdWithWorker } from "@/lib/advances-queries";
 
-import { AdvanceRequestForm } from "../../new/advance-request-form";
+import { AdvanceRequestForm } from "@/app/dashboard/advance/advance-request-form";
 
 export default async function AdvanceEditPage({
     params,
@@ -35,8 +35,7 @@ export default async function AdvanceEditPage({
     return (
         <FormPageLayout
             title="Edit advance request"
-            subtitle={`Detail for worker ${detail.request.workerName}`}
-            maxWidthClassName="max-w-screen-2xl">
+            subtitle={`Detail for worker ${detail.request.workerName}`}>
             {workers.length === 0 ? (
                 <p className="text-muted-foreground text-sm">
                     No workers yet. Add a worker first.

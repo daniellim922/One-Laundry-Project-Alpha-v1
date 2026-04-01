@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { requirePermission } from "@/lib/require-permission";
 
-import { AdvanceRequestForm } from "./advance-request-form";
+import { AdvanceRequestForm } from "@/app/dashboard/advance/advance-request-form";
 
 export default async function AdvanceRequestPage({
     searchParams,
@@ -27,8 +27,7 @@ export default async function AdvanceRequestPage({
     return (
         <FormPageLayout
             title="Employee advance request form"
-            subtitle="Complete all sections. Advance details (amount and dates) are stored; other fields match the paper form for your records."
-            maxWidthClassName="max-w-4xl">
+            subtitle="Complete all sections. Advance details (amount and dates) are stored; other fields match the paper form for your records.">
             {workers.length === 0 ? (
                 <p className="text-muted-foreground text-sm">
                     No workers yet. Add a worker first.

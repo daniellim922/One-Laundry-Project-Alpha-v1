@@ -8,7 +8,7 @@ import { requirePermission } from "@/lib/require-permission";
 import { checkPermission } from "@/lib/permissions";
 import { Pencil } from "lucide-react";
 
-import { AdvanceRequestView } from "./advance-request-view";
+import { AdvanceRequestForm } from "../advance-request-form";
 
 export default async function AdvanceDetailPage({
     params,
@@ -44,9 +44,12 @@ export default async function AdvanceDetailPage({
                         </Link>
                     </Button>
                 )
-            }
-            maxWidthClassName="max-w-screen-2xl">
-            <AdvanceRequestView detail={detail} advanceRequestId={id} />
+            }>
+            <AdvanceRequestForm
+                readOnly
+                initialData={detail}
+                advanceRequestId={id}
+            />
         </FormPageLayout>
     );
 }
