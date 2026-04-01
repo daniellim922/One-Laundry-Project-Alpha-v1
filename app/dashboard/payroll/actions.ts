@@ -292,8 +292,6 @@ export async function createPayroll(formData: FormData) {
         advance: advanceTotal,
     });
 
-    const now = new Date();
-
     const [voucher] = await db
         .insert(payrollVoucherTable)
         .values({
@@ -320,8 +318,8 @@ export async function createPayroll(formData: FormData) {
             paymentMethod: employment.paymentMethod,
             payNowPhone: employment.payNowPhone,
             bankAccountNumber: employment.bankAccountNumber,
-            createdAt: now,
-            updatedAt: now,
+            createdAt: new Date(),
+            updatedAt: new Date(),
         })
         .returning({ id: payrollVoucherTable.id });
 
@@ -332,8 +330,8 @@ export async function createPayroll(formData: FormData) {
         periodEnd,
         payrollDate,
         status: "draft",
-        createdAt: now,
-        updatedAt: now,
+        createdAt: new Date(),
+        updatedAt: new Date(),
     });
 
     revalidatePath("/dashboard/payroll");
@@ -425,8 +423,6 @@ export async function createPayrolls(formData: FormData) {
             advance: advanceTotal,
         });
 
-        const now = new Date();
-
         const [voucher] = await db
             .insert(payrollVoucherTable)
             .values({
@@ -453,8 +449,8 @@ export async function createPayrolls(formData: FormData) {
                 paymentMethod: employment.paymentMethod,
                 payNowPhone: employment.payNowPhone,
                 bankAccountNumber: employment.bankAccountNumber,
-                createdAt: now,
-                updatedAt: now,
+                createdAt: new Date(),
+                updatedAt: new Date(),
             })
             .returning({ id: payrollVoucherTable.id });
 
@@ -465,8 +461,8 @@ export async function createPayrolls(formData: FormData) {
             periodEnd,
             payrollDate,
             status: "draft",
-            createdAt: now,
-            updatedAt: now,
+            createdAt: new Date(),
+            updatedAt: new Date(),
         });
         created++;
     }
@@ -572,15 +568,13 @@ export async function updatePayroll(payrollId: string, formData: FormData) {
         advance: advanceTotal,
     });
 
-    const now = new Date();
-
     await db
         .update(payrollTable)
         .set({
             periodStart,
             periodEnd,
             payrollDate,
-            updatedAt: now,
+            updatedAt: new Date(),
         })
         .where(eq(payrollTable.id, payrollId));
 
@@ -607,7 +601,7 @@ export async function updatePayroll(payrollId: string, formData: FormData) {
             paymentMethod: employment.paymentMethod,
             payNowPhone: employment.payNowPhone,
             bankAccountNumber: employment.bankAccountNumber,
-            updatedAt: now,
+            updatedAt: new Date(),
         })
         .where(eq(payrollVoucherTable.id, existing.payrollVoucherId));
 

@@ -124,9 +124,8 @@ export async function createAdvanceRequest(
     const employeeSignatureDate = parseDateString(input.employeeSignatureDate);
     const managerSignatureDate = parseDateString(input.managerSignatureDate);
 
-    const now = new Date();
-
     try {
+        const now = new Date();
         await db.transaction(async (tx) => {
             const requestInsert: InsertAdvanceRequest = {
                 workerId: input.workerId,

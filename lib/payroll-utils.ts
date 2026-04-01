@@ -110,7 +110,7 @@ export interface PayCalcInput {
     publicHolidays: number;
 }
 
-export interface PayCalcResult {
+interface PayCalcResult {
     basePay: number;
     overtimeHours: number;
     overtimePay: number;

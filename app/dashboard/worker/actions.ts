@@ -87,8 +87,6 @@ export async function createWorker(formData: FormData): Promise<ActionResult> {
     const bankAccountNumber =
         (formData.get("bankAccountNumber") ?? "").toString().trim() || null;
 
-    const now = new Date();
-
     try {
         const [employment] = await db
             .insert(employmentTable)
@@ -103,8 +101,8 @@ export async function createWorker(formData: FormData): Promise<ActionResult> {
                 paymentMethod,
                 payNowPhone,
                 bankAccountNumber,
-                createdAt: now,
-                updatedAt: now,
+                createdAt: new Date(),
+                updatedAt: new Date(),
             })
             .returning({ id: employmentTable.id });
 
@@ -124,8 +122,8 @@ export async function createWorker(formData: FormData): Promise<ActionResult> {
                 countryOfOrigin,
                 race,
                 employmentId,
-                createdAt: now,
-                updatedAt: now,
+                createdAt: new Date(),
+                updatedAt: new Date(),
             } satisfies InsertWorker)
             .returning({ id: workerTable.id });
 
@@ -195,8 +193,6 @@ export async function updateWorker(
     const bankAccountNumber =
         (formData.get("bankAccountNumber") ?? "").toString().trim() || null;
 
-    const now = new Date();
-
     try {
         const [existing] = await db
             .select({
@@ -226,7 +222,7 @@ export async function updateWorker(
                 paymentMethod,
                 payNowPhone,
                 bankAccountNumber,
-                updatedAt: now,
+                updatedAt: new Date(),
             })
             .where(eq(employmentTable.id, employmentId));
 
@@ -240,7 +236,7 @@ export async function updateWorker(
                 status,
                 countryOfOrigin,
                 race,
-                updatedAt: now,
+                updatedAt: new Date(),
             })
             .where(eq(workerTable.id, id));
 

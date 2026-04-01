@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import type { Column, ColumnDef } from "@tanstack/react-table";
-import Link from "next/link";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,18 +11,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-
-export type DataTableColumnMeta = {
-    /** When true, this column participates in global search. */
-    globalSearch?: boolean;
-};
-
-export type DataTableColumnDef<TData, TValue = unknown> = ColumnDef<
-    TData,
-    TValue
-> & {
-    meta?: DataTableColumnMeta;
-};
 
 export function createSortableHeader(label: string) {
     const Header = <TData, TValue>({
@@ -71,10 +58,8 @@ export function RowActionsMenu({
 }
 
 export function createActionsColumn<TData>({
-    label,
     cell,
 }: {
-    label?: string;
     cell: (row: TData) => React.ReactNode;
 }): ColumnDef<TData> {
     return {
@@ -87,22 +72,6 @@ export function createActionsColumn<TData>({
     };
 }
 
-export function createLinkCell<TData>({
-    href,
-    text,
-    className = "hover:underline",
-}: {
-    href: (row: TData) => string;
-    text: (row: TData) => React.ReactNode;
-    className?: string;
-}) {
-    return ({ row }: { row: { original: TData } }) => (
-        <Link href={href(row.original)} className={className}>
-            {text(row.original)}
-        </Link>
-    );
-}
-
 export function createBadgeCell<TData>({
     value,
     variant = "outline",
@@ -112,34 +81,11 @@ export function createBadgeCell<TData>({
     variant?: React.ComponentProps<typeof Badge>["variant"];
     toneClassNameFor?: (row: TData) => string | undefined;
 }) {
-    return ({ row }: { row: { original: TData } }) => (
+    const BadgeCell = ({ row }: { row: { original: TData } }) => (
         <Badge variant={variant} className={toneClassNameFor?.(row.original)}>
             {value(row.original)}
         </Badge>
     );
-}
-
-export function createDateCell<TData>({
-    value,
-    format,
-}: {
-    value: (row: TData) => string | Date;
-    format: (d: string | Date) => string;
-}) {
-    return ({ row }: { row: { original: TData } }) =>
-        format(value(row.original));
-}
-
-export function createMoneyCell<TData>({
-    value,
-    currency = "USD",
-    locale = "en-US",
-}: {
-    value: (row: TData) => number;
-    currency?: string;
-    locale?: string;
-}) {
-    const fmt = new Intl.NumberFormat(locale, { style: "currency", currency });
-    return ({ row }: { row: { original: TData } }) =>
-        fmt.format(value(row.original));
+    BadgeCell.displayName = "BadgeCell";
+    return BadgeCell;
 }

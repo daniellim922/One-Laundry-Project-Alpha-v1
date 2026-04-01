@@ -44,7 +44,27 @@ type SplitWorkerSeed = {
     worker: Omit<InsertWorker, "employmentId">;
 };
 
-function splitWorkerSeed(seed: any): SplitWorkerSeed {
+type WorkerSeed = (typeof workers)[number] &
+    Partial<{
+        cpf: number;
+        monthlyPay: number;
+        minimumWorkingHours: number;
+        hourlyRate: number;
+        restDayRate: number;
+        paymentMethod: string;
+        payNowPhone: string;
+        bankAccountNumber: string;
+        nric: string;
+        email: string;
+        phone: string;
+        countryOfOrigin: string;
+        race: string;
+        employmentType: string;
+        employmentArrangement: string;
+        status: string;
+    }>;
+
+function splitWorkerSeed(seed: WorkerSeed): SplitWorkerSeed {
     const employment: InsertEmployment = {
         employmentType: seed.employmentType ?? null,
         employmentArrangement: seed.employmentArrangement ?? null,
@@ -74,7 +94,6 @@ function splitWorkerSeed(seed: any): SplitWorkerSeed {
 async function seedTimesheets(
     insertedWorkers: { id: string }[],
 ): Promise<void> {
-    const now = new Date();
     const timesheetInserts: InsertTimesheet[] = timesheets.map((t) => ({
         workerId: insertedWorkers[t.workerIndex]!.id,
         dateIn: t.dateIn,
@@ -82,8 +101,8 @@ async function seedTimesheets(
         dateOut: t.dateOut,
         timeOut: t.timeOut,
         hours: t.hours,
-        createdAt: now,
-        updatedAt: now,
+        createdAt: new Date(),
+        updatedAt: new Date(),
     }));
     await db.insert(timesheetTable).values(timesheetInserts);
 }
@@ -91,7 +110,6 @@ async function seedTimesheets(
 async function seedAdvances(
     insertedWorkers: { id: string; name: string }[],
 ): Promise<void> {
-    const now = new Date();
     const workerIdByName = new Map(
         insertedWorkers.map((w) => [w.name.toLowerCase(), w.id] as const),
     );
@@ -109,8 +127,8 @@ async function seedAdvances(
             requestDate: a.dateRequested,
             amountRequested: a.amount,
             purpose: a.purpose,
-            createdAt: now,
-            updatedAt: now,
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
         const [insertedRequest] = await db
             .insert(advanceRequestTable)
@@ -122,21 +140,19 @@ async function seedAdvances(
             amount: t.installmentAmt,
             status: a.status,
             repaymentDate: t.installmentDate,
-            createdAt: now,
-            updatedAt: now,
+            createdAt: new Date(),
+            updatedAt: new Date(),
         }));
         await db.insert(advanceTable).values(advanceInserts);
     }
 }
 
 async function seedPayrolls(insertedWorkers: { id: string }[]): Promise<void> {
-    const now = new Date();
-
     for (const p of payrolls) {
         const voucherInsert: InsertPayrollVoucher = {
             ...p.voucher,
-            createdAt: now,
-            updatedAt: now,
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
         const [insertedVoucher] = await db
             .insert(payrollVoucherTable)
@@ -150,8 +166,8 @@ async function seedPayrolls(insertedWorkers: { id: string }[]): Promise<void> {
             periodEnd: p.periodEnd,
             payrollDate: p.payrollDate,
             status: p.status,
-            createdAt: now,
-            updatedAt: now,
+            createdAt: new Date(),
+            updatedAt: new Date(),
         };
         await db.insert(payrollTable).values(payrollInsert);
     }

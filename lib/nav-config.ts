@@ -40,14 +40,14 @@ function toNavItemConfig(f: (typeof DASHBOARD_NAV_FEATURES)[number]): NavItemCon
     };
 }
 
-export const NAV_ITEMS: NavItemConfig[] =
-    DASHBOARD_NAV_FEATURES.map(toNavItemConfig);
+const NAV_ITEMS: NavItemConfig[] = DASHBOARD_NAV_FEATURES.map(toNavItemConfig);
 
 /**
  * Returns nav items the user has read permission for (serializable, no icon components).
  */
 function toSerializable(item: NavItemConfig): NavItemSerializable {
-    const { alwaysVisible: _a, ...rest } = item;
+    const { alwaysVisible, ...rest } = item;
+    void alwaysVisible;
     return rest;
 }
 

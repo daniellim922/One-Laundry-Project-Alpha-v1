@@ -10,21 +10,39 @@ async function wipeDb() {
     console.log("Discovering tables to drop...");
 
     // Get all non-Drizzle tables in the public schema
-    const result = await db.execute<
-        { tablename: string }
-    >(sql`
+    const result: unknown = await db.execute(sql`
         SELECT tablename
         FROM pg_tables
         WHERE schemaname = 'public'
           AND tablename NOT LIKE 'drizzle_%'
     `);
 
-    const tables =
-        Array.isArray(result)
-            ? result.map((r: any) => r.tablename)
-            : // Some drivers return { rows }
-              // @ts-ignore – be tolerant of different result shapes
-              result.rows?.map((r: any) => r.tablename) ?? [];
+    const tables = Array.isArray(result)
+        ? result
+              .filter(
+                  (r): r is { tablename: string } =>
+                      typeof r === "object" &&
+                      r !== null &&
+                      "tablename" in r &&
+                      typeof (r as { tablename: unknown }).tablename === "string",
+              )
+              .map((r) => r.tablename)
+        : (() => {
+              // Some drivers return { rows }
+              // @ts-expect-error tolerate driver-specific result shapes
+              const rows = result?.rows as unknown;
+              if (!Array.isArray(rows)) return [];
+              return rows
+                  .filter(
+                      (r): r is { tablename: string } =>
+                          typeof r === "object" &&
+                          r !== null &&
+                          "tablename" in r &&
+                          typeof (r as { tablename: unknown }).tablename ===
+                              "string",
+                  )
+                  .map((r) => r.tablename);
+          })();
 
     if (!tables.length) {
         console.log("No user tables found to drop.");

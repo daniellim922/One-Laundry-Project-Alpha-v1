@@ -39,14 +39,15 @@ type Worker = {
 
 const sortableHeader =
     (label: string) =>
-    ({
+    function SortableHeader({
         column,
     }: {
         column: {
             toggleSorting: (asc: boolean) => void;
             getIsSorted: () => false | "asc" | "desc";
         };
-    }) => (
+    }) {
+        return (
         <Button
             type="button"
             variant="ghost"
@@ -56,6 +57,7 @@ const sortableHeader =
             <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
     );
+    };
 
 export function PayrollForm({ workers }: { workers: Worker[] }) {
     const router = useRouter();
