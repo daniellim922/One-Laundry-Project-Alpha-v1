@@ -20,23 +20,24 @@ export function FormPageLayout({
 }: FormPageLayoutProps) {
     return (
         <div>
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-                <PageBackButton />
-                <div className="min-w-0">
-                    <h1 className="text-xl font-semibold tracking-wide uppercase">
-                        {title}
-                    </h1>
-                    <p className="text-muted-foreground text-sm">{subtitle}</p>
-                </div>
-            </div>
-            <div className="flex min-h-[calc(100vh-4rem)] items-start justify-center">
-                <div className={`w-full ${maxWidthClassName} space-y-6 py-8`}>
-                    <div className="flex items-center justify-between gap-3">
-                        {actions != null ? (
-                            <div className="shrink-0">{actions}</div>
-                        ) : null}
+            <header className="flex flex-wrap items-center justify-between gap-3 gap-y-4">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <PageBackButton />
+                    <div className="min-w-0">
+                        <h1 className="text-xl font-semibold tracking-wide uppercase">
+                            {title}
+                        </h1>
+                        <p className="text-muted-foreground text-sm">
+                            {subtitle}
+                        </p>
                     </div>
-
+                </div>
+                {actions != null ? (
+                    <div className="shrink-0">{actions}</div>
+                ) : null}
+            </header>
+            <div className="flex min-h-[calc(100vh-4rem)] w-full items-start justify-center">
+                <div className={`w-full ${maxWidthClassName} space-y-6 py-8`}>
                     {children}
                 </div>
             </div>
