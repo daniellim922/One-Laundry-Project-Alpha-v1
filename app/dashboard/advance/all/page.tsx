@@ -9,7 +9,7 @@ import { requirePermission } from "@/lib/require-permission";
 import { checkPermission } from "@/lib/permissions";
 import { Plus } from "lucide-react";
 
-import { columns } from "../columns";
+import { columns } from "./columns";
 
 export default async function AdvanceAllPage() {
     const { userId } = await requirePermission("Advance", "read");
