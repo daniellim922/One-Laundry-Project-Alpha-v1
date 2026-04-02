@@ -23,14 +23,10 @@ export default async function ExpensesAllPage() {
                 </p>
             </div>
 
-            <Suspense
-                fallback={
-                    <DataTableSkeleton />
-                }>
+            <Suspense fallback={<DataTableSkeleton />}>
                 <DataTable
                     columns={columns}
                     data={expenses}
-                    searchKey="description"
                     searchParamKey="search"
                     actions={
                         <Button asChild>

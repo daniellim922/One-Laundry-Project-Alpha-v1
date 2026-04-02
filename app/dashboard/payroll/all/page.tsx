@@ -53,7 +53,6 @@ export default async function PayrollAllPage() {
                 <DataTable
                     columns={columns}
                     data={data}
-                    searchKey="workerName"
                     searchParamKey="search"
                     actions={
                         <Button asChild>

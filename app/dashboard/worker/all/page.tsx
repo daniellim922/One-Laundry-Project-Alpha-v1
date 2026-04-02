@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
 export default async function Page() {
-    const workers = await db
+    const workers = (await db
         .select({
             id: workerTable.id,
             name: workerTable.name,
@@ -43,7 +43,7 @@ export default async function Page() {
             employmentTable,
             eq(workerTable.employmentId, employmentTable.id),
         )
-        .orderBy(desc(workerTable.updatedAt)) as WorkerWithEmployment[];
+        .orderBy(desc(workerTable.updatedAt))) as WorkerWithEmployment[];
 
     return (
         <div className="space-y-6">
@@ -56,14 +56,10 @@ export default async function Page() {
                 </p>
             </div>
 
-            <Suspense
-                fallback={
-                    <DataTableSkeleton />
-                }>
+            <Suspense fallback={<DataTableSkeleton />}>
                 <DataTable
                     columns={columns}
                     data={workers}
-                    searchKey="name"
                     searchParamKey="search"
                     actions={
                         <Button asChild>

@@ -30,14 +30,10 @@ export default async function AdvanceAllPage() {
                 </p>
             </div>
 
-            <Suspense
-                fallback={
-                    <DataTableSkeleton />
-                }>
+            <Suspense fallback={<DataTableSkeleton />}>
                 <DataTable
                     columns={columns}
                     data={advanceRequests}
-                    searchKey="workerName"
                     searchParamKey="search"
                     actions={
                         canCreate ? (

@@ -190,7 +190,6 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
                         <Suspense fallback={<DataTableSkeleton />}>
                             <DataTable
                                 columns={columns}
-                                searchKey="name"
                                 searchParamKey="search"
                                 data={workers}
                                 enableRowSelection

@@ -31,8 +31,6 @@ import {
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
-    /** Legacy prop (ignored). Global search is driven by column meta. */
-    searchKey?: keyof TData & string;
     /** Name of the URL search param to sync the filter with (e.g. "search"). */
     searchParamKey?: string;
     /** Whether the global search should sync to the URL (defaults to true). */
@@ -90,7 +88,6 @@ function filterHaystacksFromValue(v: unknown): string[] {
 export function DataTable<TData, TValue>({
     columns,
     data,
-    searchKey: _searchKey,
     searchParamKey,
     syncSearchToUrl = true,
     actions,
@@ -135,7 +132,13 @@ export function DataTable<TData, TValue>({
             }
             router.replace(`${pathname}?${params.toString()}`);
         },
-        [effectiveSearchParamKey, pathname, router, searchParams, syncSearchToUrl],
+        [
+            effectiveSearchParamKey,
+            pathname,
+            router,
+            searchParams,
+            syncSearchToUrl,
+        ],
     );
 
     const handleFilterChange = (value: string) => {
@@ -194,7 +197,8 @@ export function DataTable<TData, TValue>({
             // Search across visible cells by default; allow opt-out via
             // `columnDef.meta.globalSearch === false` (used by selection/actions columns).
             return row.getVisibleCells().some((cell) => {
-                const meta = (cell.column.columnDef as { meta?: ColumnMeta }).meta;
+                const meta = (cell.column.columnDef as { meta?: ColumnMeta })
+                    .meta;
                 if (meta?.globalSearch === false) return false;
 
                 const v = cell.getValue();

@@ -49,14 +49,10 @@ export default async function TimesheetAllPage() {
                 </p>
             </div>
 
-            <Suspense
-                fallback={
-                    <DataTableSkeleton />
-                }>
+            <Suspense fallback={<DataTableSkeleton />}>
                 <DataTable
                     columns={columns}
                     data={data}
-                    searchKey="workerName"
                     searchParamKey="search"
                     actions={
                         <Button asChild>
