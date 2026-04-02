@@ -3,7 +3,7 @@
 import { and, asc, eq, gte, inArray, lte } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
-import { getAdvancesForPayrollPeriod } from "@/lib/advances-queries";
+import { getAdvancesForPayrollPeriod } from "@/utils/advances-queries";
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payroll/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payroll/payrollVoucherTable";
@@ -12,8 +12,8 @@ import { employmentTable } from "@/db/tables/payroll/employmentTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { advanceTable } from "@/db/tables/payroll/advanceTable";
 import { advanceRequestTable } from "@/db/tables/payroll/advanceRequestTable";
-import { calculatePay, type PayCalcInput } from "@/lib/payroll-utils";
-import { requirePermission } from "@/lib/require-permission";
+import { calculatePay, type PayCalcInput } from "@/utils/payroll-utils";
+import { requirePermission } from "@/utils/require-permission";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 

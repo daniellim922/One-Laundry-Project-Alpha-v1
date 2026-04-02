@@ -11,7 +11,7 @@ import { Banknote, Check, ChevronsUpDown, Plus, Trash2 } from "lucide-react";
 
 import { createAdvanceRequest } from "@/app/dashboard/advance/new/actions";
 import { updateAdvanceRequest } from "@/app/dashboard/advance/[id]/edit/actions";
-import type { AdvanceRequestDetail } from "@/lib/advances-queries";
+import type { AdvanceRequestDetail } from "@/utils/advances-queries";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -36,7 +36,7 @@ import { SelectSearch } from "@/components/ui/SelectSearch";
 import { SignaturePad } from "@/components/ui/signature-pad";
 import { Badge } from "@/components/ui/badge";
 import { loanPaidToneClassName } from "@/types/badge-tones";
-import { localDateDmy, localIsoDateYmd } from "@/lib/local-iso-date";
+import { localDateDmy, localIsoDateYmd } from "@/utils/local-iso-date";
 import { cn } from "@/lib/utils";
 import {
     Table,

@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { requirePermission } from "@/lib/require-permission";
+import { requirePermission } from "@/utils/require-permission";
 
 export default async function PayrollLayout({
     children,

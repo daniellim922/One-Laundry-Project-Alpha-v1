@@ -48,14 +48,10 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 | Shared UI primitives (read-only) | `components/ui/` |
 | Data table components | `components/data-table/` |
 | Form page shell | `components/form-page-layout.tsx` |
-| Auth server config | `lib/auth.ts` |
-| Auth client | `lib/auth-client.ts` |
-| Permission checks | `lib/permissions.ts`, `lib/require-permission.ts` |
-| Payroll domain math | `lib/payroll-utils.ts` |
-| DB client | `lib/db.ts` |
+| Third-party integrations (DB, auth, Tailwind `cn`) | `lib/db.ts`, `lib/auth.ts`, `lib/auth-client.ts`, `lib/utils.ts` |
+| App utilities, domain helpers, RBAC | `utils/` (`permissions.ts`, `require-permission.ts`, `payroll-utils.ts`, `advances-queries.ts`, `nav-config.ts`, `dashboard-nav-features.ts`, date/time helpers, `parse-attendrecord.ts`) |
 | All Drizzle table schemas | `db/tables/` (re-exported via `db/schema.ts`) |
 | Domain status enums + badge tones | `types/status.ts`, `types/badge-tones.ts` |
-| Sidebar nav config | `lib/dashboard-nav-features.ts`, `lib/nav-config.ts` |
 | Seeds | `db/seed/` |
 | Migrations | `drizzle/` |
 

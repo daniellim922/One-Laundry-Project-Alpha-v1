@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 
-import { requirePermission } from "@/lib/require-permission";
+import { requirePermission } from "@/utils/require-permission";
 import { db } from "@/lib/db";
 import { rolesTable } from "@/db/tables/auth/rolesTable";
 import { rolePermissionsTable } from "@/db/tables/auth/rolePermissionsTable";

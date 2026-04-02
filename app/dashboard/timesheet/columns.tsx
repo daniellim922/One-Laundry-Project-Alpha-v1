@@ -23,8 +23,8 @@ import {
 import { deleteTimesheetEntry } from "./actions";
 import type { TimesheetPaymentStatus } from "@/types/status";
 import { timesheetPaymentStatusBadgeTone } from "@/types/badge-tones";
-import { localDateDmy } from "@/lib/local-iso-date";
-import { localTimeHm } from "@/lib/local-time";
+import { localDateDmy } from "@/utils/local-iso-date";
+import { localTimeHm } from "@/utils/local-time";
 import {
     createBadgeCell,
     createSortableHeader,

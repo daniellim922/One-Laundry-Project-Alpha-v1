@@ -24,9 +24,9 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Trash2, Upload } from "lucide-react";
-import { parseAttendRecord } from "@/lib/parse-attendrecord";
-import type { AttendRecordOutput } from "@/lib/parse-attendrecord";
-import { calculateHoursFromDateTimes } from "@/lib/payroll-utils";
+import { parseAttendRecord } from "@/utils/parse-attendrecord";
+import type { AttendRecordOutput } from "@/utils/parse-attendrecord";
+import { calculateHoursFromDateTimes } from "@/utils/payroll-utils";
 
 const ACCEPTED_TYPES = [
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

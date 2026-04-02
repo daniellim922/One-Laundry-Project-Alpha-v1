@@ -1,5 +1,5 @@
 import { and, eq } from "drizzle-orm";
-import { db } from "./db";
+import { db } from "@/lib/db";
 import { featuresTable } from "@/db/tables/auth/featuresTable";
 import { rolePermissionsTable } from "@/db/tables/auth/rolePermissionsTable";
 import { userRolesTable } from "@/db/tables/auth/userRolesTable";

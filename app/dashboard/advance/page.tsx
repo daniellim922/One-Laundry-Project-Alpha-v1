@@ -4,8 +4,8 @@ import { count, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { advanceRequestTable } from "@/db/tables/payroll/advanceRequestTable";
 import { Button } from "@/components/ui/button";
-import { requirePermission } from "@/lib/require-permission";
-import { checkPermission } from "@/lib/permissions";
+import { requirePermission } from "@/utils/require-permission";
+import { checkPermission } from "@/utils/permissions";
 import {
     Card,
     CardContent,

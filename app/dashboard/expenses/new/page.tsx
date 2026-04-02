@@ -1,4 +1,4 @@
-import { requirePermission } from "@/lib/require-permission";
+import { requirePermission } from "@/utils/require-permission";
 import { FormPageLayout } from "@/components/form-page-layout";
 
 export default async function NewExpensePage() {

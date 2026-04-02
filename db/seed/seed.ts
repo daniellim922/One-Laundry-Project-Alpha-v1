@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { calculateHoursFromDateTimes } from "@/lib/payroll-utils";
+import { calculateHoursFromDateTimes } from "@/utils/payroll-utils";
 import { eq } from "drizzle-orm";
 import {
     workerTable,

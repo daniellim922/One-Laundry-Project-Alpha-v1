@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { checkPermission } from "@/lib/permissions";
+import { checkPermission } from "@/utils/permissions";
 import { payrollTable } from "@/db/tables/payroll/payrollTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 

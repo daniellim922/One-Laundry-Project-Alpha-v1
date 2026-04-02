@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { localDateDmy } from "@/lib/local-iso-date";
+import { localDateDmy } from "@/utils/local-iso-date";
 
 describe("local-iso-date", () => {
     it("localDateDmy formats ISO date string in en-GB", () => {

@@ -7,9 +7,9 @@ import { Eye, Pencil } from "lucide-react";
 import {
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { localDateDmy } from "@/lib/local-iso-date";
+import { localDateDmy } from "@/utils/local-iso-date";
 import { loanPaidToneClassName } from "@/types/badge-tones";
-import type { AdvanceRequestWithWorker } from "@/lib/advances-queries";
+import type { AdvanceRequestWithWorker } from "@/utils/advances-queries";
 import {
     createActionsColumn,
     createBadgeCell,

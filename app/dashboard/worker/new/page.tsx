@@ -1,4 +1,4 @@
-import { requirePermission } from "@/lib/require-permission";
+import { requirePermission } from "@/utils/require-permission";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { WorkerForm } from "../worker-form";
 

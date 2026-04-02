@@ -15,7 +15,7 @@ vi.mock("next/cache", () => ({
     revalidatePath: (...args: unknown[]) => mocks.revalidatePath(...args),
 }));
 
-vi.mock("@/lib/require-permission", () => ({
+vi.mock("@/utils/require-permission", () => ({
     requirePermission: (...args: unknown[]) => mocks.requirePermission(...args),
 }));
 

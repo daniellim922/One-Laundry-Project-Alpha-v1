@@ -1,4 +1,4 @@
-import { requirePermission } from "@/lib/require-permission";
+import { requirePermission } from "@/utils/require-permission";
 import { db } from "@/lib/db";
 import { featuresTable } from "@/db/tables/auth/featuresTable";
 import { FormPageLayout } from "@/components/form-page-layout";

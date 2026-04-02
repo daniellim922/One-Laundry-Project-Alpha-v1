@@ -24,8 +24,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { TimesheetPaymentStatus } from "@/types/status";
 import { timesheetPaymentStatusBadgeTone } from "@/types/badge-tones";
-import { localDateDmy } from "@/lib/local-iso-date";
-import { localTimeHm } from "@/lib/local-time";
+import { localDateDmy } from "@/utils/local-iso-date";
+import { localTimeHm } from "@/utils/local-time";
 import { cn } from "@/lib/utils";
 import { getPayrollDetailData } from "../payroll-detail-data";
 import { PayrollHeader } from "../payroll-header";
