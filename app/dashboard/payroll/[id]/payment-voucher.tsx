@@ -3,6 +3,15 @@
 import { useRef, useState } from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+    Table,
+    TableHeader,
+    TableBody,
+    TableFooter,
+    TableRow,
+    TableHead,
+    TableCell,
+} from "@/components/ui/table";
 
 interface PaymentVoucherProps {
     voucher: {
@@ -306,28 +315,28 @@ export function PaymentVoucher({
                     </div>
 
                     {/* Line items table */}
-                    <table className="w-full border-collapse text-sm [&_th]:align-middle [&_td]:align-middle">
-                        <thead>
-                            <tr className="border-y-2 border-black">
-                                <th className="py-2 pl-2 text-left font-semibold">
+                    <Table className="w-full border-collapse text-sm [&_th]:align-middle [&_td]:align-middle">
+                        <TableHeader>
+                            <TableRow className="border-y-2 border-black">
+                                <TableHead className="py-2 pl-2 text-left font-semibold">
                                     DESCRIPTION
-                                </th>
-                                <th className="w-[60px] py-2 text-center font-semibold">
+                                </TableHead>
+                                <TableHead className="w-[60px] py-2 text-center font-semibold">
                                     QTY
-                                </th>
-                                <th className="w-[40px] py-2" />
-                                <th className="w-[20px] py-2" />
-                                <th className="w-[80px] py-2 text-center font-semibold">
+                                </TableHead>
+                                <TableHead className="w-[40px] py-2" />
+                                <TableHead className="w-[20px] py-2" />
+                                <TableHead className="w-[80px] py-2 text-center font-semibold">
                                     RATE
-                                </th>
-                                <th
+                                </TableHead>
+                                <TableHead
                                     className="w-[140px] border-l border-black py-2 text-center font-semibold"
                                     colSpan={2}>
                                     AMOUNT
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                                </TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
                             {/* Earnings */}
                             {earnings.map((item, i) => (
                                 <ItemRow key={`e-${i}`} item={item} />
@@ -342,42 +351,42 @@ export function PaymentVoucher({
                             )}
 
                             {/* Subtotal */}
-                            <tr className="border-t border-neutral-400">
-                                <td
+                            <TableRow className="border-t border-neutral-400">
+                                <TableCell
                                     className="py-2 pr-4 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500"
                                     colSpan={5}>
                                     Subtotal
-                                </td>
-                                <td
+                                </TableCell>
+                                <TableCell
                                     className="border-l border-black py-2 pl-3 pr-3 text-right font-semibold"
                                     colSpan={2}>
                                     ${currencyFmt.format(subtotalPay)}
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
 
                             {/* Deductions */}
                             {deductions.map((item, i) => (
                                 <ItemRow key={`d-${i}`} item={item} />
                             ))}
-                        </tbody>
-                        <tfoot>
-                            <tr className="border-t-2 border-black">
-                                <td className="py-3 pl-2 text-sm" colSpan={1}>
+                        </TableBody>
+                        <TableFooter>
+                            <TableRow className="border-t-2 border-black">
+                                <TableCell className="py-3 pl-2 text-sm" colSpan={1}>
                                     A/c
-                                </td>
-                                <td
+                                </TableCell>
+                                <TableCell
                                     className="min-w-[200px] whitespace-nowrap py-3 pl-4 text-sm"
                                     colSpan={4}>
                                     {paymentMethodDisplay}
-                                </td>
-                                <td
+                                </TableCell>
+                                <TableCell
                                     className="border-l border-black py-3 pl-3 pr-3 text-right text-base font-bold"
                                     colSpan={2}>
                                     ${currencyFmt.format(netPay)}
-                                </td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                                </TableCell>
+                            </TableRow>
+                        </TableFooter>
+                    </Table>
 
                     {/* Signature blocks */}
                     <div className="grid grid-cols-2 gap-12 pt-4 text-sm">
@@ -422,23 +431,23 @@ export function PaymentVoucher({
 
 function ItemRow({ item }: { item: LineItem }) {
     return (
-        <tr className="border-b border-neutral-200">
-            <td className="py-2 pl-2 font-medium">{item.description}</td>
-            <td className="w-[60px] py-2 text-center">
+        <TableRow className="border-b border-neutral-200">
+            <TableCell className="py-2 pl-2 font-medium">{item.description}</TableCell>
+            <TableCell className="w-[60px] py-2 text-center">
                 {item.qty != null ? fmtQty(item.qty, item.unit ?? "") : ""}
-            </td>
-            <td className="w-[40px] py-2 pl-1">{item.unit ?? ""}</td>
-            <td className="w-[20px] py-2 text-center">
+            </TableCell>
+            <TableCell className="w-[40px] py-2 pl-1">{item.unit ?? ""}</TableCell>
+            <TableCell className="w-[20px] py-2 text-center">
                 {item.qty != null ? "x" : ""}
-            </td>
-            <td className="w-[80px] py-2 text-center">
+            </TableCell>
+            <TableCell className="w-[80px] py-2 text-center">
                 {item.rate != null ? `$${currencyFmt.format(item.rate)}` : ""}
-            </td>
-            <td className="w-[20px] border-l border-black py-2 pl-3">$</td>
-            <td className="w-[100px] py-2 pr-3 text-right">
+            </TableCell>
+            <TableCell className="w-[20px] border-l border-black py-2 pl-3">$</TableCell>
+            <TableCell className="w-[100px] py-2 pr-3 text-right">
                 {item.amount < 0 && "-"}
                 {currencyFmt.format(Math.abs(item.amount))}
-            </td>
-        </tr>
+            </TableCell>
+        </TableRow>
     );
 }

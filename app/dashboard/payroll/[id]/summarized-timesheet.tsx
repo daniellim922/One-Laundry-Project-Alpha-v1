@@ -1,5 +1,14 @@
 import type { SelectTimesheet } from "@/db/tables/payroll/timesheetTable";
 import { localTimeHm } from "@/lib/local-time";
+import {
+    Table,
+    TableHeader,
+    TableBody,
+    TableFooter,
+    TableRow,
+    TableHead,
+    TableCell,
+} from "@/components/ui/table";
 
 interface SummarizedTimesheetProps {
     entries: Pick<SelectTimesheet, "dateIn" | "timeIn" | "dateOut" | "timeOut" | "hours">[];
@@ -104,95 +113,95 @@ export function SummarizedTimesheet({
                 </div>
 
                 {/* Table */}
-                <table className="w-full border-collapse text-sm [&_th]:align-middle [&_td]:align-middle print:text-xs">
-                    <thead>
-                        <tr className="border-y-2 border-black">
-                            <th className="py-2 pl-2 text-left font-semibold print:py-1 print:pl-1">
+                <Table className="w-full border-collapse text-sm [&_th]:align-middle [&_td]:align-middle print:text-xs">
+                    <TableHeader>
+                        <TableRow className="border-y-2 border-black">
+                            <TableHead className="py-2 pl-2 text-left font-semibold print:py-1 print:pl-1">
                                 Date In
-                            </th>
-                            <th className="py-2 text-center font-semibold print:py-1">
+                            </TableHead>
+                            <TableHead className="py-2 text-center font-semibold print:py-1">
                                 Time in
-                            </th>
-                            <th className="py-2 text-center font-semibold print:py-1">
+                            </TableHead>
+                            <TableHead className="py-2 text-center font-semibold print:py-1">
                                 Date Out
-                            </th>
-                            <th className="py-2 text-center font-semibold print:py-1">
+                            </TableHead>
+                            <TableHead className="py-2 text-center font-semibold print:py-1">
                                 Time Out
-                            </th>
-                            <th className="py-2 text-center font-semibold print:py-1">
+                            </TableHead>
+                            <TableHead className="py-2 text-center font-semibold print:py-1">
                                 Hours
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                            </TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {periodDateKeys.map((dayKey) => {
                             const dayEntries = entriesByDateIn.get(dayKey) ?? [];
                             if (dayEntries.length === 0) {
                                 return (
-                                    <tr
+                                    <TableRow
                                         key={`missing-${dayKey}`}
                                         className="border-b border-neutral-200 text-neutral-500">
-                                        <td className="py-2 pl-2 font-medium print:py-0.5 print:pl-1">
+                                        <TableCell className="py-2 pl-2 font-medium print:py-0.5 print:pl-1">
                                             {formatShortDate(dateFromKey(dayKey))}
-                                        </td>
-                                        <td className="py-2 text-center print:py-0.5">
+                                        </TableCell>
+                                        <TableCell className="py-2 text-center print:py-0.5">
                                             -
-                                        </td>
-                                        <td className="py-2 text-center print:py-0.5">
+                                        </TableCell>
+                                        <TableCell className="py-2 text-center print:py-0.5">
                                             -
-                                        </td>
-                                        <td className="py-2 text-center print:py-0.5">
+                                        </TableCell>
+                                        <TableCell className="py-2 text-center print:py-0.5">
                                             -
-                                        </td>
-                                        <td className="py-2 pr-2 text-right print:py-0.5 print:pr-1">
+                                        </TableCell>
+                                        <TableCell className="py-2 pr-2 text-right print:py-0.5 print:pr-1">
                                             0.00 Hrs
-                                        </td>
-                                    </tr>
+                                        </TableCell>
+                                    </TableRow>
                                 );
                             }
 
                             return dayEntries.map((entry, idx) => (
-                                <tr
+                                <TableRow
                                     key={`${dayKey}-${String(entry.timeIn)}-${String(entry.timeOut)}-${idx}`}
                                     className="border-b border-neutral-200">
-                                    <td className="py-2 pl-2 font-medium print:py-0.5 print:pl-1">
+                                    <TableCell className="py-2 pl-2 font-medium print:py-0.5 print:pl-1">
                                         {formatShortDate(
                                             dateFromKey(dateKey(entry.dateIn)),
                                         )}
-                                    </td>
-                                    <td className="py-2 text-center print:py-0.5">
+                                    </TableCell>
+                                    <TableCell className="py-2 text-center print:py-0.5">
                                         {localTimeHm(entry.timeIn)}
-                                    </td>
-                                    <td className="py-2 text-center print:py-0.5">
+                                    </TableCell>
+                                    <TableCell className="py-2 text-center print:py-0.5">
                                         {formatShortDate(
                                             dateFromKey(
                                                 dateKey(entry.dateOut),
                                             ),
                                         )}
-                                    </td>
-                                    <td className="py-2 text-center print:py-0.5">
+                                    </TableCell>
+                                    <TableCell className="py-2 text-center print:py-0.5">
                                         {localTimeHm(entry.timeOut)}
-                                    </td>
-                                    <td className="py-2 pr-2 text-right print:py-0.5 print:pr-1">
+                                    </TableCell>
+                                    <TableCell className="py-2 pr-2 text-right print:py-0.5 print:pr-1">
                                         {Number(entry.hours).toFixed(2)} Hrs
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             ));
                         })}
-                    </tbody>
-                    <tfoot>
-                        <tr className="border-t-2 border-black">
-                            <td
+                    </TableBody>
+                    <TableFooter>
+                        <TableRow className="border-t-2 border-black">
+                            <TableCell
                                 className="py-3 pl-2 font-semibold print:py-1 print:pl-1"
                                 colSpan={4}>
                                 Total Working Hours
-                            </td>
-                            <td className="py-3 pr-2 text-right font-semibold print:py-1 print:pr-1">
+                            </TableCell>
+                            <TableCell className="py-3 pr-2 text-right font-semibold print:py-1 print:pr-1">
                                 {totalHours.toFixed(2)} Hrs
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
+                            </TableCell>
+                        </TableRow>
+                    </TableFooter>
+                </Table>
             </div>
         </div>
     );
