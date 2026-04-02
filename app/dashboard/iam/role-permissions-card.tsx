@@ -4,9 +4,14 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { Pencil, Plus } from "lucide-react";
 import { columns, type IAMUserRow } from "./columns";
-import { DataTable } from "@/components/data-table/DataTable";
+import { DataTable } from "@/components/data-table";
 import { DataTableSkeleton } from "@/components/data-table-skeleton";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
     Table,
@@ -90,13 +95,12 @@ export function RolePermissionsCard({
                 )}
 
                 <div className="mt-6">
-                    <h3 className="mb-2 text-sm font-medium">
-                        Users with this role
-                    </h3>
+                    <h3 className="mb-2 text-sm font-medium">Users with this role</h3>
                     <Suspense fallback={<DataTableSkeleton />}>
                         <DataTable
                             columns={columns}
                             data={users}
+                            searchKey="name"
                             actions={
                                 <Button size="sm" asChild>
                                     <Link

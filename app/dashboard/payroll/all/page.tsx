@@ -10,7 +10,7 @@ import {
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { employmentTable } from "@/db/tables/payroll/employmentTable";
 import { columns, type PayrollWithWorker } from "./columns";
-import { DataTable } from "@/components/data-table/DataTable";
+import { DataTable } from "@/components/data-table";
 import { DataTableSkeleton } from "@/components/data-table-skeleton";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -53,6 +53,7 @@ export default async function PayrollAllPage() {
                 <DataTable
                     columns={columns}
                     data={data}
+                    searchKey="workerName"
                     searchParamKey="search"
                     actions={
                         <Button asChild>
