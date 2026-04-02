@@ -81,7 +81,9 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
                     <form onSubmit={handleSave} className="space-y-3 pt-1">
                         <div className="flex flex-wrap items-end gap-3">
                             <div className="space-y-1">
-                                <Label htmlFor="periodStart">
+                                <Label
+                                    htmlFor="periodStart"
+                                    className="text-md">
                                     Period start
                                 </Label>
                                 <Input
@@ -94,7 +96,7 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
                                 />
                             </div>
                             <div className="space-y-1">
-                                <Label htmlFor="periodEnd">
+                                <Label htmlFor="periodEnd" className="text-md">
                                     Period end
                                 </Label>
                                 <Input
@@ -107,7 +109,9 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
                                 />
                             </div>
                             <div className="space-y-1">
-                                <Label htmlFor="payrollDate">
+                                <Label
+                                    htmlFor="payrollDate"
+                                    className="text-md">
                                     Payroll date
                                 </Label>
                                 <Input

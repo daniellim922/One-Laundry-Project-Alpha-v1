@@ -9,6 +9,7 @@ import {
     createBadgeCell,
     createSortableHeader,
     RowActionsMenu,
+    withMultiSelectColumnFilter,
 } from "@/components/data-table/column-builders";
 import {
     employmentArrangementBadgeTone,
@@ -44,38 +45,60 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
         header: createSortableHeader("Worker"),
         meta: { globalSearch: true },
     },
-    {
-        accessorKey: "status",
-        header: createSortableHeader("Status"),
-        meta: { globalSearch: true },
-        cell: createBadgeCell<PayrollWithWorker>({
-            value: (r) => r.status ?? "draft",
-            variant: "outline",
-            toneClassNameFor: (r) =>
-                payrollStatusBadgeTone[r.status ?? "draft"],
-        }),
-    },
-    {
-        accessorKey: "employmentType",
-        header: createSortableHeader("Employment Type"),
-        meta: { globalSearch: true },
-        cell: createBadgeCell<PayrollWithWorker>({
-            value: (r) => r.employmentType,
-            variant: "outline",
-            toneClassNameFor: (r) => employmentTypeBadgeTone[r.employmentType],
-        }),
-    },
-    {
-        accessorKey: "employmentArrangement",
-        header: createSortableHeader("Arrangement"),
-        meta: { globalSearch: true },
-        cell: createBadgeCell<PayrollWithWorker>({
-            value: (r) => r.employmentArrangement,
-            variant: "outline",
-            toneClassNameFor: (r) =>
-                employmentArrangementBadgeTone[r.employmentArrangement],
-        }),
-    },
+    withMultiSelectColumnFilter<PayrollWithWorker>(
+        {
+            accessorKey: "status",
+            header: createSortableHeader("Status"),
+            meta: { globalSearch: true },
+            cell: createBadgeCell<PayrollWithWorker>({
+                value: (r) => r.status ?? "draft",
+                variant: "outline",
+                toneClassNameFor: (r) =>
+                    payrollStatusBadgeTone[r.status ?? "draft"],
+            }),
+        },
+        {
+            options: "auto",
+            placeholder: "Status…",
+            searchPlaceholder: "Search status…",
+        },
+    ),
+    withMultiSelectColumnFilter<PayrollWithWorker>(
+        {
+            accessorKey: "employmentType",
+            header: createSortableHeader("Employment Type"),
+            meta: { globalSearch: true },
+            cell: createBadgeCell<PayrollWithWorker>({
+                value: (r) => r.employmentType,
+                variant: "outline",
+                toneClassNameFor: (r) =>
+                    employmentTypeBadgeTone[r.employmentType],
+            }),
+        },
+        {
+            options: "auto",
+            placeholder: "Employment type…",
+            searchPlaceholder: "Search employment type…",
+        },
+    ),
+    withMultiSelectColumnFilter<PayrollWithWorker>(
+        {
+            accessorKey: "employmentArrangement",
+            header: createSortableHeader("Arrangement"),
+            meta: { globalSearch: true },
+            cell: createBadgeCell<PayrollWithWorker>({
+                value: (r) => r.employmentArrangement,
+                variant: "outline",
+                toneClassNameFor: (r) =>
+                    employmentArrangementBadgeTone[r.employmentArrangement],
+            }),
+        },
+        {
+            options: "auto",
+            placeholder: "Arrangement…",
+            searchPlaceholder: "Search arrangement…",
+        },
+    ),
     {
         accessorKey: "periodStart",
         header: createSortableHeader("Period Start"),

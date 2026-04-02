@@ -28,6 +28,7 @@ import { localTimeHm } from "@/lib/local-time";
 import {
     createBadgeCell,
     createSortableHeader,
+    withMultiSelectColumnFilter,
 } from "@/components/data-table/column-builders";
 
 export type TimesheetEntryWithWorker = {
@@ -183,16 +184,24 @@ export const columns: ColumnDef<TimesheetEntryWithWorker>[] = [
         header: createSortableHeader("Hours"),
         cell: ({ row }) => row.original.hours.toFixed(2),
     },
-    {
-        accessorKey: "status",
-        header: createSortableHeader("Status"),
-        meta: { globalSearch: true },
-        cell: createBadgeCell<TimesheetEntryWithWorker>({
-            value: (r) => r.status,
-            variant: "outline",
-            toneClassNameFor: (r) => timesheetPaymentStatusBadgeTone[r.status],
-        }),
-    },
+    withMultiSelectColumnFilter<TimesheetEntryWithWorker>(
+        {
+            accessorKey: "status",
+            header: createSortableHeader("Status"),
+            meta: { globalSearch: true },
+            cell: createBadgeCell<TimesheetEntryWithWorker>({
+                value: (r) => r.status,
+                variant: "outline",
+                toneClassNameFor: (r) =>
+                    timesheetPaymentStatusBadgeTone[r.status],
+            }),
+        },
+        {
+            options: "auto",
+            placeholder: "Status…",
+            searchPlaceholder: "Search status…",
+        },
+    ),
     {
         id: "actions",
         header: "",
