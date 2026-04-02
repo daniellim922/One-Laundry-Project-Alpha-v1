@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { DataTable } from "@/components/data-table";
+import { DataTable } from "@/components/data-table/DataTable";
 import { DataTableSkeleton } from "@/components/data-table-skeleton";
 import { Button } from "@/components/ui/button";
 import { listAdvanceRequestsWithWorkers } from "@/lib/advances-queries";
@@ -30,14 +30,10 @@ export default async function AdvanceAllPage() {
                 </p>
             </div>
 
-            <Suspense
-                fallback={
-                    <DataTableSkeleton />
-                }>
+            <Suspense fallback={<DataTableSkeleton />}>
                 <DataTable
                     columns={columns}
                     data={advanceRequests}
-                    searchKey="workerName"
                     searchParamKey="search"
                     actions={
                         canCreate ? (

@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { columns } from "../columns";
-import { DataTable } from "@/components/data-table";
+import { DataTable } from "@/components/data-table/DataTable";
 import { DataTableSkeleton } from "@/components/data-table-skeleton";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -49,14 +49,10 @@ export default async function TimesheetAllPage() {
                 </p>
             </div>
 
-            <Suspense
-                fallback={
-                    <DataTableSkeleton />
-                }>
+            <Suspense fallback={<DataTableSkeleton />}>
                 <DataTable
                     columns={columns}
                     data={data}
-                    searchKey="workerName"
                     searchParamKey="search"
                     actions={
                         <Button asChild>

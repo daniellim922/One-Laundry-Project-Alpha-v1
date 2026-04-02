@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 import { createPayrolls } from "../actions";
-import { DataTable } from "@/components/data-table";
+import { DataTable } from "@/components/data-table/DataTable";
 import { DataTableSkeleton } from "@/components/data-table-skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -190,7 +190,6 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
                         <Suspense fallback={<DataTableSkeleton />}>
                             <DataTable
                                 columns={columns}
-                                searchKey="name"
                                 searchParamKey="search"
                                 data={workers}
                                 enableRowSelection
