@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 
 import { createTimesheetEntry, updateTimesheetEntry } from "./actions";
-import { SearchableWorkerSelect } from "@/components/searchable-worker-select";
+import { SelectSearch } from "@/components/SelectSearch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -92,13 +92,19 @@ export function TimesheetEntryForm({
             )}
             <div className="space-y-2">
                 <Label htmlFor="workerId">Worker</Label>
-                <SearchableWorkerSelect
+                <SelectSearch
                     name="workerId"
-                    workers={workers}
                     value={workerId}
-                    onChange={(id) => setWorkerId(id)}
+                    options={workers.map((w) => ({
+                        value: w.id,
+                        label: w.name,
+                    }))}
+                    onChange={(nextValue) => setWorkerId(nextValue)}
                     required={!disabled}
                     disabled={disabled}
+                    placeholder="Search or select worker…"
+                    searchPlaceholder="Search workers…"
+                    emptyText="No workers found."
                 />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">

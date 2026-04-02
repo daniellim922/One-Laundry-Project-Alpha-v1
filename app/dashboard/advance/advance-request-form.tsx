@@ -32,19 +32,7 @@ import {
     InputGroupAddon,
     InputGroupInput,
 } from "@/components/ui/input-group";
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from "@/components/ui/command";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
+import { SelectSearch } from "@/components/SelectSearch";
 import { SignaturePad } from "@/components/ui/signature-pad";
 import { Badge } from "@/components/ui/badge";
 import { loanPaidToneClassName } from "@/types/badge-tones";
@@ -227,82 +215,6 @@ const textareaClass = cn(
 );
 
 export type AdvanceRequestWorkerOption = { id: string; name: string };
-
-function WorkerSearchSelect({
-    workers,
-    value,
-    onChange,
-    disabled,
-    id,
-    "aria-invalid": ariaInvalid,
-    "data-testid": dataTestId,
-}: {
-    workers: AdvanceRequestWorkerOption[];
-    value: string;
-    onChange: (workerId: string) => void;
-    disabled?: boolean;
-    id?: string;
-    "aria-invalid"?: boolean;
-    "data-testid"?: string;
-}) {
-    const [open, setOpen] = React.useState(false);
-    const selected = workers.find((w) => w.id === value);
-
-    return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-                <Button
-                    id={id}
-                    type="button"
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={open}
-                    aria-invalid={ariaInvalid}
-                    data-testid={dataTestId}
-                    disabled={disabled}
-                    className="h-auto min-h-9 w-full justify-between py-2 font-normal">
-                    <span className="truncate text-left">
-                        {selected
-                            ? selected.name
-                            : "Search or select employee…"}
-                    </span>
-                    <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent
-                className="max-w-md min-w-[280px] p-0 sm:min-w-[320px]"
-                align="start">
-                <Command>
-                    <CommandInput placeholder="Search employees…" />
-                    <CommandList>
-                        <CommandEmpty>No employee found.</CommandEmpty>
-                        <CommandGroup>
-                            {workers.map((w) => (
-                                <CommandItem
-                                    key={w.id}
-                                    value={`${w.name} ${w.id}`}
-                                    onSelect={() => {
-                                        onChange(w.id);
-                                        setOpen(false);
-                                    }}>
-                                    <Check
-                                        className={cn(
-                                            "size-4 shrink-0",
-                                            value === w.id
-                                                ? "opacity-100"
-                                                : "opacity-0",
-                                        )}
-                                    />
-                                    {w.name}
-                                </CommandItem>
-                            ))}
-                        </CommandGroup>
-                    </CommandList>
-                </Command>
-            </PopoverContent>
-        </Popover>
-    );
-}
 
 function detailToDefaultValues(detail: AdvanceRequestDetail): FormValues {
     const {
@@ -687,14 +599,22 @@ function AdvanceRequestFormEditable({
                                             htmlFor={`${formId}-worker`}>
                                             Employee
                                         </FieldLabel>
-                                        <WorkerSearchSelect
-                                            workers={workers}
+                                        <SelectSearch
+                                            options={workers.map((w) => ({
+                                                value: w.id,
+                                                label: w.name,
+                                            }))}
                                             value={field.value}
-                                            onChange={field.onChange}
+                                            onChange={(nextValue) =>
+                                                field.onChange(nextValue)
+                                            }
                                             disabled={pending}
                                             id={`${formId}-worker`}
                                             data-testid="advance-request-worker"
                                             aria-invalid={fieldState.invalid}
+                                            placeholder="Search or select employee…"
+                                            searchPlaceholder="Search employees…"
+                                            emptyText="No employee found."
                                         />
                                         {fieldState.invalid && (
                                             <FieldError

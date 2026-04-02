@@ -4,7 +4,7 @@ import * as React from "react";
 import * as XLSX from "xlsx";
 
 import { importAttendRecordTimesheet } from "../actions";
-import { SearchableWorkerSelect } from "@/components/searchable-worker-select";
+import { SelectSearch } from "@/components/SelectSearch";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -419,7 +419,7 @@ export function TimesheetImportClient({ workers }: { workers: Worker[] }) {
 
     const totalEntries = editableRows.length;
 
-    /** Resolve workerName to worker id for SearchableWorkerSelect value (match by name, case-insensitive) */
+    /** Resolve workerName to worker id for SelectSearch value (match by name, case-insensitive) */
     const workerIdForName = React.useCallback(
         (workerName: string) =>
             workers.find(
@@ -547,10 +547,13 @@ export function TimesheetImportClient({ workers }: { workers: Worker[] }) {
                                                                 "pl-8",
                                                         )}>
                                                         {isFirstInGroup ? (
-                                                            <SearchableWorkerSelect
-                                                                workers={
-                                                                    workers
-                                                                }
+                                                            <SelectSearch
+                                                                options={workers.map(
+                                                                    (w) => ({
+                                                                        value: w.id,
+                                                                        label: w.name,
+                                                                    }),
+                                                                )}
                                                                 value={workerIdForName(
                                                                     row.workerName,
                                                                 )}
@@ -568,6 +571,8 @@ export function TimesheetImportClient({ workers }: { workers: Worker[] }) {
                                                                     row.workerName ||
                                                                     "Select worker"
                                                                 }
+                                                                searchPlaceholder="Search workers…"
+                                                                emptyText="No workers found."
                                                             />
                                                         ) : (
                                                             <span className="text-muted-foreground/50">
