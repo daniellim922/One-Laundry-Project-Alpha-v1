@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { FormPageLayout } from "@/components/form-page-layout";
-import { getAdvanceRequestByIdWithWorker } from "@/utils/advances-queries";
-import { requirePermission } from "@/utils/require-permission";
-import { checkPermission } from "@/utils/permissions";
+import { getAdvanceRequestByIdWithWorker } from "@/utils/advance/queries";
+import { requirePermission } from "@/utils/permissions/require-permission";
+import { checkPermission } from "@/utils/permissions/permissions";
 import { Pencil } from "lucide-react";
 
 import { AdvanceRequestForm } from "../advance-request-form";

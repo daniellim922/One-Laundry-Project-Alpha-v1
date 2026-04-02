@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 
-import { requirePermission } from "@/utils/require-permission";
-import { checkPermission } from "@/utils/permissions";
+import { requirePermission } from "@/utils/permissions/require-permission";
+import { checkPermission } from "@/utils/permissions/permissions";
 import { db } from "@/lib/db";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";

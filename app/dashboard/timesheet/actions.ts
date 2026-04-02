@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import type { AttendRecordOutput } from "@/utils/parse-attendrecord";
-import { calculateHoursFromDateTimes } from "@/utils/payroll-utils";
+import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
+import { calculateHoursFromDateTimes } from "@/utils/payroll/payroll-utils";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { synchronizeWorkerDraftPayrolls } from "@/app/dashboard/payroll/actions";

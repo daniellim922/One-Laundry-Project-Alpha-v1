@@ -1,5 +1,5 @@
 import type { SelectTimesheet } from "@/db/tables/payroll/timesheetTable";
-import { localTimeHm } from "@/utils/local-time";
+import { localTimeHm } from "@/utils/time/local-time";
 import {
     Table,
     TableHeader,

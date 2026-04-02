@@ -1,14 +1,14 @@
 import { and, eq, gte, lte } from "drizzle-orm";
 import { notFound } from "next/navigation";
 
-import { getAdvancesForPayrollPeriod } from "@/utils/advances-queries";
+import { getAdvancesForPayrollPeriod } from "@/utils/advance/queries";
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payroll/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payroll/payrollVoucherTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { employmentTable } from "@/db/tables/payroll/employmentTable";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
-import { requirePermission } from "@/utils/require-permission";
+import { requirePermission } from "@/utils/permissions/require-permission";
 
 function pad2(n: number): string {
     return String(n).padStart(2, "0");

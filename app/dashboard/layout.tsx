@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 
-import { getVisibleNavItems } from "@/utils/nav-config";
-import { requirePermission } from "@/utils/require-permission";
+import { getVisibleNavItems } from "@/utils/nav/nav-config";
+import { requirePermission } from "@/utils/permissions/require-permission";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { DashboardBreadcrumbs } from "@/components/dashboard/dashboard-breadcrumbs";
 import { Separator } from "@/components/ui/separator";

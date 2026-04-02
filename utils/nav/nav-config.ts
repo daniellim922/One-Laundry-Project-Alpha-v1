@@ -1,5 +1,5 @@
 import { DASHBOARD_NAV_FEATURES } from "./dashboard-nav-features";
-import { checkPermission } from "./permissions";
+import { checkPermission } from "../permissions/permissions";
 
 export type NavSubItem = {
     title: string;

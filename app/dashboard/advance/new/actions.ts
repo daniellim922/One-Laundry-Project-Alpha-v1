@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { synchronizeWorkerDraftPayrolls } from "@/app/dashboard/payroll/actions";
-import { localIsoDateYmd } from "@/utils/local-iso-date";
-import { requirePermission } from "@/utils/require-permission";
+import { localIsoDateYmd } from "@/utils/time/local-iso-date";
+import { requirePermission } from "@/utils/permissions/require-permission";
 import { db } from "@/lib/db";
 import {
     advanceRequestTable,

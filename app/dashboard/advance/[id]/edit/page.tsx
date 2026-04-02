@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/payroll/workerTable";
-import { requirePermission } from "@/utils/require-permission";
-import { getAdvanceRequestByIdWithWorker } from "@/utils/advances-queries";
+import { requirePermission } from "@/utils/permissions/require-permission";
+import { getAdvanceRequestByIdWithWorker } from "@/utils/advance/queries";
 
 import { AdvanceRequestForm } from "@/app/dashboard/advance/advance-request-form";
 

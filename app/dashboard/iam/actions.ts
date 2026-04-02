@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 
 import { auth } from "@/lib/auth";
-import { checkPermission } from "@/utils/permissions";
+import { checkPermission } from "@/utils/permissions/permissions";
 import { db } from "@/lib/db";
 import { user, session } from "@/db/auth-schema";
 import { rolesTable } from "@/db/tables/auth/rolesTable";

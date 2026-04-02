@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 
-import { requirePermission } from "@/utils/require-permission";
+import { requirePermission } from "@/utils/permissions/require-permission";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/payroll/workerTable";

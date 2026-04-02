@@ -1,4 +1,4 @@
-import { requirePermission } from "@/utils/require-permission";
+import { requirePermission } from "@/utils/permissions/require-permission";
 import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { FormPageLayout } from "@/components/form-page-layout";
