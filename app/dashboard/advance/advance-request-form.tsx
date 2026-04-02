@@ -32,7 +32,7 @@ import {
     InputGroupAddon,
     InputGroupInput,
 } from "@/components/ui/input-group";
-import { SelectSearch } from "@/components/SelectSearch";
+import { SelectSearch } from "@/components/ui/SelectSearch";
 import { SignaturePad } from "@/components/ui/signature-pad";
 import { Badge } from "@/components/ui/badge";
 import { loanPaidToneClassName } from "@/types/badge-tones";
@@ -100,13 +100,15 @@ const formSchema = z
             const hasRepaymentDate = repaymentDate.length > 0;
             const hasAmount = amountRaw.length > 0;
             const amountValue = Number(amountRaw);
-            const hasValidAmount = Number.isInteger(amountValue) && amountValue > 0;
+            const hasValidAmount =
+                Number.isInteger(amountValue) && amountValue > 0;
 
             if (hasAmount && !hasRepaymentDate) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     path: ["installmentAmounts", i, "repaymentDate"],
-                    message: "Expected repayment date is required when amount is set",
+                    message:
+                        "Expected repayment date is required when amount is set",
                 });
             }
 
@@ -246,7 +248,11 @@ function detailToDefaultValues(detail: AdvanceRequestDetail): FormValues {
     };
 }
 
-function AdvanceRequestReadOnlyBody({ detail }: { detail: AdvanceRequestDetail }) {
+function AdvanceRequestReadOnlyBody({
+    detail,
+}: {
+    detail: AdvanceRequestDetail;
+}) {
     const {
         request,
         advances,
@@ -356,7 +362,9 @@ function AdvanceRequestReadOnlyBody({ detail }: { detail: AdvanceRequestDetail }
                                         <Badge
                                             variant="outline"
                                             className={
-                                                loanPaidToneClassName[adv.status]
+                                                loanPaidToneClassName[
+                                                    adv.status
+                                                ]
                                             }>
                                             {adv.status}
                                         </Badge>
@@ -420,7 +428,9 @@ function AdvanceRequestReadOnlyBody({ detail }: { detail: AdvanceRequestDetail }
                                     </span>
                                     <span className="text-sm font-medium">
                                         {employeeSignatureDate
-                                            ? localDateDmy(employeeSignatureDate)
+                                            ? localDateDmy(
+                                                  employeeSignatureDate,
+                                              )
                                             : "—"}
                                     </span>
                                 </div>
@@ -775,7 +785,7 @@ function AdvanceRequestFormEditable({
                                         aria-hidden
                                     />
                                 </div>
-                                {fields.map((row, index) => (
+                                {fields.map((row, index) =>
                                     (() => {
                                         const isPaidInstallment =
                                             form.getValues(
@@ -783,123 +793,136 @@ function AdvanceRequestFormEditable({
                                             ) === "paid";
 
                                         return (
-                                    <div
-                                        key={row.id}
-                                        role="group"
-                                        aria-label={`Installment row ${index + 1}`}
-                                        className={cn(
-                                            "grid grid-cols-1 gap-2 sm:items-start",
-                                            showInstallmentStatusColumn
-                                                ? "sm:grid-cols-[1fr_1fr_auto_2.25rem]"
-                                                : "sm:grid-cols-[1fr_1fr_2.25rem]",
-                                        )}>
-                                        <Controller
-                                            name={`installmentAmounts.${index}.amount`}
-                                            control={form.control}
-                                            render={({ field, fieldState }) => (
-                                                <Field
-                                                    data-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    className="min-w-0 gap-1.5">
-                                                    <Input
-                                                        {...field}
-                                                        id={`${formId}-inst-${index}`}
-                                                        type="number"
-                                                        min={0}
-                                                        step={1}
-                                                        inputMode="decimal"
-                                                        disabled={
-                                                            pending ||
-                                                            isPaidInstallment
-                                                        }
-                                                        aria-labelledby={`${formId}-installment-col`}
-                                                        aria-invalid={
-                                                            fieldState.invalid
-                                                        }
-                                                    />
-                                                    {fieldState.invalid && (
-                                                        <FieldError
-                                                            errors={[
-                                                                fieldState.error,
-                                                            ]}
-                                                        />
+                                            <div
+                                                key={row.id}
+                                                role="group"
+                                                aria-label={`Installment row ${index + 1}`}
+                                                className={cn(
+                                                    "grid grid-cols-1 gap-2 sm:items-start",
+                                                    showInstallmentStatusColumn
+                                                        ? "sm:grid-cols-[1fr_1fr_auto_2.25rem]"
+                                                        : "sm:grid-cols-[1fr_1fr_2.25rem]",
+                                                )}>
+                                                <Controller
+                                                    name={`installmentAmounts.${index}.amount`}
+                                                    control={form.control}
+                                                    render={({
+                                                        field,
+                                                        fieldState,
+                                                    }) => (
+                                                        <Field
+                                                            data-invalid={
+                                                                fieldState.invalid
+                                                            }
+                                                            className="min-w-0 gap-1.5">
+                                                            <Input
+                                                                {...field}
+                                                                id={`${formId}-inst-${index}`}
+                                                                type="number"
+                                                                min={0}
+                                                                step={1}
+                                                                inputMode="decimal"
+                                                                disabled={
+                                                                    pending ||
+                                                                    isPaidInstallment
+                                                                }
+                                                                aria-labelledby={`${formId}-installment-col`}
+                                                                aria-invalid={
+                                                                    fieldState.invalid
+                                                                }
+                                                            />
+                                                            {fieldState.invalid && (
+                                                                <FieldError
+                                                                    errors={[
+                                                                        fieldState.error,
+                                                                    ]}
+                                                                />
+                                                            )}
+                                                        </Field>
                                                     )}
-                                                </Field>
-                                            )}
-                                        />
-                                        <Controller
-                                            name={`installmentAmounts.${index}.repaymentDate`}
-                                            control={form.control}
-                                            render={({ field, fieldState }) => (
-                                                <Field
-                                                    data-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    className="min-w-0 gap-1.5">
-                                                    <Input
-                                                        {...field}
-                                                        id={`${formId}-repayment-${index}`}
-                                                        type="date"
-                                                        min={
-                                                            isPaidInstallment
-                                                                ? undefined
-                                                                : localIsoDateYmd()
-                                                        }
-                                                        disabled={
-                                                            pending ||
-                                                            isPaidInstallment
-                                                        }
-                                                        aria-labelledby={`${formId}-repayment-col`}
-                                                        aria-invalid={
-                                                            fieldState.invalid
-                                                        }
-                                                    />
-                                                    {fieldState.invalid && (
-                                                        <FieldError
-                                                            errors={[
-                                                                fieldState.error,
-                                                            ]}
-                                                        />
+                                                />
+                                                <Controller
+                                                    name={`installmentAmounts.${index}.repaymentDate`}
+                                                    control={form.control}
+                                                    render={({
+                                                        field,
+                                                        fieldState,
+                                                    }) => (
+                                                        <Field
+                                                            data-invalid={
+                                                                fieldState.invalid
+                                                            }
+                                                            className="min-w-0 gap-1.5">
+                                                            <Input
+                                                                {...field}
+                                                                id={`${formId}-repayment-${index}`}
+                                                                type="date"
+                                                                min={
+                                                                    isPaidInstallment
+                                                                        ? undefined
+                                                                        : localIsoDateYmd()
+                                                                }
+                                                                disabled={
+                                                                    pending ||
+                                                                    isPaidInstallment
+                                                                }
+                                                                aria-labelledby={`${formId}-repayment-col`}
+                                                                aria-invalid={
+                                                                    fieldState.invalid
+                                                                }
+                                                            />
+                                                            {fieldState.invalid && (
+                                                                <FieldError
+                                                                    errors={[
+                                                                        fieldState.error,
+                                                                    ]}
+                                                                />
+                                                            )}
+                                                        </Field>
                                                     )}
-                                                </Field>
-                                            )}
-                                        />
-                                        {showInstallmentStatusColumn ? (
-                                            <Controller
-                                                name={`installmentAmounts.${index}.status`}
-                                                control={form.control}
-                                                render={({ field }) => {
-                                                    const status =
-                                                        field.value ?? "loan";
-                                                    return (
-                                                        <div className="flex h-9 items-center">
-                                                            <Badge
-                                                                variant="outline"
-                                                                className={loanPaidToneClassName[status]}
-                                                            >
-                                                                {status}
-                                                            </Badge>
-                                                        </div>
-                                                    );
-                                                }}
-                                            />
-                                        ) : null}
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="icon"
-                                            disabled={
-                                                pending || fields.length === 1
-                                            }
-                                            aria-label="Remove this installment row"
-                                            onClick={() => remove(index)}>
-                                            <Trash2 className="size-4" />
-                                        </Button>
-                                    </div>
+                                                />
+                                                {showInstallmentStatusColumn ? (
+                                                    <Controller
+                                                        name={`installmentAmounts.${index}.status`}
+                                                        control={form.control}
+                                                        render={({ field }) => {
+                                                            const status =
+                                                                field.value ??
+                                                                "loan";
+                                                            return (
+                                                                <div className="flex h-9 items-center">
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                        className={
+                                                                            loanPaidToneClassName[
+                                                                                status
+                                                                            ]
+                                                                        }>
+                                                                        {status}
+                                                                    </Badge>
+                                                                </div>
+                                                            );
+                                                        }}
+                                                    />
+                                                ) : null}
+                                                <Button
+                                                    type="button"
+                                                    variant="destructive"
+                                                    size="icon"
+                                                    disabled={
+                                                        pending ||
+                                                        fields.length === 1
+                                                    }
+                                                    aria-label="Remove this installment row"
+                                                    onClick={() =>
+                                                        remove(index)
+                                                    }>
+                                                    <Trash2 className="size-4" />
+                                                </Button>
+                                            </div>
                                         );
-                                    })()
-                                ))}
+                                    })(),
+                                )}
                             </div>
                         )}
                         {(() => {
@@ -911,10 +934,10 @@ function AdvanceRequestFormEditable({
                                 watchedInstallments.reduce(
                                     (sum, row) =>
                                         sum +
-                                (Number.isInteger(Number(row.amount)) &&
-                                Number(row.amount) > 0
-                                    ? Number(row.amount)
-                                    : 0),
+                                        (Number.isInteger(Number(row.amount)) &&
+                                        Number(row.amount) > 0
+                                            ? Number(row.amount)
+                                            : 0),
                                     0,
                                 );
                             const hasValidInstallments =
@@ -941,10 +964,8 @@ function AdvanceRequestFormEditable({
                                             ? "text-emerald-600 dark:text-emerald-400"
                                             : "text-destructive"
                                     }`}>
-                                    Total:{" "}
-                                    {`$${totalInstallments}`} /{" "}
-                                    {`$${amountRequested}`}{" "}
-                                    requested
+                                    Total: {`$${totalInstallments}`} /{" "}
+                                    {`$${amountRequested}`} requested
                                 </p>
                             );
                         })()}

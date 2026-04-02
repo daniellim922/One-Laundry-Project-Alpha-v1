@@ -13,9 +13,9 @@ import {
     Wallet,
 } from "lucide-react";
 
-import { NavMain } from "@/components/nav-main";
-import { NavUser } from "@/components/nav-user";
-import { SidebarModeToggle } from "@/components/theme-switcher";
+import { NavMain } from "@/components/sidebar/nav-main";
+import { NavUser } from "@/components/sidebar/nav-user";
+import { SidebarModeToggle } from "@/components/ui/theme-switcher";
 import {
     Sidebar,
     SidebarContent,
@@ -36,7 +36,6 @@ const ICON_MAP = {
     Expenses: DollarSign,
     IAM: Shield,
 } as const;
-
 
 export function AppSidebar({
     items,
@@ -66,8 +65,10 @@ export function AppSidebar({
                 pathname === item.url ||
                 pathname.startsWith(item.url + "/") ||
                 (subItems?.some(
-                    (s) => pathname === s.url || pathname.startsWith(s.url + "/")
-                ) ?? false);
+                    (s) =>
+                        pathname === s.url || pathname.startsWith(s.url + "/"),
+                ) ??
+                    false);
             return {
                 ...item,
                 icon: ICON_MAP[item.iconName],

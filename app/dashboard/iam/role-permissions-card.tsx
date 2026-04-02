@@ -4,8 +4,8 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { Pencil, Plus } from "lucide-react";
 import { columns, type IAMUserRow } from "./columns";
-import { DataTable } from "@/components/data-table";
-import { DataTableSkeleton } from "@/components/data-table-skeleton";
+import { DataTable } from "@/components/data-table/data-table";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {

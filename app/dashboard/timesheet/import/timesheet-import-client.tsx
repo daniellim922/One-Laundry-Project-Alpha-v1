@@ -4,7 +4,7 @@ import * as React from "react";
 import * as XLSX from "xlsx";
 
 import { importAttendRecordTimesheet } from "../actions";
-import { SelectSearch } from "@/components/SelectSearch";
+import { SelectSearch } from "@/components/ui/SelectSearch";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {

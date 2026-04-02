@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { PageBackButton } from "./page-back-button";
+import { PageBackButton } from "./ui/page-back-button";
 
 type FormPageLayoutProps = {
     title: string;

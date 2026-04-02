@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Dialog, DialogPanel } from "@headlessui/react";
 import { Menu, X } from "lucide-react";
-import { ModeToggle } from "@/components/theme-switcher";
+import { ModeToggle } from "@/components/ui/theme-switcher";
 
 const navigation = [
     { name: "Product", href: "#" },

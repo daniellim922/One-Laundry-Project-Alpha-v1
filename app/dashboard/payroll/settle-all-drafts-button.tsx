@@ -18,7 +18,7 @@ import {
     getDraftPayrollsForSettlement,
     settleAllDraftPayrolls,
 } from "./actions";
-import { DataTable } from "@/components/data-table";
+import { DataTable } from "@/components/data-table/data-table";
 import { columns } from "./all/columns";
 
 export function SettleAllDraftPayrollsButton() {

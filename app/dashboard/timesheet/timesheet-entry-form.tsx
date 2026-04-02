@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 
 import { createTimesheetEntry, updateTimesheetEntry } from "./actions";
-import { SelectSearch } from "@/components/SelectSearch";
+import { SelectSearch } from "@/components/ui/SelectSearch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

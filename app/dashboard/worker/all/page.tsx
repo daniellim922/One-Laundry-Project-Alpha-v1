@@ -9,8 +9,8 @@ import {
 } from "@/db/tables/payroll/workerTable";
 import { employmentTable } from "@/db/tables/payroll/employmentTable";
 import { columns } from "../columns";
-import { DataTable } from "@/components/data-table";
-import { DataTableSkeleton } from "@/components/data-table-skeleton";
+import { DataTable } from "@/components/data-table/data-table";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 

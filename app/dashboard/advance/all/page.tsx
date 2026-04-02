@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { DataTable } from "@/components/data-table";
-import { DataTableSkeleton } from "@/components/data-table-skeleton";
+import { DataTable } from "@/components/data-table/data-table";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { Button } from "@/components/ui/button";
 import { listAdvanceRequestsWithWorkers } from "@/lib/advances-queries";
 import { requirePermission } from "@/lib/require-permission";
