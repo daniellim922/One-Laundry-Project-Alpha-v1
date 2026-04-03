@@ -103,7 +103,7 @@ export function SettleAllDraftPayrollsButton() {
         if (ids.length > 0) {
             setDownloadingZip(true);
             try {
-                const res = await fetch("/api/payroll/settled-zip", {
+                const res = await fetch("/api/payroll/download-zip", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ payrollIds: ids }),
