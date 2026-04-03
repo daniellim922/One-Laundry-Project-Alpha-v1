@@ -106,7 +106,7 @@ export function SummarizedTimesheet({
                     </p>
                     <p>
                         <span className="font-medium text-neutral-600">
-                            Period Start Date  Period End Date:{" "}
+                            Period:{" "}
                         </span>
                         <span className="font-semibold">{periodLabel}</span>
                     </p>
@@ -115,20 +115,20 @@ export function SummarizedTimesheet({
                 {/* Table */}
                 <Table className="w-full border-collapse text-sm [&_th]:align-middle [&_td]:align-middle print:text-xs">
                     <TableHeader>
-                        <TableRow className="border-y-2 border-black">
-                            <TableHead className="py-2 pl-2 text-left font-semibold print:py-1 print:pl-1">
+                        <TableRow className="border-y-2 border-black hover:bg-white">
+                            <TableHead className="py-2 pl-2 text-left font-semibold text-black print:py-1 print:pl-1">
                                 Date In
                             </TableHead>
-                            <TableHead className="py-2 text-center font-semibold print:py-1">
+                            <TableHead className="py-2 text-center font-semibold text-black print:py-1">
                                 Time in
                             </TableHead>
-                            <TableHead className="py-2 text-center font-semibold print:py-1">
+                            <TableHead className="py-2 text-center font-semibold text-black print:py-1">
                                 Date Out
                             </TableHead>
-                            <TableHead className="py-2 text-center font-semibold print:py-1">
+                            <TableHead className="py-2 text-center font-semibold text-black print:py-1">
                                 Time Out
                             </TableHead>
-                            <TableHead className="py-2 text-center font-semibold print:py-1">
+                            <TableHead className="py-2 pr-2 text-right font-semibold text-black print:py-1 print:pr-1">
                                 Hours
                             </TableHead>
                         </TableRow>
@@ -140,7 +140,7 @@ export function SummarizedTimesheet({
                                 return (
                                     <TableRow
                                         key={`missing-${dayKey}`}
-                                        className="border-b border-neutral-200 text-neutral-500">
+                                        className="border-b border-neutral-200 text-black">
                                         <TableCell className="py-2 pl-2 font-medium print:py-0.5 print:pl-1">
                                             {formatShortDate(dateFromKey(dayKey))}
                                         </TableCell>
@@ -189,8 +189,8 @@ export function SummarizedTimesheet({
                             ));
                         })}
                     </TableBody>
-                    <TableFooter>
-                        <TableRow className="border-t-2 border-black">
+                    <TableFooter className="bg-white print:bg-white">
+                        <TableRow className="border-t-2 border-black hover:bg-white">
                             <TableCell
                                 className="py-3 pl-2 font-semibold print:py-1 print:pl-1"
                                 colSpan={4}>
