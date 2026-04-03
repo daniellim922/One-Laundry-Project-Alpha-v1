@@ -12,6 +12,7 @@ export function PageBackButton() {
         <Button
             variant="ghost"
             size="icon"
+            className="h-auto w-9 self-stretch"
             onClick={() => router.back()}
             aria-label="Go back">
             <ArrowLeft className="h-4 w-4" />

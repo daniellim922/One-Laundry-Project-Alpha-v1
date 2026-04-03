@@ -5,6 +5,7 @@ import { requirePermission } from "@/utils/permissions/require-permission";
 import { db } from "@/lib/db";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
+import { EntityStatusBadge } from "@/components/ui/entity-status-badge";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { TimesheetEntryForm } from "../../timesheet-entry-form";
 
@@ -47,7 +48,8 @@ export default async function EditTimesheetEntryPage({ params }: PageProps) {
     return (
         <FormPageLayout
             title="Edit timesheet entry"
-            subtitle="Update clock in/out and worker for this entry">
+            subtitle="Update clock in/out and worker for this entry"
+            status={<EntityStatusBadge status={entry.status} />}>
             <TimesheetEntryForm
                 workers={workers}
                 entry={{

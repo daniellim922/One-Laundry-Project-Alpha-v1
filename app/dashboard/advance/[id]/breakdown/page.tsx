@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import { EntityStatusBadge } from "@/components/ui/entity-status-badge";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { getAdvanceRequestByIdWithWorker } from "@/utils/advance/queries";
 import { requirePermission } from "@/utils/permissions/require-permission";
@@ -29,14 +30,15 @@ export default async function AdvanceBreakdownPage({
         <FormPageLayout
             title="Advance request"
             subtitle={`Detail for worker ${detail.request.workerName}`}
+            status={<EntityStatusBadge status={detail.request.status} />}
             actions={
                 !canUpdate || detail.request.status === "paid" ? (
-                    <Button variant="outline" size="sm" disabled>
+                    <Button variant="outline" disabled>
                         <Pencil className="h-4 w-4" />
                         Edit
                     </Button>
                 ) : (
-                    <Button asChild variant="outline" size="sm">
+                    <Button asChild variant="outline">
                         <Link
                             href={`/dashboard/advance/${id}/edit`}
                             className="flex items-center gap-2">

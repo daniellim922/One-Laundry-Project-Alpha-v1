@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { Button } from "@/components/ui/button";
+import { EntityStatusBadge } from "@/components/ui/entity-status-badge";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { Pencil } from "lucide-react";
 import { TimesheetEntryForm } from "../../timesheet-entry-form";
@@ -52,9 +53,10 @@ export default async function ViewTimesheetEntryPage({ params }: PageProps) {
         <FormPageLayout
             title="Timesheet entry"
             subtitle="Clock in/out and worker for this entry (read-only)"
+            status={<EntityStatusBadge status={entry.status} />}
             actions={
                 canEdit ? (
-                    <Button asChild variant="outline" size="sm">
+                    <Button asChild variant="outline">
                         <Link
                             href={`/dashboard/timesheet/${id}/edit`}
                             className="flex items-center gap-2">
@@ -63,7 +65,7 @@ export default async function ViewTimesheetEntryPage({ params }: PageProps) {
                         </Link>
                     </Button>
                 ) : (
-                    <Button variant="outline" size="sm" disabled>
+                    <Button variant="outline" disabled>
                         <Pencil className="h-4 w-4" />
                         Edit
                     </Button>
