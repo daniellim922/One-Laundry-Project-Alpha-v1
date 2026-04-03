@@ -14,6 +14,7 @@ import {
 import { SimpleDonutChart } from "@/components/dashboard/simple-donut-chart";
 import { ArrowRight, Plus, Wallet } from "lucide-react";
 import { SettleAllDraftPayrollsButton } from "./settle-all-drafts-button";
+import { DownloadPayrollsButton } from "./download-payrolls-button";
 
 export default async function PayrollOverviewPage() {
     const [[{ total }], [{ draftCount }]] = await Promise.all([
@@ -61,6 +62,7 @@ export default async function PayrollOverviewPage() {
                     </Link>
                 </Button>
                 <SettleAllDraftPayrollsButton />
+                <DownloadPayrollsButton />
                 <Button variant="outline" asChild>
                     <Link href="/dashboard/payroll/new">
                         <Plus className="mr-2 h-4 w-4" />

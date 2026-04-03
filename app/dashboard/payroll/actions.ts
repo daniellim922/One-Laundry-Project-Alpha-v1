@@ -780,27 +780,55 @@ export async function settlePayroll(payrollId: string) {
     return { success: true };
 }
 
-export async function settleAllDraftPayrolls() {
+class SettleDraftPayrollsValidationError extends Error {
+    readonly code: "NOT_FOUND" | "NOT_DRAFT";
+
+    constructor(code: "NOT_FOUND" | "NOT_DRAFT") {
+        super(code);
+        this.code = code;
+        this.name = "SettleDraftPayrollsValidationError";
+    }
+}
+
+export async function settleDraftPayrolls(payrollIds: string[]) {
     await requirePermission("Payroll", "update");
+
+    const uniqueIds = Array.from(new Set(payrollIds));
+    if (uniqueIds.length === 0) {
+        return { error: "Select at least one payroll to settle" };
+    }
 
     const now = new Date();
 
     let settledPayrollIds: string[] = [];
     try {
         settledPayrollIds = await db.transaction(async (tx) => {
-            const drafts = await tx
+            const rows = await tx
                 .select()
                 .from(payrollTable)
-                .where(eq(payrollTable.status, "draft"));
+                .where(inArray(payrollTable.id, uniqueIds));
 
-            for (const payroll of drafts) {
-                await settlePayrollInTx(tx, payroll, now);
+            if (rows.length !== uniqueIds.length) {
+                throw new SettleDraftPayrollsValidationError("NOT_FOUND");
+            }
+            if (rows.some((r) => r.status !== "draft")) {
+                throw new SettleDraftPayrollsValidationError("NOT_DRAFT");
             }
 
-            return drafts.map((p) => p.id);
+            const sorted = [...rows].sort((a, b) => a.id.localeCompare(b.id));
+            for (const payroll of sorted) {
+                await settlePayrollInTx(tx, payroll, now);
+            }
+            return sorted.map((p) => p.id);
         });
     } catch (error) {
-        console.error("Error settling all draft payrolls", error);
+        if (error instanceof SettleDraftPayrollsValidationError) {
+            if (error.code === "NOT_FOUND") {
+                return { error: "One or more payrolls were not found" };
+            }
+            return { error: "One or more payrolls are not drafts" };
+        }
+        console.error("Error settling draft payrolls", error);
         return { error: "Failed to settle draft payrolls" };
     }
 
@@ -840,6 +868,32 @@ export async function getDraftPayrollsForSettlement() {
             eq(workerTable.employmentId, employmentTable.id),
         )
         .where(eq(payrollTable.status, "draft"))
+        .orderBy(asc(workerTable.name), asc(payrollTable.periodStart));
+
+    return rows.map((r) => ({
+        ...r.payroll,
+        workerName: r.workerName,
+        employmentType: r.employmentType,
+        employmentArrangement: r.employmentArrangement,
+    }));
+}
+
+export async function getAllPayrollsForDownload() {
+    await requirePermission("Payroll", "read");
+
+    const rows = await db
+        .select({
+            payroll: payrollTable,
+            workerName: workerTable.name,
+            employmentType: employmentTable.employmentType,
+            employmentArrangement: employmentTable.employmentArrangement,
+        })
+        .from(payrollTable)
+        .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id))
+        .innerJoin(
+            employmentTable,
+            eq(workerTable.employmentId, employmentTable.id),
+        )
         .orderBy(asc(workerTable.name), asc(payrollTable.periodStart));
 
     return rows.map((r) => ({
