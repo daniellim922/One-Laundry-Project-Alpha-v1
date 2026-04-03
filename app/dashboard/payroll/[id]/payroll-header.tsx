@@ -63,7 +63,11 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
 
     return (
         <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
+            <Button
+                variant="ghost"
+                size="icon"
+                className="h-auto w-9 self-stretch"
+                asChild>
                 <Link href="/dashboard/payroll/all">
                     <ArrowLeft className="h-4 w-4" />
                 </Link>

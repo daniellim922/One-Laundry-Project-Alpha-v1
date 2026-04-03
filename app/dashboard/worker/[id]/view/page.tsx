@@ -6,6 +6,7 @@ import { requirePermission } from "@/utils/permissions/require-permission";
 import { checkPermission } from "@/utils/permissions/permissions";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { Button } from "@/components/ui/button";
+import { EntityStatusBadge } from "@/components/ui/entity-status-badge";
 import { db } from "@/lib/db";
 import { Pencil } from "lucide-react";
 import { workerTable } from "@/db/tables/payroll/workerTable";
@@ -67,9 +68,10 @@ export default async function ViewWorkerPage({ params }: PageProps) {
         <FormPageLayout
             title="View worker"
             subtitle="Worker details (read-only)."
+            status={<EntityStatusBadge status={worker.status} />}
             actions={
                 canEdit ? (
-                    <Button asChild variant="outline" size="sm">
+                    <Button asChild variant="outline">
                         <Link
                             href={`/dashboard/worker/${id}/edit`}
                             className="flex items-center gap-2">
@@ -78,7 +80,7 @@ export default async function ViewWorkerPage({ params }: PageProps) {
                         </Link>
                     </Button>
                 ) : (
-                    <Button variant="outline" size="sm" disabled>
+                    <Button variant="outline" disabled>
                         <Pencil className="h-4 w-4" />
                         Edit
                     </Button>

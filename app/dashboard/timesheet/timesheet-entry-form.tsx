@@ -9,9 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import type { TimesheetPaymentStatus } from "@/types/status";
-import { timesheetPaymentStatusBadgeTone } from "@/types/badge-tones";
 
 type Worker = { id: string; name: string };
 
@@ -80,16 +78,6 @@ export function TimesheetEntryForm({
 
     const fieldsBody = (
         <>
-            {entry?.status != null && (
-                <div>
-                    <Badge
-                        className={
-                            timesheetPaymentStatusBadgeTone[entry.status]
-                        }>
-                        {entry.status}
-                    </Badge>
-                </div>
-            )}
             <div className="space-y-2">
                 <Label htmlFor="workerId">Worker</Label>
                 <SelectSearch

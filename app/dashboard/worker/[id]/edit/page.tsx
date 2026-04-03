@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 
 import { requirePermission } from "@/utils/permissions/require-permission";
 import { FormPageLayout } from "@/components/form-page-layout";
+import { EntityStatusBadge } from "@/components/ui/entity-status-badge";
 import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { employmentTable } from "@/db/tables/payroll/employmentTable";
@@ -60,7 +61,8 @@ export default async function EditWorkerPage({ params }: PageProps) {
     return (
         <FormPageLayout
             title="Edit worker"
-            subtitle="Update this worker's details.">
+            subtitle="Update this worker's details."
+            status={<EntityStatusBadge status={worker.status} />}>
             <WorkerForm worker={worker} />
         </FormPageLayout>
     );
