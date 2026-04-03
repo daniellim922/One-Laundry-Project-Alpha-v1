@@ -6,6 +6,10 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 
 import { auth } from "@/lib/auth";
+import {
+    DASHBOARD_RETURN_PATH_HEADER,
+    loginUrlWithReturn,
+} from "@/utils/auth/return-url";
 import { checkPermission } from "@/utils/permissions/permissions";
 import { db } from "@/lib/db";
 import { user, session } from "@/db/auth-schema";
@@ -18,8 +22,11 @@ const IAM_FEATURE = "IAM (Identity and Access Management)";
 async function requireIamPermission(
     action: "create" | "read" | "update" | "delete",
 ) {
-    const authSession = await auth.api.getSession({ headers: await headers() });
-    if (!authSession) redirect("/login");
+    const h = await headers();
+    const authSession = await auth.api.getSession({ headers: h });
+    if (!authSession) {
+        redirect(loginUrlWithReturn(h.get(DASHBOARD_RETURN_PATH_HEADER)));
+    }
     const allowed = await checkPermission(
         authSession.user.id,
         IAM_FEATURE,
