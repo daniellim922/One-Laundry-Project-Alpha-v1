@@ -1,5 +1,3 @@
-// Generated from employee DB (1).xlsx (sheet: Employee Database)
-
 export const workers = [
     {
         name: "Ding Chun Rong",
@@ -9,7 +7,6 @@ export const workers = [
         employmentType: "Full Time",
         employmentArrangement: "Foreign Worker",
         monthlyPay: 4000,
-        minimumWorkingHours: 260,
         hourlyRate: 8,
         restDayRate: 88.76,
         paymentMethod: "PayNow",

@@ -35,7 +35,6 @@ function isoDate(val: unknown): string {
 }
 
 function isoToDdmmyyyy(iso: string): string {
-    // Expect ISO date `YYYY-MM-DD`
     const s = String(iso).slice(0, 10);
     const [y, m, d] = s.split("-");
     if (!y || !m || !d) return s;
@@ -96,7 +95,6 @@ export async function POST(req: NextRequest) {
             zip.on("data", (chunk: Buffer) => controller.enqueue(new Uint8Array(chunk)));
             zip.on("end", () => controller.close());
             zip.on("warning", (err: unknown) => {
-                // Treat warnings as fatal to avoid silent corrupt zips.
                 controller.error(err);
             });
             zip.on("error", (err: unknown) => controller.error(err));
@@ -146,4 +144,3 @@ export async function POST(req: NextRequest) {
         },
     });
 }
-

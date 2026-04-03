@@ -850,6 +850,32 @@ export async function getDraftPayrollsForSettlement() {
     }));
 }
 
+export async function getAllPayrollsForDownload() {
+    await requirePermission("Payroll", "read");
+
+    const rows = await db
+        .select({
+            payroll: payrollTable,
+            workerName: workerTable.name,
+            employmentType: employmentTable.employmentType,
+            employmentArrangement: employmentTable.employmentArrangement,
+        })
+        .from(payrollTable)
+        .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id))
+        .innerJoin(
+            employmentTable,
+            eq(workerTable.employmentId, employmentTable.id),
+        )
+        .orderBy(asc(workerTable.name), asc(payrollTable.periodStart));
+
+    return rows.map((r) => ({
+        ...r.payroll,
+        workerName: r.workerName,
+        employmentType: r.employmentType,
+        employmentArrangement: r.employmentArrangement,
+    }));
+}
+
 export async function updateVoucherDays(input: {
     payrollId: string;
     voucherId: string;
