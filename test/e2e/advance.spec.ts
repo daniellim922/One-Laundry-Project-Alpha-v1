@@ -40,7 +40,6 @@ test.describe("Advance dashboard", () => {
         await expect(page).toHaveURL(/\/dashboard\/advance\/[0-9a-f-]+$/i);
         await expect(page.getByTestId("advance-detail")).toBeVisible();
         await expect(page.getByTestId("advance-detail-amount")).toBeVisible();
-        await expect(page.getByTestId("advance-detail-status")).toBeVisible();
     });
 
     test("add advance request form submits and returns to list", async ({

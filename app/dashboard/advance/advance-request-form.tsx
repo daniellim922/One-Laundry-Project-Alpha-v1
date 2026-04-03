@@ -1,13 +1,19 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Banknote, Check, ChevronsUpDown, Plus, Trash2 } from "lucide-react";
+import {
+    Banknote,
+    Calendar,
+    DollarSign,
+    Plus,
+    Trash2,
+    User,
+} from "lucide-react";
 
 import { createAdvanceRequest } from "@/app/dashboard/advance/new/actions";
 import { updateAdvanceRequest } from "@/app/dashboard/advance/[id]/edit/actions";
@@ -33,7 +39,6 @@ import {
     InputGroupInput,
 } from "@/components/ui/input-group";
 import { SelectSearch } from "@/components/ui/SelectSearch";
-import { SignaturePad } from "@/components/ui/signature-pad";
 import { Badge } from "@/components/ui/badge";
 import { loanPaidToneClassName } from "@/types/badge-tones";
 import { localDateDmy, localIsoDateYmd } from "@/utils/time/local-iso-date";
@@ -75,18 +80,6 @@ const formSchema = z
                 status: z.enum(["loan", "paid"]).optional(),
             }),
         ),
-        employeeSignature: z.string().optional(),
-        managerSignature: z.string().optional(),
-        employeeSignatureDate: z
-            .string()
-            .transform((v) => v.trim())
-            .refine((v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v), "Invalid date")
-            .optional(),
-        managerSignatureDate: z
-            .string()
-            .transform((v) => v.trim())
-            .refine((v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v), "Invalid date")
-            .optional(),
     })
     .superRefine((values, ctx) => {
         const today = localIsoDateYmd();
@@ -161,31 +154,6 @@ const formSchema = z
             }
         });
 
-        const employeeSigDate = values.employeeSignatureDate?.trim() ?? "";
-        if (
-            employeeSigDate &&
-            /^\d{4}-\d{2}-\d{2}$/.test(employeeSigDate) &&
-            employeeSigDate < today
-        ) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ["employeeSignatureDate"],
-                message: "Employee signature date cannot be before today",
-            });
-        }
-
-        const managerSigDate = values.managerSignatureDate?.trim() ?? "";
-        if (
-            managerSigDate &&
-            /^\d{4}-\d{2}-\d{2}$/.test(managerSigDate) &&
-            managerSigDate < today
-        ) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ["managerSignatureDate"],
-                message: "Manager signature date cannot be before today",
-            });
-        }
         if (!hasValidInstallment) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
@@ -219,15 +187,7 @@ const textareaClass = cn(
 export type AdvanceRequestWorkerOption = { id: string; name: string };
 
 function detailToDefaultValues(detail: AdvanceRequestDetail): FormValues {
-    const {
-        request,
-        advances,
-        purpose,
-        employeeSignature,
-        employeeSignatureDate,
-        managerSignature,
-        managerSignatureDate,
-    } = detail;
+    const { request, advances, purpose } = detail;
     return {
         workerId: request.workerId,
         loanDate: request.requestDate,
@@ -241,10 +201,6 @@ function detailToDefaultValues(detail: AdvanceRequestDetail): FormValues {
                       status: a.status,
                   }))
                 : [{ amount: "", repaymentDate: "", status: "loan" }],
-        employeeSignature: employeeSignature ?? "",
-        managerSignature: managerSignature ?? "",
-        employeeSignatureDate: employeeSignatureDate ?? "",
-        managerSignatureDate: managerSignatureDate ?? "",
     };
 }
 
@@ -253,88 +209,59 @@ function AdvanceRequestReadOnlyBody({
 }: {
     detail: AdvanceRequestDetail;
 }) {
-    const {
-        request,
-        advances,
-        purpose,
-        employeeSignature,
-        employeeSignatureDate,
-        managerSignature,
-        managerSignatureDate,
-    } = detail;
+    const { request, advances, purpose } = detail;
 
     return (
         <FieldGroup className="gap-6">
             <Card>
                 <CardHeader className="border-b pb-4">
                     <CardTitle className="text-sm font-semibold uppercase tracking-wide">
-                        1. Advance information
+                        Advance information
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4 pt-4">
-                    <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-                        <Field className="min-w-0 space-y-2">
-                            <FieldLabel>Employee</FieldLabel>
-                            <Link
-                                href={`/dashboard/worker/${request.workerId}/view`}
-                                className="font-medium text-primary underline-offset-4 hover:underline">
-                                {request.workerName}
-                            </Link>
-                        </Field>
-
-                        <Field className="min-w-0 space-y-2">
-                            <FieldLabel>Date of request</FieldLabel>
-                            <p data-testid="advance-detail-loan-date">
-                                {localDateDmy(request.requestDate)}
-                            </p>
-                        </Field>
+                <CardContent className="space-y-3 pt-4">
+                    <div className="flex items-center gap-2">
+                        <User className="size-5 shrink-0 text-muted-foreground" />
+                        <Link
+                            href={`/dashboard/worker/${request.workerId}/view`}
+                            className="font-medium text-primary underline underline-offset-4 hover:opacity-80">
+                            {request.workerName}
+                        </Link>
                     </div>
 
-                    <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-                        <Field className="space-y-2">
-                            <FieldLabel>Amount requested</FieldLabel>
-                            <InputGroup>
-                                <InputGroupInput
-                                    type="text"
-                                    readOnly
-                                    value={`$${request.amountRequested}`}
-                                    className="bg-muted/50"
-                                    data-testid="advance-detail-amount"
-                                />
-                                <InputGroupAddon>
-                                    <Banknote className="size-4 text-muted-foreground" />
-                                </InputGroupAddon>
-                            </InputGroup>
-                        </Field>
-
-                        <Field className="space-y-2">
-                            <FieldLabel>Status</FieldLabel>
-                            <div className="w-fit!">
-                                <Badge
-                                    variant="outline"
-                                    className={
-                                        loanPaidToneClassName[request.status]
-                                    }
-                                    data-testid="advance-detail-status">
-                                    {request.status}
-                                </Badge>
-                            </div>
-                        </Field>
+                    <div
+                        className="flex items-center gap-2"
+                        data-testid="advance-detail-loan-date">
+                        <Calendar className="size-5 shrink-0 text-muted-foreground" />
+                        <span className="text-primary">
+                            {localDateDmy(request.requestDate)}
+                        </span>
                     </div>
 
-                    <Field className="space-y-2">
-                        <FieldLabel>Purpose of advance</FieldLabel>
-                        <p className="whitespace-pre-wrap min-h-[100px] rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                    <div
+                        className="flex items-center gap-2"
+                        data-testid="advance-detail-amount">
+                        <DollarSign className="size-5 shrink-0 text-muted-foreground" />
+                        <span className="text-primary">
+                            {request.amountRequested}
+                        </span>
+                    </div>
+
+                    <div className="space-y-1 pt-5">
+                        <p className="text-lg font-medium">
+                            Purpose of advance
+                        </p>
+                        <p className="whitespace-pre-wrap text-md text-muted-foreground">
                             {purpose || "—"}
                         </p>
-                    </Field>
+                    </div>
                 </CardContent>
             </Card>
 
             <Card>
                 <CardHeader className="border-b pb-2">
                     <CardTitle className="text-sm font-semibold uppercase tracking-wide">
-                        2. Repayment terms
+                        Repayment terms
                     </CardTitle>
                     <p className="text-muted-foreground text-sm">
                         Each installment is tracked as a separate advance
@@ -387,88 +314,6 @@ function AdvanceRequestReadOnlyBody({
                     </Table>
                 </CardContent>
             </Card>
-
-            <Card>
-                <CardHeader className="border-b pb-4">
-                    <CardTitle className="text-sm font-semibold uppercase tracking-wide">
-                        3. Employee acknowledgment
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4 pt-4">
-                    <p className="text-muted-foreground text-sm leading-relaxed">
-                        I acknowledge that this advance is a loan and will be
-                        repaid according to the agreed terms. I authorize the
-                        company to deduct the repayment from my salary as
-                        specified.
-                    </p>
-                    <div className="space-y-4">
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <div className="space-y-2">
-                                <FieldLabel className="text-muted-foreground font-normal">
-                                    Employee signature
-                                </FieldLabel>
-                                {employeeSignature ? (
-                                    <div className="relative aspect-3/1 max-w-xs overflow-hidden rounded border bg-muted/30">
-                                        <Image
-                                            src={employeeSignature}
-                                            alt="Employee signature"
-                                            fill
-                                            className="object-contain p-2"
-                                            unoptimized
-                                        />
-                                    </div>
-                                ) : (
-                                    <p className="text-muted-foreground text-sm">
-                                        —
-                                    </p>
-                                )}
-                                <div>
-                                    <span className="text-muted-foreground text-sm">
-                                        Date signed:{" "}
-                                    </span>
-                                    <span className="text-sm font-medium">
-                                        {employeeSignatureDate
-                                            ? localDateDmy(
-                                                  employeeSignatureDate,
-                                              )
-                                            : "—"}
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <FieldLabel className="text-muted-foreground font-normal">
-                                    Manager&apos;s signature
-                                </FieldLabel>
-                                {managerSignature ? (
-                                    <div className="relative aspect-3/1 max-w-xs overflow-hidden rounded border bg-muted/30">
-                                        <Image
-                                            src={managerSignature}
-                                            alt="Manager signature"
-                                            fill
-                                            className="object-contain p-2"
-                                            unoptimized
-                                        />
-                                    </div>
-                                ) : (
-                                    <p className="text-muted-foreground text-sm">
-                                        —
-                                    </p>
-                                )}
-                                <div>
-                                    <span className="text-muted-foreground text-sm">
-                                        Date signed:{" "}
-                                    </span>
-                                    <span className="text-sm font-medium">
-                                        {managerSignatureDate
-                                            ? localDateDmy(managerSignatureDate)
-                                            : "—"}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
         </FieldGroup>
     );
 }
@@ -505,10 +350,6 @@ function AdvanceRequestFormEditable({
                   installmentAmounts: [
                       { amount: "", repaymentDate: "", status: "loan" },
                   ],
-                  employeeSignature: "",
-                  managerSignature: "",
-                  employeeSignatureDate: "",
-                  managerSignatureDate: "",
               },
     });
 
@@ -538,10 +379,6 @@ function AdvanceRequestFormEditable({
                       amount: data.amount,
                       purpose: data.purpose,
                       installmentAmounts: data.installmentAmounts,
-                      employeeSignature: data.employeeSignature,
-                      employeeSignatureDate: data.employeeSignatureDate,
-                      managerSignature: data.managerSignature,
-                      managerSignatureDate: data.managerSignatureDate,
                   })
                 : await createAdvanceRequest({
                       workerId: data.workerId,
@@ -549,10 +386,6 @@ function AdvanceRequestFormEditable({
                       amount: data.amount,
                       purpose: data.purpose,
                       installmentAmounts: data.installmentAmounts,
-                      employeeSignature: data.employeeSignature,
-                      employeeSignatureDate: data.employeeSignatureDate,
-                      managerSignature: data.managerSignature,
-                      managerSignatureDate: data.managerSignatureDate,
                   });
         setPending(false);
 
@@ -593,7 +426,7 @@ function AdvanceRequestFormEditable({
                 <Card>
                     <CardHeader className="border-b pb-4">
                         <CardTitle className="text-sm font-semibold uppercase tracking-wide">
-                            1. Advance information
+                            Advance information
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4 pt-4">
@@ -721,7 +554,7 @@ function AdvanceRequestFormEditable({
                 <Card className="gap-4">
                     <CardHeader className="border-b pb-2">
                         <CardTitle className="text-sm font-semibold uppercase tracking-wide">
-                            2. Repayment terms
+                            Repayment terms
                         </CardTitle>
                         {installmentRowsMounted && (
                             <CardAction>
@@ -982,103 +815,6 @@ function AdvanceRequestFormEditable({
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader className="border-b pb-4">
-                        <CardTitle className="text-sm font-semibold uppercase tracking-wide">
-                            3. Employee acknowledgment
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4 pt-4">
-                        <p className="text-muted-foreground text-sm leading-relaxed">
-                            I acknowledge that this advance is a loan and will
-                            be repaid according to the agreed terms. I authorize
-                            the company to deduct the repayment from my salary
-                            as specified.
-                        </p>
-                        <div className="space-y-4">
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="space-y-1">
-                                    <p className="text-muted-foreground text-sm">
-                                        Employee signature
-                                    </p>
-                                    <Controller
-                                        name="employeeSignature"
-                                        control={form.control}
-                                        render={({ field }) => (
-                                            <SignaturePad
-                                                value={field.value ?? ""}
-                                                onChange={field.onChange}
-                                                disabled={pending}
-                                                aria-label="Employee signature"
-                                            />
-                                        )}
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <FieldLabel
-                                        htmlFor={`${formId}-employee-sig-date`}
-                                        className="text-muted-foreground font-normal">
-                                        Date
-                                    </FieldLabel>
-                                    <Controller
-                                        name="employeeSignatureDate"
-                                        control={form.control}
-                                        render={({ field }) => (
-                                            <Input
-                                                {...field}
-                                                id={`${formId}-employee-sig-date`}
-                                                type="date"
-                                                min={localIsoDateYmd()}
-                                                disabled={pending}
-                                                value={field.value ?? ""}
-                                            />
-                                        )}
-                                    />
-                                </div>
-                            </div>
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                <div className="space-y-1">
-                                    <p className="text-muted-foreground text-sm">
-                                        Manager&apos;s signature
-                                    </p>
-                                    <Controller
-                                        name="managerSignature"
-                                        control={form.control}
-                                        render={({ field }) => (
-                                            <SignaturePad
-                                                value={field.value ?? ""}
-                                                onChange={field.onChange}
-                                                disabled={pending}
-                                                aria-label="Manager signature"
-                                            />
-                                        )}
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <FieldLabel
-                                        htmlFor={`${formId}-manager-sig-date`}
-                                        className="text-muted-foreground font-normal">
-                                        Date
-                                    </FieldLabel>
-                                    <Controller
-                                        name="managerSignatureDate"
-                                        control={form.control}
-                                        render={({ field }) => (
-                                            <Input
-                                                {...field}
-                                                id={`${formId}-manager-sig-date`}
-                                                type="date"
-                                                min={localIsoDateYmd()}
-                                                disabled={pending}
-                                                value={field.value ?? ""}
-                                            />
-                                        )}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
             </FieldGroup>
 
             <div className="flex flex-col items-end gap-3">
