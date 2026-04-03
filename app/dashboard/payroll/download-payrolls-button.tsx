@@ -4,6 +4,7 @@ import * as React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { RowSelectionState } from "@tanstack/react-table";
 import { Download } from "lucide-react";
+import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +56,7 @@ function getDownloadFilenameFromContentDisposition(
 }
 
 export function DownloadPayrollsButton() {
+    const pathname = usePathname();
     const [open, setOpen] = React.useState(false);
     const [downloading, setDownloading] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
@@ -67,6 +69,32 @@ export function DownloadPayrollsButton() {
     const selectedCount = Object.keys(rowSelection).filter(
         (k) => rowSelection[k],
     ).length;
+
+    const resetDownloadDialogUi = React.useCallback(() => {
+        setError(null);
+        setLoading(false);
+    }, []);
+
+    const wasDownloadDialogOpen = React.useRef(false);
+    const downloadDialogOpenedAtPath = React.useRef<string | null>(null);
+
+    React.useEffect(() => {
+        if (open && !wasDownloadDialogOpen.current) {
+            downloadDialogOpenedAtPath.current = pathname;
+        }
+        if (!open) {
+            downloadDialogOpenedAtPath.current = null;
+        }
+        wasDownloadDialogOpen.current = open;
+    }, [open, pathname]);
+
+    React.useEffect(() => {
+        if (!open || downloadDialogOpenedAtPath.current === null) return;
+        if (pathname !== downloadDialogOpenedAtPath.current) {
+            setOpen(false);
+            resetDownloadDialogUi();
+        }
+    }, [pathname, open, resetDownloadDialogUi]);
 
     React.useEffect(() => {
         let cancelled = false;
@@ -125,6 +153,7 @@ export function DownloadPayrollsButton() {
             a.remove();
             URL.revokeObjectURL(url);
             setOpen(false);
+            resetDownloadDialogUi();
         } catch (e) {
             console.error(e);
             setError("Failed to download payroll PDFs");
@@ -139,8 +168,7 @@ export function DownloadPayrollsButton() {
             onOpenChange={(nextOpen) => {
                 setOpen(nextOpen);
                 if (!nextOpen) {
-                    setError(null);
-                    setLoading(false);
+                    resetDownloadDialogUi();
                 }
             }}>
             <DialogTrigger asChild>

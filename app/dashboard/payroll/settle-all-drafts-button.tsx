@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
+import type { ColumnDef } from "@tanstack/react-table";
+import type { RowSelectionState } from "@tanstack/react-table";
+import { usePathname, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,15 +16,24 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import { createRowSelectionColumn } from "@/components/data-table/column-builders";
+import { DataTable } from "@/components/data-table/data-table";
 import {
     getDraftPayrollsForSettlement,
-    settleAllDraftPayrolls,
+    settleDraftPayrolls,
 } from "./actions";
-import { DataTable } from "@/components/data-table/data-table";
-import { columns } from "./all/columns";
+import { columns as baseColumns, type PayrollWithWorker } from "./all/columns";
+
+const selectableColumns: ColumnDef<PayrollWithWorker>[] = [
+    createRowSelectionColumn<PayrollWithWorker>({
+        ariaLabelForRow: (p) => `Select ${p.workerName}`,
+    }),
+    ...baseColumns,
+];
 
 export function SettleAllDraftPayrollsButton() {
     const router = useRouter();
+    const pathname = usePathname();
     const [open, setOpen] = React.useState(false);
     const [pending, setPending] = React.useState(false);
     const [downloadingZip, setDownloadingZip] = React.useState(false);
@@ -31,8 +42,41 @@ export function SettleAllDraftPayrollsButton() {
     const [drafts, setDrafts] = React.useState<
         Awaited<ReturnType<typeof getDraftPayrollsForSettlement>>
     >([]);
+    const [rowSelection, setRowSelection] = React.useState<RowSelectionState>(
+        {},
+    );
 
     const draftCount = drafts.length;
+    const selectedCount = Object.keys(rowSelection).filter(
+        (k) => rowSelection[k],
+    ).length;
+
+    const resetSettleDialogUi = React.useCallback(() => {
+        setError(null);
+        setLoadingDrafts(false);
+        setRowSelection({});
+    }, []);
+
+    const wasSettleDialogOpen = React.useRef(false);
+    const settleDialogOpenedAtPath = React.useRef<string | null>(null);
+
+    React.useEffect(() => {
+        if (open && !wasSettleDialogOpen.current) {
+            settleDialogOpenedAtPath.current = pathname;
+        }
+        if (!open) {
+            settleDialogOpenedAtPath.current = null;
+        }
+        wasSettleDialogOpen.current = open;
+    }, [open, pathname]);
+
+    React.useEffect(() => {
+        if (!open || settleDialogOpenedAtPath.current === null) return;
+        if (pathname !== settleDialogOpenedAtPath.current) {
+            setOpen(false);
+            resetSettleDialogUi();
+        }
+    }, [pathname, open, resetSettleDialogUi]);
 
     React.useEffect(() => {
         let cancelled = false;
@@ -40,10 +84,14 @@ export function SettleAllDraftPayrollsButton() {
             if (!open) return;
             setLoadingDrafts(true);
             setError(null);
+            setRowSelection({});
             try {
                 const rows = await getDraftPayrollsForSettlement();
                 if (cancelled) return;
                 setDrafts(rows);
+                setRowSelection(
+                    Object.fromEntries(rows.map((r) => [r.id, true])),
+                );
             } catch (e) {
                 if (cancelled) return;
                 console.error("Failed to load draft payrolls", e);
@@ -87,11 +135,16 @@ export function SettleAllDraftPayrollsButton() {
         return null;
     }
 
-    async function handleSettleAll() {
+    async function handleSettleSelected() {
+        const selectedIds = Object.keys(rowSelection).filter(
+            (k) => rowSelection[k],
+        );
+        if (selectedIds.length === 0) return;
+
         setError(null);
         setPending(true);
 
-        const result = await settleAllDraftPayrolls();
+        const result = await settleDraftPayrolls(selectedIds);
 
         setPending(false);
         if (result?.error) {
@@ -135,6 +188,7 @@ export function SettleAllDraftPayrollsButton() {
         }
 
         setOpen(false);
+        resetSettleDialogUi();
         router.refresh();
     }
 
@@ -144,8 +198,7 @@ export function SettleAllDraftPayrollsButton() {
             onOpenChange={(nextOpen) => {
                 setOpen(nextOpen);
                 if (!nextOpen) {
-                    setError(null);
-                    setLoadingDrafts(false);
+                    resetSettleDialogUi();
                 }
             }}>
             <DialogTrigger asChild>
@@ -160,26 +213,28 @@ export function SettleAllDraftPayrollsButton() {
                 <DialogHeader>
                     <DialogTitle>Confirm settlement</DialogTitle>
                     <DialogDescription>
-                        Are you sure you want to settle{" "}
-                        {loadingDrafts ? "Loading..." : `${draftCount}`} draft
-                        payrolls?
+                        {loadingDrafts
+                            ? "Loading draft payrolls…"
+                            : draftCount === 0
+                              ? "There are no draft payrolls to settle."
+                              : "Select the draft payrolls you want to settle. All rows are selected by default."}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm font-medium tabular-nums"></p>
-                    </div>
-
                     {loadingDrafts ? (
                         <div className="rounded-md border px-3 py-3 text-sm text-muted-foreground">
                             Loading draft payrolls...
                         </div>
                     ) : (
                         <DataTable
-                            columns={columns}
-                            data={drafts}
+                            columns={selectableColumns}
+                            data={drafts as PayrollWithWorker[]}
                             syncSearchToUrl={false}
                             pageSize={5}
+                            enableRowSelection
+                            rowSelection={rowSelection}
+                            onRowSelectionChange={setRowSelection}
+                            getRowId={(row) => row.id}
                         />
                     )}
                 </div>
@@ -202,14 +257,14 @@ export function SettleAllDraftPayrollsButton() {
                             pending ||
                             downloadingZip ||
                             loadingDrafts ||
-                            draftCount === 0
+                            selectedCount === 0
                         }
-                        onClick={handleSettleAll}>
+                        onClick={handleSettleSelected}>
                         {pending
                             ? "Settling..."
                             : downloadingZip
                               ? "Preparing ZIP..."
-                              : "Yes, settle all"}
+                              : `Settle selected (${selectedCount})`}
                     </Button>
                 </DialogFooter>
             </DialogContent>
