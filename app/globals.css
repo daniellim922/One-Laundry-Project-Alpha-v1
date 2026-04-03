@@ -134,7 +134,8 @@
     html,
     body,
     main,
-    .printable-payroll {
+    .printable-payroll,
+    .printable-advance {
         background: white !important;
     }
 
