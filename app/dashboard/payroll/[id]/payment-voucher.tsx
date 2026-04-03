@@ -258,79 +258,75 @@ export function PaymentVoucher({
                 </div>
 
                 <div className="space-y-6 p-8">
-                    {/* Metadata grid */}
-                    <div className="grid grid-cols-2 gap-x-12 gap-y-3 text-sm">
-                        <div className="flex items-baseline gap-2">
-                            <span className="font-medium text-neutral-600">
-                                Voucher No:
-                            </span>
-                            <span className="border-b border-neutral-400 px-2 pb-0.5 font-semibold print:border-black">
-                                {voucher.voucherNumber ?? "—"}
-                            </span>
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                            <span className="font-medium text-neutral-600">
-                                Date:
-                            </span>
-                            <span className="border-b border-neutral-400 px-2 pb-0.5 font-semibold print:border-black">
-                                {voucherDate}
-                            </span>
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                            <span className="font-medium text-neutral-600">
-                                Pay to:
-                            </span>
-                            <span className="border-b border-neutral-400 px-2 pb-0.5 font-semibold uppercase tracking-wide print:border-black">
-                                {workerName}
-                            </span>
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                            <span className="font-medium text-neutral-600">
-                                Period:
-                            </span>
-                            <span className="border-b border-neutral-400 px-2 pb-0.5 font-semibold print:border-black">
-                                {periodLabel}
-                            </span>
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                            <span className="font-medium text-neutral-600">
-                                Min. Hours:
-                            </span>
-                            <span className="border-b border-neutral-400 px-2 pb-0.5 font-semibold print:border-black">
-                                {voucher.minimumWorkingHours != null
-                                    ? voucher.minimumWorkingHours.toFixed(2)
-                                    : "—"}
-                            </span>
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                            <span className="font-medium text-neutral-600">
-                                Hours Worked:
-                            </span>
-                            <span className="border-b border-neutral-400 px-2 pb-0.5 font-semibold print:border-black">
-                                {voucher.totalHoursWorked != null
-                                    ? voucher.totalHoursWorked.toFixed(2)
-                                    : "—"}
-                            </span>
-                        </div>
-                    </div>
+                    {/* Metadata table */}
+                    <Table className="w-full text-sm">
+                        <TableBody>
+                            <TableRow className="border-0 hover:bg-white">
+                                <TableCell className="py-2 pr-3 text-right font-medium text-black">
+                                    Voucher No:
+                                </TableCell>
+                                <TableCell className="py-2 pl-3 font-semibold text-black">
+                                    {voucher.voucherNumber ?? "—"}
+                                </TableCell>
+                                <TableCell className="py-2 pr-3 text-right font-medium text-black">
+                                    Date:
+                                </TableCell>
+                                <TableCell className="py-2 pl-3 font-semibold text-black">
+                                    {voucherDate}
+                                </TableCell>
+                            </TableRow>
+                            <TableRow className="border-0 hover:bg-white">
+                                <TableCell className="py-2 pr-3 text-right font-medium text-black">
+                                    Pay to:
+                                </TableCell>
+                                <TableCell className="py-2 pl-3 font-semibold uppercase tracking-wide text-black">
+                                    {workerName}
+                                </TableCell>
+                                <TableCell className="py-2 pr-3 text-right font-medium text-black">
+                                    Period:
+                                </TableCell>
+                                <TableCell className="py-2 pl-3 font-semibold text-black">
+                                    {periodLabel}
+                                </TableCell>
+                            </TableRow>
+                            <TableRow className="border-0 hover:bg-white">
+                                <TableCell className="py-2 pr-3 text-right font-medium text-black">
+                                    Min. Hours:
+                                </TableCell>
+                                <TableCell className="py-2 pl-3 font-semibold text-black">
+                                    {voucher.minimumWorkingHours != null
+                                        ? voucher.minimumWorkingHours.toFixed(2)
+                                        : "—"}
+                                </TableCell>
+                                <TableCell className="py-2 pr-3 text-right font-medium text-black">
+                                    Hours Worked:
+                                </TableCell>
+                                <TableCell className="py-2 pl-3 font-semibold text-black">
+                                    {voucher.totalHoursWorked != null
+                                        ? voucher.totalHoursWorked.toFixed(2)
+                                        : "—"}
+                                </TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
 
                     {/* Line items table */}
                     <Table className="w-full border-collapse text-sm [&_th]:align-middle [&_td]:align-middle">
                         <TableHeader>
                             <TableRow className="border-y-2 border-black">
-                                <TableHead className="py-2 pl-2 text-left font-semibold">
+                                <TableHead className="py-2 pl-2 text-left font-semibold text-black">
                                     DESCRIPTION
                                 </TableHead>
-                                <TableHead className="w-[60px] py-2 text-center font-semibold">
+                                <TableHead className="w-[60px] py-2 text-center font-semibold text-black">
                                     QTY
                                 </TableHead>
-                                <TableHead className="w-[40px] py-2" />
-                                <TableHead className="w-[20px] py-2" />
-                                <TableHead className="w-[80px] py-2 text-center font-semibold">
+                                <TableHead className="w-[40px] py-2 text-black" />
+                                <TableHead className="w-[20px] py-2 text-black" />
+                                <TableHead className="w-[80px] py-2 text-center font-semibold text-black">
                                     RATE
                                 </TableHead>
                                 <TableHead
-                                    className="w-[140px] border-l border-black py-2 text-center font-semibold"
+                                    className="w-[140px] border-l border-black py-2 text-center font-semibold text-black"
                                     colSpan={2}>
                                     AMOUNT
                                 </TableHead>
@@ -353,7 +349,7 @@ export function PaymentVoucher({
                             {/* Subtotal */}
                             <TableRow className="border-t border-neutral-400">
                                 <TableCell
-                                    className="py-2 pr-4 text-right text-xs font-semibold uppercase tracking-wide text-neutral-500"
+                                    className="py-2 pl-2 text-left text-xs font-semibold uppercase tracking-wide text-black"
                                     colSpan={5}>
                                     Subtotal
                                 </TableCell>
@@ -369,13 +365,13 @@ export function PaymentVoucher({
                                 <ItemRow key={`d-${i}`} item={item} />
                             ))}
                         </TableBody>
-                        <TableFooter>
-                            <TableRow className="border-t-2 border-black">
-                                <TableCell className="py-3 pl-2 text-sm" colSpan={1}>
-                                    A/c
+                        <TableFooter className="bg-white print:bg-white">
+                            <TableRow className="border-t-2 border-black hover:bg-white">
+                                <TableCell className="py-3 pl-2 text-sm font-semibold" colSpan={1}>
+                                    Grand Total
                                 </TableCell>
                                 <TableCell
-                                    className="min-w-[200px] whitespace-nowrap py-3 pl-4 text-sm"
+                                    className="whitespace-nowrap py-3 pr-4 text-right text-sm"
                                     colSpan={4}>
                                     {paymentMethodDisplay}
                                 </TableCell>
@@ -389,40 +385,34 @@ export function PaymentVoucher({
                     </Table>
 
                     {/* Signature blocks */}
-                    <div className="grid grid-cols-2 gap-12 pt-4 text-sm">
-                        <div className="space-y-8">
-                            <p className="font-medium">Payment approved by</p>
-                            <div>
-                                <div className="w-full max-w-[200px] border-b border-black" />
-                                <div className="mt-3 space-y-1 text-xs text-neutral-500">
-                                    <p>
-                                        Name:{" "}
-                                        <span className="inline-block w-32 border-b border-neutral-300" />
-                                    </p>
-                                    <p>
-                                        Date:{" "}
-                                        <span className="inline-block w-32 border-b border-neutral-300" />
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="space-y-8 text-right">
-                            <p className="font-medium">Payment received by</p>
-                            <div>
-                                <div className="ml-auto w-full max-w-[200px] border-b border-black" />
-                                <div className="mt-3 space-y-1 text-xs text-neutral-500">
-                                    <p>
-                                        Name:{" "}
-                                        <span className="inline-block w-32 border-b border-neutral-300" />
-                                    </p>
-                                    <p>
-                                        Date:{" "}
-                                        <span className="inline-block w-32 border-b border-neutral-300" />
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <Table className="w-full text-sm">
+                        <TableBody>
+                            <TableRow className="border-0 hover:bg-white">
+                                <TableCell className="py-2 text-md font-medium text-black">
+                                    Payment approved by Alvis Ong Thai Ying
+                                </TableCell>
+                                <TableCell className="py-2 text-md text-right font-medium text-black">
+                                    Payment received by {workerName}
+                                </TableCell>
+                            </TableRow>
+                            <TableRow className="border-0 hover:bg-white">
+                                <TableCell className="text-black pt-12">
+                                    <div className="w-full max-w-[200px] border-b border-black" />
+                                </TableCell>
+                                <TableCell className="text-black pt-12">
+                                    <div className="ml-auto w-full max-w-[200px] border-b border-black" />
+                                </TableCell>
+                            </TableRow>
+                            <TableRow className="border-0 hover:bg-white">
+                                <TableCell className="pt-4 text-md text-black">
+                                    Date: <span className="border-b border-neutral-300 px-1">{voucherDate}</span>
+                                </TableCell>
+                                <TableCell className="pt-4 text-right text-md text-black">
+                                    Date: <span className="inline-block w-32 border-b border-neutral-300" />
+                                </TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
                 </div>
             </div>
         </div>
