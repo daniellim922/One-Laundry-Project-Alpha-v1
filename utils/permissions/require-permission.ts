@@ -1,6 +1,10 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import {
+    DASHBOARD_RETURN_PATH_HEADER,
+    loginUrlWithReturn,
+} from "@/utils/auth/return-url";
 import { checkPermission, type PermissionAction } from "./permissions";
 
 /**
@@ -17,7 +21,8 @@ export async function requirePermission(
     });
 
     if (!session) {
-        redirect("/login");
+        const h = await headers();
+        redirect(loginUrlWithReturn(h.get(DASHBOARD_RETURN_PATH_HEADER)));
     }
 
     const hasPermission = await checkPermission(
