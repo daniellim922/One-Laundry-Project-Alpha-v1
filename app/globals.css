@@ -134,8 +134,8 @@
     html,
     body,
     main,
-    .printable-payroll,
-    .printable-advance {
+    .download-payroll,
+    .download-advance {
         background: white !important;
     }
 
@@ -161,11 +161,11 @@
         box-shadow: none !important;
         border-radius: 0 !important;
     }
-    .timesheet-print-compact {
+    .timesheet-download-compact {
         font-size: 11px;
     }
 
-    .timesheet-print-compact table {
+    .timesheet-download-compact table {
         font-size: 10px;
     }
 }
