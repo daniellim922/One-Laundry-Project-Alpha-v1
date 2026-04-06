@@ -4,14 +4,15 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { EntityStatusBadge } from "@/components/ui/entity-status-badge";
 import { FormPageLayout } from "@/components/form-page-layout";
+import { StepProgressPanel } from "@/components/ui/step-progress-panel";
 import { getAdvanceRequestByIdWithWorker } from "@/utils/advance/queries";
 import { requirePermission } from "@/utils/permissions/require-permission";
 import { checkPermission } from "@/utils/permissions/permissions";
 import { Pencil } from "lucide-react";
 
-import { AdvanceStepProgress } from "../advance-step-progress";
+import { getAdvanceStepItems } from "../page";
 import { AdvanceSummaryCapture } from "../advance-summary-capture";
-import { AdvancePrintable } from "../advance-printable";
+import { AdvanceDownloadVoucher } from "../advance-downloadable";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -32,6 +33,7 @@ export default async function AdvanceSummaryPage({ params }: PageProps) {
             title="Advance request"
             subtitle={`Summary for worker ${detail.request.workerName}`}
             status={<EntityStatusBadge status={detail.request.status} />}
+            maxWidthClassName="max-w-none"
             actions={
                 !canUpdate || detail.request.status === "paid" ? (
                     <Button variant="outline" disabled>
@@ -49,9 +51,9 @@ export default async function AdvanceSummaryPage({ params }: PageProps) {
                     </Button>
                 )
             }>
-            <AdvanceStepProgress
+            <StepProgressPanel
                 className="print:hidden"
-                advanceRequestId={id}
+                steps={getAdvanceStepItems(id)}
                 activeStep={2}
             />
 
@@ -61,7 +63,7 @@ export default async function AdvanceSummaryPage({ params }: PageProps) {
                     workerName={detail.request.workerName}
                     amountRequested={detail.request.amountRequested}
                     requestDate={detail.request.requestDate}>
-                    <AdvancePrintable detail={detail} />
+                    <AdvanceDownloadVoucher detail={detail} />
                 </AdvanceSummaryCapture>
             </section>
         </FormPageLayout>

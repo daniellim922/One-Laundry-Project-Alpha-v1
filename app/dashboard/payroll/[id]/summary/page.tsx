@@ -1,5 +1,3 @@
-import { Suspense } from "react";
-
 import { PayrollHeader } from "../payroll-header";
 import { PaymentVoucher } from "../payment-voucher";
 import { PayrollStepProgress } from "../payroll-step-progress";

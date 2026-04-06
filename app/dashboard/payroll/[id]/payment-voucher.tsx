@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +12,11 @@ import {
     TableHead,
     TableCell,
 } from "@/components/ui/table";
+import {
+    DownloadDocumentShell,
+    DownloadMetadataTable,
+} from "@/components/ui/download-document-shell";
+import { VoucherSignatureSection } from "@/components/ui/signature-section";
 
 interface PaymentVoucherProps {
     voucher: {
@@ -72,7 +77,6 @@ export function PaymentVoucher({
     workerName,
     showDownloadButton = true,
 }: PaymentVoucherProps) {
-    const voucherRootRef = useRef<HTMLDivElement | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
 
     function isoToDdmmyyyy(iso: string): string {
@@ -247,68 +251,42 @@ export function PaymentVoucher({
                 </div>
             ) : null}
 
-            <div
-                ref={voucherRootRef}
-                className="voucher-print-root overflow-hidden border border-neutral-300 bg-white text-black print:border-black print:break-inside-avoid print:page-break-after-always">
-                {/* Header */}
-                <div className="border-b border-neutral-300 px-8 pt-6 pb-4 print:border-black">
-                    <h2 className="text-center text-xl font-bold tracking-[0.2em] text-neutral-900">
-                        PAYMENT VOUCHER
-                    </h2>
-                </div>
-
-                <div className="space-y-6 p-8">
-                    {/* Metadata table */}
-                    <Table className="w-full text-sm">
-                        <TableBody>
-                            <TableRow className="border-0 hover:bg-white">
-                                <TableCell className="py-2 pr-3 text-right font-medium text-black">
-                                    Voucher No:
-                                </TableCell>
-                                <TableCell className="py-2 pl-3 font-semibold text-black">
-                                    {voucher.voucherNumber ?? "—"}
-                                </TableCell>
-                                <TableCell className="py-2 pr-3 text-right font-medium text-black">
-                                    Date:
-                                </TableCell>
-                                <TableCell className="py-2 pl-3 font-semibold text-black">
-                                    {voucherDate}
-                                </TableCell>
-                            </TableRow>
-                            <TableRow className="border-0 hover:bg-white">
-                                <TableCell className="py-2 pr-3 text-right font-medium text-black">
-                                    Pay to:
-                                </TableCell>
-                                <TableCell className="py-2 pl-3 font-semibold uppercase tracking-wide text-black">
+            <DownloadDocumentShell
+                title="PAYMENT VOUCHER"
+                className="voucher-download-root"
+                pageBreakAfter>
+                <DownloadMetadataTable
+                    rows={[
+                        {
+                            leftLabel: "Voucher No:",
+                            leftValue: voucher.voucherNumber ?? "—",
+                            rightLabel: "Date:",
+                            rightValue: voucherDate,
+                        },
+                        {
+                            leftLabel: "Pay to:",
+                            leftValue: (
+                                <span className="uppercase tracking-wide">
                                     {workerName}
-                                </TableCell>
-                                <TableCell className="py-2 pr-3 text-right font-medium text-black">
-                                    Period:
-                                </TableCell>
-                                <TableCell className="py-2 pl-3 font-semibold text-black">
-                                    {periodLabel}
-                                </TableCell>
-                            </TableRow>
-                            <TableRow className="border-0 hover:bg-white">
-                                <TableCell className="py-2 pr-3 text-right font-medium text-black">
-                                    Min. Hours:
-                                </TableCell>
-                                <TableCell className="py-2 pl-3 font-semibold text-black">
-                                    {voucher.minimumWorkingHours != null
-                                        ? voucher.minimumWorkingHours.toFixed(2)
-                                        : "—"}
-                                </TableCell>
-                                <TableCell className="py-2 pr-3 text-right font-medium text-black">
-                                    Hours Worked:
-                                </TableCell>
-                                <TableCell className="py-2 pl-3 font-semibold text-black">
-                                    {voucher.totalHoursWorked != null
-                                        ? voucher.totalHoursWorked.toFixed(2)
-                                        : "—"}
-                                </TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
+                                </span>
+                            ),
+                            rightLabel: "Period:",
+                            rightValue: periodLabel,
+                        },
+                        {
+                            leftLabel: "Min. Hours:",
+                            leftValue:
+                                voucher.minimumWorkingHours != null
+                                    ? voucher.minimumWorkingHours.toFixed(2)
+                                    : "—",
+                            rightLabel: "Hours Worked:",
+                            rightValue:
+                                voucher.totalHoursWorked != null
+                                    ? voucher.totalHoursWorked.toFixed(2)
+                                    : "—",
+                        },
+                    ]}
+                />
 
                     {/* Line items table */}
                     <Table className="w-full border-collapse text-sm [&_th]:align-middle [&_td]:align-middle">
@@ -384,37 +362,14 @@ export function PaymentVoucher({
                         </TableFooter>
                     </Table>
 
-                    {/* Signature blocks */}
-                    <Table className="w-full text-sm">
-                        <TableBody>
-                            <TableRow className="border-0 hover:bg-white">
-                                <TableCell className="py-2 text-md font-medium text-black">
-                                    Payment approved by Alvis Ong Thai Ying
-                                </TableCell>
-                                <TableCell className="py-2 text-md text-right font-medium text-black">
-                                    Payment received by {workerName}
-                                </TableCell>
-                            </TableRow>
-                            <TableRow className="border-0 hover:bg-white">
-                                <TableCell className="text-black pt-12">
-                                    <div className="w-full max-w-[200px] border-b border-black" />
-                                </TableCell>
-                                <TableCell className="text-black pt-12">
-                                    <div className="ml-auto w-full max-w-[200px] border-b border-black" />
-                                </TableCell>
-                            </TableRow>
-                            <TableRow className="border-0 hover:bg-white">
-                                <TableCell className="pt-4 text-md text-black">
-                                    Date: <span className="border-b border-neutral-300 px-1">{voucherDate}</span>
-                                </TableCell>
-                                <TableCell className="pt-4 text-right text-md text-black">
-                                    Date: <span className="inline-block w-32 border-b border-neutral-300" />
-                                </TableCell>
-                            </TableRow>
-                        </TableBody>
-                    </Table>
-                </div>
-            </div>
+                <VoucherSignatureSection
+                    approvedLabel="Payment approved"
+                    receivedLabel="Payment received"
+                    approverName="Alvis Ong Thai Ying"
+                    receiverName={workerName}
+                    approvedDate={voucherDate}
+                />
+            </DownloadDocumentShell>
         </div>
     );
 }

@@ -85,7 +85,7 @@ export function SummarizedTimesheet({
     const periodLabel = `${formatPeriod(start)} to ${formatPeriod(end)}`;
 
     return (
-        <div className="voucher-print-root overflow-hidden border border-neutral-300 bg-white text-black print:border-black print:break-inside-avoid timesheet-print-compact">
+        <div className="voucher-download-root overflow-hidden border border-neutral-300 bg-white text-black print:border-black print:break-inside-avoid timesheet-download-compact">
             {/* Header */}
             <div className="border-b border-neutral-300 px-8 pt-6 pb-4 print:border-black print:px-4 print:pt-3 print:pb-2">
                 <h2 className="text-center text-xl font-bold tracking-[0.2em] text-neutral-900 print:text-base print:tracking-widest">

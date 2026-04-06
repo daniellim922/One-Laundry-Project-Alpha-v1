@@ -7,10 +7,11 @@ import { FormPageLayout } from "@/components/form-page-layout";
 import { getAdvanceRequestByIdWithWorker } from "@/utils/advance/queries";
 import { requirePermission } from "@/utils/permissions/require-permission";
 import { checkPermission } from "@/utils/permissions/permissions";
+import { StepProgressPanel } from "@/components/ui/step-progress-panel";
 import { Pencil } from "lucide-react";
 
 import { AdvanceRequestForm } from "../../advance-request-form";
-import { AdvanceStepProgress } from "../advance-step-progress";
+import { getAdvanceStepItems } from "../page";
 
 export default async function AdvanceBreakdownPage({
     params,
@@ -31,6 +32,7 @@ export default async function AdvanceBreakdownPage({
             title="Advance request"
             subtitle={`Detail for worker ${detail.request.workerName}`}
             status={<EntityStatusBadge status={detail.request.status} />}
+            maxWidthClassName="max-w-none"
             actions={
                 !canUpdate || detail.request.status === "paid" ? (
                     <Button variant="outline" disabled>
@@ -48,7 +50,7 @@ export default async function AdvanceBreakdownPage({
                     </Button>
                 )
             }>
-            <AdvanceStepProgress advanceRequestId={id} activeStep={1} />
+            <StepProgressPanel steps={getAdvanceStepItems(id)} activeStep={1} />
             <AdvanceRequestForm
                 readOnly
                 initialData={detail}
