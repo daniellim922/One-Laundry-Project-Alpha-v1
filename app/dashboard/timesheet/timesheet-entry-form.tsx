@@ -2,14 +2,21 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 
 import { createTimesheetEntry, updateTimesheetEntry } from "./actions";
 import { SelectSearch } from "@/components/ui/SelectSearch";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { localIsoDateYmd } from "@/utils/time/local-iso-date";
 import type { TimesheetPaymentStatus } from "@/types/status";
+import { TimesheetDateField } from "./timesheet-date-field";
+import { isIsoDateStrict } from "./timesheet-date-utils";
+import { TimesheetTimeField } from "./timesheet-time-field";
+import { isHmTimeStrict, normalizeHmTime } from "./timesheet-time-utils";
 
 type Worker = { id: string; name: string };
 
@@ -22,6 +29,46 @@ type TimesheetEntry = {
     timeOut: string;
     status?: TimesheetPaymentStatus;
 };
+
+const formSchema = z
+    .object({
+        workerId: z.string().min(1, "Worker is required"),
+        dateIn: z
+            .string()
+            .min(1, "Date in is required")
+            .refine((value) => isIsoDateStrict(value), {
+                message: "Date in is invalid",
+            }),
+        dateOut: z
+            .string()
+            .min(1, "Date out is required")
+            .refine((value) => isIsoDateStrict(value), {
+                message: "Date out is invalid",
+            }),
+        timeIn: z
+            .string()
+            .min(1, "Time in is required")
+            .refine((value) => isHmTimeStrict(value), {
+                message: "Time in must be in HH:MM format",
+            }),
+        timeOut: z
+            .string()
+            .min(1, "Time out is required")
+            .refine((value) => isHmTimeStrict(value), {
+                message: "Time out must be in HH:MM format",
+            }),
+    })
+    .superRefine((values, ctx) => {
+        if (values.dateIn && values.dateOut && values.dateOut < values.dateIn) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["dateOut"],
+                message: "Date out must be on or after date in",
+            });
+        }
+    });
+
+type FormValues = z.infer<typeof formSchema>;
 
 export function TimesheetEntryForm({
     workers,
@@ -36,126 +83,194 @@ export function TimesheetEntryForm({
     const router = useRouter();
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
-    const [workerId, setWorkerId] = React.useState(entry?.workerId ?? "");
 
-    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault();
-        setError(null);
-        setPending(true);
-        const form = e.currentTarget;
-        const formData = new FormData(form);
-        const result = entry
-            ? await updateTimesheetEntry(entry.id, formData)
-            : await createTimesheetEntry(formData);
-        setPending(false);
-        if (result.error) {
-            setError(result.error);
-            return;
-        }
-        router.push("/dashboard/timesheet/all");
-        router.refresh();
-    }
-
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localIsoDateYmd();
     const defaultDateIn = entry?.dateIn ?? today;
     const defaultDateOut = entry?.dateOut ?? defaultDateIn;
-    const defaultTimeIn = entry?.timeIn?.slice(0, 5) ?? "09:00";
-    const defaultTimeOut = entry?.timeOut?.slice(0, 5) ?? "17:00";
+    const defaultTimeIn = normalizeHmTime(entry?.timeIn?.slice(0, 5) ?? "09:00");
+    const defaultTimeOut = normalizeHmTime(
+        entry?.timeOut?.slice(0, 5) ?? "17:00",
+    );
 
-    const [dateIn, setDateIn] = React.useState(defaultDateIn);
-    const [dateOut, setDateOut] = React.useState(defaultDateOut);
-    const [timeIn, setTimeIn] = React.useState(defaultTimeIn);
-    const [timeOut, setTimeOut] = React.useState(defaultTimeOut);
+    const form = useForm<FormValues>({
+        resolver: zodResolver(formSchema),
+        defaultValues: {
+            workerId: entry?.workerId ?? "",
+            dateIn: defaultDateIn,
+            dateOut: defaultDateOut,
+            timeIn: defaultTimeIn,
+            timeOut: defaultTimeOut,
+        },
+    });
+
+    const [dateIn, dateOut, timeIn, timeOut] = useWatch({
+        control: form.control,
+        name: ["dateIn", "dateOut", "timeIn", "timeOut"],
+    });
 
     const totalHours = React.useMemo(() => {
         if (!dateIn || !dateOut || !timeIn || !timeOut) return null;
         const start = new Date(`${dateIn}T${timeIn}:00`);
         const end = new Date(`${dateOut}T${timeOut}:00`);
         const diffMs = end.getTime() - start.getTime();
-        if (diffMs < 0 || isNaN(diffMs)) return null;
+        if (diffMs < 0 || Number.isNaN(diffMs)) return null;
         return (diffMs / 3_600_000).toFixed(2);
     }, [dateIn, dateOut, timeIn, timeOut]);
 
+    async function onSubmit(values: FormValues) {
+        setError(null);
+        setPending(true);
+
+        const formData = new FormData();
+        formData.set("workerId", values.workerId);
+        formData.set("dateIn", values.dateIn);
+        formData.set("dateOut", values.dateOut);
+        formData.set("timeIn", values.timeIn);
+        formData.set("timeOut", values.timeOut);
+
+        const result = entry
+            ? await updateTimesheetEntry(entry.id, formData)
+            : await createTimesheetEntry(formData);
+
+        setPending(false);
+        if (result.error) {
+            setError(result.error);
+            return;
+        }
+
+        router.push("/dashboard/timesheet/all");
+        router.refresh();
+    }
+
     const fieldsBody = (
         <>
-            <div className="space-y-2">
-                <Label htmlFor="workerId">Worker</Label>
-                <SelectSearch
+            <FieldGroup>
+                <Controller
                     name="workerId"
-                    value={workerId}
-                    options={workers.map((w) => ({
-                        value: w.id,
-                        label: w.name,
-                    }))}
-                    onChange={(nextValue) => setWorkerId(nextValue)}
-                    required={!disabled}
-                    disabled={disabled}
-                    placeholder="Search or select worker…"
-                    searchPlaceholder="Search workers…"
-                    emptyText="No workers found."
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                        <Field data-invalid={fieldState.invalid}>
+                            <FieldLabel htmlFor="workerId">Worker</FieldLabel>
+                            <SelectSearch
+                                id="workerId"
+                                value={field.value}
+                                options={workers.map((worker) => ({
+                                    value: worker.id,
+                                    label: worker.name,
+                                }))}
+                                onChange={(nextValue) => field.onChange(nextValue)}
+                                required={!disabled}
+                                disabled={disabled || pending}
+                                aria-invalid={fieldState.invalid}
+                                placeholder="Search or select worker…"
+                                searchPlaceholder="Search workers…"
+                                emptyText="No workers found."
+                            />
+                            {fieldState.invalid && (
+                                <FieldError errors={[fieldState.error]} />
+                            )}
+                        </Field>
+                    )}
                 />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                    <Label htmlFor="dateIn">Date in</Label>
-                    <Input
-                        id="dateIn"
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <Controller
                         name="dateIn"
-                        type="date"
-                        value={dateIn}
-                        onChange={(e) => setDateIn(e.target.value)}
-                        required={!disabled}
-                        disabled={disabled}
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid}>
+                                <FieldLabel htmlFor="dateIn">Date in</FieldLabel>
+                                <TimesheetDateField
+                                    id="dateIn"
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                    required={!disabled}
+                                    disabled={disabled || pending}
+                                    aria-invalid={fieldState.invalid}
+                                />
+                                {fieldState.invalid && (
+                                    <FieldError errors={[fieldState.error]} />
+                                )}
+                            </Field>
+                        )}
                     />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="dateOut">Date out</Label>
-                    <Input
-                        id="dateOut"
+
+                    <Controller
                         name="dateOut"
-                        type="date"
-                        value={dateOut}
-                        onChange={(e) => setDateOut(e.target.value)}
-                        required={!disabled}
-                        disabled={disabled}
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid}>
+                                <FieldLabel htmlFor="dateOut">Date out</FieldLabel>
+                                <TimesheetDateField
+                                    id="dateOut"
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                    required={!disabled}
+                                    disabled={disabled || pending}
+                                    aria-invalid={fieldState.invalid}
+                                />
+                                {fieldState.invalid && (
+                                    <FieldError errors={[fieldState.error]} />
+                                )}
+                            </Field>
+                        )}
                     />
                 </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                    <Label htmlFor="timeIn">Time in</Label>
-                    <Input
-                        id="timeIn"
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <Controller
                         name="timeIn"
-                        type="time"
-                        value={timeIn}
-                        onChange={(e) => setTimeIn(e.target.value)}
-                        required={!disabled}
-                        disabled={disabled}
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid}>
+                                <FieldLabel htmlFor="timeIn">Time in</FieldLabel>
+                                <TimesheetTimeField
+                                    id="timeIn"
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                    required={!disabled}
+                                    disabled={disabled || pending}
+                                    aria-invalid={fieldState.invalid}
+                                />
+                                {fieldState.invalid && (
+                                    <FieldError errors={[fieldState.error]} />
+                                )}
+                            </Field>
+                        )}
                     />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="timeOut">Time out</Label>
-                    <Input
-                        id="timeOut"
+
+                    <Controller
                         name="timeOut"
-                        type="time"
-                        value={timeOut}
-                        onChange={(e) => setTimeOut(e.target.value)}
-                        required={!disabled}
-                        disabled={disabled}
+                        control={form.control}
+                        render={({ field, fieldState }) => (
+                            <Field data-invalid={fieldState.invalid}>
+                                <FieldLabel htmlFor="timeOut">Time out</FieldLabel>
+                                <TimesheetTimeField
+                                    id="timeOut"
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                    required={!disabled}
+                                    disabled={disabled || pending}
+                                    aria-invalid={fieldState.invalid}
+                                />
+                                {fieldState.invalid && (
+                                    <FieldError errors={[fieldState.error]} />
+                                )}
+                            </Field>
+                        )}
                     />
                 </div>
-            </div>
+            </FieldGroup>
+
             {totalHours !== null && (
                 <div className="rounded-md bg-muted px-4 py-3 text-sm">
                     <span className="font-medium">Total hours:</span>{" "}
                     <span className="text-lg font-semibold">{totalHours}</span>
                 </div>
             )}
-            {!disabled && error && (
-                <p className="text-destructive text-sm">{error}</p>
-            )}
+
+            {!disabled && error && <p className="text-destructive text-sm">{error}</p>}
+
             <div className="flex gap-2">
                 {disabled ? (
                     <>
@@ -172,7 +287,7 @@ export function TimesheetEntryForm({
                 ) : (
                     <>
                         <Button type="submit" disabled={pending}>
-                            {pending ? "Adding..." : "Add"}
+                            {pending ? (entry ? "Saving..." : "Adding...") : entry ? "Save" : "Add"}
                         </Button>
                         <Button
                             type="button"
@@ -192,7 +307,10 @@ export function TimesheetEntryForm({
                 {disabled ? (
                     <div className="space-y-4">{fieldsBody}</div>
                 ) : (
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form
+                        onSubmit={form.handleSubmit(onSubmit)}
+                        className="space-y-4"
+                        autoComplete="off">
                         {fieldsBody}
                     </form>
                 )}
