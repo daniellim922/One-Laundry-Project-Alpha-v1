@@ -1,5 +1,6 @@
 import { pgTable, uuid, text, timestamp } from "drizzle-orm/pg-core";
 import { employmentTable, type SelectEmployment } from "./employmentTable";
+import { workerStatusEnum } from "./statusEnums";
 
 export const workerTable = pgTable("worker", {
     id: uuid().primaryKey().defaultRandom(),
@@ -7,7 +8,7 @@ export const workerTable = pgTable("worker", {
     nric: text("nric"),
     email: text("email"),
     phone: text("phone"),
-    status: text("status", { enum: ["Active", "Inactive"] as const }).notNull(),
+    status: workerStatusEnum("status").notNull(),
     countryOfOrigin: text("country_of_origin"),
     race: text("race"),
 

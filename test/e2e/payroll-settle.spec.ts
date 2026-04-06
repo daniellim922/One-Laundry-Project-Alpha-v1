@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 const NO_DRAFT_SKIP_REASON =
-    "No draft payroll in the database; run db:seed or create a draft payroll to exercise this flow.";
+    "No Draft payroll in the database; run db:seed or create a Draft payroll to exercise this flow.";
 const NOT_AUTHENTICATED_SKIP_REASON =
     "Not authenticated (auth setup did not produce a valid session). Configure DB/env and re-run e2e.";
 
@@ -12,15 +12,15 @@ function requireAuthenticatedOrSkip(page: { url(): string }) {
 }
 
 /**
- * When at least one payroll has status `draft`, these tests run the real assertions.
- * If none appears within the timeout (empty DB, all settled, etc.), tests **skip** so
+ * When at least one payroll has status `Draft`, these tests run the real assertions.
+ * If none appears within the timeout (empty DB, all Settled, etc.), tests **skip** so
  * `npm run test:e2e` still exits successfully.
  *
- * Fresh seed (`npm run db:seed`) creates draft payrolls for the first and 32nd workers
+ * Fresh seed (`npm run db:seed`) creates Draft payrolls for the first and 32nd workers
  * in db/seed/payrolls.ts.
  */
 async function requireDraftPayrollRowOrSkip(page: Page) {
-    const draftRows = page.getByRole("row").filter({ hasText: "draft" });
+    const draftRows = page.getByRole("row").filter({ hasText: "Draft" });
     const first = draftRows.first();
     try {
         await expect(first).toBeVisible({ timeout: 20_000 });
@@ -41,11 +41,11 @@ test.describe("Payroll settle flow", () => {
         ).toBeVisible();
     });
 
-    test("lists at least one draft payroll", async ({ page }) => {
+    test("lists at least one Draft payroll", async ({ page }) => {
         await requireDraftPayrollRowOrSkip(page);
     });
 
-    test("settles a draft payroll from detail page", async ({ page }) => {
+    test("settles a Draft payroll from detail page", async ({ page }) => {
         const draftRow = await requireDraftPayrollRowOrSkip(page);
 
         await draftRow.getByRole("button", { name: "Open row actions" }).click();
@@ -59,6 +59,6 @@ test.describe("Payroll settle flow", () => {
 
         await expect(page.getByRole("dialog")).not.toBeVisible();
         await expect(page).toHaveURL(/\/dashboard\/payroll\/[0-9a-f-]+\/summary/i);
-        await expect(page.getByText("settled").first()).toBeVisible();
+        await expect(page.getByText("Settled").first()).toBeVisible();
     });
 });

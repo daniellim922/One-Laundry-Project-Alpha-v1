@@ -28,7 +28,6 @@ import { localTimeHm } from "@/utils/time/local-time";
 import {
     createBadgeCell,
     createSortableHeader,
-    withMultiSelectColumnFilter,
 } from "@/components/data-table/column-builders";
 
 export type TimesheetEntryWithWorker = {
@@ -54,7 +53,7 @@ function TimesheetRowActions({
     const [deleteOpen, setDeleteOpen] = React.useState(false);
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
-    const isPaid = status === "paid";
+    const isPaid = status === "Paid";
 
     async function handleDelete() {
         setError(null);
@@ -184,24 +183,16 @@ export const columns: ColumnDef<TimesheetEntryWithWorker>[] = [
         header: createSortableHeader("Hours"),
         cell: ({ row }) => row.original.hours.toFixed(2),
     },
-    withMultiSelectColumnFilter<TimesheetEntryWithWorker>(
-        {
-            accessorKey: "status",
-            header: createSortableHeader("Status"),
-            meta: { globalSearch: true },
-            cell: createBadgeCell<TimesheetEntryWithWorker>({
-                value: (r) => r.status,
-                variant: "outline",
-                toneClassNameFor: (r) =>
-                    timesheetPaymentStatusBadgeTone[r.status],
-            }),
-        },
-        {
-            options: "auto",
-            placeholder: "Status…",
-            searchPlaceholder: "Search status…",
-        },
-    ),
+    {
+        accessorKey: "status",
+        header: createSortableHeader("Status"),
+        meta: { globalSearch: true },
+        cell: createBadgeCell<TimesheetEntryWithWorker>({
+            value: (r) => r.status,
+            variant: "outline",
+            toneClassNameFor: (r) => timesheetPaymentStatusBadgeTone[r.status],
+        }),
+    },
     {
         id: "actions",
         header: "",

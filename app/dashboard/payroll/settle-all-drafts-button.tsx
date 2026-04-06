@@ -94,8 +94,8 @@ export function SettleAllDraftPayrollsButton() {
                 );
             } catch (e) {
                 if (cancelled) return;
-                console.error("Failed to load draft payrolls", e);
-                setError("Failed to load draft payrolls");
+                console.error("Failed to load Draft payrolls", e);
+                setError("Failed to load Draft payrolls");
             } finally {
                 if (cancelled) return;
                 setLoadingDrafts(false);
@@ -206,7 +206,7 @@ export function SettleAllDraftPayrollsButton() {
                     type="button"
                     variant="destructive"
                     disabled={pending || downloadingZip}>
-                    Settle all draft payrolls
+                    Settle all Draft payrolls
                 </Button>
             </DialogTrigger>
             <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-6xl [&_button]:cursor-pointer">
@@ -214,16 +214,16 @@ export function SettleAllDraftPayrollsButton() {
                     <DialogTitle>Confirm settlement</DialogTitle>
                     <DialogDescription>
                         {loadingDrafts
-                            ? "Loading draft payrolls…"
+                            ? "Loading Draft payrolls…"
                             : draftCount === 0
-                              ? "There are no draft payrolls to settle."
-                              : "Select the draft payrolls you want to settle. All rows are selected by default."}
+                              ? "There are no Draft payrolls to settle."
+                              : "Select the Draft payrolls you want to settle. All rows are selected by default."}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-2">
                     {loadingDrafts ? (
                         <div className="rounded-md border px-3 py-3 text-sm text-muted-foreground">
-                            Loading draft payrolls...
+                            Loading Draft payrolls...
                         </div>
                     ) : (
                         <DataTable

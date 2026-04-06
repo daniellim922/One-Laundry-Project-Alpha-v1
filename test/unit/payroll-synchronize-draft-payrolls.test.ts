@@ -30,7 +30,7 @@ describe("synchronizeWorkerDraftPayrolls", () => {
         expect(mocks.db.select).not.toHaveBeenCalled();
     });
 
-    it("returns success when no draft payrolls exist", async () => {
+    it("returns success when no Draft payrolls exist", async () => {
         mocks.db.select.mockReturnValueOnce({
             from: vi.fn().mockReturnValue({
                 where: vi.fn().mockResolvedValue([]),

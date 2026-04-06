@@ -77,7 +77,7 @@ const formSchema = z
                         (v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v),
                         "Invalid date",
                     ),
-                status: z.enum(["loan", "paid"]).optional(),
+                status: z.enum(["Loan", "Paid"]).optional(),
             }),
         ),
     })
@@ -116,7 +116,7 @@ const formSchema = z
 
             if (
                 hasRepaymentDate &&
-                row.status !== "paid" &&
+                row.status !== "Paid" &&
                 /^\d{4}-\d{2}-\d{2}$/.test(repaymentDate) &&
                 repaymentDate < today
             ) {
@@ -200,7 +200,7 @@ function detailToDefaultValues(detail: AdvanceRequestDetail): FormValues {
                       repaymentDate: a.repaymentDate ?? "",
                       status: a.status,
                   }))
-                : [{ amount: "", repaymentDate: "", status: "loan" }],
+                : [{ amount: "", repaymentDate: "", status: "Loan" }],
     };
 }
 
@@ -348,7 +348,7 @@ function AdvanceRequestFormEditable({
                   amount: "",
                   purpose: "",
                   installmentAmounts: [
-                      { amount: "", repaymentDate: "", status: "loan" },
+                      { amount: "", repaymentDate: "", status: "Loan" },
                   ],
               },
     });
@@ -569,7 +569,7 @@ function AdvanceRequestFormEditable({
                                         insert(fields.length, {
                                             amount: "",
                                             repaymentDate: "",
-                                            status: "loan",
+                                            status: "Loan",
                                         })
                                     }>
                                     <Plus className="size-4" />
@@ -623,7 +623,7 @@ function AdvanceRequestFormEditable({
                                         const isPaidInstallment =
                                             form.getValues(
                                                 `installmentAmounts.${index}.status`,
-                                            ) === "paid";
+                                            ) === "Paid";
 
                                         return (
                                             <div
@@ -721,7 +721,7 @@ function AdvanceRequestFormEditable({
                                                         render={({ field }) => {
                                                             const status =
                                                                 field.value ??
-                                                                "loan";
+                                                                "Loan";
                                                             return (
                                                                 <div className="flex h-9 items-center">
                                                                     <Badge

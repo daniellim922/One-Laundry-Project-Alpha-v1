@@ -1,8 +1,8 @@
-export type LoanPaidStatus = "loan" | "paid";
+export type LoanPaidStatus = "Loan" | "Paid";
 
-export type TimesheetPaymentStatus = "unpaid" | "paid";
+export type TimesheetPaymentStatus = "Unpaid" | "Paid";
 
-export type PayrollStatus = "draft" | "settled";
+export type PayrollStatus = "Draft" | "Settled";
 
 export type WorkerStatus = "Active" | "Inactive";
 

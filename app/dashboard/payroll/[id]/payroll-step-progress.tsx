@@ -38,7 +38,7 @@ export function PayrollStepProgress({
     const [open, setOpen] = React.useState(false);
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
-    const isSettled = payrollStatus === "settled";
+    const isSettled = payrollStatus === "Settled";
 
     const steps: StepProgressItem[] = [
         {

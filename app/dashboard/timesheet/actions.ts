@@ -110,7 +110,7 @@ export async function updateTimesheetEntry(id: string, formData: FormData) {
     if (!oldEntry) {
         return { error: "Timesheet entry not found" };
     }
-    if (oldEntry.status === "paid") {
+    if (oldEntry.status === "Paid") {
         return { error: "Paid timesheet entries cannot be edited" };
     }
 

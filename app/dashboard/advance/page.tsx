@@ -25,7 +25,7 @@ export default async function AdvanceOverviewPage() {
         db
             .select({ loanCount: count() })
             .from(advanceRequestTable)
-            .where(eq(advanceRequestTable.status, "loan")),
+            .where(eq(advanceRequestTable.status, "Loan")),
     ]);
     const paidCount = Number(total) - Number(loanCount);
 
@@ -51,7 +51,7 @@ export default async function AdvanceOverviewPage() {
                     <CardContent>
                         <div className="text-2xl font-bold">{total}</div>
                         <p className="text-muted-foreground text-xs">
-                            {loanCount} active loans
+                            {loanCount} Loan requests
                         </p>
                     </CardContent>
                 </Card>
@@ -77,7 +77,7 @@ export default async function AdvanceOverviewPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Advances</CardTitle>
-                    <CardDescription>Loan vs paid</CardDescription>
+                    <CardDescription>Loan vs Paid</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <SimpleDonutChart
@@ -85,7 +85,7 @@ export default async function AdvanceOverviewPage() {
                         segments={[
                             {
                                 key: "loan",
-                                label: "Active loan",
+                                label: "Loan",
                                 value: Number(loanCount),
                             },
                             {

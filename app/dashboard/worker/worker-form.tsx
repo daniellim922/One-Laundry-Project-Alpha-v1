@@ -199,7 +199,7 @@ export type WorkerWithEmployment = {
     nric: string | null;
     email: string | null;
     phone: string | null;
-    status: string;
+    status: "Active" | "Inactive";
     countryOfOrigin: string | null;
     race: string | null;
     employmentType: string;
@@ -224,9 +224,7 @@ function getDefaultValues(
         nric: worker?.nric ?? "",
         email: worker?.email ?? "",
         phone: worker?.phone ?? "",
-        status: (worker?.status === "On Leave"
-            ? "Active"
-            : (worker?.status ?? "Active")) as WorkerFormValues["status"],
+        status: (worker?.status ?? "Active") as WorkerFormValues["status"],
         employmentType: (worker?.employmentType ??
             "Full Time") as WorkerFormValues["employmentType"],
         employmentArrangement: (worker?.employmentArrangement ??

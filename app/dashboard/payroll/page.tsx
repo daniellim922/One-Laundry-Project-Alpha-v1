@@ -22,7 +22,7 @@ export default async function PayrollOverviewPage() {
         db
             .select({ draftCount: count() })
             .from(payrollTable)
-            .where(eq(payrollTable.status, "draft")),
+            .where(eq(payrollTable.status, "Draft")),
     ]);
 
     return (
@@ -47,8 +47,8 @@ export default async function PayrollOverviewPage() {
                     <CardContent>
                         <div className="text-2xl font-bold">{total}</div>
                         <p className="text-muted-foreground text-xs">
-                            {draftCount} draft ·{" "}
-                            {Number(total) - Number(draftCount)} settled
+                            {draftCount} Draft ·{" "}
+                            {Number(total) - Number(draftCount)} Settled
                         </p>
                     </CardContent>
                 </Card>
@@ -74,7 +74,7 @@ export default async function PayrollOverviewPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Payroll by status</CardTitle>
-                    <CardDescription>Draft vs settled</CardDescription>
+                    <CardDescription>Draft vs Settled</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <SimpleDonutChart
