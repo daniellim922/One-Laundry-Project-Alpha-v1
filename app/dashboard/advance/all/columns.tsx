@@ -45,7 +45,7 @@ export const columns: ColumnDef<AdvanceRequestWithWorker>[] = [
     },
     createActionsColumn<AdvanceRequestWithWorker>({
         cell: (advanceRequest) => {
-            const isPaid = advanceRequest.status === "paid";
+            const isPaid = advanceRequest.status === "Paid";
             return (
                 <RowActionsMenu>
                     <DropdownMenuItem asChild>

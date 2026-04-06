@@ -45,17 +45,17 @@ describe("settlePayroll", () => {
         expect(result).toEqual({ error: "Payroll not found" });
     });
 
-    it("returns error when payroll is not draft", async () => {
+    it("returns error when payroll is not Draft", async () => {
         mocks.db.select.mockReturnValueOnce({
             from: vi.fn().mockReturnValue({
                 where: vi.fn().mockReturnValue({
-                    limit: vi.fn().mockResolvedValue([makePayroll({ status: "settled" })]),
+                    limit: vi.fn().mockResolvedValue([makePayroll({ status: "Settled" })]),
                 }),
             }),
         });
 
         const result = await settlePayroll("payroll-1");
-        expect(result).toEqual({ error: "Only draft payrolls can be settled" });
+        expect(result).toEqual({ error: "Only Draft payrolls can be settled" });
     });
 
     it("settles payroll and revalidates routes", async () => {
@@ -72,12 +72,12 @@ describe("settlePayroll", () => {
         const txUpdate = vi.fn().mockReturnValue({ set: txUpdateSet });
 
         const advancesInPeriod = [
-            makeAdvance({ id: "adv-1", advanceRequestId: "req-1", status: "loan" }),
-            makeAdvance({ id: "adv-2", advanceRequestId: "req-2", status: "paid" }),
+            makeAdvance({ id: "adv-1", advanceRequestId: "req-1", status: "Loan" }),
+            makeAdvance({ id: "adv-2", advanceRequestId: "req-2", status: "Paid" }),
         ];
         const requestAdvances = [
-            { advanceRequestId: "req-1", status: "paid" as const },
-            { advanceRequestId: "req-2", status: "loan" as const },
+            { advanceRequestId: "req-1", status: "Paid" as const },
+            { advanceRequestId: "req-2", status: "Loan" as const },
         ];
 
         const txSelect = vi

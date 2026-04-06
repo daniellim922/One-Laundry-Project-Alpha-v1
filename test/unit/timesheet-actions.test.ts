@@ -40,8 +40,8 @@ describe("updateTimesheetEntry", () => {
         mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({ success: true });
     });
 
-    it("returns error and does not update when entry is paid", async () => {
-        mockSelectResolved([{ workerId: "worker-1", status: "paid" }]);
+    it("returns error and does not update when entry is Paid", async () => {
+        mockSelectResolved([{ workerId: "worker-1", status: "Paid" }]);
 
         const fd = new FormData();
         fd.set("workerId", "worker-1");

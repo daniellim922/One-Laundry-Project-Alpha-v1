@@ -58,8 +58,8 @@ function toDateString(val: string): string {
 }
 
 /**
- * Recalculates draft payroll vouchers for a worker from timesheets, advances, and current employment.
- * Call after timesheet/worker/advance changes so draft vouchers stay in sync.
+ * Recalculates Draft payroll vouchers for a worker from timesheets, advances, and current employment.
+ * Call after timesheet/worker/advance changes so Draft vouchers stay in sync.
  */
 export async function synchronizeWorkerDraftPayrolls(input: {
     workerId: string;
@@ -76,7 +76,7 @@ export async function synchronizeWorkerDraftPayrolls(input: {
             .where(
                 and(
                     eq(payrollTable.workerId, workerId),
-                    eq(payrollTable.status, "draft"),
+                    eq(payrollTable.status, "Draft"),
                 ),
             );
 
@@ -169,7 +169,7 @@ export async function synchronizeWorkerDraftPayrolls(input: {
                     ),
                 );
             const advanceTotal = advanceRows
-                .filter((advance) => advance.status === "loan")
+                .filter((advance) => advance.status === "Loan")
                 .reduce((sum, advance) => sum + advance.amount, 0);
             const netPay = calcNetPay({
                 totalPay,
@@ -207,8 +207,8 @@ export async function synchronizeWorkerDraftPayrolls(input: {
 
         return { success: true };
     } catch (error) {
-        console.error("Error synchronizing worker draft payrolls", error);
-        return { error: "Failed to synchronize draft payrolls" };
+        console.error("Error synchronizing worker Draft payrolls", error);
+        return { error: "Failed to synchronize Draft payrolls" };
     }
 }
 
@@ -284,7 +284,7 @@ export async function createPayroll(formData: FormData) {
         periodEnd,
     );
     const advanceTotal = advances
-        .filter((a) => a.status === "loan")
+        .filter((a) => a.status === "Loan")
         .reduce((sum, a) => sum + a.amount, 0);
     const netPay = calcNetPay({
         totalPay,
@@ -329,7 +329,7 @@ export async function createPayroll(formData: FormData) {
         periodStart,
         periodEnd,
         payrollDate,
-        status: "draft",
+        status: "Draft",
         createdAt: new Date(),
         updatedAt: new Date(),
     });
@@ -415,7 +415,7 @@ export async function createPayrolls(formData: FormData) {
             periodEnd,
         );
         const advanceTotal = advances
-            .filter((a) => a.status === "loan")
+            .filter((a) => a.status === "Loan")
             .reduce((sum, a) => sum + a.amount, 0);
         const netPay = calcNetPay({
             totalPay,
@@ -460,7 +460,7 @@ export async function createPayrolls(formData: FormData) {
             periodStart,
             periodEnd,
             payrollDate,
-            status: "draft",
+            status: "Draft",
             createdAt: new Date(),
             updatedAt: new Date(),
         });
@@ -488,8 +488,8 @@ export async function updatePayroll(payrollId: string, formData: FormData) {
         .limit(1);
 
     if (!existing) return { error: "Payroll not found" };
-    if (existing.status !== "draft")
-        return { error: "Only draft payrolls can be edited" };
+    if (existing.status !== "Draft")
+        return { error: "Only Draft payrolls can be edited" };
 
     const [row] = await db
         .select({
@@ -560,7 +560,7 @@ export async function updatePayroll(payrollId: string, formData: FormData) {
         periodEnd,
     );
     const advanceTotal = advances
-        .filter((a) => a.status === "loan")
+        .filter((a) => a.status === "Loan")
         .reduce((sum, a) => sum + a.amount, 0);
     const netPay = calcNetPay({
         totalPay,
@@ -625,17 +625,17 @@ async function settlePayrollInTx(
     type AdvanceInPeriodRow = {
         id: string;
         advanceRequestId: string;
-        status: "loan" | "paid";
+        status: "Loan" | "Paid";
     };
     type RequestAdvanceRow = {
         advanceRequestId: string;
-        status: "loan" | "paid";
+        status: "Loan" | "Paid";
     };
 
     await tx
         .update(payrollTable)
         .set({
-            status: "settled",
+            status: "Settled",
             updatedAt: now,
         })
         .where(eq(payrollTable.id, payroll.id));
@@ -660,14 +660,14 @@ async function settlePayrollInTx(
         );
 
     const loanAdvanceIds = advancesInPeriod
-        .filter((advance) => advance.status === "loan")
+        .filter((advance) => advance.status === "Loan")
         .map((advance) => advance.id);
 
     if (loanAdvanceIds.length > 0) {
         await tx
             .update(advanceTable)
             .set({
-                status: "paid",
+                status: "Paid",
                 updatedAt: now,
             })
             .where(inArray(advanceTable.id, loanAdvanceIds));
@@ -692,14 +692,14 @@ async function settlePayrollInTx(
                 acc[row.advanceRequestId]!.push({ status: row.status });
                 return acc;
             },
-            {} as Record<string, Array<{ status: "loan" | "paid" }>>,
+            {} as Record<string, Array<{ status: "Loan" | "Paid" }>>,
         );
 
         const fullyPaidRequestIds = requestIds.filter((requestId: string) => {
             const advances = byRequestId[requestId] ?? [];
             return (
                 advances.length > 0 &&
-                advances.every((a) => a.status === "paid")
+                advances.every((a) => a.status === "Paid")
             );
         });
 
@@ -711,7 +711,7 @@ async function settlePayrollInTx(
             await tx
                 .update(advanceRequestTable)
                 .set({
-                    status: "paid",
+                    status: "Paid",
                     updatedAt: now,
                 })
                 .where(inArray(advanceRequestTable.id, fullyPaidRequestIds));
@@ -721,7 +721,7 @@ async function settlePayrollInTx(
             await tx
                 .update(advanceRequestTable)
                 .set({
-                    status: "loan",
+                    status: "Loan",
                     updatedAt: now,
                 })
                 .where(inArray(advanceRequestTable.id, notFullyPaidRequestIds));
@@ -731,7 +731,7 @@ async function settlePayrollInTx(
     await tx
         .update(timesheetTable)
         .set({
-            status: "paid",
+            status: "Paid",
             updatedAt: now,
         })
         .where(
@@ -739,7 +739,7 @@ async function settlePayrollInTx(
                 eq(timesheetTable.workerId, payroll.workerId),
                 gte(timesheetTable.dateIn, payroll.periodStart),
                 lte(timesheetTable.dateOut, payroll.periodEnd),
-                eq(timesheetTable.status, "unpaid"),
+                eq(timesheetTable.status, "Unpaid"),
             ),
         );
 }
@@ -754,8 +754,8 @@ export async function settlePayroll(payrollId: string) {
         .limit(1);
 
     if (!payroll) return { error: "Payroll not found" };
-    if (payroll.status !== "draft") {
-        return { error: "Only draft payrolls can be settled" };
+    if (payroll.status !== "Draft") {
+        return { error: "Only Draft payrolls can be settled" };
     }
 
     const now = new Date();
@@ -811,7 +811,7 @@ export async function settleDraftPayrolls(payrollIds: string[]) {
             if (rows.length !== uniqueIds.length) {
                 throw new SettleDraftPayrollsValidationError("NOT_FOUND");
             }
-            if (rows.some((r) => r.status !== "draft")) {
+            if (rows.some((r) => r.status !== "Draft")) {
                 throw new SettleDraftPayrollsValidationError("NOT_DRAFT");
             }
 
@@ -828,8 +828,8 @@ export async function settleDraftPayrolls(payrollIds: string[]) {
             }
             return { error: "One or more payrolls are not drafts" };
         }
-        console.error("Error settling draft payrolls", error);
-        return { error: "Failed to settle draft payrolls" };
+        console.error("Error settling Draft payrolls", error);
+        return { error: "Failed to settle Draft payrolls" };
     }
 
     for (const payrollId of settledPayrollIds) {
@@ -867,7 +867,7 @@ export async function getDraftPayrollsForSettlement() {
             employmentTable,
             eq(workerTable.employmentId, employmentTable.id),
         )
-        .where(eq(payrollTable.status, "draft"))
+        .where(eq(payrollTable.status, "Draft"))
         .orderBy(asc(workerTable.name), asc(payrollTable.periodStart));
 
     return rows.map((r) => ({
@@ -931,8 +931,8 @@ export async function updateVoucherDays(input: {
     if (payrollRow.payrollVoucherId !== voucherId) {
         return { error: "Voucher does not belong to this payroll" };
     }
-    if (payrollRow.status !== "draft") {
-        return { error: "Only draft payrolls can edit voucher days" };
+    if (payrollRow.status !== "Draft") {
+        return { error: "Only Draft payrolls can edit voucher days" };
     }
 
     const [voucher] = await db

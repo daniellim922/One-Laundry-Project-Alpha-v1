@@ -17,8 +17,7 @@ type EntityStatus =
     | LoanPaidStatus
     | TimesheetPaymentStatus
     | PayrollStatus
-    | WorkerStatus
-    | string;
+    | WorkerStatus;
 
 const knownStatusToneClassName = {
     ...loanPaidToneClassName,
@@ -26,11 +25,6 @@ const knownStatusToneClassName = {
     ...payrollStatusBadgeTone,
     ...workerStatusBadgeTone,
 };
-
-function toStatusLabel(status: EntityStatus): string {
-    if (status.length === 0) return status;
-    return status.charAt(0).toUpperCase() + status.slice(1);
-}
 
 export function EntityStatusBadge({
     status,
@@ -52,7 +46,7 @@ export function EntityStatusBadge({
                     : "bg-muted text-muted-foreground",
                 className,
             )}>
-            {label ?? toStatusLabel(status)}
+            {label ?? status}
         </Badge>
     );
 }

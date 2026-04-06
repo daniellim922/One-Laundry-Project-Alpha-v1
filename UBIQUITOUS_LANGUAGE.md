@@ -23,7 +23,7 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | **Timesheet entry**             | A single worked interval: **Date in**, **Time in**, **Date out**, **Time out**, derived **Hours**, and a settlement flag (**Unpaid** / **Paid**).                                                                                                                            | Clock record, attendance row                              |
 | **Hours**                       | Decimal duration worked for one **Timesheet entry**, computed from in/out date-times (including overnight spans).                                                                                                                                                            | Duration (when money is implied, prefer **Hours worked**) |
-| **Timesheet settlement status** | Stored as **unpaid** / **paid**: **paid** applies only after the containing **Payroll** is **Settled** (editing restricted for **paid** rows). In the UI, prefer labels like **Included in payroll** instead of bare **Paid** to avoid confusion with **Advance** repayment. | Bare **Paid** in user-facing timesheet copy               |
+| **Timesheet settlement status** | Stored as **Unpaid** / **Paid**: **Paid** applies only after the containing **Payroll** is **Settled** (editing restricted for **Paid** rows). In the UI, prefer labels like **Included in payroll** instead of bare **Paid** to avoid confusion with **Advance** repayment. | Bare **Paid** in user-facing timesheet copy               |
 
 
 ## Payroll run and voucher
@@ -47,7 +47,7 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 | **Total pay**                        | Gross pay for the period after **Hours-not-met deduction**, before CPF and **Advance** recovery.                                                                                                                                                                                                                                                                                   | Gross (ambiguous)                                                                                           |
 | **Net pay**                          | **Total pay** minus **CPF** and the sum of outstanding **Advance** amounts in **Loan** status for the period.                                                                                                                                                                                                                                                                      | Take-home (informal)                                                                                        |
 | **Synchronize worker drafts**        | Recompute all **Draft** **Payrolls** for a **Worker** from current **Employment**, **Timesheet entries**, **Payroll voucher** inputs, and **Advances**.                                                                                                                                                                                                                            | Sync, refresh                                                                                               |
-| **Reopen** (payroll)                 | Privileged action: **Settled** → **Draft** for the **whole** **Payroll** run (one worker, one run). Affected **Timesheet** entries return to **unpaid**. **Advance** recovery applied in that **Settled** run is **reverted** so amounts return to **Loan** until the run is **Settled** again. Same **Roles** that may **Settle** may **Reopen** (symmetric payroll-admin trust). | Partial reopen of one run; using **Reopen** when payout is already final in the real world without a policy |
+| **Reopen** (payroll)                 | Privileged action: **Settled** → **Draft** for the **whole** **Payroll** run (one worker, one run). Affected **Timesheet** entries return to **Unpaid**. **Advance** recovery applied in that **Settled** run is **reverted** so amounts return to **Loan** until the run is **Settled** again. Same **Roles** that may **Settle** may **Reopen** (symmetric payroll-admin trust). | Partial reopen of one run; using **Reopen** when payout is already final in the real world without a policy |
 
 
 ## Salary advances
@@ -57,8 +57,8 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
 | **Advance request**                 | A **Worker**-initiated request for a salary **Advance**, with amount, purpose, and signature fields (formal labels may say **employee**). | Loan application (unless legal)               |
 | **Advance**                         | A disbursement line linked to an **Advance request**, with amount and repayment scheduling.                                               | Loan (unless policy uses that term legally)   |
-| **Advance / request status (loan)** | Money is still to be recovered through payroll (outstanding).                                                                             | Pending, open                                 |
-| **Advance / request status (paid)** | The **Advance** has been fully repaid or cleared (all linked lines **Paid**).                                                             | Settled (reserve **Settled** for **Payroll**) |
+| **Advance / request status (Loan)** | Money is still to be recovered through payroll (outstanding).                                                                             | Pending, open                                 |
+| **Advance / request status (Paid)** | The **Advance** has been fully repaid or cleared (all linked lines **Paid**).                                                             | Settled (reserve **Settled** for **Payroll**) |
 
 
 ## Expenses
@@ -87,13 +87,13 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 - **Draft** **Payrolls** for a **Worker** are recomputed from **Timesheet entries** whose dates fall in the **Pay period**, from the **Employment** terms, **Payroll voucher** counts (e.g. **Rest days**, **Public holidays**), and **Advances** in **Loan** status.
 - An **Advance request** belongs to one **Worker**; one or more **Advances** belong to one **Advance request**.
 - **Advance request** status **Paid** applies when every linked **Advance** is **Paid**.
-- **Settle** marks the run **Settled** and sets covered **Timesheet** entries to **paid**; **Reopen** reverses that for the run and reverts **Advance** recovery as above.
+- **Settle** marks the run **Settled** and sets covered **Timesheet** entries to **Paid**; **Reopen** reverses that for the run and reverts **Advance** recovery as above.
 
 ## Example dialogue
 
-> **Dev:** "When we **settle** a **Payroll**, should **Timesheet entries** in that period flip to **paid**?"
+> **Dev:** "When we **settle** a **Payroll**, should **Timesheet entries** in that period flip to **Paid**?"
 
-> **Domain expert:** "Only on **Settle** — not when the run is still **Draft**. On screen we say **Included in payroll**, not **Paid**, so nobody confuses it with an **Advance** marked **paid** (repaid)."
+> **Domain expert:** "Only on **Settle** — not when the run is still **Draft**. On screen we say **Included in payroll**, not **Paid**, so nobody confuses it with an **Advance** marked **Paid** (repaid)."
 
 > **Dev:** "We **reopen** a **Settled** run to fix a mistake — what happens to **Advances**?"
 
@@ -105,10 +105,9 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 
 ## Flagged ambiguities
 
-- **Settled** applies to **Payroll**; using **settled** for **Advances** would collide with **Advance** status **paid** — keep **Settled** for payroll finalization only.
+- **Settled** applies to **Payroll**; using **Settled** for **Advances** would collide with **Advance** status **Paid** — keep **Settled** for payroll finalization only.
 - **Reopen** assumes the system is the source of truth for **Advance** balances; if real-world payouts already happened, operations may need a policy outside this model.
 
 ## Deferred (not in vocabulary until implemented)
 
 - A future payroll status **Needs Attention** was discussed; **no** shared rules or terms for it until it exists in code.
-

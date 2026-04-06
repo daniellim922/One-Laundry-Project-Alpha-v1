@@ -1,23 +1,19 @@
 import {
     pgTable,
     uuid,
-    text,
     timestamp,
     date,
 } from "drizzle-orm/pg-core";
 import { workerTable } from "./workerTable";
 import { payrollVoucherTable } from "./payrollVoucherTable";
+import { payrollStatusEnum } from "./statusEnums";
 
 export const payrollTable = pgTable("payroll", {
     id: uuid().primaryKey().defaultRandom(),
     periodStart: date("period_start").notNull(),
     periodEnd: date("period_end").notNull(),
     payrollDate: date("payroll_date").notNull(),
-    status: text("status", {
-        enum: ["draft", "settled"] as const,
-    })
-        .notNull()
-        .default("draft"),
+    status: payrollStatusEnum("status").notNull().default("Draft"),
 
     workerId: uuid("worker_id")
         .references(() => workerTable.id, { onDelete: "cascade" })
