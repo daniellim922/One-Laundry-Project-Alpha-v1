@@ -97,7 +97,7 @@ export function AdvancePrintable({ detail }: { detail: AdvanceRequestDetail }) {
                     <Table className="w-full border-collapse text-sm [&_th]:align-middle [&_td]:align-middle">
                         <TableHeader>
                             <TableRow className="border-y-2 border-black">
-                                <TableHead className="w-[50px] py-2 pl-2 text-neutral-700 text-center font-semibold">
+                                <TableHead className="w-12.5 py-2 pl-2 text-neutral-700 text-center font-semibold">
                                     #
                                 </TableHead>
                                 <TableHead className="py-2 text-left font-semibold text-black-700">
@@ -167,7 +167,7 @@ export function AdvancePrintable({ detail }: { detail: AdvanceRequestDetail }) {
                     <div className="space-y-8">
                         <p className="font-medium">Employee signature</p>
                         <div>
-                            <div className="w-full max-w-[200px] border-b border-black" />
+                            <div className="w-full max-w-50 border-b border-black" />
                             <div className="mt-3 space-y-1 text-xs text-neutral-500">
                                 <p>
                                     Name:{" "}
@@ -183,7 +183,7 @@ export function AdvancePrintable({ detail }: { detail: AdvanceRequestDetail }) {
                     <div className="space-y-8 text-right">
                         <p className="font-medium">Manager&apos;s signature</p>
                         <div>
-                            <div className="ml-auto w-full max-w-[200px] border-b border-black" />
+                            <div className="ml-auto w-full max-w-50 border-b border-black" />
                             <div className="mt-3 space-y-1 text-xs text-neutral-500">
                                 <p>
                                     Name:{" "}
