@@ -82,13 +82,15 @@ export function createRowSelectionColumn<TData>({
 
 export function RowActionsMenu({
     label = "Open row actions",
+    modal = true,
     children,
 }: {
     label?: string;
+    modal?: boolean;
     children: React.ReactNode;
 }) {
     return (
-        <DropdownMenu>
+        <DropdownMenu modal={modal}>
             <DropdownMenuTrigger asChild>
                 <Button
                     type="button"

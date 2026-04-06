@@ -97,16 +97,16 @@ export function AdvancePrintable({ detail }: { detail: AdvanceRequestDetail }) {
                     <Table className="w-full border-collapse text-sm [&_th]:align-middle [&_td]:align-middle">
                         <TableHeader>
                             <TableRow className="border-y-2 border-black">
-                                <TableHead className="w-[50px] py-2 pl-2 text-center font-semibold">
+                                <TableHead className="w-[50px] py-2 pl-2 text-neutral-700 text-center font-semibold">
                                     #
                                 </TableHead>
-                                <TableHead className="py-2 text-left font-semibold">
+                                <TableHead className="py-2 text-left font-semibold text-black-700">
                                     AMOUNT
                                 </TableHead>
-                                <TableHead className="py-2 text-left font-semibold">
+                                <TableHead className="py-2 text-left font-semibold text-black-700">
                                     REPAYMENT DATE
                                 </TableHead>
-                                <TableHead className="py-2 text-left font-semibold">
+                                <TableHead className="py-2 text-left font-semibold text-black-700">
                                     STATUS
                                 </TableHead>
                             </TableRow>
@@ -132,7 +132,7 @@ export function AdvancePrintable({ detail }: { detail: AdvanceRequestDetail }) {
                             ))}
                         </TableBody>
                         <TableFooter>
-                            <TableRow className="border-t-2 border-black">
+                            <TableRow className="border-t-2 border-black bg-white">
                                 <TableCell className="py-3 pl-2 text-center font-semibold">
                                     {advances.length}
                                 </TableCell>
