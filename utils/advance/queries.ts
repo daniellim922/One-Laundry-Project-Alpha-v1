@@ -17,21 +17,21 @@ export type AdvanceRequestWithWorker = {
     workerId: string;
     workerName: string;
     amountRequested: number;
-    status: "loan" | "paid";
+    status: "Loan" | "Paid";
     requestDate: string;
     createdAt: Date;
     updatedAt: Date;
 };
 
-function deriveStatusFromAdvances(advances: { status: "loan" | "paid" }[]): "loan" | "paid" {
-    if (advances.length === 0) return "loan";
-    return advances.every((a) => a.status === "paid") ? "paid" : "loan";
+function deriveStatusFromAdvances(advances: { status: "Loan" | "Paid" }[]): "Loan" | "Paid" {
+    if (advances.length === 0) return "Loan";
+    return advances.every((a) => a.status === "Paid") ? "Paid" : "Loan";
 }
 
 export type AdvanceWithRepayment = {
     id: string;
     amount: number;
-    status: "loan" | "paid";
+    status: "Loan" | "Paid";
     repaymentDate: string | null;
 };
 
@@ -64,7 +64,7 @@ export async function listAdvanceRequestsWithWorkers(
         .where(inArray(advanceTable.advanceRequestId, requestIds));
 
     const advancesByRequestId = advanceRows.reduce<
-        Record<string, { status: "loan" | "paid" }[]>
+        Record<string, { status: "Loan" | "Paid" }[]>
     >((acc, a) => {
         const id = a.advanceRequestId;
         if (!acc[id]) acc[id] = [];
@@ -175,7 +175,7 @@ export async function getAdvanceRequestByIdWithWorker(
 export type AdvanceForPayrollPeriod = {
     id: string;
     amount: number;
-    status: "loan" | "paid";
+    status: "Loan" | "Paid";
     repaymentDate: string | null;
     advanceRequestId: string;
 };

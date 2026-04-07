@@ -54,7 +54,7 @@ function TimesheetRowActions({
     const [deleteOpen, setDeleteOpen] = React.useState(false);
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
-    const isPaid = status === "paid";
+    const isPaid = status === "Paid";
 
     async function handleDelete() {
         setError(null);

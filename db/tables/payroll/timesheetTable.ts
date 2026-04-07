@@ -20,10 +20,10 @@ export const timesheetTable = pgTable(
         timeOut: time("time_out").notNull(),
         hours: real("hours").notNull().default(0),
         status: text("status", {
-            enum: ["unpaid", "paid"] as const,
+            enum: ["Unpaid", "Paid"] as const,
         })
             .notNull()
-            .default("unpaid"),
+            .default("Unpaid"),
 
         workerId: uuid("worker_id")
             .notNull()

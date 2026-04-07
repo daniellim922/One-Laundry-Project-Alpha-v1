@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { Column, Table } from "@tanstack/react-table";
+import type { Column, ColumnFiltersState, Table } from "@tanstack/react-table";
 
 import { Input } from "@/components/ui/input";
 import { MultiSelectSearch } from "@/components/ui/MultiSelectSearch";
@@ -18,6 +18,10 @@ export type ColumnFilterMeta = {
     filterPlaceholder?: string;
     filterSearchPlaceholder?: string;
     filterEmptyText?: string;
+    externalTextFilter?: {
+        value: string;
+        onChange: (next: string) => void;
+    };
 };
 
 function autoOptionsForColumn<TData>(
@@ -58,14 +62,28 @@ export function ColumnFilterCell<TData>({
     if (meta?.filterVariant === "multiSelect") {
         if (!resolvedOptions.length) return null;
 
-        const current = (column.getFilterValue() as string[] | undefined) ?? [];
+        const active = table
+            .getState()
+            .columnFilters.find((filter) => filter.id === column.id);
+        const current = Array.isArray(active?.value) ? active.value : [];
 
         return (
             <MultiSelectSearch
                 options={resolvedOptions}
                 value={current}
                 onChange={(next) =>
-                    column.setFilterValue(next.length ? next : undefined)
+                    table.setColumnFilters((prev: ColumnFiltersState) => {
+                        const withoutColumn = prev.filter(
+                            (filter) => filter.id !== column.id,
+                        );
+                        if (!next.length) {
+                            return withoutColumn;
+                        }
+                        return [
+                            ...withoutColumn,
+                            { id: column.id, value: next },
+                        ];
+                    })
                 }
                 placeholder={meta.filterPlaceholder ?? "Select…"}
                 searchPlaceholder={meta.filterSearchPlaceholder ?? "Search…"}
@@ -74,11 +92,46 @@ export function ColumnFilterCell<TData>({
         );
     }
 
+    if (meta?.externalTextFilter) {
+        return (
+            <Input
+                placeholder="Filter..."
+                value={meta.externalTextFilter.value}
+                onChange={(event) =>
+                    meta.externalTextFilter?.onChange(event.target.value)
+                }
+                className="h-8 text-xs"
+            />
+        );
+    }
+
+    const currentTextValue = (() => {
+        const active = table
+            .getState()
+            .columnFilters.find((filter) => filter.id === column.id);
+        return typeof active?.value === "string" ? active.value : "";
+    })();
+
     return (
         <Input
             placeholder="Filter..."
-            value={(column.getFilterValue() as string) ?? ""}
-            onChange={(e) => column.setFilterValue(e.target.value || undefined)}
+            value={currentTextValue}
+            onChange={(event) => {
+                const rawValue = event.target.value;
+                const normalizedValue = rawValue.trim();
+                table.setColumnFilters((prev: ColumnFiltersState) => {
+                    const withoutColumn = prev.filter(
+                        (filter) => filter.id !== column.id,
+                    );
+                    if (!normalizedValue) {
+                        return withoutColumn;
+                    }
+                    return [
+                        ...withoutColumn,
+                        { id: column.id, value: rawValue },
+                    ];
+                });
+            }}
             className="h-8 text-xs"
         />
     );

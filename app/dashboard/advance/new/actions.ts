@@ -129,7 +129,7 @@ export async function createAdvanceRequest(
         await db.transaction(async (tx) => {
             const requestInsert: InsertAdvanceRequest = {
                 workerId: input.workerId,
-                status: "loan",
+                status: "Loan",
                 requestDate,
                 amountRequested,
                 purpose: input.purpose?.trim() || null,
@@ -152,7 +152,7 @@ export async function createAdvanceRequest(
                 (inst) => ({
                     advanceRequestId: req.id,
                     amount: inst.amount,
-                    status: "loan" as const,
+                    status: "Loan" as const,
                     repaymentDate: inst.repaymentDate,
                     createdAt: now,
                     updatedAt: now,

@@ -41,7 +41,7 @@ export default async function ViewTimesheetEntryPage({ params }: PageProps) {
     if (!entry) notFound();
 
     const canEdit =
-        entry.status !== "paid" &&
+        entry.status !== "Paid" &&
         (await checkPermission(userId, "Timesheet", "update"));
 
     const workers = await db

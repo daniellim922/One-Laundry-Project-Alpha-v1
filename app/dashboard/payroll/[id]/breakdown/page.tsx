@@ -418,7 +418,7 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                         field="restDays"
                                         restDays={voucher.restDays}
                                         publicHolidays={voucher.publicHolidays}
-                                        readOnly={payroll.status !== "draft"}
+                                        readOnly={payroll.status !== "Draft"}
                                     />
                                     <div className="space-y-1">
                                         <p className="text-sm text-muted-foreground">
@@ -437,7 +437,7 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                         field="publicHolidays"
                                         restDays={voucher.restDays}
                                         publicHolidays={voucher.publicHolidays}
-                                        readOnly={payroll.status !== "draft"}
+                                        readOnly={payroll.status !== "Draft"}
                                     />
                                     <div className="space-y-1">
                                         <p className="text-sm text-muted-foreground">
@@ -633,7 +633,7 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                 </TableHeader>
                                 <TableBody>
                                     {entries.map((e) => {
-                                        const paid = e.status === "paid";
+                                        const paid = e.status === "Paid";
                                         const status =
                                             e.status as TimesheetPaymentStatus;
                                         return (

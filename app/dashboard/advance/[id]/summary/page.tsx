@@ -35,7 +35,7 @@ export default async function AdvanceSummaryPage({ params }: PageProps) {
             status={<EntityStatusBadge status={detail.request.status} />}
             maxWidthClassName="max-w-none"
             actions={
-                !canUpdate || detail.request.status === "paid" ? (
+                !canUpdate || detail.request.status === "Paid" ? (
                     <Button variant="outline" disabled>
                         <Pencil className="h-4 w-4" />
                         Edit

@@ -7,7 +7,7 @@ export const advances = [
     {
         workerName: "Ding Chun Rong",
         amount: 300,
-        status: "loan" as const,
+        status: "Loan" as const,
         dateRequested: "2026-02-10",
         purpose: "Unforeseen medical expenses",
 
@@ -29,7 +29,7 @@ export const advances = [
     {
         workerName: "Alvis Ong Thai Ying",
         amount: 200,
-        status: "loan" as const,
+        status: "Loan" as const,
         dateRequested: "2026-02-18",
         purpose: "Emergency travel expenses",
         repaymentTerms: [
@@ -46,7 +46,7 @@ export const advances = [
     {
         workerName: "Lovepreet",
         amount: 150,
-        status: "loan" as const,
+        status: "Loan" as const,
         dateRequested: "2026-02-25",
         purpose: "Home renovation",
         repaymentTerms: [

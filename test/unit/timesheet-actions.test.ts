@@ -41,7 +41,7 @@ describe("updateTimesheetEntry", () => {
     });
 
     it("returns error and does not update when entry is paid", async () => {
-        mockSelectResolved([{ workerId: "worker-1", status: "paid" }]);
+        mockSelectResolved([{ workerId: "worker-1", status: "Paid" }]);
 
         const fd = new FormData();
         fd.set("workerId", "worker-1");

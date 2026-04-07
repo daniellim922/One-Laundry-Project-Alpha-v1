@@ -47,7 +47,7 @@ export type PayrollEntry = {
     periodStart: string;
     periodEnd: string;
     payrollDate: string;
-    status: "draft" | "settled";
+    status: "Draft" | "Settled";
     voucher: VoucherEntry;
 };
 
@@ -61,9 +61,9 @@ function generatePayrolls(): PayrollEntry[] {
         );
     }
 
-    const statusForIndex = (i: number): "draft" | "settled" => {
-        if (i === 0 || i === 31) return "draft";
-        return "settled";
+    const statusForIndex = (i: number): "Draft" | "Settled" => {
+        if (i === 0 || i === 31) return "Draft";
+        return "Settled";
     };
 
     const payrolls: PayrollEntry[] = [];

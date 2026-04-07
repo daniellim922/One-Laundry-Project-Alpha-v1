@@ -22,7 +22,7 @@ export default async function PayrollOverviewPage() {
         db
             .select({ draftCount: count() })
             .from(payrollTable)
-            .where(eq(payrollTable.status, "draft")),
+            .where(eq(payrollTable.status, "Draft")),
     ]);
 
     return (
@@ -81,12 +81,12 @@ export default async function PayrollOverviewPage() {
                         centerLabel="runs"
                         segments={[
                             {
-                                key: "draft",
+                                key: "Draft",
                                 label: "Draft",
                                 value: Number(draftCount),
                             },
                             {
-                                key: "settled",
+                                key: "Settled",
                                 label: "Settled",
                                 value: Number(total) - Number(draftCount),
                             },

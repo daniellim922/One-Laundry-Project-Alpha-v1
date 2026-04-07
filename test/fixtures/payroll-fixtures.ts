@@ -4,7 +4,7 @@ export function makePayroll(overrides?: Partial<{
     periodStart: string;
     periodEnd: string;
     payrollDate: string;
-    status: "draft" | "settled";
+    status: "Draft" | "Settled";
 }>) {
     return {
         id: "payroll-1",
@@ -12,7 +12,7 @@ export function makePayroll(overrides?: Partial<{
         periodStart: "2025-03-01",
         periodEnd: "2025-03-31",
         payrollDate: "2025-04-05",
-        status: "draft" as const,
+        status: "Draft" as const,
         ...overrides,
     };
 }
@@ -20,12 +20,12 @@ export function makePayroll(overrides?: Partial<{
 export function makeAdvance(overrides?: Partial<{
     id: string;
     advanceRequestId: string;
-    status: "loan" | "paid";
+    status: "Loan" | "Paid";
 }>) {
     return {
         id: "adv-1",
         advanceRequestId: "req-1",
-        status: "loan" as const,
+        status: "Loan" as const,
         ...overrides,
     };
 }

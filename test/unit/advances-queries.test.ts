@@ -10,7 +10,7 @@ import {
 
 function mockDbForList(
     rows: Omit<AdvanceRequestWithWorker, "status">[],
-    advancesByRequestId: Record<string, { status: "loan" | "paid" }[]>,
+    advancesByRequestId: Record<string, { status: "Loan" | "Paid" }[]>,
 ) {
     const requestRows = rows.map((r) => ({
         id: r.id,
@@ -87,7 +87,7 @@ describe("advances-queries", () => {
         workerId: "w1",
         workerName: "Test Worker",
         amountRequested: 100,
-        status: "loan",
+        status: "Loan",
         requestDate: "2025-01-10",
         createdAt: new Date("2025-01-01T00:00:00Z"),
         updatedAt: new Date("2025-01-01T00:00:00Z"),
@@ -100,7 +100,7 @@ describe("advances-queries", () => {
     it("listAdvanceRequestsWithWorkers returns mapped rows from db", async () => {
         const { status: _s, ...requestWithoutStatus } = sample;
         const mockDb = mockDbForList([requestWithoutStatus], {
-            ar1: [{ status: "loan" }],
+            ar1: [{ status: "Loan" }],
         });
         const out = await listAdvanceRequestsWithWorkers(mockDb);
         expect(out).toHaveLength(1);
@@ -108,17 +108,17 @@ describe("advances-queries", () => {
             id: "ar1",
             workerName: "Test Worker",
             amountRequested: 100,
-            status: "loan",
+            status: "Loan",
         });
     });
 
     it("listAdvanceRequestsWithWorkers derives paid when all advances paid", async () => {
         const { status: _s, ...requestWithoutStatus } = sample;
         const mockDb = mockDbForList([requestWithoutStatus], {
-            ar1: [{ status: "paid" }],
+            ar1: [{ status: "Paid" }],
         });
         const out = await listAdvanceRequestsWithWorkers(mockDb);
-        expect(out[0]!.status).toBe("paid");
+        expect(out[0]!.status).toBe("Paid");
     });
 
     it("listAdvanceRequestsWithWorkers handles empty set", async () => {
@@ -129,14 +129,14 @@ describe("advances-queries", () => {
 
     it("getAdvanceRequestByIdWithWorker returns request and advances when found", async () => {
         const advanceRows = [
-            { id: "a1", amount: 100, status: "loan", repaymentDate: "2025-02-10" },
+            { id: "a1", amount: 100, status: "Loan", repaymentDate: "2025-02-10" },
         ];
         const mockDb = createMockDbForGetById(sample, advanceRows);
         const out = await getAdvanceRequestByIdWithWorker("ar1", mockDb);
         expect(out).not.toBeNull();
         expect(out!.request).toMatchObject({ id: "ar1", workerName: "Test Worker" });
         expect(out!.advances).toHaveLength(1);
-        expect(out!.advances[0]).toMatchObject({ amount: 100, status: "loan" });
+        expect(out!.advances[0]).toMatchObject({ amount: 100, status: "Loan" });
     });
 
     it("getAdvanceRequestByIdWithWorker returns null when request missing", async () => {

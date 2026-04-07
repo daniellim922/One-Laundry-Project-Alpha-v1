@@ -20,7 +20,7 @@ function requireAuthenticatedOrSkip(page: { url(): string }) {
  * in db/seed/payrolls.ts.
  */
 async function requireDraftPayrollRowOrSkip(page: Page) {
-    const draftRows = page.getByRole("row").filter({ hasText: "draft" });
+    const draftRows = page.getByRole("row").filter({ hasText: "Draft" });
     const first = draftRows.first();
     try {
         await expect(first).toBeVisible({ timeout: 20_000 });
@@ -59,6 +59,6 @@ test.describe("Payroll settle flow", () => {
 
         await expect(page.getByRole("dialog")).not.toBeVisible();
         await expect(page).toHaveURL(/\/dashboard\/payroll\/[0-9a-f-]+\/summary/i);
-        await expect(page.getByText("settled").first()).toBeVisible();
+        await expect(page.getByText("Settled").first()).toBeVisible();
     });
 });

@@ -25,7 +25,7 @@ export default async function AdvanceOverviewPage() {
         db
             .select({ loanCount: count() })
             .from(advanceRequestTable)
-            .where(eq(advanceRequestTable.status, "loan")),
+            .where(eq(advanceRequestTable.status, "Loan")),
     ]);
     const paidCount = Number(total) - Number(loanCount);
 
@@ -84,12 +84,12 @@ export default async function AdvanceOverviewPage() {
                         centerLabel="requests"
                         segments={[
                             {
-                                key: "loan",
+                                key: "Loan",
                                 label: "Active loan",
                                 value: Number(loanCount),
                             },
                             {
-                                key: "paid",
+                                key: "Paid",
                                 label: "Paid",
                                 value: paidCount,
                             },

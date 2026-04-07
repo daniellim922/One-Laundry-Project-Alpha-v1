@@ -14,10 +14,10 @@ export const advanceRequestTable = pgTable("advance_request", {
         .notNull()
         .references(() => workerTable.id, { onDelete: "cascade" }),
     status: text("status", {
-        enum: ["loan", "paid"] as const,
+        enum: ["Loan", "Paid"] as const,
     })
         .notNull()
-        .default("loan"),
+        .default("Loan"),
     requestDate: date("request_date").notNull(),
     amountRequested: integer("amount_requested").notNull(),
     purpose: text("purpose"),

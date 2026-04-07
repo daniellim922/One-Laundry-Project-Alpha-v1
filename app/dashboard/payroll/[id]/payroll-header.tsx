@@ -36,10 +36,10 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
 
-    const isDraft = payroll.status === "draft";
+    const isDraft = payroll.status === "Draft";
 
     const statusClass =
-        payroll.status === "settled"
+        payroll.status === "Settled"
             ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
             : "bg-slate-100 text-slate-800 dark:bg-slate-500/20 dark:text-slate-300";
 

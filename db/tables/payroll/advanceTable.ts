@@ -12,10 +12,10 @@ export const advanceTable = pgTable("advance", {
     id: uuid().primaryKey().defaultRandom(),
     amount: integer("amount").notNull(),
     status: text("status", {
-        enum: ["loan", "paid"] as const,
+        enum: ["Loan", "Paid"] as const,
     })
         .notNull()
-        .default("loan"),
+        .default("Loan"),
     repaymentDate: date("repayment_date"),
 
     advanceRequestId: uuid("advance_request_id")

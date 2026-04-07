@@ -42,7 +42,7 @@ export type UpdateAdvanceRequestInput = {
     installmentAmounts: Array<{
         amount?: string;
         repaymentDate?: string;
-        status?: "loan" | "paid";
+        status?: "Loan" | "Paid";
     }>;
     employeeSignature?: string;
     employeeSignatureDate?: string;
@@ -73,7 +73,7 @@ export async function updateAdvanceRequest(
     const validInstallments: Array<{
         repaymentDate: string;
         amount: number;
-        status: "loan" | "paid";
+        status: "Loan" | "Paid";
     }> = [];
     for (const row of input.installmentAmounts) {
         const rawRepaymentDate = row.repaymentDate?.trim() ?? "";
@@ -113,7 +113,7 @@ export async function updateAdvanceRequest(
             };
         }
 
-        const status = row.status === "paid" ? "paid" : "loan";
+        const status = row.status === "Paid" ? "Paid" : "Loan";
         validInstallments.push({ repaymentDate, amount, status });
     }
 
@@ -154,7 +154,7 @@ export async function updateAdvanceRequest(
 
     const today = localIsoDateYmd();
     for (const inst of validInstallments) {
-        if (inst.status !== "paid" && inst.repaymentDate < today) {
+        if (inst.status !== "Paid" && inst.repaymentDate < today) {
             return {
                 success: false,
                 error: "Expected repayment date cannot be before today",

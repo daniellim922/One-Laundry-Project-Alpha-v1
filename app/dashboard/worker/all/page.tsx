@@ -1,20 +1,22 @@
-import Link from "next/link";
-import { Suspense } from "react";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
+import { requirePermission } from "@/utils/permissions/require-permission";
+import { checkPermission } from "@/utils/permissions/permissions";
 import {
     workerTable,
     type WorkerWithEmployment,
 } from "@/db/tables/payroll/workerTable";
 import { employmentTable } from "@/db/tables/payroll/employmentTable";
-import { columns } from "../columns";
-import { DataTable } from "@/components/data-table/data-table";
-import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { WorkerAllTableSection } from "./worker-all-table-section";
 
 export default async function Page() {
+    const { userId } = await requirePermission("Workers", "read");
+    const [canCreateWorker, canMassEditWorkingHours] = await Promise.all([
+        checkPermission(userId, "Workers", "create"),
+        checkPermission(userId, "Workers", "update"),
+    ]);
+
     const workers = (await db
         .select({
             id: workerTable.id,
@@ -45,6 +47,32 @@ export default async function Page() {
         )
         .orderBy(desc(workerTable.updatedAt))) as WorkerWithEmployment[];
 
+    const workersForMassEdit = canMassEditWorkingHours
+        ? await db
+              .select({
+                  id: workerTable.id,
+                  name: workerTable.name,
+                  employmentArrangement: employmentTable.employmentArrangement,
+                  minimumWorkingHours: employmentTable.minimumWorkingHours,
+              })
+              .from(workerTable)
+              .innerJoin(
+                  employmentTable,
+                  eq(workerTable.employmentId, employmentTable.id),
+              )
+              .where(
+                  and(
+                      eq(workerTable.status, "Active"),
+                      eq(employmentTable.employmentType, "Full Time"),
+                      eq(
+                          employmentTable.employmentArrangement,
+                          "Foreign Worker",
+                      ),
+                  ),
+              )
+              .orderBy(desc(workerTable.updatedAt))
+        : [];
+
     return (
         <div className="space-y-6">
             <div>
@@ -56,21 +84,12 @@ export default async function Page() {
                 </p>
             </div>
 
-            <Suspense fallback={<DataTableSkeleton />}>
-                <DataTable
-                    columns={columns}
-                    data={workers}
-                    searchParamKey="search"
-                    actions={
-                        <Button asChild>
-                            <Link href="/dashboard/worker/new">
-                                <Plus className="mr-2 h-4 w-4" />
-                                New worker
-                            </Link>
-                        </Button>
-                    }
-                />
-            </Suspense>
+            <WorkerAllTableSection
+                workers={workers}
+                workersForMassEdit={workersForMassEdit}
+                canCreateWorker={canCreateWorker}
+                canMassEditWorkingHours={canMassEditWorkingHours}
+            />
         </div>
     );
 }

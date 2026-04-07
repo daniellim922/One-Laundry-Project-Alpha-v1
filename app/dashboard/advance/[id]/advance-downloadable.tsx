@@ -37,7 +37,7 @@ export function AdvanceDownloadVoucher({
     const { request, advances } = detail;
 
     const totalAmount = advances.reduce((sum, a) => sum + a.amount, 0);
-    const paidCount = advances.filter((a) => a.status === "paid").length;
+    const paidCount = advances.filter((a) => a.status === "Paid").length;
     const outstandingCount = advances.length - paidCount;
 
     return (

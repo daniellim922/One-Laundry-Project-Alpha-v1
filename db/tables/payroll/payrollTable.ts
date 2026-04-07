@@ -14,10 +14,10 @@ export const payrollTable = pgTable("payroll", {
     periodEnd: date("period_end").notNull(),
     payrollDate: date("payroll_date").notNull(),
     status: text("status", {
-        enum: ["draft", "settled"] as const,
+        enum: ["Draft", "Settled"] as const,
     })
         .notNull()
-        .default("draft"),
+        .default("Draft"),
 
     workerId: uuid("worker_id")
         .references(() => workerTable.id, { onDelete: "cascade" })

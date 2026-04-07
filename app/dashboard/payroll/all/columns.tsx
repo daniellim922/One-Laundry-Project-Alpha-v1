@@ -51,10 +51,10 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
             header: createSortableHeader("Status"),
             meta: { globalSearch: true },
             cell: createBadgeCell<PayrollWithWorker>({
-                value: (r) => r.status ?? "draft",
+                value: (r) => r.status ?? "Draft",
                 variant: "outline",
                 toneClassNameFor: (r) =>
-                    payrollStatusBadgeTone[r.status ?? "draft"],
+                    payrollStatusBadgeTone[r.status ?? "Draft"],
             }),
         },
         {
