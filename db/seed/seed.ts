@@ -37,7 +37,7 @@ import { timesheets } from "./timesheet";
 import { advances } from "./advances";
 import { payrolls } from "./payrolls";
 import { FEATURES, ROLES, ROLE_PERMISSIONS } from "./iam";
-import { seedAdminUser } from "./auth";
+import { seedDefaultAuthUsers } from "./auth";
 
 type SplitWorkerSeed = {
     employment: InsertEmployment;
@@ -237,10 +237,12 @@ async function seed() {
     await seedRolePermissions();
     console.log("New role permissions created!");
 
-    const seededAdmin = await seedAdminUser();
-    console.log(
-        `Seeded admin user: ${seededAdmin.email} (username: ${seededAdmin.username}) linked to roleId ${seededAdmin.roleId}`,
-    );
+    const seededUsers = await seedDefaultAuthUsers();
+    for (const seededUser of seededUsers) {
+        console.log(
+            `Seeded user: ${seededUser.email} (username: ${seededUser.username}) linked to roleId ${seededUser.roleId}`,
+        );
+    }
     process.exit(0);
 }
 seed();
