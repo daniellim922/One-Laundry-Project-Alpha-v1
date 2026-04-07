@@ -12,13 +12,18 @@ type SeedAdminUserResult = {
     username: string;
 };
 
-export async function seedAdminUser(): Promise<SeedAdminUserResult> {
-    const email = process.env.SEED_ADMIN_EMAIL ?? "root@example.com";
-    const password = process.env.SEED_ADMIN_PASSWORD ?? "root1234";
-    const name = process.env.SEED_ADMIN_NAME ?? "Root";
-    const username = process.env.SEED_ADMIN_USERNAME ?? "root";
-    const roleName = process.env.SEED_ADMIN_ROLE ?? "Admin";
+type SeedUserConfig = {
+    email: string;
+    password: string;
+    name: string;
+    username: string;
+    roleName: string;
+};
 
+async function seedUserWithRole(
+    config: SeedUserConfig,
+): Promise<SeedAdminUserResult> {
+    const { email, password, name, username, roleName } = config;
     const roleRow = await db
         .select({ id: rolesTable.id })
         .from(rolesTable)
@@ -77,4 +82,65 @@ export async function seedAdminUser(): Promise<SeedAdminUserResult> {
     }
 
     return { userId, roleId, email, username };
+}
+
+export async function seedAdminUser(): Promise<SeedAdminUserResult> {
+    return seedUserWithRole({
+        email: process.env.SEED_ADMIN_EMAIL ?? "root@example.com",
+        password: process.env.SEED_ADMIN_PASSWORD ?? "root1234",
+        name: process.env.SEED_ADMIN_NAME ?? "Root",
+        username: process.env.SEED_ADMIN_USERNAME ?? "root",
+        roleName: process.env.SEED_ADMIN_ROLE ?? "Admin",
+    });
+}
+
+export async function seedWorkersReadOnlyUser(): Promise<SeedAdminUserResult> {
+    return seedUserWithRole({
+        email:
+            process.env.SEED_WORKER_READONLY_EMAIL ??
+            "worker-reader@example.com",
+        password: process.env.SEED_WORKER_READONLY_PASSWORD ?? "worker1234",
+        name: process.env.SEED_WORKER_READONLY_NAME ?? "Worker Reader",
+        username:
+            process.env.SEED_WORKER_READONLY_USERNAME ?? "worker_reader",
+        roleName:
+            process.env.SEED_WORKER_READONLY_ROLE ?? "Workers Read Only",
+    });
+}
+
+export async function seedWorkersCreateUser(): Promise<SeedAdminUserResult> {
+    return seedUserWithRole({
+        email:
+            process.env.SEED_WORKER_CREATE_EMAIL ??
+            "worker-creator@example.com",
+        password: process.env.SEED_WORKER_CREATE_PASSWORD ?? "worker1234",
+        name: process.env.SEED_WORKER_CREATE_NAME ?? "Worker Creator",
+        username:
+            process.env.SEED_WORKER_CREATE_USERNAME ?? "worker_creator",
+        roleName:
+            process.env.SEED_WORKER_CREATE_ROLE ?? "Workers Create Only",
+    });
+}
+
+export async function seedWorkersUpdateUser(): Promise<SeedAdminUserResult> {
+    return seedUserWithRole({
+        email:
+            process.env.SEED_WORKER_UPDATE_EMAIL ??
+            "worker-updater@example.com",
+        password: process.env.SEED_WORKER_UPDATE_PASSWORD ?? "worker1234",
+        name: process.env.SEED_WORKER_UPDATE_NAME ?? "Worker Updater",
+        username:
+            process.env.SEED_WORKER_UPDATE_USERNAME ?? "worker_updater",
+        roleName:
+            process.env.SEED_WORKER_UPDATE_ROLE ?? "Workers Update Only",
+    });
+}
+
+export async function seedDefaultAuthUsers(): Promise<SeedAdminUserResult[]> {
+    return [
+        await seedAdminUser(),
+        await seedWorkersReadOnlyUser(),
+        await seedWorkersCreateUser(),
+        await seedWorkersUpdateUser(),
+    ];
 }
