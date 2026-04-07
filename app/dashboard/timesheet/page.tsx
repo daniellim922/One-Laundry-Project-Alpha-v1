@@ -83,12 +83,12 @@ export default async function TimesheetOverviewPage() {
                         centerLabel="entries"
                         segments={[
                             {
-                                key: "unpaid",
+                                key: "Unpaid",
                                 label: "Unpaid",
                                 value: Number(unpaid),
                             },
                             {
-                                key: "paid",
+                                key: "Paid",
                                 label: "Paid",
                                 value: Number(total) - Number(unpaid),
                             },

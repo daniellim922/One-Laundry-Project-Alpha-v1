@@ -84,12 +84,12 @@ export default async function AdvanceOverviewPage() {
                         centerLabel="requests"
                         segments={[
                             {
-                                key: "loan",
-                                label: "Loan",
+                                key: "Loan",
+                                label: "Active loan",
                                 value: Number(loanCount),
                             },
                             {
-                                key: "paid",
+                                key: "Paid",
                                 label: "Paid",
                                 value: paidCount,
                             },

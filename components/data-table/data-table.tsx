@@ -11,6 +11,7 @@ import {
     getPaginationRowModel,
     getSortedRowModel,
     type OnChangeFn,
+    type Row,
     type RowSelectionState,
     SortingState,
     useReactTable,
@@ -18,6 +19,10 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
+import {
+    ColumnFilterCell,
+    type ColumnFilterMeta,
+} from "@/components/data-table/column-filter-cell";
 import { Input } from "@/components/ui/input";
 import {
     Table,
@@ -35,21 +40,29 @@ interface DataTableProps<TData, TValue> {
     searchParamKey?: string;
     /** Whether the global search should sync to the URL (defaults to true). */
     syncSearchToUrl?: boolean;
+    /** Whether to render the top global search input (defaults to true). */
+    showGlobalSearch?: boolean;
+    /** Whether to render the column filters row (defaults to true). */
+    showColumnFilters?: boolean;
     /** Optional actions to render next to the search input (e.g. "Add" button) */
     actions?: React.ReactNode;
     /** Pagination size (defaults to 20). */
     pageSize?: number;
     /** Enable TanStack row selection. */
-    enableRowSelection?: boolean;
+    enableRowSelection?: boolean | ((row: TData) => boolean);
     /** Controlled row selection state. */
     rowSelection?: RowSelectionState;
     /** Controlled row selection change handler. */
     onRowSelectionChange?: OnChangeFn<RowSelectionState>;
     /** Stable row id accessor (required for controlled selection with non-index IDs). */
     getRowId?: (originalRow: TData, index: number) => string;
+    /** Default column filters (useful for pre-filled table filter inputs). */
+    initialColumnFilters?: ColumnFiltersState;
+    /** Reset key for default column filters (set a new value to re-apply defaults). */
+    columnFiltersResetKey?: string | number;
 }
 
-type ColumnMeta = { globalSearch?: boolean };
+type ColumnMeta = ColumnFilterMeta & { globalSearch?: boolean };
 
 function formatEnGbDate(d: Date): string {
     return d.toLocaleDateString("en-GB", {
@@ -90,12 +103,16 @@ export function DataTable<TData, TValue>({
     data,
     searchParamKey,
     syncSearchToUrl = true,
+    showGlobalSearch = true,
+    showColumnFilters = true,
     actions,
     pageSize = 20,
     enableRowSelection,
     rowSelection,
     onRowSelectionChange,
     getRowId,
+    initialColumnFilters,
+    columnFiltersResetKey,
 }: DataTableProps<TData, TValue>) {
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -110,8 +127,12 @@ export function DataTable<TData, TValue>({
 
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [columnFilters, setColumnFilters] =
-        React.useState<ColumnFiltersState>([]);
+        React.useState<ColumnFiltersState>(initialColumnFilters ?? []);
     const [globalFilter, setGlobalFilter] = React.useState(initialFilter);
+
+    React.useEffect(() => {
+        setColumnFilters(initialColumnFilters ?? []);
+    }, [columnFiltersResetKey, initialColumnFilters]);
 
     React.useEffect(() => {
         if (!syncSearchToUrl) return;
@@ -160,6 +181,14 @@ export function DataTable<TData, TValue>({
         [],
     );
 
+    const resolvedEnableRowSelection = React.useMemo(() => {
+        if (!enableRowSelection) return undefined;
+        if (typeof enableRowSelection === "function") {
+            return (row: Row<TData>) => enableRowSelection(row.original);
+        }
+        return true;
+    }, [enableRowSelection]);
+
     const table = useReactTable({
         data,
         columns,
@@ -181,7 +210,11 @@ export function DataTable<TData, TValue>({
         getSortedRowModel: getSortedRowModel(),
         onGlobalFilterChange: handleFilterChange,
         ...(enableRowSelection
-            ? { enableRowSelection: true, onRowSelectionChange, getRowId }
+            ? {
+                  enableRowSelection: resolvedEnableRowSelection ?? true,
+                  onRowSelectionChange,
+                  getRowId,
+              }
             : undefined),
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
@@ -209,13 +242,23 @@ export function DataTable<TData, TValue>({
         },
     });
 
-    const showSearch = table
+    const canSearchAnyColumn = table
         .getVisibleLeafColumns()
         .some(
             (col) =>
                 ((col.columnDef as { meta?: ColumnMeta }).meta?.globalSearch ??
                     true) !== false,
         );
+    const showSearch = showGlobalSearch && canSearchAnyColumn;
+    const hasColumnFilters = table
+        .getHeaderGroups()
+        .at(-1)
+        ?.headers.some((header) => header.column.getCanFilter());
+
+    const normalizedActions = React.useMemo(
+        () => React.Children.toArray(actions),
+        [actions],
+    );
 
     return (
         <div className="space-y-4">
@@ -233,7 +276,7 @@ export function DataTable<TData, TValue>({
                     ) : (
                         <div />
                     )}
-                    {actions}
+                    {normalizedActions}
                 </div>
             ) : null}
 
@@ -257,33 +300,33 @@ export function DataTable<TData, TValue>({
                                 ))}
                             </TableRow>
                         ))}
-                        <TableRow>
-                            {table
-                                .getHeaderGroups()
-                                .at(-1)
-                                ?.headers.map((header) => (
-                                    <TableHead
-                                        key={`${header.id}-filter`}
-                                        className="px-2 py-1">
-                                        {header.column.getCanFilter() ? (
-                                            <Input
-                                                placeholder="Filter..."
-                                                value={
-                                                    (header.column.getFilterValue() as string) ??
-                                                    ""
-                                                }
-                                                onChange={(e) =>
-                                                    header.column.setFilterValue(
-                                                        e.target.value ||
-                                                            undefined,
-                                                    )
-                                                }
-                                                className="h-8 text-xs"
-                                            />
-                                        ) : null}
-                                    </TableHead>
-                                ))}
-                        </TableRow>
+                        {showColumnFilters && hasColumnFilters ? (
+                            <TableRow>
+                                {table
+                                    .getHeaderGroups()
+                                    .at(-1)
+                                    ?.headers.map((header) => (
+                                        <TableHead
+                                            key={`${header.column.id}-filter`}
+                                            className="px-2 py-1">
+                                            {header.column.getCanFilter() ? (
+                                                <ColumnFilterCell
+                                                    column={header.column}
+                                                    meta={
+                                                        (
+                                                            header.column
+                                                                .columnDef as {
+                                                                meta?: ColumnMeta;
+                                                            }
+                                                        ).meta
+                                                    }
+                                                    table={table}
+                                                />
+                                            ) : null}
+                                        </TableHead>
+                                    ))}
+                            </TableRow>
+                        ) : null}
                     </TableHeader>
                     <TableBody>
                         {table.getRowModel().rows?.length ? (

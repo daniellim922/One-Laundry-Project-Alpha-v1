@@ -61,16 +61,21 @@ function toDateString(val: string): string {
  * Recalculates Draft payroll vouchers for a worker from timesheets, advances, and current employment.
  * Call after timesheet/worker/advance changes so Draft vouchers stay in sync.
  */
-export async function synchronizeWorkerDraftPayrolls(input: {
-    workerId: string;
-}): Promise<{ success: true } | { error: string }> {
+type PayrollSyncExecutor = typeof db;
+
+async function synchronizeWorkerDraftPayrollsWithExecutor(
+    executor: PayrollSyncExecutor,
+    input: {
+        workerId: string;
+    },
+): Promise<{ success: true } | { error: string }> {
     const { workerId } = input;
     if (!workerId?.trim()) {
         return { error: "Missing workerId" };
     }
 
     try {
-        const drafts = await db
+        const drafts = await executor
             .select()
             .from(payrollTable)
             .where(
@@ -84,7 +89,7 @@ export async function synchronizeWorkerDraftPayrolls(input: {
             return { success: true };
         }
 
-        const [employmentRow] = await db
+        const [employmentRow] = await executor
             .select({ employment: employmentTable })
             .from(workerTable)
             .innerJoin(
@@ -100,7 +105,7 @@ export async function synchronizeWorkerDraftPayrolls(input: {
         }
 
         for (const payroll of drafts) {
-            const entryRows = await db
+            const entryRows = await executor
                 .select({ hours: timesheetTable.hours })
                 .from(timesheetTable)
                 .where(
@@ -115,7 +120,7 @@ export async function synchronizeWorkerDraftPayrolls(input: {
                 0,
             );
 
-            const [currentVoucher] = await db
+            const [currentVoucher] = await executor
                 .select({
                     restDays: payrollVoucherTable.restDays,
                     publicHolidays: payrollVoucherTable.publicHolidays,
@@ -151,7 +156,7 @@ export async function synchronizeWorkerDraftPayrolls(input: {
                 payCalc.totalPay + hoursNotMetDeduction,
             );
 
-            const advanceRows = await db
+            const advanceRows = await executor
                 .select({
                     amount: advanceTable.amount,
                     status: advanceTable.status,
@@ -177,7 +182,7 @@ export async function synchronizeWorkerDraftPayrolls(input: {
                 advance: advanceTotal,
             });
 
-            await db
+            await executor
                 .update(payrollVoucherTable)
                 .set({
                     employmentType: employment.employmentType,
@@ -210,6 +215,24 @@ export async function synchronizeWorkerDraftPayrolls(input: {
         console.error("Error synchronizing worker Draft payrolls", error);
         return { error: "Failed to synchronize Draft payrolls" };
     }
+}
+
+export async function synchronizeWorkerDraftPayrolls(input: {
+    workerId: string;
+}): Promise<{ success: true } | { error: string }> {
+    return synchronizeWorkerDraftPayrollsWithExecutor(db, input);
+}
+
+export async function synchronizeWorkerDraftPayrollsInTx(
+    tx: DbTransaction,
+    input: {
+        workerId: string;
+    },
+): Promise<{ success: true } | { error: string }> {
+    return synchronizeWorkerDraftPayrollsWithExecutor(
+        tx as unknown as PayrollSyncExecutor,
+        input,
+    );
 }
 
 export async function createPayroll(formData: FormData) {

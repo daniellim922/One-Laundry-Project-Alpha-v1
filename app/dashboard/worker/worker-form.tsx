@@ -85,32 +85,34 @@ const workerFormSchema = z
                     | "restDayRate"
                     | "minimumWorkingHours";
                 requiredMessage: string;
-                positiveMessage: string;
+                validationMessage: string;
+                allowZero?: boolean;
             }> = [
                 {
                     key: "monthlyPay",
                     requiredMessage:
                         "Monthly pay is required for full time workers",
-                    positiveMessage: "Monthly pay must be a positive number",
+                    validationMessage: "Monthly pay must be a positive number",
                 },
                 {
                     key: "hourlyRate",
                     requiredMessage:
                         "Hourly rate is required for full time workers",
-                    positiveMessage: "Hourly rate must be a positive number",
+                    validationMessage: "Hourly rate must be a positive number",
                 },
                 {
                     key: "restDayRate",
                     requiredMessage:
                         "Rest day rate is required for full time workers",
-                    positiveMessage: "Rest day rate must be a positive number",
+                    validationMessage: "Rest day rate must be a positive number",
                 },
                 {
                     key: "minimumWorkingHours",
                     requiredMessage:
                         "Minimum working hours are required for full time workers",
-                    positiveMessage:
-                        "Minimum working hours must be a positive number",
+                    validationMessage:
+                        "Minimum working hours must be zero or a positive number",
+                    allowZero: true,
                 },
             ];
 
@@ -129,11 +131,14 @@ const workerFormSchema = z
                 }
 
                 const numericValue = Number(value);
-                if (!Number.isFinite(numericValue) || numericValue <= 0) {
+                const isValidNumber = field.allowZero
+                    ? numericValue >= 0
+                    : numericValue > 0;
+                if (!Number.isFinite(numericValue) || !isValidNumber) {
                     ctx.addIssue({
                         code: z.ZodIssueCode.custom,
                         path: [field.key],
-                        message: field.positiveMessage,
+                        message: field.validationMessage,
                     });
                 }
             }

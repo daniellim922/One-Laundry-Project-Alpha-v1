@@ -62,10 +62,12 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
         }),
     },
     {
-        accessorKey: "phone",
-        header: createSortableHeader("Phone"),
-        meta: { globalSearch: true },
-        cell: ({ row }) => row.original.phone ?? "—",
+        accessorKey: "minimumWorkingHours",
+        header: createSortableHeader("Minimum Working Hours"),
+        cell: ({ row }) =>
+            row.original.minimumWorkingHours != null
+                ? `${row.original.minimumWorkingHours}h`
+                : "—",
     },
     {
         accessorKey: "monthlyPay",

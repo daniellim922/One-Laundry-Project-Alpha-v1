@@ -30,5 +30,10 @@ export type InsertWorker = typeof workerTable.$inferInsert;
 export type WorkerWithEmployment = SelectWorker &
     Pick<
         SelectEmployment,
-        "employmentType" | "employmentArrangement" | "monthlyPay" | "hourlyRate" | "paymentMethod"
+        | "employmentType"
+        | "employmentArrangement"
+        | "monthlyPay"
+        | "minimumWorkingHours"
+        | "hourlyRate"
+        | "paymentMethod"
     >;

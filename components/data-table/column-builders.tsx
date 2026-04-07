@@ -46,6 +46,11 @@ export function createRowSelectionColumn<TData>({
         enableColumnFilter: false,
         header: ({ table }) => (
             <Checkbox
+                disabled={
+                    !table
+                        .getRowModel()
+                        .rows.some((row) => row.getCanSelect())
+                }
                 checked={
                     table.getIsAllRowsSelected()
                         ? true
@@ -59,17 +64,21 @@ export function createRowSelectionColumn<TData>({
                 aria-label="Select all"
             />
         ),
-        cell: ({ row }) => (
-            <Checkbox
-                checked={row.getIsSelected()}
-                onCheckedChange={(checked) => row.toggleSelected(!!checked)}
-                aria-label={
-                    ariaLabelForRow
-                        ? ariaLabelForRow(row.original)
-                        : "Select row"
-                }
-            />
-        ),
+        cell: ({ row }) => {
+            const canSelect = row.getCanSelect();
+            return (
+                <Checkbox
+                    disabled={!canSelect}
+                    checked={canSelect ? row.getIsSelected() : false}
+                    onCheckedChange={(checked) => row.toggleSelected(!!checked)}
+                    aria-label={
+                        ariaLabelForRow
+                            ? ariaLabelForRow(row.original)
+                            : "Select row"
+                    }
+                />
+            );
+        },
         meta: { globalSearch: false },
     };
 }
