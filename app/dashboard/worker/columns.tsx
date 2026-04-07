@@ -37,10 +37,7 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
         cell: createBadgeCell<WorkerWithEmployment>({
             value: (r) => r.status,
             variant: "outline",
-            toneClassNameFor: (r) =>
-                workerStatusBadgeTone[
-                    r.status as keyof typeof workerStatusBadgeTone
-                ],
+            toneClassNameFor: (r) => workerStatusBadgeTone[r.status],
         }),
     },
     {
@@ -50,10 +47,7 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
         cell: createBadgeCell<WorkerWithEmployment>({
             value: (r) => r.employmentType,
             variant: "outline",
-            toneClassNameFor: (r) =>
-                employmentTypeBadgeTone[
-                    r.employmentType as keyof typeof employmentTypeBadgeTone
-                ],
+            toneClassNameFor: (r) => employmentTypeBadgeTone[r.employmentType],
         }),
     },
     {
@@ -64,9 +58,7 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
             value: (r) => r.employmentArrangement,
             variant: "outline",
             toneClassNameFor: (r) =>
-                employmentArrangementBadgeTone[
-                    r.employmentArrangement as keyof typeof employmentArrangementBadgeTone
-                ],
+                employmentArrangementBadgeTone[r.employmentArrangement],
         }),
     },
     {
@@ -93,21 +85,14 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
         accessorKey: "paymentMethod",
         header: createSortableHeader("Payment Method"),
         meta: { globalSearch: true },
-        cell: ({ row }) => {
-            const value = row.original.paymentMethod;
-            if (!value) return "—";
-            const badgeCell = createBadgeCell<WorkerWithEmployment>({
-                value: (r) => r.paymentMethod ?? "—",
-                variant: "outline",
-                toneClassNameFor: (r) =>
-                    r.paymentMethod
-                        ? workerPaymentMethodBadgeTone[
-                              r.paymentMethod as keyof typeof workerPaymentMethodBadgeTone
-                          ]
-                        : undefined,
-            });
-            return badgeCell({ row });
-        },
+        cell: createBadgeCell<WorkerWithEmployment>({
+            value: (r) => r.paymentMethod ?? "—",
+            variant: "outline",
+            toneClassNameFor: (r) =>
+                r.paymentMethod
+                    ? workerPaymentMethodBadgeTone[r.paymentMethod]
+                    : undefined,
+        }),
     },
     createActionsColumn<WorkerWithEmployment>({
         cell: (worker) => (

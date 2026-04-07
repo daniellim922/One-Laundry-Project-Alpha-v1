@@ -45,7 +45,7 @@ export default async function WorkerOverviewPage() {
                     <CardContent>
                         <div className="text-2xl font-bold">{total}</div>
                         <p className="text-muted-foreground text-xs">
-                            {active} active, {inactive} inactive
+                            {active} Active, {inactive} Inactive
                         </p>
                     </CardContent>
                 </Card>
@@ -69,7 +69,7 @@ export default async function WorkerOverviewPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Status breakdown</CardTitle>
-                    <CardDescription>Active vs inactive workers</CardDescription>
+                    <CardDescription>Active vs Inactive workers</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <SimpleDonutChart

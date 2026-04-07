@@ -34,6 +34,15 @@ function parseDateString(val: string | null | undefined): string | null {
     return s;
 }
 
+function parseLoanPaidStatus(
+    val: string | null | undefined,
+): "Loan" | "Paid" | null {
+    if (val == null) return null;
+    const s = String(val).trim();
+    if (s === "Loan" || s === "Paid") return s;
+    return null;
+}
+
 export type UpdateAdvanceRequestInput = {
     workerId: string;
     loanDate: string;
@@ -113,7 +122,13 @@ export async function updateAdvanceRequest(
             };
         }
 
-        const status = row.status === "Paid" ? "Paid" : "Loan";
+        const status = parseLoanPaidStatus(row.status);
+        if (!status) {
+            return {
+                success: false,
+                error: "Installment status must be Loan or Paid",
+            };
+        }
         validInstallments.push({ repaymentDate, amount, status });
     }
 

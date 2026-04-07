@@ -58,8 +58,8 @@ function toDateString(val: string): string {
 }
 
 /**
- * Recalculates draft payroll vouchers for a worker from timesheets, advances, and current employment.
- * Call after timesheet/worker/advance changes so draft vouchers stay in sync.
+ * Recalculates Draft payroll vouchers for a worker from timesheets, advances, and current employment.
+ * Call after timesheet/worker/advance changes so Draft vouchers stay in sync.
  */
 type PayrollSyncExecutor = typeof db;
 
@@ -212,8 +212,8 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
 
         return { success: true };
     } catch (error) {
-        console.error("Error synchronizing worker draft payrolls", error);
-        return { error: "Failed to synchronize draft payrolls" };
+        console.error("Error synchronizing worker Draft payrolls", error);
+        return { error: "Failed to synchronize Draft payrolls" };
     }
 }
 
@@ -512,7 +512,7 @@ export async function updatePayroll(payrollId: string, formData: FormData) {
 
     if (!existing) return { error: "Payroll not found" };
     if (existing.status !== "Draft")
-        return { error: "Only draft payrolls can be edited" };
+        return { error: "Only Draft payrolls can be edited" };
 
     const [row] = await db
         .select({
@@ -778,7 +778,7 @@ export async function settlePayroll(payrollId: string) {
 
     if (!payroll) return { error: "Payroll not found" };
     if (payroll.status !== "Draft") {
-        return { error: "Only draft payrolls can be settled" };
+        return { error: "Only Draft payrolls can be settled" };
     }
 
     const now = new Date();
@@ -851,8 +851,8 @@ export async function settleDraftPayrolls(payrollIds: string[]) {
             }
             return { error: "One or more payrolls are not drafts" };
         }
-        console.error("Error settling draft payrolls", error);
-        return { error: "Failed to settle draft payrolls" };
+        console.error("Error settling Draft payrolls", error);
+        return { error: "Failed to settle Draft payrolls" };
     }
 
     for (const payrollId of settledPayrollIds) {
@@ -955,7 +955,7 @@ export async function updateVoucherDays(input: {
         return { error: "Voucher does not belong to this payroll" };
     }
     if (payrollRow.status !== "Draft") {
-        return { error: "Only draft payrolls can edit voucher days" };
+        return { error: "Only Draft payrolls can edit voucher days" };
     }
 
     const [voucher] = await db

@@ -13,12 +13,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 
-export type MultiSelectFilterOption = {
-    value: string;
-    label: string;
-    keywords?: string;
-};
-
 export function createSortableHeader(label: string) {
     const Header = <TData, TValue>({
         column,
@@ -145,42 +139,4 @@ export function createBadgeCell<TData>({
     );
     BadgeCell.displayName = "BadgeCell";
     return BadgeCell;
-}
-export function withMultiSelectColumnFilter<TData>(
-    column: ColumnDef<TData>,
-    {
-        options,
-        placeholder,
-        searchPlaceholder,
-        emptyText,
-    }: {
-        options?: MultiSelectFilterOption[] | "auto";
-        placeholder?: string;
-        searchPlaceholder?: string;
-        emptyText?: string;
-    },
-): ColumnDef<TData> {
-    const prevMeta = (column as { meta?: Record<string, unknown> }).meta ?? {};
-    return {
-        ...column,
-        enableColumnFilter: true,
-        filterFn: (row, columnId, filterValue) => {
-            const selected = Array.isArray(filterValue)
-                ? (filterValue as string[])
-                : [];
-            if (selected.length === 0) return true;
-
-            const v = row.getValue(columnId);
-            if (v == null) return false;
-            return selected.includes(String(v));
-        },
-        meta: {
-            ...prevMeta,
-            filterVariant: "multiSelect",
-            filterOptions: options ?? "auto",
-            filterPlaceholder: placeholder,
-            filterSearchPlaceholder: searchPlaceholder,
-            filterEmptyText: emptyText,
-        },
-    };
 }

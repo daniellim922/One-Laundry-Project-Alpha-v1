@@ -112,7 +112,7 @@ describe("advances-queries", () => {
         });
     });
 
-    it("listAdvanceRequestsWithWorkers derives paid when all advances paid", async () => {
+    it("listAdvanceRequestsWithWorkers derives Paid when all advances are Paid", async () => {
         const { status: _s, ...requestWithoutStatus } = sample;
         const mockDb = mockDbForList([requestWithoutStatus], {
             ar1: [{ status: "Paid" }],

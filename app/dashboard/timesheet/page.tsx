@@ -45,8 +45,8 @@ export default async function TimesheetOverviewPage() {
                     <CardContent>
                         <div className="text-2xl font-bold">{total}</div>
                         <p className="text-muted-foreground text-xs">
-                            {unpaid} unpaid ·{" "}
-                            {Number(total) - Number(unpaid)} paid
+                            {unpaid} Unpaid ·{" "}
+                            {Number(total) - Number(unpaid)} Paid
                         </p>
                     </CardContent>
                 </Card>
@@ -76,7 +76,7 @@ export default async function TimesheetOverviewPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Payment status</CardTitle>
-                    <CardDescription>Unpaid vs paid entries</CardDescription>
+                    <CardDescription>Unpaid vs Paid entries</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <SimpleDonutChart

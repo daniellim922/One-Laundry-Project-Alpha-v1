@@ -117,8 +117,8 @@ export function AdvanceDownloadVoucher({
                             </TableCell>
                             <TableCell className="py-3" />
                             <TableCell className="py-3 text-xs">
-                                {paidCount} paid / {outstandingCount}{" "}
-                                outstanding
+                                {paidCount} Paid / {outstandingCount}{" "}
+                                Outstanding
                             </TableCell>
                         </TableRow>
                     </TableFooter>

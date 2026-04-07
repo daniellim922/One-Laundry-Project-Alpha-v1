@@ -7,17 +7,14 @@ import {
     text,
 } from "drizzle-orm/pg-core";
 import { workerTable } from "./workerTable";
+import { loanPaidStatusEnum } from "./statusEnums";
 
 export const advanceRequestTable = pgTable("advance_request", {
     id: uuid().primaryKey().defaultRandom(),
     workerId: uuid("worker_id")
         .notNull()
         .references(() => workerTable.id, { onDelete: "cascade" }),
-    status: text("status", {
-        enum: ["Loan", "Paid"] as const,
-    })
-        .notNull()
-        .default("Loan"),
+    status: loanPaidStatusEnum("status").notNull().default("Loan"),
     requestDate: date("request_date").notNull(),
     amountRequested: integer("amount_requested").notNull(),
     purpose: text("purpose"),

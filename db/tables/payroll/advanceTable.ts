@@ -4,18 +4,14 @@ import {
     timestamp,
     date,
     integer,
-    text,
 } from "drizzle-orm/pg-core";
 import { advanceRequestTable } from "./advanceRequestTable";
+import { loanPaidStatusEnum } from "./statusEnums";
 
 export const advanceTable = pgTable("advance", {
     id: uuid().primaryKey().defaultRandom(),
     amount: integer("amount").notNull(),
-    status: text("status", {
-        enum: ["Loan", "Paid"] as const,
-    })
-        .notNull()
-        .default("Loan"),
+    status: loanPaidStatusEnum("status").notNull().default("Loan"),
     repaymentDate: date("repayment_date"),
 
     advanceRequestId: uuid("advance_request_id")

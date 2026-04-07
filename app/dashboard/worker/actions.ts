@@ -47,9 +47,10 @@ function toNumber(val: FormDataEntryValue | null): number | null {
     return n;
 }
 
-function coerceWorkerStatus(input: unknown): WorkerStatus {
-    const s = (input ?? "Active").toString().trim();
-    return s === "Inactive" ? "Inactive" : "Active";
+function parseWorkerStatus(input: unknown): WorkerStatus | null {
+    const s = input?.toString().trim();
+    if (s === "Active" || s === "Inactive") return s;
+    return null;
 }
 
 type ActionResult =
@@ -92,9 +93,10 @@ export async function createWorker(formData: FormData): Promise<ActionResult> {
     const nric = (formData.get("nric") ?? "").toString().trim() || null;
     const email = (formData.get("email") ?? "").toString().trim() || null;
     const phone = (formData.get("phone") ?? "").toString().trim() || null;
-    const status: InsertWorker["status"] = coerceWorkerStatus(
-        formData.get("status"),
-    );
+    const status = parseWorkerStatus(formData.get("status"));
+    if (!status) {
+        return { success: false, error: "Invalid worker status" };
+    }
     const countryOfOrigin =
         (formData.get("countryOfOrigin") ?? "").toString().trim() || null;
     const race = (formData.get("race") ?? "").toString().trim() || null;
@@ -199,9 +201,10 @@ export async function updateWorker(
     const nric = (formData.get("nric") ?? "").toString().trim() || null;
     const email = (formData.get("email") ?? "").toString().trim() || null;
     const phone = (formData.get("phone") ?? "").toString().trim() || null;
-    const status: InsertWorker["status"] = coerceWorkerStatus(
-        formData.get("status"),
-    );
+    const status = parseWorkerStatus(formData.get("status"));
+    if (!status) {
+        return { success: false, error: "Invalid worker status" };
+    }
     const countryOfOrigin =
         (formData.get("countryOfOrigin") ?? "").toString().trim() || null;
     const race = (formData.get("race") ?? "").toString().trim() || null;

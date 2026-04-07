@@ -45,7 +45,7 @@ describe("settlePayroll", () => {
         expect(result).toEqual({ error: "Payroll not found" });
     });
 
-    it("returns error when payroll is not draft", async () => {
+    it("returns error when payroll is not Draft", async () => {
         mocks.db.select.mockReturnValueOnce({
             from: vi.fn().mockReturnValue({
                 where: vi.fn().mockReturnValue({
@@ -55,7 +55,7 @@ describe("settlePayroll", () => {
         });
 
         const result = await settlePayroll("payroll-1");
-        expect(result).toEqual({ error: "Only draft payrolls can be settled" });
+        expect(result).toEqual({ error: "Only Draft payrolls can be settled" });
     });
 
     it("settles payroll and revalidates routes", async () => {
