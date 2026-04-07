@@ -19,7 +19,6 @@ import {
     LayoutDashboard,
     Users,
 } from "lucide-react";
-import { DatePickerInput } from "@/components/ui/date-picker-input";
 
 export default async function Page() {
     const [[workersResult], [expensesResult]] = await Promise.all([
@@ -159,7 +158,6 @@ export default async function Page() {
                     </Button>
                 </CardContent>
             </Card>
-            <DatePickerInput />
         </div>
     );
 }
