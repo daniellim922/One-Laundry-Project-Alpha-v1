@@ -12,6 +12,8 @@ import { workerTable } from "@/db/tables/payroll/workerTable";
 export const runtime = "nodejs";
 
 type Body = { payrollIds?: unknown };
+type PayrollPdfFailure = { payrollId: string; reason: string };
+type PayrollPdfEntry = { name: string; buffer: Buffer };
 
 async function requireApiPermission(req: NextRequest) {
     const session = await auth.api.getSession({ headers: req.headers });
@@ -41,6 +43,61 @@ function isoToDdmmyyyy(iso: string): string {
     return `${d}_${m}_${y}`;
 }
 
+export function dedupeStringsPreserveOrder(values: string[]): string[] {
+    return Array.from(new Set(values));
+}
+
+function appendNumericSuffix(filename: string, n: number): string {
+    const lastDot = filename.lastIndexOf(".");
+    if (lastDot <= 0) return `${filename} (${n})`;
+    const stem = filename.slice(0, lastDot);
+    const ext = filename.slice(lastDot);
+    return `${stem} (${n})${ext}`;
+}
+
+export function makeUniqueZipEntryName(
+    baseName: string,
+    seenNames: Map<string, number>,
+): string {
+    const count = seenNames.get(baseName) ?? 0;
+    seenNames.set(baseName, count + 1);
+    if (count === 0) return baseName;
+    return appendNumericSuffix(baseName, count + 1);
+}
+
+export function createPayrollPdfBaseName(args: {
+    workerName: string;
+    periodStart: string;
+    periodEnd: string;
+}): string {
+    return safeFilenamePart(
+        `${args.workerName} - ${args.periodStart}-${args.periodEnd}.pdf`,
+    );
+}
+
+export function formatDownloadErrorsReport(
+    failures: PayrollPdfFailure[],
+): string {
+    const lines = [
+        "Some payroll PDFs failed to generate.",
+        "",
+        ...failures.map((f) => `- ${f.payrollId}: ${f.reason}`),
+        "",
+    ];
+    return lines.join("\n");
+}
+
+export function createZipFilename(args: {
+    periodStart: string;
+    periodEnd: string;
+    partial: boolean;
+}): string {
+    const partialSuffix = args.partial ? "-partial" : "";
+    return safeFilenamePart(
+        `payrolls-${args.periodStart}-${args.periodEnd}${partialSuffix}.zip`,
+    );
+}
+
 export async function POST(req: NextRequest) {
     const perm = await requireApiPermission(req);
     if (!perm.ok) {
@@ -54,9 +111,10 @@ export async function POST(req: NextRequest) {
         return new Response("Invalid JSON", { status: 400 });
     }
 
-    const payrollIds = Array.isArray(parsed.payrollIds)
+    const payrollIdsRaw = Array.isArray(parsed.payrollIds)
         ? (parsed.payrollIds as unknown[]).filter((x) => typeof x === "string")
         : [];
+    const payrollIds = dedupeStringsPreserveOrder(payrollIdsRaw);
 
     if (payrollIds.length === 0) {
         return new Response("No payrollIds provided", { status: 400 });
@@ -88,6 +146,61 @@ export async function POST(req: NextRequest) {
     const cookie = req.headers.get("cookie") ?? "";
     const origin = req.nextUrl.origin;
 
+    const failures: PayrollPdfFailure[] = [];
+    const pdfEntries: PayrollPdfEntry[] = [];
+    const seenNames = new Map<string, number>();
+
+    for (const id of payrollIds) {
+        try {
+            const url = `${origin}/api/payroll/${id}/pdf?mode=summary`;
+            const res = await fetch(url, {
+                headers: cookie ? { cookie } : undefined,
+                cache: "no-store",
+            });
+            if (!res.ok) {
+                const reason = `PDF failed (${res.status})`;
+                failures.push({ payrollId: id, reason });
+                console.warn(`[payroll/download-zip] Failed to fetch PDF`, {
+                    payrollId: id,
+                    status: res.status,
+                });
+                continue;
+            }
+            const buf = Buffer.from(await res.arrayBuffer());
+
+            const meta = metaById.get(id);
+            const workerName = meta?.workerName ?? `payroll-${id}`;
+            const periodStart = isoToDdmmyyyy(isoDate(meta?.periodStart ?? ""));
+            const periodEnd = isoToDdmmyyyy(isoDate(meta?.periodEnd ?? ""));
+            const baseName = createPayrollPdfBaseName({
+                workerName,
+                periodStart,
+                periodEnd,
+            });
+            const uniqueName = makeUniqueZipEntryName(baseName, seenNames);
+            if (uniqueName !== baseName) {
+                console.warn(`[payroll/download-zip] Duplicate filename collision`, {
+                    payrollId: id,
+                    baseName,
+                    uniqueName,
+                });
+            }
+
+            pdfEntries.push({
+                name: uniqueName,
+                buffer: buf,
+            });
+        } catch (error) {
+            const reason =
+                error instanceof Error ? error.message : "Unknown error";
+            failures.push({ payrollId: id, reason });
+            console.warn(`[payroll/download-zip] PDF processing error`, {
+                payrollId: id,
+                reason,
+            });
+        }
+    }
+
     const stream = new ReadableStream<Uint8Array>({
         start(controller) {
             const zip = archiver("zip", { zlib: { level: 9 } });
@@ -101,27 +214,14 @@ export async function POST(req: NextRequest) {
 
             (async () => {
                 try {
-                    for (const id of payrollIds) {
-                        const url = `${origin}/api/payroll/${id}/pdf?mode=summary`;
-                        const res = await fetch(url, {
-                            headers: cookie ? { cookie } : undefined,
-                            cache: "no-store",
+                    for (const entry of pdfEntries) {
+                        zip.append(Readable.from(entry.buffer), {
+                            name: entry.name,
                         });
-                        if (!res.ok) {
-                            throw new Error(`PDF failed for ${id} (${res.status})`);
-                        }
-                        const buf = Buffer.from(await res.arrayBuffer());
-
-                        const meta = metaById.get(id);
-                        const workerName = meta?.workerName ?? `payroll-${id}`;
-                        const periodStart = isoToDdmmyyyy(isoDate(meta?.periodStart ?? ""));
-                        const periodEnd = isoToDdmmyyyy(isoDate(meta?.periodEnd ?? ""));
-
-                        zip.append(Readable.from(buf), {
-                            name: safeFilenamePart(
-                                `${workerName} - ${periodStart}-${periodEnd}.pdf`,
-                            ),
-                        });
+                    }
+                    if (failures.length > 0) {
+                        const report = formatDownloadErrorsReport(failures);
+                        zip.append(report, { name: "_download-errors.txt" });
                     }
                     await zip.finalize();
                 } catch (e) {
@@ -131,9 +231,11 @@ export async function POST(req: NextRequest) {
         },
     });
 
-    const zipName = safeFilenamePart(
-        `payrolls-${periodStartForZipLabel}-${periodEndForZipLabel}.zip`,
-    );
+    const zipName = createZipFilename({
+        periodStart: periodStartForZipLabel,
+        periodEnd: periodEndForZipLabel,
+        partial: failures.length > 0,
+    });
     const zipNameStar = encodeURIComponent(zipName);
 
     return new Response(stream, {
