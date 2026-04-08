@@ -6,7 +6,7 @@ import type { RowSelectionState } from "@tanstack/react-table";
 import { ListChecks } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { massUpdateWorkerMinimumWorkingHours } from "./actions";
+import { massUpdateWorkerMinimumWorkingHours } from "../actions";
 import { DataTable } from "@/components/data-table/data-table";
 import {
     createBadgeCell,
@@ -213,10 +213,14 @@ export function MassEditWorkingHoursButton({
             return;
         }
 
-        const selectedWorkers = workers.filter((worker) => rowSelection[worker.id]);
+        const selectedWorkers = workers.filter(
+            (worker) => rowSelection[worker.id],
+        );
         const failedFromClientValidation: MassEditFailure[] = [];
-        const updates: Array<{ workerId: string; minimumWorkingHours: number }> =
-            [];
+        const updates: Array<{
+            workerId: string;
+            minimumWorkingHours: number;
+        }> = [];
 
         for (const worker of selectedWorkers) {
             const rawValue = nextHoursByWorkerId[worker.id];
@@ -260,11 +264,14 @@ export function MassEditWorkingHoursButton({
                 result.failed.map((failure) => failure.workerId),
             );
             const requestedHoursByWorkerId = new Map(
-                updates.map((update) => [update.workerId, update.minimumWorkingHours]),
+                updates.map((update) => [
+                    update.workerId,
+                    update.minimumWorkingHours,
+                ]),
             );
 
-            const resultRows: MassEditWorkingHoursResultRow[] = selectedWorkers.map(
-                (worker) => {
+            const resultRows: MassEditWorkingHoursResultRow[] =
+                selectedWorkers.map((worker) => {
                     const failed =
                         clientFailuresByWorkerId.has(worker.id) ||
                         serverFailuresByWorkerId.has(worker.id);
@@ -278,8 +285,7 @@ export function MassEditWorkingHoursButton({
                             : (requestedHoursByWorkerId.get(worker.id) ?? null),
                         status: failed ? "failed" : "updated",
                     };
-                },
-            );
+                });
 
             onResult?.(resultRows);
             setOpen(false);
@@ -364,7 +370,10 @@ export function MassEditWorkingHoursButton({
 
                 <DialogFooter>
                     <DialogClose asChild>
-                        <Button type="button" variant="outline" disabled={pending}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={pending}>
                             Cancel
                         </Button>
                     </DialogClose>
@@ -372,7 +381,9 @@ export function MassEditWorkingHoursButton({
                         type="button"
                         disabled={pending || selectedCount === 0}
                         onClick={handleSave}>
-                        {pending ? "Saving..." : `Save selected (${selectedCount})`}
+                        {pending
+                            ? "Saving..."
+                            : `Save selected (${selectedCount})`}
                     </Button>
                 </DialogFooter>
             </DialogContent>
