@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { requirePermission } from "@/utils/permissions/require-permission";
@@ -12,10 +12,7 @@ import { WorkerAllTableSection } from "./worker-all-table-section";
 
 export default async function Page() {
     const { userId } = await requirePermission("Workers", "read");
-    const [canCreateWorker, canMassEditWorkingHours] = await Promise.all([
-        checkPermission(userId, "Workers", "create"),
-        checkPermission(userId, "Workers", "update"),
-    ]);
+    const canCreateWorker = await checkPermission(userId, "Workers", "create");
 
     const workers = (await db
         .select({
@@ -47,32 +44,6 @@ export default async function Page() {
         )
         .orderBy(desc(workerTable.updatedAt))) as WorkerWithEmployment[];
 
-    const workersForMassEdit = canMassEditWorkingHours
-        ? await db
-              .select({
-                  id: workerTable.id,
-                  name: workerTable.name,
-                  employmentArrangement: employmentTable.employmentArrangement,
-                  minimumWorkingHours: employmentTable.minimumWorkingHours,
-              })
-              .from(workerTable)
-              .innerJoin(
-                  employmentTable,
-                  eq(workerTable.employmentId, employmentTable.id),
-              )
-              .where(
-                  and(
-                      eq(workerTable.status, "Active"),
-                      eq(employmentTable.employmentType, "Full Time"),
-                      eq(
-                          employmentTable.employmentArrangement,
-                          "Foreign Worker",
-                      ),
-                  ),
-              )
-              .orderBy(desc(workerTable.updatedAt))
-        : [];
-
     return (
         <div className="space-y-6">
             <div>
@@ -86,9 +57,7 @@ export default async function Page() {
 
             <WorkerAllTableSection
                 workers={workers}
-                workersForMassEdit={workersForMassEdit}
                 canCreateWorker={canCreateWorker}
-                canMassEditWorkingHours={canMassEditWorkingHours}
             />
         </div>
     );
