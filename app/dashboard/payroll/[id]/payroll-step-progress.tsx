@@ -38,6 +38,7 @@ export function PayrollStepProgress({
     const [open, setOpen] = React.useState(false);
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
+    const settleInFlightRef = React.useRef(false);
     const isSettled = payrollStatus === "Settled";
 
     const steps: StepProgressItem[] = [
@@ -54,19 +55,26 @@ export function PayrollStepProgress({
     ];
 
     async function handleSettle() {
+        if (settleInFlightRef.current) return;
+
+        settleInFlightRef.current = true;
         setError(null);
         setPending(true);
 
-        const result = await settlePayroll(payrollId);
+        try {
+            const result = await settlePayroll(payrollId);
 
-        setPending(false);
-        if (result?.error) {
-            setError(result.error);
-            return;
+            if (result?.error) {
+                setError(result.error);
+                return;
+            }
+
+            setOpen(false);
+            router.push(`/dashboard/payroll/${payrollId}/summary?download=1`);
+        } finally {
+            settleInFlightRef.current = false;
+            setPending(false);
         }
-
-        setOpen(false);
-        router.push(`/dashboard/payroll/${payrollId}/summary?download=1`);
     }
 
     const finalAction = isSettled ? (
