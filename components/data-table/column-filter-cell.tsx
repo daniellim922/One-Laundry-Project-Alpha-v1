@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import type { Column, ColumnFiltersState, Table } from "@tanstack/react-table";
 
 import { Input } from "@/components/ui/input";
@@ -42,26 +43,36 @@ export function ColumnFilterCell<TData>({
         return typeof active?.value === "string" ? active.value : "";
     })();
 
+    const [draft, setDraft] = React.useState(currentTextValue);
+
+    React.useEffect(() => {
+        setDraft((prev) => (prev === currentTextValue ? prev : currentTextValue));
+    }, [currentTextValue]);
+
+    React.useEffect(() => {
+        const handle = window.setTimeout(() => {
+            const rawValue = draft;
+            const normalizedValue = rawValue.trim();
+
+            table.setColumnFilters((prev: ColumnFiltersState) => {
+                const withoutColumn = prev.filter(
+                    (filter) => filter.id !== column.id,
+                );
+                if (!normalizedValue) {
+                    return withoutColumn;
+                }
+                return [...withoutColumn, { id: column.id, value: rawValue }];
+            });
+        }, 200);
+
+        return () => window.clearTimeout(handle);
+    }, [column.id, draft, table]);
+
     return (
         <Input
             placeholder={meta?.filterPlaceholder ?? "Filter..."}
-            value={currentTextValue}
-            onChange={(event) => {
-                const rawValue = event.target.value;
-                const normalizedValue = rawValue.trim();
-                table.setColumnFilters((prev: ColumnFiltersState) => {
-                    const withoutColumn = prev.filter(
-                        (filter) => filter.id !== column.id,
-                    );
-                    if (!normalizedValue) {
-                        return withoutColumn;
-                    }
-                    return [
-                        ...withoutColumn,
-                        { id: column.id, value: rawValue },
-                    ];
-                });
-            }}
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
             className="h-8 text-xs"
         />
     );
