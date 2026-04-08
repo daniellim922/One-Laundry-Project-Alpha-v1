@@ -2,17 +2,27 @@
 
 import * as React from "react";
 import { Suspense } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
 import { createPayrolls } from "../actions";
+import type { PayrollPeriodConflict } from "@/utils/payroll/payroll-period-conflicts";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 import {
     Field,
     FieldError,
@@ -48,10 +58,27 @@ const formSchema = z
 
 type FormValues = z.infer<typeof formSchema>;
 
+function toDisplayDate(date: string): string {
+    const parsed = new Date(`${date}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) return date;
+    return parsed.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+    });
+}
+
 export function PayrollForm({ workers }: { workers: Worker[] }) {
     const router = useRouter();
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
+    const [summary, setSummary] = React.useState<{
+        created: string;
+        skipped: string;
+    } | null>(null);
+    const [conflicts, setConflicts] = React.useState<PayrollPeriodConflict[]>(
+        [],
+    );
     const [rowSelection, setRowSelection] = React.useState<
         Record<string, boolean>
     >({});
@@ -75,6 +102,8 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
 
     async function onSubmit(values: FormValues) {
         setError(null);
+        setSummary(null);
+        setConflicts([]);
         setPending(true);
 
         const formData = new FormData();
@@ -85,12 +114,40 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
 
         const result = await createPayrolls(formData);
         setPending(false);
-        if (result.error) {
+        if ("error" in result) {
             setError(result.error);
             return;
         }
-        router.push("/dashboard/payroll/all");
-        router.refresh();
+
+        if (result.created > 0 && result.skipped === 0) {
+            router.push("/dashboard/payroll/all");
+            router.refresh();
+            return;
+        }
+
+        const uniqueConflicts = Array.from(
+            new Map(
+                result.conflicts.map((conflict) => [
+                    conflict.payrollId,
+                    conflict,
+                ]),
+            ).values(),
+        );
+
+        const createdLabel = `${result.created} payroll${result.created === 1 ? "" : "s"} created`;
+        const skippedLabel =
+            result.skipped > 0
+                ? `${result.skipped} worker${result.skipped === 1 ? "" : "s"} skipped due to overlap`
+                : "no workers skipped";
+
+        setSummary({
+            created: createdLabel,
+            skipped: skippedLabel,
+        });
+        setConflicts(uniqueConflicts);
+        if (result.created > 0) {
+            router.refresh();
+        }
     }
 
     return (
@@ -209,6 +266,64 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
 
                     {error && (
                         <p className="text-destructive text-sm">{error}</p>
+                    )}
+                    {summary && (
+                        <div className="text-muted-foreground text-sm space-y-1">
+                            <p>{summary.created}</p>
+                            <p className="text-destructive">
+                                {summary.skipped}
+                            </p>
+                        </div>
+                    )}
+                    {conflicts.length > 0 && (
+                        <div className="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Period start</TableHead>
+                                        <TableHead>Period end</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead className="text-right">
+                                            Action
+                                        </TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {conflicts.map((conflict) => (
+                                        <TableRow key={conflict.payrollId}>
+                                            <TableCell className="font-medium">
+                                                {conflict.workerName}
+                                            </TableCell>
+                                            <TableCell>
+                                                {toDisplayDate(
+                                                    conflict.periodStart,
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                {toDisplayDate(
+                                                    conflict.periodEnd,
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                {conflict.status}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button
+                                                    asChild
+                                                    size="sm"
+                                                    variant="outline">
+                                                    <Link
+                                                        href={`/dashboard/payroll/${conflict.payrollId}/breakdown`}>
+                                                        View
+                                                    </Link>
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
                     )}
                     <div className="flex gap-2">
                         <Button

@@ -37,6 +37,9 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
     const [editing, setEditing] = React.useState(false);
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
+    const [conflictPayrollId, setConflictPayrollId] = React.useState<
+        string | null
+    >(null);
 
     const isDraft = payroll.status === "Draft";
 
@@ -45,6 +48,7 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
     async function handleSave(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         setError(null);
+        setConflictPayrollId(null);
         setPending(true);
 
         const form = e.currentTarget;
@@ -52,8 +56,11 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
         const result = await updatePayroll(payroll.id, formData);
 
         setPending(false);
-        if (result.error) {
+        if ("error" in result) {
             setError(result.error);
+            if ("code" in result && result.code === "OVERLAP_CONFLICT") {
+                setConflictPayrollId(result.conflicts[0]?.payrollId ?? null);
+            }
             return;
         }
         setEditing(false);
@@ -128,7 +135,16 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
                             </div>
                         </div>
                         {error && (
-                            <p className="text-destructive text-sm">{error}</p>
+                            <div className="text-sm space-y-1">
+                                <p className="text-destructive">{error}</p>
+                                {conflictPayrollId && (
+                                    <Link
+                                        href={`/dashboard/payroll/${conflictPayrollId}/breakdown`}
+                                        className="underline underline-offset-4">
+                                        View conflicting payroll
+                                    </Link>
+                                )}
+                            </div>
                         )}
                         <div className="flex gap-2">
                             <Button type="submit" size="sm" disabled={pending}>
@@ -141,6 +157,7 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
                                 onClick={() => {
                                     setEditing(false);
                                     setError(null);
+                                    setConflictPayrollId(null);
                                 }}
                                 disabled={pending}>
                                 Cancel
