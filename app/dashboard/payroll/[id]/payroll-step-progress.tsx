@@ -2,12 +2,14 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { ChevronDown, Loader2 } from "lucide-react";
 
 import {
     StepProgressPanel,
     type StepProgressItem,
 } from "@/components/ui/step-progress-panel";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
     Dialog,
     DialogClose,
@@ -18,8 +20,30 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 
-import { settlePayroll } from "../actions";
+import {
+    settlePayroll,
+    revertPayroll,
+    getRevertPreview,
+    type RevertPreviewRow,
+} from "../actions";
+import { cn } from "@/lib/utils";
+import {
+    payrollStatusBadgeTone,
+    timesheetPaymentStatusBadgeTone,
+    installmentToneClassName,
+    advanceLoanToneClassName,
+} from "@/types/badge-tones";
+import { localDateDmy } from "@/utils/time/local-iso-date";
+import { localTimeHm } from "@/utils/time/local-time";
 
 interface PayrollStepProgressProps {
     className?: string;
@@ -39,7 +63,41 @@ export function PayrollStepProgress({
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const settleInFlightRef = React.useRef(false);
+
+    const [revertOpen, setRevertOpen] = React.useState(false);
+    const [revertPending, setRevertPending] = React.useState(false);
+    const [revertError, setRevertError] = React.useState<string | null>(null);
+    const revertInFlightRef = React.useRef(false);
+
+    const [previewLoading, setPreviewLoading] = React.useState(false);
+    const [previewData, setPreviewData] = React.useState<
+        RevertPreviewRow[] | null
+    >(null);
+    const [previewError, setPreviewError] = React.useState<string | null>(null);
+
     const isSettled = payrollStatus === "Settled";
+
+    React.useEffect(() => {
+        if (!revertOpen) {
+            setPreviewData(null);
+            setPreviewError(null);
+            return;
+        }
+        let cancelled = false;
+        setPreviewLoading(true);
+        getRevertPreview(payrollId).then((result) => {
+            if (cancelled) return;
+            if ("error" in result) {
+                setPreviewError(result.error);
+            } else {
+                setPreviewData(result.data);
+            }
+            setPreviewLoading(false);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [revertOpen, payrollId]);
 
     const steps: StepProgressItem[] = [
         {
@@ -77,14 +135,91 @@ export function PayrollStepProgress({
         }
     }
 
+    async function handleRevert() {
+        if (revertInFlightRef.current) return;
+
+        revertInFlightRef.current = true;
+        setRevertError(null);
+        setRevertPending(true);
+
+        try {
+            const result = await revertPayroll(payrollId);
+
+            if (result?.error) {
+                setRevertError(result.error);
+                return;
+            }
+
+            setRevertOpen(false);
+            router.push(`/dashboard/payroll/${payrollId}/breakdown`);
+        } finally {
+            revertInFlightRef.current = false;
+            setRevertPending(false);
+        }
+    }
+
     const finalAction = isSettled ? (
-        <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            onClick={() => {}}>
-            Revert
-        </Button>
+        <Dialog
+            open={revertOpen}
+            onOpenChange={(nextOpen) => {
+                setRevertOpen(nextOpen);
+                if (!nextOpen) setRevertError(null);
+            }}>
+            <DialogTrigger asChild>
+                <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    disabled={revertPending}
+                    className="cursor-pointer">
+                    Revert
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="[&_button]:cursor-pointer flex max-h-[min(95vh,1100px)] flex-col gap-4 sm:max-w-6xl">
+                <DialogHeader className="shrink-0">
+                    <DialogTitle>Confirm revert</DialogTitle>
+                    <DialogDescription>
+                        The following changes will be applied:
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    {previewLoading ? (
+                        <div className="flex items-center gap-2 py-4">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-sm text-muted-foreground">
+                                Loading preview...
+                            </span>
+                        </div>
+                    ) : previewError ? (
+                        <p className="text-sm text-destructive">{previewError}</p>
+                    ) : previewData ? (
+                        <RevertPreviewTable rows={previewData} />
+                    ) : null}
+                </div>
+                {revertError ? (
+                    <p className="shrink-0 text-sm text-destructive">
+                        {revertError}
+                    </p>
+                ) : null}
+                <DialogFooter className="shrink-0">
+                    <DialogClose asChild>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={revertPending}>
+                            Cancel
+                        </Button>
+                    </DialogClose>
+                    <Button
+                        type="button"
+                        variant="destructive"
+                        disabled={revertPending}
+                        onClick={handleRevert}>
+                        {revertPending ? "Reverting..." : "Yes, revert"}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     ) : (
         <Dialog
             open={open}
@@ -140,5 +275,199 @@ export function PayrollStepProgress({
             activeStep={activeStep}
             finalAction={{ id: 3, content: finalAction }}
         />
+    );
+}
+
+const statusToneMap: Record<string, string> = {
+    ...payrollStatusBadgeTone,
+    ...timesheetPaymentStatusBadgeTone,
+    ...installmentToneClassName,
+    ...advanceLoanToneClassName,
+};
+
+function revertPreviewRowIsExpandable(row: RevertPreviewRow): boolean {
+    return (
+        (row.timesheetLines?.length ?? 0) > 0 ||
+        (row.advanceInstallmentLines?.length ?? 0) > 0
+    );
+}
+
+function RevertPreviewExpandedLines({ row }: { row: RevertPreviewRow }) {
+    if (row.timesheetLines?.length) {
+        return (
+            <Table className="text-sm">
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Date in</TableHead>
+                        <TableHead>Date out</TableHead>
+                        <TableHead>Time in</TableHead>
+                        <TableHead>Time out</TableHead>
+                        <TableHead>Hours</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {row.timesheetLines.map((line) => (
+                        <TableRow key={line.id}>
+                            <TableCell>{localDateDmy(line.dateIn)}</TableCell>
+                            <TableCell>{localDateDmy(line.dateOut)}</TableCell>
+                            <TableCell>{localTimeHm(line.timeIn)}</TableCell>
+                            <TableCell>{localTimeHm(line.timeOut)}</TableCell>
+                            <TableCell>
+                                {Number(line.hours).toFixed(2)}
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        );
+    }
+
+    if (row.advanceInstallmentLines?.length) {
+        return (
+            <Table className="text-sm">
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>Repayment date</TableHead>
+                        <TableHead>Amount</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {row.advanceInstallmentLines.map((line) => (
+                        <TableRow key={line.id}>
+                            <TableCell>
+                                {line.repaymentDate
+                                    ? localDateDmy(line.repaymentDate)
+                                    : "—"}
+                            </TableCell>
+                            <TableCell>{`$${line.amount}`}</TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        );
+    }
+
+    return null;
+}
+
+function RevertPreviewTable({ rows }: { rows: RevertPreviewRow[] }) {
+    const [expandedRowNames, setExpandedRowNames] = React.useState<
+        Record<string, boolean>
+    >({});
+
+    function toggleRowExpanded(name: string) {
+        setExpandedRowNames((prev) => ({
+            ...prev,
+            [name]: !prev[name],
+        }));
+    }
+
+    return (
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Current Status</TableHead>
+                    <TableHead>Future Status</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {rows.map((row) => {
+                    const badges = (
+                        <>
+                            <TableCell>
+                                <Badge
+                                    variant="secondary"
+                                    className={cn(
+                                        statusToneMap[row.currentStatus],
+                                    )}>
+                                    {row.currentStatus}
+                                </Badge>
+                            </TableCell>
+                            <TableCell>
+                                <Badge
+                                    variant="secondary"
+                                    className={cn(
+                                        statusToneMap[row.futureStatus],
+                                    )}>
+                                    {row.futureStatus}
+                                </Badge>
+                            </TableCell>
+                        </>
+                    );
+
+                    if (revertPreviewRowIsExpandable(row)) {
+                        const expanded = !!expandedRowNames[row.name];
+                        return (
+                            <React.Fragment key={row.name}>
+                                <TableRow>
+                                    <TableCell className="font-medium">
+                                        <button
+                                            type="button"
+                                            aria-expanded={expanded}
+                                            onClick={() =>
+                                                toggleRowExpanded(row.name)
+                                            }
+                                            className="flex cursor-pointer items-center gap-2 text-left underline-offset-4 hover:underline">
+                                            <ChevronDown
+                                                className={cn(
+                                                    "size-4 shrink-0 transition-transform",
+                                                    expanded && "rotate-180",
+                                                )}
+                                            />
+                                            <span>{row.name}</span>
+                                        </button>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge
+                                            variant="secondary"
+                                            className={cn(
+                                                statusToneMap[
+                                                    row.currentStatus
+                                                ],
+                                            )}>
+                                            {row.currentStatus}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge
+                                            variant="secondary"
+                                            className={cn(
+                                                statusToneMap[
+                                                    row.futureStatus
+                                                ],
+                                            )}>
+                                            {row.futureStatus}
+                                        </Badge>
+                                    </TableCell>
+                                </TableRow>
+                                {expanded ? (
+                                    <TableRow className="hover:bg-transparent">
+                                        <TableCell
+                                            colSpan={3}
+                                            className="p-0">
+                                            <div className="max-h-96 overflow-y-auto border-t bg-muted/40 px-4 py-3">
+                                                <RevertPreviewExpandedLines
+                                                    row={row}
+                                                />
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : null}
+                            </React.Fragment>
+                        );
+                    }
+
+                    return (
+                        <TableRow key={row.name}>
+                            <TableCell className="font-medium">
+                                {row.name}
+                            </TableCell>
+                            {badges}
+                        </TableRow>
+                    );
+                })}
+            </TableBody>
+        </Table>
     );
 }

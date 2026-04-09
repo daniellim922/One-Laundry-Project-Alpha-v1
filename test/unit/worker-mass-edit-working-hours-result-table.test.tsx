@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { MassEditWorkingHoursResultTable } from "@/app/dashboard/worker/mass-edit-working-hours-result-table";
+import { MassEditWorkingHoursResultTable } from "@/app/dashboard/worker/mass-edit/mass-edit-working-hours-result-table";
 
 describe("MassEditWorkingHoursResultTable", () => {
     it("renders headers, formatted hours, and emoji status", () => {
