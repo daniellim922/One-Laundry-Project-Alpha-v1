@@ -78,8 +78,12 @@ export function PayrollStepProgress({
     }
 
     const finalAction = isSettled ? (
-        <Button type="button" variant="outline" size="sm" disabled>
-            Settled
+        <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={() => {}}>
+            Revert
         </Button>
     ) : (
         <Dialog
@@ -91,7 +95,7 @@ export function PayrollStepProgress({
             <DialogTrigger asChild>
                 <Button
                     type="button"
-                    variant="destructive"
+                    variant="default"
                     size="sm"
                     disabled={pending}
                     className="cursor-pointer">
@@ -105,16 +109,21 @@ export function PayrollStepProgress({
                         Are you sure you want to settle this payroll?
                     </DialogDescription>
                 </DialogHeader>
-                {error ? <p className="text-sm text-destructive">{error}</p> : null}
+                {error ? (
+                    <p className="text-sm text-destructive">{error}</p>
+                ) : null}
                 <DialogFooter>
                     <DialogClose asChild>
-                        <Button type="button" variant="outline" disabled={pending}>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={pending}>
                             Cancel
                         </Button>
                     </DialogClose>
                     <Button
                         type="button"
-                        variant="destructive"
+                        variant="default"
                         disabled={pending}
                         onClick={handleSettle}>
                         {pending ? "Settling..." : "Yes, settle"}
