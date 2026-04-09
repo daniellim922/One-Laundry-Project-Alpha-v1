@@ -40,8 +40,8 @@ describe("updateTimesheetEntry", () => {
         mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({ success: true });
     });
 
-    it("returns error and does not update when entry is Paid", async () => {
-        mockSelectResolved([{ workerId: "worker-1", status: "Paid" }]);
+    it("returns error and does not update when entry is Timesheet Paid", async () => {
+        mockSelectResolved([{ workerId: "worker-1", status: "Timesheet Paid" }]);
 
         const fd = new FormData();
         fd.set("workerId", "worker-1");
@@ -53,7 +53,7 @@ describe("updateTimesheetEntry", () => {
         const result = await updateTimesheetEntry("entry-1", fd);
 
         expect(result).toEqual({
-            error: "Paid timesheet entries cannot be edited",
+            error: "Timesheet Paid entries cannot be edited",
         });
         expect(mocks.db.update).not.toHaveBeenCalled();
     });

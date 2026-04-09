@@ -13,8 +13,8 @@ export const installmentStatusEnum = pgEnum("installment_status", [
 ]);
 
 export const timesheetPaymentStatusEnum = pgEnum("timesheet_payment_status", [
-    "Unpaid",
-    "Paid",
+    "Timesheet Unpaid",
+    "Timesheet Paid",
 ]);
 
 export const payrollStatusEnum = pgEnum("payroll_status", ["Draft", "Settled"]);

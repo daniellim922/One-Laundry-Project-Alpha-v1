@@ -890,7 +890,7 @@ async function settlePayrollInTx(
     await tx
         .update(timesheetTable)
         .set({
-            status: "Paid",
+            status: "Timesheet Paid",
             updatedAt: now,
         })
         .where(
@@ -898,7 +898,7 @@ async function settlePayrollInTx(
                 eq(timesheetTable.workerId, payroll.workerId),
                 gte(timesheetTable.dateIn, payroll.periodStart),
                 lte(timesheetTable.dateOut, payroll.periodEnd),
-                eq(timesheetTable.status, "Unpaid"),
+                eq(timesheetTable.status, "Timesheet Unpaid"),
             ),
         );
 }

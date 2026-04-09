@@ -27,8 +27,8 @@ export const timesheetPaymentStatusBadgeTone: Record<
     TimesheetPaymentStatus,
     string
 > = {
-    Unpaid: "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300",
-    Paid: "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300",
+    "Timesheet Unpaid": "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300",
+    "Timesheet Paid": "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300",
 };
 
 export const payrollStatusBadgeTone: Record<PayrollStatus, string> = {

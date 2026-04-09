@@ -21,9 +21,9 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 
 | Term                            | Definition                                                                                                                                                                                                                                                                   | Aliases to avoid                                          |
 | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| **Timesheet entry**             | A single worked interval: **Date in**, **Time in**, **Date out**, **Time out**, derived **Hours**, and a settlement flag (**Unpaid** / **Paid**).                                                                                                                            | Clock record, attendance row                              |
+| **Timesheet entry**             | A single worked interval: **Date in**, **Time in**, **Date out**, **Time out**, derived **Hours**, and a settlement flag (**Timesheet Unpaid** / **Timesheet Paid**).                                                                                                        | Clock record, attendance row                              |
 | **Hours**                       | Decimal duration worked for one **Timesheet entry**, computed from in/out date-times (including overnight spans).                                                                                                                                                            | Duration (when money is implied, prefer **Hours worked**) |
-| **Timesheet settlement status** | Stored as **Unpaid** / **Paid**: **Paid** applies only after the containing **Payroll** is **Settled** (editing restricted for **Paid** rows). In the UI, prefer labels like **Included in payroll** instead of bare **Paid** to avoid confusion with **Advance** repayment. | Bare **Paid** in user-facing timesheet copy               |
+| **Timesheet settlement status** | Stored as **Timesheet Unpaid** / **Timesheet Paid**: **Timesheet Paid** applies only after the containing **Payroll** is **Settled** (editing restricted for **Timesheet Paid** rows). The prefix disambiguates from **Advance Paid** / **Installment Paid**. | Bare **Paid** / **Unpaid** without the **Timesheet** prefix |
 
 
 ## Payroll run and voucher
@@ -47,7 +47,7 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 | **Total pay**                        | Gross pay for the period after **Hours-not-met deduction**, before CPF and **Advance** recovery.                                                                                                                                                                                                                                                                                   | Gross (ambiguous)                                                                                           |
 | **Net pay**                          | **Total pay** minus **CPF** and the sum of outstanding **Installment** amounts in **Installment Loan** status for the period.                                                                                                                                                                                                                                                                      | Take-home (informal)                                                                                        |
 | **Synchronize worker drafts**        | Recompute all **Draft** **Payrolls** for a **Worker** from current **Employment**, **Timesheet entries**, **Payroll voucher** inputs, and **Advances**.                                                                                                                                                                                                                            | Sync, refresh                                                                                               |
-| **Reopen** (payroll)                 | Privileged action: **Settled** → **Draft** for the **whole** **Payroll** run (one worker, one run). Affected **Timesheet** entries return to **Unpaid**. **Advance** recovery applied in that **Settled** run is **reverted** so installments return to **Installment Loan** until the run is **Settled** again. Same **Roles** that may **Settle** may **Reopen** (symmetric payroll-admin trust). | Partial reopen of one run; using **Reopen** when payout is already final in the real world without a policy |
+| **Reopen** (payroll)                 | Privileged action: **Settled** → **Draft** for the **whole** **Payroll** run (one worker, one run). Affected **Timesheet** entries return to **Timesheet Unpaid**. **Advance** recovery applied in that **Settled** run is **reverted** so installments return to **Installment Loan** until the run is **Settled** again. Same **Roles** that may **Settle** may **Reopen** (symmetric payroll-admin trust). | Partial reopen of one run; using **Reopen** when payout is already final in the real world without a policy |
 
 
 ## Salary advances
@@ -89,17 +89,17 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 - **Draft** **Payrolls** for a **Worker** are recomputed from **Timesheet entries** whose dates fall in the **Pay period**, from the **Employment** terms, **Payroll voucher** counts (e.g. **Rest days**, **Public holidays**), and **Installments** in **Installment Loan** status.
 - An **Advance request** belongs to one **Worker**; one or more **Installments** belong to one **Advance request**.
 - **Advance request** status becomes **Advance Paid** when every linked **Installment** is **Installment Paid**.
-- **Settle** marks the run **Settled** and sets covered **Timesheet** entries to **Paid**; **Reopen** reverses that for the run and reverts **Advance** recovery as above.
+- **Settle** marks the run **Settled** and sets covered **Timesheet** entries to **Timesheet Paid**; **Reopen** reverses that for the run and reverts **Advance** recovery as above.
 
 ## Example dialogue
 
-> **Dev:** "When we **settle** a **Payroll**, should **Timesheet entries** in that period flip to **Paid**?"
+> **Dev:** "When we **settle** a **Payroll**, should **Timesheet entries** in that period flip to **Timesheet Paid**?"
 
-> **Domain expert:** "Only on **Settle** — not when the run is still **Draft**. On screen we say **Included in payroll**, not **Paid**, so nobody confuses it with an **Installment** marked **Installment Paid** (repaid)."
+> **Domain expert:** "Only on **Settle** — not when the run is still **Draft**. The **Timesheet** prefix disambiguates from **Installment Paid** (advance repayment)."
 
-> **Dev:** "We **reopen** a **Settled** run to fix a mistake — what happens to **Advances**?"
+> **Dev:** "We **reopen** a **Settled** run to fix a mistake — what happens to **Advances** and **Timesheets**?"
 
-> **Domain expert:** "Recovery unwinds: installments go back to **Installment Loan** until we **Settle** again. We only **reopen** the **whole** payroll for that worker and period, and periods must not overlap across runs."
+> **Domain expert:** "Recovery unwinds: installments go back to **Installment Loan** and timesheet entries revert to **Timesheet Unpaid** until we **Settle** again. We only **reopen** the **whole** payroll for that worker and period, and periods must not overlap across runs."
 
 > **Dev:** "Who can **Reopen**?"
 
