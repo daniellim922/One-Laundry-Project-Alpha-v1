@@ -1,13 +1,15 @@
 import { pgEnum } from "drizzle-orm/pg-core";
 
-export const workerStatusEnum = pgEnum("worker_status", [
-    "Active",
-    "Inactive",
+export const workerStatusEnum = pgEnum("worker_status", ["Active", "Inactive"]);
+
+export const advanceLoanStatusEnum = pgEnum("advance_loan_status", [
+    "Advance Loan",
+    "Advance Paid",
 ]);
 
-export const loanPaidStatusEnum = pgEnum("loan_paid_status", [
-    "Loan",
-    "Paid",
+export const installmentStatusEnum = pgEnum("installment_status", [
+    "Installment Loan",
+    "Installment Paid",
 ]);
 
 export const timesheetPaymentStatusEnum = pgEnum("timesheet_payment_status", [
@@ -15,7 +17,4 @@ export const timesheetPaymentStatusEnum = pgEnum("timesheet_payment_status", [
     "Paid",
 ]);
 
-export const payrollStatusEnum = pgEnum("payroll_status", [
-    "Draft",
-    "Settled",
-]);
+export const payrollStatusEnum = pgEnum("payroll_status", ["Draft", "Settled"]);

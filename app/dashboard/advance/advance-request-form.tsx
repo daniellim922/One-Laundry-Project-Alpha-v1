@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/input-group";
 import { SelectSearch } from "@/components/ui/SelectSearch";
 import { Badge } from "@/components/ui/badge";
-import { loanPaidToneClassName } from "@/types/badge-tones";
+import { installmentToneClassName } from "@/types/badge-tones";
 import { localDateDmy, localIsoDateYmd } from "@/utils/time/local-iso-date";
 import { cn } from "@/lib/utils";
 import {
@@ -56,7 +56,7 @@ import {
 const formSchema = z
     .object({
         workerId: z.string().min(1, "Select an employee"),
-        loanDate: z
+        requestDate: z
             .string()
             .min(1, "Date of request is required")
             .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date"),
@@ -77,7 +77,7 @@ const formSchema = z
                         (v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v),
                         "Invalid date",
                     ),
-                status: z.enum(["Loan", "Paid"]).optional(),
+                status: z.enum(["Installment Loan", "Installment Paid"]).optional(),
             }),
         ),
     })
@@ -105,7 +105,7 @@ const formSchema = z
                 });
             }
 
-            if (hasRepaymentDate && repaymentDate < values.loanDate) {
+            if (hasRepaymentDate && repaymentDate < values.requestDate) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     path: ["installmentAmounts", i, "repaymentDate"],
@@ -116,7 +116,7 @@ const formSchema = z
 
             if (
                 hasRepaymentDate &&
-                row.status !== "Paid" &&
+                row.status !== "Installment Paid" &&
                 /^\d{4}-\d{2}-\d{2}$/.test(repaymentDate) &&
                 repaymentDate < today
             ) {
@@ -190,7 +190,7 @@ function detailToDefaultValues(detail: AdvanceRequestDetail): FormValues {
     const { request, advances, purpose } = detail;
     return {
         workerId: request.workerId,
-        loanDate: request.requestDate,
+        requestDate: request.requestDate,
         amount: String(request.amountRequested),
         purpose: purpose ?? "",
         installmentAmounts:
@@ -200,7 +200,7 @@ function detailToDefaultValues(detail: AdvanceRequestDetail): FormValues {
                       repaymentDate: a.repaymentDate ?? "",
                       status: a.status,
                   }))
-                : [{ amount: "", repaymentDate: "", status: "Loan" }],
+                : [{ amount: "", repaymentDate: "", status: "Installment Loan" }],
     };
 }
 
@@ -231,7 +231,7 @@ function AdvanceRequestReadOnlyBody({
 
                     <div
                         className="flex items-center gap-2"
-                        data-testid="advance-detail-loan-date">
+                        data-testid="advance-detail-request-date">
                         <Calendar className="size-5 shrink-0 text-muted-foreground" />
                         <span className="text-primary">
                             {localDateDmy(request.requestDate)}
@@ -289,7 +289,7 @@ function AdvanceRequestReadOnlyBody({
                                         <Badge
                                             variant="outline"
                                             className={
-                                                loanPaidToneClassName[
+                                                installmentToneClassName[
                                                     adv.status
                                                 ]
                                             }>
@@ -344,11 +344,11 @@ function AdvanceRequestFormEditable({
             ? detailToDefaultValues(initialData)
             : {
                   workerId: initialWorkerId ?? "",
-                  loanDate: localIsoDateYmd(),
+                  requestDate: localIsoDateYmd(),
                   amount: "",
                   purpose: "",
                   installmentAmounts: [
-                      { amount: "", repaymentDate: "", status: "Loan" },
+                      { amount: "", repaymentDate: "", status: "Installment Loan" },
                   ],
               },
     });
@@ -375,14 +375,14 @@ function AdvanceRequestFormEditable({
             isEditMode && advanceRequestId
                 ? await updateAdvanceRequest(advanceRequestId, {
                       workerId: data.workerId,
-                      loanDate: data.loanDate,
+                      requestDate: data.requestDate,
                       amount: data.amount,
                       purpose: data.purpose,
                       installmentAmounts: data.installmentAmounts,
                   })
                 : await createAdvanceRequest({
                       workerId: data.workerId,
-                      loanDate: data.loanDate,
+                      requestDate: data.requestDate,
                       amount: data.amount,
                       purpose: data.purpose,
                       installmentAmounts: data.installmentAmounts,
@@ -469,19 +469,19 @@ function AdvanceRequestFormEditable({
                             />
 
                             <Controller
-                                name="loanDate"
+                                name="requestDate"
                                 control={form.control}
                                 render={({ field, fieldState }) => (
                                     <Field
                                         data-invalid={fieldState.invalid}
                                         className="min-w-0 space-y-2">
                                         <FieldLabel
-                                            htmlFor={`${formId}-loan-date`}>
+                                            htmlFor={`${formId}-request-date`}>
                                             Date of request
                                         </FieldLabel>
                                         <Input
                                             {...field}
-                                            id={`${formId}-loan-date`}
+                                            id={`${formId}-request-date`}
                                             type="date"
                                             disabled={pending}
                                             aria-invalid={fieldState.invalid}
@@ -569,7 +569,7 @@ function AdvanceRequestFormEditable({
                                         insert(fields.length, {
                                             amount: "",
                                             repaymentDate: "",
-                                            status: "Loan",
+                                            status: "Installment Loan",
                                         })
                                     }>
                                     <Plus className="size-4" />
@@ -623,7 +623,7 @@ function AdvanceRequestFormEditable({
                                         const isPaidInstallment =
                                             form.getValues(
                                                 `installmentAmounts.${index}.status`,
-                                            ) === "Paid";
+                                            ) === "Installment Paid";
 
                                         return (
                                             <div
@@ -721,13 +721,13 @@ function AdvanceRequestFormEditable({
                                                         render={({ field }) => {
                                                             const status =
                                                                 field.value ??
-                                                                "Loan";
+                                                                "Installment Loan";
                                                             return (
                                                                 <div className="flex h-9 items-center">
                                                                     <Badge
                                                                         variant="outline"
                                                                         className={
-                                                                            loanPaidToneClassName[
+                                                                            installmentToneClassName[
                                                                                 status
                                                                             ]
                                                                         }>

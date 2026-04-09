@@ -34,24 +34,24 @@ function parseDateString(val: string | null | undefined): string | null {
     return s;
 }
 
-function parseLoanPaidStatus(
+function parseInstallmentStatus(
     val: string | null | undefined,
-): "Loan" | "Paid" | null {
+): "Installment Loan" | "Installment Paid" | null {
     if (val == null) return null;
     const s = String(val).trim();
-    if (s === "Loan" || s === "Paid") return s;
+    if (s === "Installment Loan" || s === "Installment Paid") return s;
     return null;
 }
 
 export type UpdateAdvanceRequestInput = {
     workerId: string;
-    loanDate: string;
+    requestDate: string;
     amount: string;
     purpose?: string;
     installmentAmounts: Array<{
         amount?: string;
         repaymentDate?: string;
-        status?: "Loan" | "Paid";
+        status?: "Installment Loan" | "Installment Paid";
     }>;
     employeeSignature?: string;
     employeeSignatureDate?: string;
@@ -74,7 +74,7 @@ export async function updateAdvanceRequest(
         return { success: false, error: "Amount must be a positive integer" };
     }
 
-    const requestDate = parseDateString(input.loanDate);
+    const requestDate = parseDateString(input.requestDate);
     if (!requestDate) {
         return { success: false, error: "Date of request is required" };
     }
@@ -82,7 +82,7 @@ export async function updateAdvanceRequest(
     const validInstallments: Array<{
         repaymentDate: string;
         amount: number;
-        status: "Loan" | "Paid";
+        status: "Installment Loan" | "Installment Paid";
     }> = [];
     for (const row of input.installmentAmounts) {
         const rawRepaymentDate = row.repaymentDate?.trim() ?? "";
@@ -122,11 +122,11 @@ export async function updateAdvanceRequest(
             };
         }
 
-        const status = parseLoanPaidStatus(row.status);
+        const status = parseInstallmentStatus(row.status);
         if (!status) {
             return {
                 success: false,
-                error: "Installment status must be Loan or Paid",
+                error: "Installment status must be Installment Loan or Installment Paid",
             };
         }
         validInstallments.push({ repaymentDate, amount, status });
@@ -169,7 +169,7 @@ export async function updateAdvanceRequest(
 
     const today = localIsoDateYmd();
     for (const inst of validInstallments) {
-        if (inst.status !== "Paid" && inst.repaymentDate < today) {
+        if (inst.status !== "Installment Paid" && inst.repaymentDate < today) {
             return {
                 success: false,
                 error: "Expected repayment date cannot be before today",

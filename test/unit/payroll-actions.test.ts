@@ -72,12 +72,12 @@ describe("settlePayroll", () => {
         const txUpdate = vi.fn().mockReturnValue({ set: txUpdateSet });
 
         const advancesInPeriod = [
-            makeAdvance({ id: "adv-1", advanceRequestId: "req-1", status: "Loan" }),
-            makeAdvance({ id: "adv-2", advanceRequestId: "req-2", status: "Paid" }),
+            makeAdvance({ id: "adv-1", advanceRequestId: "req-1", status: "Installment Loan" }),
+            makeAdvance({ id: "adv-2", advanceRequestId: "req-2", status: "Installment Paid" }),
         ];
         const requestAdvances = [
-            { advanceRequestId: "req-1", status: "Paid" as const },
-            { advanceRequestId: "req-2", status: "Loan" as const },
+            { advanceRequestId: "req-1", status: "Installment Paid" as const },
+            { advanceRequestId: "req-2", status: "Installment Loan" as const },
         ];
 
         const txSelect = vi

@@ -3,6 +3,7 @@ import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { advanceRequestTable } from "@/db/tables/payroll/advanceRequestTable";
 import { advanceTable } from "@/db/tables/payroll/advanceTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
+import type { AdvanceLoanStatus, InstallmentStatus } from "@/types/status";
 import { db } from "@/lib/db";
 
 function normalizePgDate(value: string | Date): string {
@@ -17,21 +18,25 @@ export type AdvanceRequestWithWorker = {
     workerId: string;
     workerName: string;
     amountRequested: number;
-    status: "Loan" | "Paid";
+    status: AdvanceLoanStatus;
     requestDate: string;
     createdAt: Date;
     updatedAt: Date;
 };
 
-function deriveStatusFromAdvances(advances: { status: "Loan" | "Paid" }[]): "Loan" | "Paid" {
-    if (advances.length === 0) return "Loan";
-    return advances.every((a) => a.status === "Paid") ? "Paid" : "Loan";
+function deriveStatusFromAdvances(
+    advances: { status: InstallmentStatus }[],
+): AdvanceLoanStatus {
+    if (advances.length === 0) return "Advance Loan";
+    return advances.every((a) => a.status === "Installment Paid")
+        ? "Advance Paid"
+        : "Advance Loan";
 }
 
 export type AdvanceWithRepayment = {
     id: string;
     amount: number;
-    status: "Loan" | "Paid";
+    status: InstallmentStatus;
     repaymentDate: string | null;
 };
 
@@ -64,7 +69,7 @@ export async function listAdvanceRequestsWithWorkers(
         .where(inArray(advanceTable.advanceRequestId, requestIds));
 
     const advancesByRequestId = advanceRows.reduce<
-        Record<string, { status: "Loan" | "Paid" }[]>
+        Record<string, { status: InstallmentStatus }[]>
     >((acc, a) => {
         const id = a.advanceRequestId;
         if (!acc[id]) acc[id] = [];
@@ -175,7 +180,7 @@ export async function getAdvanceRequestByIdWithWorker(
 export type AdvanceForPayrollPeriod = {
     id: string;
     amount: number;
-    status: "Loan" | "Paid";
+    status: InstallmentStatus;
     repaymentDate: string | null;
     advanceRequestId: string;
 };

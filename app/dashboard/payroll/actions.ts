@@ -188,7 +188,7 @@ async function createPayrollForWorkerInExecutor(
         periodEnd,
     );
     const advanceTotal = advances
-        .filter((advance) => advance.status === "Loan")
+        .filter((advance) => advance.status === "Installment Loan")
         .reduce((sum, advance) => sum + advance.amount, 0);
     const netPay = calcNetPay({
         totalPay,
@@ -356,7 +356,7 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
                     ),
                 );
             const advanceTotal = advanceRows
-                .filter((advance) => advance.status === "Loan")
+                .filter((advance) => advance.status === "Installment Loan")
                 .reduce((sum, advance) => sum + advance.amount, 0);
             const netPay = calcNetPay({
                 totalPay,
@@ -699,7 +699,7 @@ export async function updatePayroll(
         periodEnd,
     );
     const advanceTotal = advances
-        .filter((a) => a.status === "Loan")
+        .filter((a) => a.status === "Installment Loan")
         .reduce((sum, a) => sum + a.amount, 0);
     const netPay = calcNetPay({
         totalPay,
@@ -781,11 +781,11 @@ async function settlePayrollInTx(
     type AdvanceInPeriodRow = {
         id: string;
         advanceRequestId: string;
-        status: "Loan" | "Paid";
+        status: "Installment Loan" | "Installment Paid";
     };
     type RequestAdvanceRow = {
         advanceRequestId: string;
-        status: "Loan" | "Paid";
+        status: "Installment Loan" | "Installment Paid";
     };
 
     await tx
@@ -815,18 +815,18 @@ async function settlePayrollInTx(
             ),
         );
 
-    const loanAdvanceIds = advancesInPeriod
-        .filter((advance) => advance.status === "Loan")
+    const installmentLoanIds = advancesInPeriod
+        .filter((advance) => advance.status === "Installment Loan")
         .map((advance) => advance.id);
 
-    if (loanAdvanceIds.length > 0) {
+    if (installmentLoanIds.length > 0) {
         await tx
             .update(advanceTable)
             .set({
-                status: "Paid",
+                status: "Installment Paid",
                 updatedAt: now,
             })
-            .where(inArray(advanceTable.id, loanAdvanceIds));
+            .where(inArray(advanceTable.id, installmentLoanIds));
     }
 
     const requestIds: string[] = Array.from(
@@ -848,14 +848,17 @@ async function settlePayrollInTx(
                 acc[row.advanceRequestId]!.push({ status: row.status });
                 return acc;
             },
-            {} as Record<string, Array<{ status: "Loan" | "Paid" }>>,
+            {} as Record<
+                string,
+                Array<{ status: "Installment Loan" | "Installment Paid" }>
+            >,
         );
 
         const fullyPaidRequestIds = requestIds.filter((requestId: string) => {
             const advances = byRequestId[requestId] ?? [];
             return (
                 advances.length > 0 &&
-                advances.every((a) => a.status === "Paid")
+                advances.every((a) => a.status === "Installment Paid")
             );
         });
 
@@ -867,7 +870,7 @@ async function settlePayrollInTx(
             await tx
                 .update(advanceRequestTable)
                 .set({
-                    status: "Paid",
+                    status: "Advance Paid",
                     updatedAt: now,
                 })
                 .where(inArray(advanceRequestTable.id, fullyPaidRequestIds));
@@ -877,7 +880,7 @@ async function settlePayrollInTx(
             await tx
                 .update(advanceRequestTable)
                 .set({
-                    status: "Loan",
+                    status: "Advance Loan",
                     updatedAt: now,
                 })
                 .where(inArray(advanceRequestTable.id, notFullyPaidRequestIds));

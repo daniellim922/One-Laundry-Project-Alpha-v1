@@ -20,12 +20,12 @@ export function makePayroll(overrides?: Partial<{
 export function makeAdvance(overrides?: Partial<{
     id: string;
     advanceRequestId: string;
-    status: "Loan" | "Paid";
+    status: "Installment Loan" | "Installment Paid";
 }>) {
     return {
         id: "adv-1",
         advanceRequestId: "req-1",
-        status: "Loan" as const,
+        status: "Installment Loan" as const,
         ...overrides,
     };
 }

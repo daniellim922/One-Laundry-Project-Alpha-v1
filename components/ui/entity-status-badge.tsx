@@ -1,12 +1,14 @@
 import { Badge } from "@/components/ui/badge";
 import {
-    loanPaidToneClassName,
+    advanceLoanToneClassName,
+    installmentToneClassName,
     payrollStatusBadgeTone,
     timesheetPaymentStatusBadgeTone,
     workerStatusBadgeTone,
 } from "@/types/badge-tones";
 import type {
-    LoanPaidStatus,
+    AdvanceLoanStatus,
+    InstallmentStatus,
     PayrollStatus,
     TimesheetPaymentStatus,
     WorkerStatus,
@@ -14,13 +16,15 @@ import type {
 import { cn } from "@/lib/utils";
 
 type EntityStatus =
-    | LoanPaidStatus
+    | AdvanceLoanStatus
+    | InstallmentStatus
     | TimesheetPaymentStatus
     | PayrollStatus
     | WorkerStatus;
 
 const knownStatusToneClassName = {
-    ...loanPaidToneClassName,
+    ...advanceLoanToneClassName,
+    ...installmentToneClassName,
     ...timesheetPaymentStatusBadgeTone,
     ...payrollStatusBadgeTone,
     ...workerStatusBadgeTone,

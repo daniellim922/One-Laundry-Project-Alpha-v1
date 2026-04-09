@@ -8,7 +8,7 @@ import {
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { localDateDmy } from "@/utils/time/local-iso-date";
-import { loanPaidToneClassName } from "@/types/badge-tones";
+import { advanceLoanToneClassName } from "@/types/badge-tones";
 import type { AdvanceRequestWithWorker } from "@/utils/advance/queries";
 import {
     createActionsColumn,
@@ -35,7 +35,7 @@ export const columns: ColumnDef<AdvanceRequestWithWorker>[] = [
         cell: createBadgeCell<AdvanceRequestWithWorker>({
             value: (r) => r.status,
             variant: "outline",
-            toneClassNameFor: (r) => loanPaidToneClassName[r.status],
+            toneClassNameFor: (r) => advanceLoanToneClassName[r.status],
         }),
     },
     {
@@ -45,7 +45,7 @@ export const columns: ColumnDef<AdvanceRequestWithWorker>[] = [
     },
     createActionsColumn<AdvanceRequestWithWorker>({
         cell: (advanceRequest) => {
-            const isPaid = advanceRequest.status === "Paid";
+            const isPaid = advanceRequest.status === "Advance Paid";
             return (
                 <RowActionsMenu>
                     <DropdownMenuItem asChild>
