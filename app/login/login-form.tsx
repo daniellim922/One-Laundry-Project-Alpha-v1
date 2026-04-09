@@ -24,6 +24,7 @@ export function LoginForm({ afterLoginPath }: LoginFormProps) {
         e.preventDefault();
         setError(null);
         setIsSubmitting(true);
+        let didSucceed = false;
 
         try {
             await authClient.signIn.username(
@@ -34,6 +35,7 @@ export function LoginForm({ afterLoginPath }: LoginFormProps) {
                 },
                 {
                     onSuccess: () => {
+                        didSucceed = true;
                         router.push(afterLoginPath);
                     },
                     onError: (ctx) => {
@@ -42,7 +44,9 @@ export function LoginForm({ afterLoginPath }: LoginFormProps) {
                 },
             );
         } finally {
-            setIsSubmitting(false);
+            if (!didSucceed) {
+                setIsSubmitting(false);
+            }
         }
     }
 
@@ -62,7 +66,10 @@ export function LoginForm({ afterLoginPath }: LoginFormProps) {
                         Enter your credentials to access your account.
                     </p>
                 </div>
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form
+                    onSubmit={handleSubmit}
+                    className="space-y-6"
+                    aria-busy={isSubmitting}>
                     <div className="space-y-2">
                         <Label htmlFor="username">Username</Label>
                         <Input
@@ -73,6 +80,7 @@ export function LoginForm({ afterLoginPath }: LoginFormProps) {
                             placeholder="Enter your username"
                             required
                             autoComplete="username"
+                            disabled={isSubmitting}
                         />
                     </div>
                     <div className="space-y-2">
@@ -85,6 +93,7 @@ export function LoginForm({ afterLoginPath }: LoginFormProps) {
                             placeholder="Enter your password"
                             required
                             autoComplete="current-password"
+                            disabled={isSubmitting}
                         />
                     </div>
                     {error ? (
@@ -97,7 +106,17 @@ export function LoginForm({ afterLoginPath }: LoginFormProps) {
                         className="w-full"
                         size="lg"
                         disabled={isSubmitting}>
-                        Log in
+                        {isSubmitting ? (
+                            <>
+                                <span
+                                    className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+                                    aria-hidden="true"
+                                />
+                                Logging in…
+                            </>
+                        ) : (
+                            "Log in"
+                        )}
                     </Button>
                 </form>
             </div>
