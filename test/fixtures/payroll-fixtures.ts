@@ -21,11 +21,15 @@ export function makeAdvance(overrides?: Partial<{
     id: string;
     advanceRequestId: string;
     status: "Installment Loan" | "Installment Paid";
+    amount: number;
+    repaymentDate: string | null;
 }>) {
     return {
         id: "adv-1",
         advanceRequestId: "req-1",
         status: "Installment Loan" as const,
+        amount: 100,
+        repaymentDate: "2025-03-15",
         ...overrides,
     };
 }
