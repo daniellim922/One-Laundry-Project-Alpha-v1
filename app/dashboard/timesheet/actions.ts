@@ -110,8 +110,8 @@ export async function updateTimesheetEntry(id: string, formData: FormData) {
     if (!oldEntry) {
         return { error: "Timesheet entry not found" };
     }
-    if (oldEntry.status === "Paid") {
-        return { error: "Paid timesheet entries cannot be edited" };
+    if (oldEntry.status === "Timesheet Paid") {
+        return { error: "Timesheet Paid entries cannot be edited" };
     }
 
     const hours = calculateHoursFromDateTimes(dateIn, timeIn, dateOut, timeOut);

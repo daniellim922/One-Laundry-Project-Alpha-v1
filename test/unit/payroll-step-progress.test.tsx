@@ -101,4 +101,18 @@ describe("PayrollStepProgress", () => {
         ).toBeTruthy();
         expect(mocks.push).not.toHaveBeenCalled();
     });
+
+    it("renders a Revert button when payroll is Settled", () => {
+        render(
+            <PayrollStepProgress
+                payrollId="payroll-1"
+                payrollStatus="Settled"
+                activeStep={3}
+            />,
+        );
+
+        const revert = screen.getByRole("button", { name: "Revert" });
+        expect(revert).toBeTruthy();
+        expect((revert as HTMLButtonElement).disabled).toBe(false);
+    });
 });

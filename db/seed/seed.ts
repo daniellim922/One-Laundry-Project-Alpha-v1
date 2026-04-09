@@ -138,7 +138,7 @@ async function seedAdvances(
         const advanceInserts: InsertAdvance[] = a.repaymentTerms.map((t) => ({
             advanceRequestId: insertedRequest!.id,
             amount: t.installmentAmt,
-            status: a.status,
+            status: "Installment Loan" as const,
             repaymentDate: t.installmentDate,
             createdAt: new Date(),
             updatedAt: new Date(),

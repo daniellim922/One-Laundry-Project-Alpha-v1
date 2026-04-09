@@ -38,7 +38,7 @@ function parseDateString(val: string | null | undefined): string | null {
 
 export type CreateAdvanceRequestInput = {
     workerId: string;
-    loanDate: string;
+    requestDate: string;
     amount: string;
     purpose?: string;
     installmentAmounts: Array<{ amount?: string; repaymentDate?: string }>;
@@ -62,7 +62,7 @@ export async function createAdvanceRequest(
         return { success: false, error: "Amount must be a positive integer" };
     }
 
-    const requestDate = parseDateString(input.loanDate);
+    const requestDate = parseDateString(input.requestDate);
     if (!requestDate) {
         return { success: false, error: "Date of request is required" };
     }
@@ -129,7 +129,7 @@ export async function createAdvanceRequest(
         await db.transaction(async (tx) => {
             const requestInsert: InsertAdvanceRequest = {
                 workerId: input.workerId,
-                status: "Loan",
+                status: "Advance Loan",
                 requestDate,
                 amountRequested,
                 purpose: input.purpose?.trim() || null,
@@ -152,7 +152,7 @@ export async function createAdvanceRequest(
                 (inst) => ({
                     advanceRequestId: req.id,
                     amount: inst.amount,
-                    status: "Loan" as const,
+                    status: "Installment Loan" as const,
                     repaymentDate: inst.repaymentDate,
                     createdAt: now,
                     updatedAt: now,

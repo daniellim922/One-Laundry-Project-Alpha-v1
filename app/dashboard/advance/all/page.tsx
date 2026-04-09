@@ -26,7 +26,7 @@ export default async function AdvanceAllPage() {
                     All advances
                 </h2>
                 <p className="text-muted-foreground">
-                    All advance loans across workers.
+                    All advance requests across workers.
                 </p>
             </div>
 

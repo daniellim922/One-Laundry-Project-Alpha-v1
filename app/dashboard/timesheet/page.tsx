@@ -20,7 +20,7 @@ export default async function TimesheetOverviewPage() {
         db
             .select({ unpaid: count() })
             .from(timesheetTable)
-            .where(eq(timesheetTable.status, "Unpaid")),
+            .where(eq(timesheetTable.status, "Timesheet Unpaid")),
     ]);
 
     return (
@@ -45,8 +45,8 @@ export default async function TimesheetOverviewPage() {
                     <CardContent>
                         <div className="text-2xl font-bold">{total}</div>
                         <p className="text-muted-foreground text-xs">
-                            {unpaid} Unpaid ·{" "}
-                            {Number(total) - Number(unpaid)} Paid
+                            {unpaid} Timesheet Unpaid ·{" "}
+                            {Number(total) - Number(unpaid)} Timesheet Paid
                         </p>
                     </CardContent>
                 </Card>
@@ -76,20 +76,20 @@ export default async function TimesheetOverviewPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Payment status</CardTitle>
-                    <CardDescription>Unpaid vs Paid entries</CardDescription>
+                    <CardDescription>Timesheet Unpaid vs Timesheet Paid entries</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <SimpleDonutChart
                         centerLabel="entries"
                         segments={[
                             {
-                                key: "Unpaid",
-                                label: "Unpaid",
+                                key: "Timesheet Unpaid",
+                                label: "Timesheet Unpaid",
                                 value: Number(unpaid),
                             },
                             {
-                                key: "Paid",
-                                label: "Paid",
+                                key: "Timesheet Paid",
+                                label: "Timesheet Paid",
                                 value: Number(total) - Number(unpaid),
                             },
                         ]}

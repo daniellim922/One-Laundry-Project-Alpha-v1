@@ -1,5 +1,6 @@
 import type {
-    LoanPaidStatus,
+    AdvanceLoanStatus,
+    InstallmentStatus,
     PayrollStatus,
     TimesheetPaymentStatus,
     WorkerEmploymentArrangement,
@@ -8,17 +9,26 @@ import type {
     WorkerStatus,
 } from "@/types/status";
 
-export const loanPaidToneClassName: Record<LoanPaidStatus, string> = {
-    Loan: "bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300",
-    Paid: "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
+export const advanceLoanToneClassName: Record<AdvanceLoanStatus, string> = {
+    "Advance Loan":
+        "bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300",
+    "Advance Paid":
+        "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
+};
+
+export const installmentToneClassName: Record<InstallmentStatus, string> = {
+    "Installment Loan":
+        "bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300",
+    "Installment Paid":
+        "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
 };
 
 export const timesheetPaymentStatusBadgeTone: Record<
     TimesheetPaymentStatus,
     string
 > = {
-    Unpaid: "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300",
-    Paid: "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300",
+    "Timesheet Unpaid": "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300",
+    "Timesheet Paid": "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300",
 };
 
 export const payrollStatusBadgeTone: Record<PayrollStatus, string> = {

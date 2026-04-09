@@ -1,17 +1,11 @@
-import {
-    pgTable,
-    uuid,
-    timestamp,
-    date,
-    integer,
-} from "drizzle-orm/pg-core";
+import { pgTable, uuid, timestamp, date, integer } from "drizzle-orm/pg-core";
 import { advanceRequestTable } from "./advanceRequestTable";
-import { loanPaidStatusEnum } from "./statusEnums";
+import { installmentStatusEnum } from "./statusEnums";
 
 export const advanceTable = pgTable("advance", {
     id: uuid().primaryKey().defaultRandom(),
     amount: integer("amount").notNull(),
-    status: loanPaidStatusEnum("status").notNull().default("Loan"),
+    status: installmentStatusEnum("status").notNull().default("Installment Loan"),
     repaymentDate: date("repayment_date"),
 
     advanceRequestId: uuid("advance_request_id")

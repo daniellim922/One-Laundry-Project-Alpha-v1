@@ -36,7 +36,7 @@ export default async function EditTimesheetEntryPage({ params }: PageProps) {
 
     if (!entry) notFound();
 
-    if (entry.status === "Paid") {
+    if (entry.status === "Timesheet Paid") {
         redirect(`/dashboard/timesheet/${id}/view`);
     }
 

@@ -1,6 +1,8 @@
-export type LoanPaidStatus = "Loan" | "Paid";
+export type AdvanceLoanStatus = "Advance Loan" | "Advance Paid";
 
-export type TimesheetPaymentStatus = "Unpaid" | "Paid";
+export type InstallmentStatus = "Installment Loan" | "Installment Paid";
+
+export type TimesheetPaymentStatus = "Timesheet Unpaid" | "Timesheet Paid";
 
 export type PayrollStatus = "Draft" | "Settled";
 

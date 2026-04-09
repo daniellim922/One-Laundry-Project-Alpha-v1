@@ -20,14 +20,14 @@ export default async function AdvanceOverviewPage() {
     const { userId } = await requirePermission("Advance", "read");
     const canCreate = await checkPermission(userId, "Advance", "create");
 
-    const [[{ total }], [{ loanCount }]] = await Promise.all([
+    const [[{ total }], [{ advanceLoanCount }]] = await Promise.all([
         db.select({ total: count() }).from(advanceRequestTable),
         db
-            .select({ loanCount: count() })
+            .select({ advanceLoanCount: count() })
             .from(advanceRequestTable)
-            .where(eq(advanceRequestTable.status, "Loan")),
+            .where(eq(advanceRequestTable.status, "Advance Loan")),
     ]);
-    const paidCount = Number(total) - Number(loanCount);
+    const paidCount = Number(total) - Number(advanceLoanCount);
 
     return (
         <div className="space-y-6">
@@ -51,7 +51,7 @@ export default async function AdvanceOverviewPage() {
                     <CardContent>
                         <div className="text-2xl font-bold">{total}</div>
                         <p className="text-muted-foreground text-xs">
-                            {loanCount} Loan requests
+                            {advanceLoanCount} Advance Loan requests
                         </p>
                     </CardContent>
                 </Card>
@@ -77,19 +77,21 @@ export default async function AdvanceOverviewPage() {
             <Card>
                 <CardHeader>
                     <CardTitle>Advances</CardTitle>
-                    <CardDescription>Loan vs Paid</CardDescription>
+                    <CardDescription>
+                        Advance Loan vs Advance Paid
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <SimpleDonutChart
                         centerLabel="requests"
                         segments={[
                             {
-                                key: "Loan",
+                                key: "Advance Loan",
                                 label: "Active loan",
-                                value: Number(loanCount),
+                                value: Number(advanceLoanCount),
                             },
                             {
-                                key: "Paid",
+                                key: "Advance Paid",
                                 label: "Paid",
                                 value: paidCount,
                             },

@@ -34,7 +34,7 @@ export default async function AdvanceBreakdownPage({
             status={<EntityStatusBadge status={detail.request.status} />}
             maxWidthClassName="max-w-none"
             actions={
-                !canUpdate || detail.request.status === "Paid" ? (
+                !canUpdate || detail.request.status === "Advance Paid" ? (
                     <Button variant="outline" disabled>
                         <Pencil className="h-4 w-4" />
                         Edit

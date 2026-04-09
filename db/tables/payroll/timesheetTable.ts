@@ -21,7 +21,7 @@ export const timesheetTable = pgTable(
         hours: real("hours").notNull().default(0),
         status: timesheetPaymentStatusEnum("status")
             .notNull()
-            .default("Unpaid"),
+            .default("Timesheet Unpaid"),
 
         workerId: uuid("worker_id")
             .notNull()

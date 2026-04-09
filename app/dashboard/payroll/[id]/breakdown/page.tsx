@@ -633,7 +633,7 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                 </TableHeader>
                                 <TableBody>
                                     {entries.map((e) => {
-                                        const paid = e.status === "Paid";
+                                        const paid = e.status === "Timesheet Paid";
                                         const status =
                                             e.status as TimesheetPaymentStatus;
                                         return (
