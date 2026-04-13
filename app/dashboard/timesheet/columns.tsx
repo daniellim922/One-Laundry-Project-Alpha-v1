@@ -20,7 +20,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { deleteTimesheetEntry } from "./actions";
+import { deleteTimesheetEntry } from "./delete-timesheet-entry";
 import type { TimesheetPaymentStatus } from "@/types/status";
 import { timesheetPaymentStatusBadgeTone } from "@/types/badge-tones";
 import { localDateDmy } from "@/utils/time/local-iso-date";
@@ -60,7 +60,7 @@ function TimesheetRowActions({
         setPending(true);
         const result = await deleteTimesheetEntry(id);
         setPending(false);
-        if (result?.error) {
+        if ("error" in result) {
             setError(result.error);
             return;
         }

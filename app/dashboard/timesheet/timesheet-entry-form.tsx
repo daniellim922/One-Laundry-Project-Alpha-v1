@@ -133,7 +133,7 @@ export function TimesheetEntryForm({
             : await createTimesheetEntry(formData);
 
         setPending(false);
-        if (result.error) {
+        if ("error" in result) {
             setError(result.error);
             return;
         }

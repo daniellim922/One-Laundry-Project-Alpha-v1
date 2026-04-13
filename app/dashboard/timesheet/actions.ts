@@ -1,14 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
 
-import { db } from "@/lib/db";
-import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
-import { calculateHoursFromDateTimes } from "@/utils/payroll/payroll-utils";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
+import { db } from "@/lib/db";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
+import {
+    createTimesheetEntryRecord,
+    updateTimesheetEntryRecord,
+} from "@/services/timesheet/save-timesheet-entry";
+import { deleteTimesheetEntry as deleteTimesheetEntryRecord } from "@/services/timesheet/delete-timesheet-entry";
+import { importAttendRecordTimesheet as importAttendRecordTimesheetRecord } from "@/services/timesheet/import-attend-record-timesheet";
+import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
+import { calculateHoursFromDateTimes } from "@/utils/payroll/payroll-utils";
 
 function toTimeString(val: string): string {
     const s = String(val).trim();
@@ -39,16 +44,6 @@ function formDate(formData: FormData, key: string): string {
     return toDateString(raw as string);
 }
 
-/** Convert DD/MM/YYYY to YYYY-MM-DD for DB storage */
-function ddMmYyyyToIso(val: string): string {
-    const m = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (!m) return "";
-    const [, day, month, year] = m;
-    const d = `${year}-${month!.padStart(2, "0")}-${day!.padStart(2, "0")}`;
-    const parsed = new Date(d);
-    return Number.isNaN(parsed.getTime()) ? "" : d;
-}
-
 export async function createTimesheetEntry(formData: FormData) {
     const workerId = formData.get("workerId") as string;
     const dateRaw = formData.get("date");
@@ -57,27 +52,15 @@ export async function createTimesheetEntry(formData: FormData) {
     const dateOut = formDate(formData, "dateOut") || dateIn;
     const timeIn = toTimeString(formData.get("timeIn") as string);
     const timeOut = toTimeString(formData.get("timeOut") as string);
-
-    if (!workerId || !dateIn || !dateOut || !timeIn || !timeOut) {
-        return { error: "Missing required fields" };
-    }
-
-    const hours = calculateHoursFromDateTimes(dateIn, timeIn, dateOut, timeOut);
-
-    await db.insert(timesheetTable).values({
+    const result = await createTimesheetEntryRecord({
         workerId,
         dateIn,
-        timeIn,
         dateOut,
+        timeIn,
         timeOut,
-        hours,
-        createdAt: new Date(),
-        updatedAt: new Date(),
     });
-
-    const sync = await synchronizeWorkerDraftPayrolls({ workerId });
-    if ("error" in sync) {
-        return { error: sync.error };
+    if ("error" in result) {
+        return result;
     }
 
     revalidatePath("/dashboard/timesheet");
@@ -93,53 +76,16 @@ export async function updateTimesheetEntry(id: string, formData: FormData) {
     const dateOut = formDate(formData, "dateOut");
     const timeIn = toTimeString(formData.get("timeIn") as string);
     const timeOut = toTimeString(formData.get("timeOut") as string);
-
-    if (!id || !workerId || !dateIn || !dateOut || !timeIn || !timeOut) {
-        return { error: "Missing required fields" };
-    }
-
-    const [oldEntry] = await db
-        .select({
-            workerId: timesheetTable.workerId,
-            status: timesheetTable.status,
-        })
-        .from(timesheetTable)
-        .where(eq(timesheetTable.id, id))
-        .limit(1);
-
-    if (!oldEntry) {
-        return { error: "Timesheet entry not found" };
-    }
-    if (oldEntry.status === "Timesheet Paid") {
-        return { error: "Timesheet Paid entries cannot be edited" };
-    }
-
-    const hours = calculateHoursFromDateTimes(dateIn, timeIn, dateOut, timeOut);
-
-    await db
-        .update(timesheetTable)
-        .set({
-            workerId,
-            dateIn,
-            timeIn,
-            dateOut,
-            timeOut,
-            hours,
-            updatedAt: new Date(),
-        })
-        .where(eq(timesheetTable.id, id));
-
-    const sync = await synchronizeWorkerDraftPayrolls({ workerId });
-    if ("error" in sync) {
-        return { error: sync.error };
-    }
-    if (oldEntry && oldEntry.workerId !== workerId) {
-        const syncOld = await synchronizeWorkerDraftPayrolls({
-            workerId: oldEntry.workerId,
-        });
-        if ("error" in syncOld) {
-            return { error: syncOld.error };
-        }
+    const result = await updateTimesheetEntryRecord({
+        id,
+        workerId,
+        dateIn,
+        dateOut,
+        timeIn,
+        timeOut,
+    });
+    if ("error" in result) {
+        return result;
     }
 
     revalidatePath("/dashboard/timesheet");
@@ -150,23 +96,9 @@ export async function updateTimesheetEntry(id: string, formData: FormData) {
 }
 
 export async function deleteTimesheetEntry(id: string) {
-    if (!id) return { error: "Missing id" };
-
-    const [entry] = await db
-        .select({ workerId: timesheetTable.workerId })
-        .from(timesheetTable)
-        .where(eq(timesheetTable.id, id))
-        .limit(1);
-
-    await db.delete(timesheetTable).where(eq(timesheetTable.id, id));
-
-    if (entry) {
-        const sync = await synchronizeWorkerDraftPayrolls({
-            workerId: entry.workerId,
-        });
-        if ("error" in sync) {
-            return { error: sync.error };
-        }
+    const result = await deleteTimesheetEntryRecord({ id });
+    if (!result.success) {
+        return { error: result.error };
     }
 
     revalidatePath("/dashboard/timesheet");
@@ -261,94 +193,11 @@ export async function importTimesheetEntries(rows: ImportRow[]) {
 }
 
 export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
-    const workerNames = await db
-        .select({ id: workerTable.id, name: workerTable.name })
-        .from(workerTable);
-    const nameToId = new Map(
-        workerNames.map((w) => [w.name.toLowerCase().trim(), w.id]),
-    );
-
-    const toInsert: {
-        workerId: string;
-        dateIn: string;
-        timeIn: string;
-        dateOut: string;
-        timeOut: string;
-        hours: number;
-        createdAt: Date;
-        updatedAt: Date;
-    }[] = [];
-    const errors: string[] = [];
-
-    for (const worker of data.workers) {
-        const workerId = nameToId.get(worker.name.toLowerCase().trim());
-        if (!workerId) {
-            errors.push(`Unknown worker "${worker.name}"`);
-            continue;
-        }
-
-        for (const d of worker.dates) {
-            const dateIn = ddMmYyyyToIso(d.dateIn);
-            const dateOut = ddMmYyyyToIso(d.dateOut);
-            if (!dateIn || !dateOut) {
-                errors.push(`Invalid date for ${worker.name}: ${d.dateIn}`);
-                continue;
-            }
-
-            const timeIn = toTimeString(d.timeIn);
-            const timeOutRaw = String(d.timeOut ?? "").trim();
-            const timeOut =
-                !timeOutRaw || /^\s+$/.test(timeOutRaw)
-                    ? "23:59:59"
-                    : toTimeString(d.timeOut);
-
-            const hours =
-                typeof d.hours === "number" && d.hours >= 0
-                    ? d.hours
-                    : calculateHoursFromDateTimes(
-                          dateIn,
-                          timeIn,
-                          dateOut,
-                          timeOut,
-                      );
-
-            toInsert.push({
-                workerId,
-                dateIn,
-                timeIn,
-                dateOut,
-                timeOut,
-                hours,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            });
-        }
-    }
-
-    if (toInsert.length > 0) {
-        await db.insert(timesheetTable).values(toInsert);
-
-        const affectedWorkerIds = [...new Set(toInsert.map((r) => r.workerId))];
-        for (const wid of affectedWorkerIds) {
-            const sync = await synchronizeWorkerDraftPayrolls({
-                workerId: wid,
-            });
-            if ("error" in sync) {
-                return {
-                    imported: toInsert.length,
-                    errors: [...errors, sync.error],
-                };
-            }
-        }
-    }
+    const result = await importAttendRecordTimesheetRecord(data);
 
     revalidatePath("/dashboard/timesheet");
     revalidatePath("/dashboard/timesheet/all");
     revalidatePath("/dashboard/payroll");
     revalidatePath("/dashboard/payroll/all");
-
-    return {
-        imported: toInsert.length,
-        errors: errors.length > 0 ? errors : undefined,
-    };
+    return result;
 }
