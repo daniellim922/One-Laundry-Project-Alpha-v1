@@ -19,9 +19,9 @@ import {
 import { createRowSelectionColumn } from "@/components/data-table/column-builders";
 import { DataTable } from "@/components/data-table/data-table";
 import {
-    getDraftPayrollsForSettlement,
     settleDraftPayrolls,
 } from "./actions";
+import { fetchSettlementCandidates } from "./read-api";
 import { columns as baseColumns, type PayrollWithWorker } from "./all/columns";
 
 const selectableColumns: ColumnDef<PayrollWithWorker>[] = [
@@ -39,9 +39,7 @@ export function SettleAllDraftPayrollsButton() {
     const [downloadingZip, setDownloadingZip] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const [loadingDrafts, setLoadingDrafts] = React.useState(false);
-    const [drafts, setDrafts] = React.useState<
-        Awaited<ReturnType<typeof getDraftPayrollsForSettlement>>
-    >([]);
+    const [drafts, setDrafts] = React.useState<PayrollWithWorker[]>([]);
     const [rowSelection, setRowSelection] = React.useState<RowSelectionState>(
         {},
     );
@@ -86,9 +84,9 @@ export function SettleAllDraftPayrollsButton() {
             setError(null);
             setRowSelection({});
             try {
-                const rows = await getDraftPayrollsForSettlement();
+                const rows = await fetchSettlementCandidates();
                 if (cancelled) return;
-                setDrafts(rows);
+                setDrafts(rows as PayrollWithWorker[]);
                 setRowSelection(
                     Object.fromEntries(rows.map((r) => [r.id, true])),
                 );

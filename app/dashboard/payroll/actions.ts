@@ -23,6 +23,14 @@ import {
     validatePayrollPeriodRange,
 } from "@/utils/payroll/payroll-period-conflicts";
 import { requirePermission } from "@/utils/permissions/require-permission";
+import {
+    getPayrollRevertPreview,
+    type RevertPreviewAdvanceInstallmentLine,
+    type RevertPreviewRow,
+    type RevertPreviewTimesheetLine,
+} from "@/services/payroll/get-revert-preview";
+import { listDraftPayrollsForSettlement } from "@/services/payroll/list-draft-payrolls-for-settlement";
+import { listPayrollsForDownload } from "@/services/payroll/list-payrolls-for-download";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type CreatePayrollExecutor = Pick<DbTransaction, "select" | "insert">;
@@ -1009,55 +1017,12 @@ export async function settleDraftPayrolls(payrollIds: string[]) {
 
 export async function getDraftPayrollsForSettlement() {
     await requirePermission("Payroll", "read");
-
-    const rows = await db
-        .select({
-            payroll: payrollTable,
-            workerName: workerTable.name,
-            employmentType: employmentTable.employmentType,
-            employmentArrangement: employmentTable.employmentArrangement,
-        })
-        .from(payrollTable)
-        .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id))
-        .innerJoin(
-            employmentTable,
-            eq(workerTable.employmentId, employmentTable.id),
-        )
-        .where(eq(payrollTable.status, "Draft"))
-        .orderBy(asc(workerTable.name), asc(payrollTable.periodStart));
-
-    return rows.map((r) => ({
-        ...r.payroll,
-        workerName: r.workerName,
-        employmentType: r.employmentType,
-        employmentArrangement: r.employmentArrangement,
-    }));
+    return listDraftPayrollsForSettlement();
 }
 
 export async function getAllPayrollsForDownload() {
     await requirePermission("Payroll", "read");
-
-    const rows = await db
-        .select({
-            payroll: payrollTable,
-            workerName: workerTable.name,
-            employmentType: employmentTable.employmentType,
-            employmentArrangement: employmentTable.employmentArrangement,
-        })
-        .from(payrollTable)
-        .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id))
-        .innerJoin(
-            employmentTable,
-            eq(workerTable.employmentId, employmentTable.id),
-        )
-        .orderBy(asc(workerTable.name), asc(payrollTable.periodStart));
-
-    return rows.map((r) => ({
-        ...r.payroll,
-        workerName: r.workerName,
-        employmentType: r.employmentType,
-        employmentArrangement: r.employmentArrangement,
-    }));
+    return listPayrollsForDownload();
 }
 
 export async function updateVoucherDays(input: {
@@ -1171,190 +1136,15 @@ export async function updateVoucherDays(input: {
     return { success: true };
 }
 
-export type RevertPreviewTimesheetLine = {
-    id: string;
-    dateIn: string;
-    dateOut: string;
-    timeIn: string;
-    timeOut: string;
-    hours: number;
-};
-
-export type RevertPreviewAdvanceInstallmentLine = {
-    id: string;
-    amount: number;
-    repaymentDate: string | null;
-};
-
-export type RevertPreviewRow = {
-    name: string;
-    currentStatus: string;
-    futureStatus: string;
-    timesheetLines?: RevertPreviewTimesheetLine[];
-    advanceInstallmentLines?: RevertPreviewAdvanceInstallmentLine[];
-};
-
 export async function getRevertPreview(
     payrollId: string,
 ): Promise<{ data: RevertPreviewRow[] } | { error: string }> {
     await requirePermission("Payroll", "read");
-
-    const [payroll] = await db
-        .select()
-        .from(payrollTable)
-        .where(eq(payrollTable.id, payrollId))
-        .limit(1);
-
-    if (!payroll) return { error: "Payroll not found" };
-    if (payroll.status !== "Settled") {
-        return { error: "Only Settled payrolls can be previewed for revert" };
+    const result = await getPayrollRevertPreview(payrollId);
+    if ("error" in result) {
+        return { error: result.error };
     }
-
-    const rows: RevertPreviewRow[] = [
-        { name: "Payroll", currentStatus: "Settled", futureStatus: "Draft" },
-    ];
-
-    const timesheets = await db
-        .select({
-            id: timesheetTable.id,
-            dateIn: timesheetTable.dateIn,
-            dateOut: timesheetTable.dateOut,
-            timeIn: timesheetTable.timeIn,
-            timeOut: timesheetTable.timeOut,
-            hours: timesheetTable.hours,
-        })
-        .from(timesheetTable)
-        .where(
-            and(
-                eq(timesheetTable.workerId, payroll.workerId),
-                gte(timesheetTable.dateIn, payroll.periodStart),
-                lte(timesheetTable.dateOut, payroll.periodEnd),
-                eq(timesheetTable.status, "Timesheet Paid"),
-            ),
-        )
-        .orderBy(asc(timesheetTable.dateIn));
-
-    if (timesheets.length > 0) {
-        rows.push({
-            name: `Timesheets (${timesheets.length})`,
-            currentStatus: "Timesheet Paid",
-            futureStatus: "Timesheet Unpaid",
-            timesheetLines: timesheets.map((t) => ({
-                id: t.id,
-                dateIn: String(t.dateIn),
-                dateOut: String(t.dateOut),
-                timeIn: String(t.timeIn),
-                timeOut: String(t.timeOut),
-                hours: t.hours,
-            })),
-        });
-    }
-
-    type AdvanceInPeriodRow = {
-        id: string;
-        advanceRequestId: string;
-        status: "Installment Loan" | "Installment Paid";
-        amount: number;
-        repaymentDate: string | null;
-    };
-
-    const advancesInPeriod: AdvanceInPeriodRow[] = await db
-        .select({
-            id: advanceTable.id,
-            advanceRequestId: advanceTable.advanceRequestId,
-            status: advanceTable.status,
-            amount: advanceTable.amount,
-            repaymentDate: advanceTable.repaymentDate,
-        })
-        .from(advanceTable)
-        .innerJoin(
-            advanceRequestTable,
-            eq(advanceTable.advanceRequestId, advanceRequestTable.id),
-        )
-        .where(
-            and(
-                eq(advanceRequestTable.workerId, payroll.workerId),
-                gte(advanceTable.repaymentDate, payroll.periodStart),
-                lte(advanceTable.repaymentDate, payroll.periodEnd),
-            ),
-        );
-
-    const installmentPaidInPeriod = advancesInPeriod
-        .filter((a) => a.status === "Installment Paid")
-        .sort((a, b) =>
-            String(a.repaymentDate ?? "").localeCompare(
-                String(b.repaymentDate ?? ""),
-            ),
-        );
-
-    if (installmentPaidInPeriod.length > 0) {
-        rows.push({
-            name: `Advance (${installmentPaidInPeriod.length})`,
-            currentStatus: "Installment Paid",
-            futureStatus: "Installment Loan",
-            advanceInstallmentLines: installmentPaidInPeriod.map((a) => ({
-                id: a.id,
-                amount: a.amount,
-                repaymentDate: a.repaymentDate,
-            })),
-        });
-    }
-
-    const requestIds = Array.from(
-        new Set(advancesInPeriod.map((a) => a.advanceRequestId)),
-    );
-
-    if (requestIds.length > 0) {
-        type RequestAdvanceRow = {
-            advanceRequestId: string;
-            status: "Installment Loan" | "Installment Paid";
-        };
-
-        const requestAdvances: RequestAdvanceRow[] = await db
-            .select({
-                advanceRequestId: advanceTable.advanceRequestId,
-                status: advanceTable.status,
-            })
-            .from(advanceTable)
-            .where(inArray(advanceTable.advanceRequestId, requestIds));
-
-        const byRequestId = requestAdvances.reduce(
-            (acc, row) => {
-                if (!acc[row.advanceRequestId]) acc[row.advanceRequestId] = [];
-                acc[row.advanceRequestId]!.push({ status: row.status });
-                return acc;
-            },
-            {} as Record<
-                string,
-                Array<{ status: "Installment Loan" | "Installment Paid" }>
-            >,
-        );
-
-        const installmentPaidRequestIds = new Set(
-            installmentPaidInPeriod.map((a) => a.advanceRequestId),
-        );
-
-        let advanceRequestFlipCount = 0;
-        for (const requestId of requestIds) {
-            const allInstallments = byRequestId[requestId] ?? [];
-            const currentlyAllPaid =
-                allInstallments.length > 0 &&
-                allInstallments.every((a) => a.status === "Installment Paid");
-            if (currentlyAllPaid && installmentPaidRequestIds.has(requestId)) {
-                advanceRequestFlipCount++;
-            }
-        }
-
-        if (advanceRequestFlipCount > 0) {
-            rows.push({
-                name: `Advance Requests (${advanceRequestFlipCount})`,
-                currentStatus: "Advance Paid",
-                futureStatus: "Advance Loan",
-            });
-        }
-    }
-
-    return { data: rows };
+    return result;
 }
 
 export {

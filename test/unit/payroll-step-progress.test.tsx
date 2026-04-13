@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
     push: vi.fn(),
     settlePayroll: vi.fn(),
     revertPayroll: vi.fn(),
-    getRevertPreview: vi.fn(),
+    fetchRevertPreview: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -28,7 +28,10 @@ vi.mock("@/components/ui/step-progress-panel", () => ({
 vi.mock("@/app/dashboard/payroll/actions", () => ({
     settlePayroll: (...args: unknown[]) => mocks.settlePayroll(...args),
     revertPayroll: (...args: unknown[]) => mocks.revertPayroll(...args),
-    getRevertPreview: (...args: unknown[]) => mocks.getRevertPreview(...args),
+}));
+
+vi.mock("@/app/dashboard/payroll/read-api", () => ({
+    fetchRevertPreview: (...args: unknown[]) => mocks.fetchRevertPreview(...args),
 }));
 
 import { PayrollStepProgress } from "@/app/dashboard/payroll/[id]/payroll-step-progress";
@@ -52,15 +55,13 @@ describe("PayrollStepProgress", () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.getRevertPreview.mockResolvedValue({
-            data: [
-                {
-                    name: "Payroll",
-                    currentStatus: "Settled",
-                    futureStatus: "Draft",
-                },
-            ],
-        });
+        mocks.fetchRevertPreview.mockResolvedValue([
+            {
+                name: "Payroll",
+                currentStatus: "Settled",
+                futureStatus: "Draft",
+            },
+        ]);
     });
 
     it("prevents duplicate settle submissions on rapid confirm clicks", async () => {
@@ -232,11 +233,11 @@ describe("PayrollStepProgress", () => {
 
     it("shows loading state when revert dialog opens", async () => {
         const previewDeferred = createDeferred<{
-            data: { name: string; currentStatus: string; futureStatus: string }[];
-        }>();
-        mocks.getRevertPreview.mockImplementationOnce(
-            () => previewDeferred.promise,
-        );
+            name: string;
+            currentStatus: string;
+            futureStatus: string;
+        }[]>();
+        mocks.fetchRevertPreview.mockImplementationOnce(() => previewDeferred.promise);
 
         render(
             <PayrollStepProgress
@@ -250,32 +251,28 @@ describe("PayrollStepProgress", () => {
 
         expect(await screen.findByText("Loading preview...")).toBeTruthy();
 
-        previewDeferred.resolve({
-            data: [
-                {
-                    name: "Payroll",
-                    currentStatus: "Settled",
-                    futureStatus: "Draft",
-                },
-            ],
-        });
+        previewDeferred.resolve([
+            {
+                name: "Payroll",
+                currentStatus: "Settled",
+                futureStatus: "Draft",
+            },
+        ]);
     });
 
     it("renders preview table with Name / Current Status / Future Status columns after data loads", async () => {
-        mocks.getRevertPreview.mockResolvedValueOnce({
-            data: [
-                {
-                    name: "Payroll",
-                    currentStatus: "Settled",
-                    futureStatus: "Draft",
-                },
-                {
-                    name: "Timesheets (3)",
-                    currentStatus: "Timesheet Paid",
-                    futureStatus: "Timesheet Unpaid",
-                },
-            ],
-        });
+        mocks.fetchRevertPreview.mockResolvedValueOnce([
+            {
+                name: "Payroll",
+                currentStatus: "Settled",
+                futureStatus: "Draft",
+            },
+            {
+                name: "Timesheets (3)",
+                currentStatus: "Timesheet Paid",
+                futureStatus: "Timesheet Unpaid",
+            },
+        ]);
 
         render(
             <PayrollStepProgress
@@ -300,30 +297,28 @@ describe("PayrollStepProgress", () => {
     });
 
     it("expands Timesheets row to show timesheet detail sub-table from preview", async () => {
-        mocks.getRevertPreview.mockResolvedValueOnce({
-            data: [
-                {
-                    name: "Payroll",
-                    currentStatus: "Settled",
-                    futureStatus: "Draft",
-                },
-                {
-                    name: "Timesheets (1)",
-                    currentStatus: "Timesheet Paid",
-                    futureStatus: "Timesheet Unpaid",
-                    timesheetLines: [
-                        {
-                            id: "ts-1",
-                            dateIn: "2025-03-01",
-                            dateOut: "2025-03-02",
-                            timeIn: "09:15:00",
-                            timeOut: "17:30:00",
-                            hours: 8.25,
-                        },
-                    ],
-                },
-            ],
-        });
+        mocks.fetchRevertPreview.mockResolvedValueOnce([
+            {
+                name: "Payroll",
+                currentStatus: "Settled",
+                futureStatus: "Draft",
+            },
+            {
+                name: "Timesheets (1)",
+                currentStatus: "Timesheet Paid",
+                futureStatus: "Timesheet Unpaid",
+                timesheetLines: [
+                    {
+                        id: "ts-1",
+                        dateIn: "2025-03-01",
+                        dateOut: "2025-03-02",
+                        timeIn: "09:15:00",
+                        timeOut: "17:30:00",
+                        hours: 8.25,
+                    },
+                ],
+            },
+        ]);
 
         render(
             <PayrollStepProgress
@@ -353,27 +348,25 @@ describe("PayrollStepProgress", () => {
     });
 
     it("expands Advance row to show repayment date and amount columns from preview", async () => {
-        mocks.getRevertPreview.mockResolvedValueOnce({
-            data: [
-                {
-                    name: "Payroll",
-                    currentStatus: "Settled",
-                    futureStatus: "Draft",
-                },
-                {
-                    name: "Advance (1)",
-                    currentStatus: "Installment Paid",
-                    futureStatus: "Installment Loan",
-                    advanceInstallmentLines: [
-                        {
-                            id: "adv-1",
-                            amount: 40,
-                            repaymentDate: "2025-03-10",
-                        },
-                    ],
-                },
-            ],
-        });
+        mocks.fetchRevertPreview.mockResolvedValueOnce([
+            {
+                name: "Payroll",
+                currentStatus: "Settled",
+                futureStatus: "Draft",
+            },
+            {
+                name: "Advance (1)",
+                currentStatus: "Installment Paid",
+                futureStatus: "Installment Loan",
+                advanceInstallmentLines: [
+                    {
+                        id: "adv-1",
+                        amount: 40,
+                        repaymentDate: "2025-03-10",
+                    },
+                ],
+            },
+        ]);
 
         render(
             <PayrollStepProgress
@@ -403,9 +396,9 @@ describe("PayrollStepProgress", () => {
     });
 
     it("shows error message if preview fetch fails", async () => {
-        mocks.getRevertPreview.mockResolvedValueOnce({
-            error: "Payroll not found",
-        });
+        mocks.fetchRevertPreview.mockRejectedValueOnce(
+            new Error("Payroll not found"),
+        );
 
         render(
             <PayrollStepProgress
@@ -421,15 +414,13 @@ describe("PayrollStepProgress", () => {
     });
 
     it("revert confirm button still works after preview loads", async () => {
-        mocks.getRevertPreview.mockResolvedValueOnce({
-            data: [
-                {
-                    name: "Payroll",
-                    currentStatus: "Settled",
-                    futureStatus: "Draft",
-                },
-            ],
-        });
+        mocks.fetchRevertPreview.mockResolvedValueOnce([
+            {
+                name: "Payroll",
+                currentStatus: "Settled",
+                futureStatus: "Draft",
+            },
+        ]);
         mocks.revertPayroll.mockResolvedValueOnce({ success: true });
 
         render(

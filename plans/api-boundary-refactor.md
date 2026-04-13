@@ -75,9 +75,9 @@ Move timesheet workflows that are not semantic form submissions to `app/api`, es
 
 ### Acceptance criteria
 
-- [ ] Timesheet delete and import workflows use `app/api` without changing the visible UX.
-- [ ] Timesheet create and update forms still work through server actions.
-- [ ] Draft payroll synchronization and error handling remain behaviorally correct across both API and action paths.
+- [x] Timesheet delete and import workflows use `app/api` without changing the visible UX.
+- [x] Timesheet create and update forms still work through server actions.
+- [x] Draft payroll synchronization and error handling remain behaviorally correct across both API and action paths.
 
 ---
 
@@ -91,9 +91,9 @@ Refactor advance creation and editing so the transport layer is thin and the bus
 
 ### Acceptance criteria
 
-- [ ] Advance create and edit flows run through shared services rather than directly coupling to payroll action modules.
-- [ ] Advance request submission behavior remains unchanged for users.
-- [ ] Advance-related payroll synchronization and export behavior still works after the decoupling.
+- [x] Advance create and edit flows run through shared services rather than directly coupling to payroll action modules.
+- [x] Advance request submission behavior remains unchanged for users.
+- [x] Advance-related payroll synchronization and export behavior still works after the decoupling.
 
 ---
 
@@ -107,9 +107,9 @@ Migrate payroll client-triggered reads that currently behave like RPC calls into
 
 ### Acceptance criteria
 
-- [ ] Payroll preview and selection flows load through GET `app/api` routes.
-- [ ] Existing lazy-loading dialogs and panels continue to behave the same from the user's perspective.
-- [ ] Read-side route tests cover permission handling, empty states, and structured error responses.
+- [x] Payroll preview and selection flows load through GET `app/api` routes.
+- [x] Existing lazy-loading dialogs and panels continue to behave the same from the user's perspective.
+- [x] Read-side route tests cover permission handling, empty states, and structured error responses.
 
 ---
 

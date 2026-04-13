@@ -9,8 +9,11 @@ This document maps the live `app/api/` surface and its request flows.
 | `/api/auth/[...all]` | `GET`, `POST` | better-auth handler | Session, account, and auth lifecycle |
 | `/api/advance/[id]/pdf` | `GET` | Session + `Advance:read` | Generate printable advance summary PDF |
 | `/api/iam/users/[id]/status` | `PATCH` | Session + `IAM (Identity and Access Management):update` | Ban or unban a user from a client-triggered HTTP workflow |
+| `/api/payroll/[id]/revert-preview` | `GET` | Session + `Payroll:read` | Lazy-load the revert impact preview for the payroll detail dialog |
 | `/api/payroll/[id]/pdf` | `GET` | Session + `Payroll:read` | Generate payroll summary or voucher PDF |
+| `/api/payroll/download-selection` | `GET` | Session + `Payroll:read` | Lazy-load payroll rows for the download-selection dialog |
 | `/api/payroll/download-zip` | `POST` | Session + `Payroll:read` | Bundle multiple payroll PDFs into a ZIP |
+| `/api/payroll/settlement-candidates` | `GET` | Session + `Payroll:read` | Lazy-load Draft payroll rows for the bulk-settlement dialog |
 | `/api/timesheets/[id]` | `DELETE` | Session + `Timesheet:delete` | Delete a timesheet entry from the dashboard row-actions flow and re-sync draft payrolls |
 | `/api/timesheets/import` | `POST` | Session + `Timesheet:create` | Import AttendRecord-style timesheets from the client-side import workflow and re-sync draft payrolls |
 | `/api/workers/minimum-working-hours` | `PATCH` | Session + `Workers:update` | Bulk-update minimum working hours for active full-time workers and re-sync draft payrolls |
@@ -73,6 +76,45 @@ flowchart TD
     J --> K[Open print page and wait for fonts]
     K --> L[Render PDF]
     L --> M[Return application/pdf attachment]
+```
+
+## Payroll Revert Preview Read
+
+```mermaid
+flowchart TD
+    A[Client GET /api/payroll/:id/revert-preview] --> B[requireApiPermission helper]
+    B -->|no session| C[401 JSON error]
+    B -->|forbidden| D[403 JSON error]
+    B --> E[services/payroll/get-revert-preview]
+    E -->|payroll missing| F[404 JSON error]
+    E -->|payroll not Settled| G[409 JSON error]
+    E --> H[Load impacted timesheets and advances]
+    H --> I[Build structured preview rows]
+    I --> J[200 JSON success]
+```
+
+## Payroll Settlement Candidates Read
+
+```mermaid
+flowchart TD
+    A[Client GET /api/payroll/settlement-candidates] --> B[requireApiPermission helper]
+    B -->|no session| C[401 JSON error]
+    B -->|forbidden| D[403 JSON error]
+    B --> E[services/payroll/list-draft-payrolls-for-settlement]
+    E --> F[Load Draft payrolls with worker + employment metadata]
+    F --> G[200 JSON success, possibly empty array]
+```
+
+## Payroll Download Selection Read
+
+```mermaid
+flowchart TD
+    A[Client GET /api/payroll/download-selection] --> B[requireApiPermission helper]
+    B -->|no session| C[401 JSON error]
+    B -->|forbidden| D[403 JSON error]
+    B --> E[services/payroll/list-payrolls-for-download]
+    E --> F[Load payrolls with worker + employment metadata]
+    F --> G[200 JSON success, possibly empty array]
 ```
 
 ## Timesheet Delete Command
@@ -165,6 +207,7 @@ flowchart TD
 - All document/export routes declare `runtime = "nodejs"`.
 - JSON command routes should prefer the shared transport helpers in `app/api/_shared/` for auth, permission, response, and revalidation handling.
 - Bulk worker minimum-hours updates stay action-free on the client side: the dashboard dialog calls the route, while worker create and edit forms remain server-action submissions.
+- Payroll revert preview, bulk settlement candidate loading, and payroll download selection now lazy-load through GET `app/api` routes, while payroll settle and revert mutations remain command-style action or API flows until later phases.
 - Timesheet delete and AttendRecord import now call `app/api` from client components, while timesheet create and edit remain server-action submissions.
 - PDF generation relies on Playwright-driven rendering of existing dashboard summary pages.
 - ZIP creation fans out by calling the internal payroll PDF endpoint, so permission and print rendering logic stay centralized.
