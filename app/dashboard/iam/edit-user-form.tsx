@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import * as React from "react";
-import { updateUser, unbanUser } from "./actions";
+import { updateUser } from "./actions";
+import { updateIamUserStatus } from "./user-status-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,7 +52,10 @@ export function EditUserForm({
     const handleUnban = async () => {
         setError(null);
         setIsUnbanning(true);
-        const result = await unbanUser(user.id);
+        const result = await updateIamUserStatus({
+            userId: user.id,
+            banned: false,
+        });
         if (result.error) setError(result.error);
         else router.refresh();
         setIsUnbanning(false);

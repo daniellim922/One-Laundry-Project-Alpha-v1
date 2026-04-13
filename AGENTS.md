@@ -45,8 +45,9 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 
 - **Server components by default.** Add `"use client"` only for interactive pieces (forms, tables, dropdowns).
 - **Server actions** live in `actions.ts` files co-located with each feature route under `app/dashboard/<feature>/`. They start with `"use server"`, validate from `FormData`, return `{ success, id? } | { error }`, and call `revalidatePath` after mutations.
-- **API routes** live under `app/api/` for non-form HTTP workflows such as auth handlers, PDF exports, and ZIP downloads. Protected routes use `auth.api.getSession` + `checkPermission` and return explicit HTTP success/error responses.
+- **API routes** live under `app/api/` for non-form HTTP workflows such as auth handlers, exports, and client-triggered mutations. Prefer the shared transport spine in `app/api/_shared/` for session lookup, permission checks, JSON responses, and route-level revalidation so handlers stay thin.
 - **Authorization** is feature-based RBAC. Server components call `requirePermission(featureName, action)` (redirects on fail). API routes use `auth.api.getSession` + `checkPermission`. Feature names: `"Home"`, `"Workers"`, `"Timesheet"`, `"Payroll"`, `"Advance"`, `"Expenses"`, `"IAM (Identity and Access Management)"`.
+- **Service boundary** keeps business rules out of transport code. Shared use-case modules live under `services/<feature>/`; server actions and route handlers should adapt inputs, call services, and handle revalidation.
 - **Input validation** belongs at the boundary. Prefer Zod for API JSON bodies, query/search params, and complex form contracts; avoid adding new ad hoc parsing branches when a schema can express the contract.
 - **Forms** use react-hook-form + `zodResolver` for complex cases, or plain `useState` + `FormData` for simple ones. All form pages use `FormPageLayout` (back button, title, subtitle, optional actions slot).
 - **Data tables** use the shared `DataTable` from `components/data-table/`. Columns are defined in `columns.tsx` next to the route. Use `createSortableHeader`, `createBadgeCell`, `createActionsColumn` from `column-builders.tsx`.
@@ -59,7 +60,8 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 | What | Where |
 |---|---|
 | Route pages + server actions | `app/dashboard/<feature>/` |
-| API routes and document exports | `app/api/` |
+| API routes and shared transport helpers | `app/api/`, `app/api/_shared/` |
+| Shared service/use-case modules | `services/<feature>/` |
 | Shared UI primitives (read-only) | `components/ui/` |
 | Data table components | `components/data-table/` |
 | Form page shell | `components/form-page-layout.tsx` |

@@ -8,7 +8,7 @@ import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
 import { calculateHoursFromDateTimes } from "@/utils/payroll/payroll-utils";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
-import { synchronizeWorkerDraftPayrolls } from "@/app/dashboard/payroll/actions";
+import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
 
 function toTimeString(val: string): string {
     const s = String(val).trim();

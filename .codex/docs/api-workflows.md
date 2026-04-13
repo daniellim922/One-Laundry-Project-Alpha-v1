@@ -8,6 +8,7 @@ This document maps the live `app/api/` surface and its request flows.
 |---|---|---|---|
 | `/api/auth/[...all]` | `GET`, `POST` | better-auth handler | Session, account, and auth lifecycle |
 | `/api/advance/[id]/pdf` | `GET` | Session + `Advance:read` | Generate printable advance summary PDF |
+| `/api/iam/users/[id]/status` | `PATCH` | Session + `IAM (Identity and Access Management):update` | Ban or unban a user from a client-triggered HTTP workflow |
 | `/api/payroll/[id]/pdf` | `GET` | Session + `Payroll:read` | Generate payroll summary or voucher PDF |
 | `/api/payroll/download-zip` | `POST` | Session + `Payroll:read` | Bundle multiple payroll PDFs into a ZIP |
 
@@ -35,6 +36,22 @@ flowchart TD
     I --> J[Open summary page and wait for networkidle]
     J --> K[Wait for fonts and render PDF]
     K --> L[Return application/pdf attachment]
+```
+
+## IAM User Status Command
+
+```mermaid
+flowchart TD
+    A[Client PATCH /api/iam/users/:id/status] --> B[requireApiPermission helper]
+    B -->|no session| C[401 JSON error]
+    B -->|forbidden| D[403 JSON error]
+    B --> E[Parse JSON body]
+    E -->|invalid body| F[400 JSON validation error]
+    E --> G[services/iam/update-user-ban-status]
+    G -->|user missing| H[404 JSON error]
+    G --> I[Update user banned fields and revoke sessions on ban]
+    I --> J[revalidate /dashboard/iam + /dashboard/iam/roles]
+    J --> K[200 JSON success]
 ```
 
 ## Payroll PDF Export
@@ -82,5 +99,6 @@ flowchart TD
 ## Runtime Notes
 
 - All document/export routes declare `runtime = "nodejs"`.
+- JSON command routes should prefer the shared transport helpers in `app/api/_shared/` for auth, permission, response, and revalidation handling.
 - PDF generation relies on Playwright-driven rendering of existing dashboard summary pages.
 - ZIP creation fans out by calling the internal payroll PDF endpoint, so permission and print rendering logic stay centralized.

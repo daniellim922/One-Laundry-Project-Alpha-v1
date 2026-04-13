@@ -3,9 +3,9 @@ import archiver from "archiver";
 import { Readable } from "node:stream";
 import { eq, inArray } from "drizzle-orm";
 
-import { auth } from "@/lib/auth";
+import { requireApiPermission } from "@/app/api/_shared/auth";
+import { apiError } from "@/app/api/_shared/responses";
 import { db } from "@/lib/db";
-import { checkPermission } from "@/utils/permissions/permissions";
 import { payrollTable } from "@/db/tables/payroll/payrollTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 
@@ -14,18 +14,6 @@ export const runtime = "nodejs";
 type Body = { payrollIds?: unknown };
 type PayrollPdfFailure = { payrollId: string; reason: string };
 type PayrollPdfEntry = { name: string; buffer: Buffer };
-
-async function requireApiPermission(req: NextRequest) {
-    const session = await auth.api.getSession({ headers: req.headers });
-    if (!session) {
-        return { ok: false as const, status: 401 as const };
-    }
-    const allowed = await checkPermission(session.user.id, "Payroll", "read");
-    if (!allowed) {
-        return { ok: false as const, status: 403 as const };
-    }
-    return { ok: true as const, userId: session.user.id };
-}
 
 function safeFilenamePart(s: string): string {
     return String(s).replace(/[/\\:*?"<>|]/g, "-").trim();
@@ -99,16 +87,20 @@ export function createZipFilename(args: {
 }
 
 export async function POST(req: NextRequest) {
-    const perm = await requireApiPermission(req);
-    if (!perm.ok) {
-        return new Response("Unauthorized", { status: perm.status });
+    const permission = await requireApiPermission(req, "Payroll", "read");
+    if (permission instanceof Response) {
+        return permission;
     }
 
     let parsed: Body;
     try {
         parsed = (await req.json()) as Body;
     } catch {
-        return new Response("Invalid JSON", { status: 400 });
+        return apiError({
+            status: 400,
+            code: "INVALID_JSON",
+            message: "Invalid JSON",
+        });
     }
 
     const payrollIdsRaw = Array.isArray(parsed.payrollIds)
@@ -117,7 +109,11 @@ export async function POST(req: NextRequest) {
     const payrollIds = dedupeStringsPreserveOrder(payrollIdsRaw);
 
     if (payrollIds.length === 0) {
-        return new Response("No payrollIds provided", { status: 400 });
+        return apiError({
+            status: 400,
+            code: "VALIDATION_ERROR",
+            message: "No payrollIds provided",
+        });
     }
 
     const payrollMeta = await db

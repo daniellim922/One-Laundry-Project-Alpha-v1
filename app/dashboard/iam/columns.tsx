@@ -4,13 +4,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Ban, Pencil, ShieldOff } from "lucide-react";
-import { banUser, unbanUser } from "./actions";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
     createActionsColumn,
     createSortableHeader,
     RowActionsMenu,
 } from "@/components/data-table/column-builders";
+import { updateIamUserStatus } from "./user-status-client";
 
 export type IAMUserRow = {
     id: string;
@@ -59,12 +59,18 @@ function UserActionsCell({ user }: { user: IAMUserRow }) {
     const router = useRouter();
 
     const handleBan = async () => {
-        await banUser(user.id);
+        await updateIamUserStatus({
+            userId: user.id,
+            banned: true,
+        });
         router.refresh();
     };
 
     const handleUnban = async () => {
-        await unbanUser(user.id);
+        await updateIamUserStatus({
+            userId: user.id,
+            banned: false,
+        });
         router.refresh();
     };
 

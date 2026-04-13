@@ -15,7 +15,7 @@ import {
 import {
     synchronizeWorkerDraftPayrolls,
     synchronizeWorkerDraftPayrollsInTx,
-} from "@/app/dashboard/payroll/actions";
+} from "@/services/payroll/synchronize-worker-draft-payrolls";
 import { requirePermission } from "@/utils/permissions/require-permission";
 import type { WorkerStatus } from "@/types/status";
 

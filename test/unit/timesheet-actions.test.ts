@@ -17,7 +17,7 @@ vi.mock("@/lib/db", () => ({
     db: mocks.db,
 }));
 
-vi.mock("@/app/dashboard/payroll/actions", () => ({
+vi.mock("@/services/payroll/synchronize-worker-draft-payrolls", () => ({
     synchronizeWorkerDraftPayrolls: (...args: unknown[]) =>
         mocks.synchronizeWorkerDraftPayrolls(...args),
 }));

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { synchronizeWorkerDraftPayrolls } from "@/app/dashboard/payroll/actions";
+import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
 import { localIsoDateYmd } from "@/utils/time/local-iso-date";
 import { requirePermission } from "@/utils/permissions/require-permission";
 import { db } from "@/lib/db";

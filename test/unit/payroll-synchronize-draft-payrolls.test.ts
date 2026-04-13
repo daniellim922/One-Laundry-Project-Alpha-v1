@@ -17,7 +17,7 @@ vi.mock("@/lib/db", () => ({
     db: mocks.db,
 }));
 
-import { synchronizeWorkerDraftPayrolls } from "@/app/dashboard/payroll/actions";
+import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
 
 describe("synchronizeWorkerDraftPayrolls", () => {
     beforeEach(() => {

@@ -25,7 +25,7 @@ vi.mock("@/utils/permissions/require-permission", () => ({
     requirePermission: (...args: unknown[]) => mocks.requirePermission(...args),
 }));
 
-vi.mock("@/app/dashboard/payroll/actions", () => ({
+vi.mock("@/services/payroll/synchronize-worker-draft-payrolls", () => ({
     synchronizeWorkerDraftPayrolls: (...args: unknown[]) =>
         mocks.synchronizeWorkerDraftPayrolls(...args),
     synchronizeWorkerDraftPayrollsInTx: (...args: unknown[]) =>
