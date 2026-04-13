@@ -139,9 +139,9 @@ Keep genuine payroll form submissions on server actions, but shrink those action
 
 ### Acceptance criteria
 
-- [ ] Payroll create and update forms still work through server actions.
-- [ ] Payroll actions delegate to shared services instead of containing the bulk of business logic.
-- [ ] The boundary is now consistent: form submissions use actions, non-form workflows use `app/api`.
+- [x] Payroll create and update forms still work through server actions.
+- [x] Payroll actions delegate to shared services instead of containing the bulk of business logic.
+- [x] The boundary is now consistent: form submissions use actions, non-form workflows use `app/api`.
 
 ---
 
@@ -155,6 +155,6 @@ Stabilize the refactor by aligning existing export routes to shared API helpers 
 
 ### Acceptance criteria
 
-- [ ] Existing export routes continue to function and are normalized to shared API patterns where it is beneficial.
-- [ ] Test coverage reflects the new route and service surfaces rather than the old action-RPC shape.
-- [ ] `AGENTS.md`, `UBIQUITOUS_LANGUAGE.md`, and relevant generated architecture docs are updated to match the new boundary.
+- [x] Existing export routes continue to function and are normalized to shared API patterns where it is beneficial.
+- [x] Test coverage reflects the new route and service surfaces rather than the old action-RPC shape.
+- [x] `AGENTS.md`, `UBIQUITOUS_LANGUAGE.md`, and relevant generated architecture docs are updated to match the new boundary.
