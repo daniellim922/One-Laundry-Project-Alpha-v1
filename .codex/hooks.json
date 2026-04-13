@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+                    {
+                        "type": "command",
+                        "command": "/usr/bin/env node \"$(git rev-parse --show-toplevel)/.codex/hooks/post_implementation_verify.mjs\"",
+                        "timeout": 1800,
+                        "statusMessage": "Running post-implementation verification"
+                    }
+        ]
+      }
+    ]
+  }
+}
