@@ -11,6 +11,7 @@ This document maps the live `app/api/` surface and its request flows.
 | `/api/iam/users/[id]/status` | `PATCH` | Session + `IAM (Identity and Access Management):update` | Ban or unban a user from a client-triggered HTTP workflow |
 | `/api/payroll/[id]/pdf` | `GET` | Session + `Payroll:read` | Generate payroll summary or voucher PDF |
 | `/api/payroll/download-zip` | `POST` | Session + `Payroll:read` | Bundle multiple payroll PDFs into a ZIP |
+| `/api/workers/minimum-working-hours` | `PATCH` | Session + `Workers:update` | Bulk-update minimum working hours for active full-time workers and re-sync draft payrolls |
 
 ## Auth Handler
 
@@ -72,6 +73,30 @@ flowchart TD
     L --> M[Return application/pdf attachment]
 ```
 
+## Worker Minimum-Hours Bulk Update
+
+```mermaid
+flowchart TD
+    A[Client PATCH /api/workers/minimum-working-hours] --> B[requireApiPermission helper]
+    B -->|no session| C[401 JSON error]
+    B -->|forbidden| D[403 JSON error]
+    B --> E[Parse JSON body with updates]
+    E -->|invalid body| F[400 JSON validation error]
+    E --> G[services/worker/mass-update-minimum-working-hours]
+    G --> H[Validate worker ids and minimum hours]
+    H --> I[For each update: load worker + employment in tx]
+    I -->|inactive or part-time| J[Append failed row]
+    I --> K[Update employment.minimumWorkingHours]
+    K --> L[synchronize worker draft payrolls in tx]
+    L -->|sync error| J
+    L --> M[Count successful updates]
+    M --> N{Any updates succeeded?}
+    N -->|yes| O[revalidate worker + payroll dashboard paths]
+    N -->|no| P[skip revalidation]
+    O --> Q[200 JSON success with updatedCount + failed rows]
+    P --> Q
+```
+
 ## Bulk Payroll ZIP Download
 
 ```mermaid
@@ -100,5 +125,6 @@ flowchart TD
 
 - All document/export routes declare `runtime = "nodejs"`.
 - JSON command routes should prefer the shared transport helpers in `app/api/_shared/` for auth, permission, response, and revalidation handling.
+- Bulk worker minimum-hours updates stay action-free on the client side: the dashboard dialog calls the route, while worker create and edit forms remain server-action submissions.
 - PDF generation relies on Playwright-driven rendering of existing dashboard summary pages.
 - ZIP creation fans out by calling the internal payroll PDF endpoint, so permission and print rendering logic stay centralized.

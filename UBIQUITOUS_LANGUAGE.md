@@ -13,6 +13,7 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 | **Employment type**        | Either **Full Time** or **Part Time**, determining how **Gross pay** is built from base, overtime, and premiums.       | Schedule, shift type                               |
 | **Employment arrangement** | Either **Foreign Worker** or **Local Worker** (classification for compliance or reporting, stored on **Employment**).  | Visa status (unless that is the legal meaning)     |
 | **Minimum working hours**  | The contracted hours threshold for a full-time **Worker**; hours above it count as **Overtime hours**.                 | Target hours, quota                                |
+| **Minimum-hours bulk update** | A batch command that changes **Minimum working hours** for multiple active full-time **Workers** and then synchronizes their **Draft Payrolls**. | Mass edit (without the payroll-sync implication) |
 | **Payment method**         | How net pay is disbursed: **PayNow**, **Bank Transfer**, or **Cash**, with stored payout identifiers where applicable. | Payout channel                                     |
 | **Worker status**          | Whether a **Worker** is currently **Active** or **Inactive** for operations and payroll handling.                      | Enabled, archived                                  |
 

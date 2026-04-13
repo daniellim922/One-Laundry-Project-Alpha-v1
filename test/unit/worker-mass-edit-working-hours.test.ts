@@ -1,38 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-    revalidatePath: vi.fn(),
-    requirePermission: vi.fn(),
-    synchronizeWorkerDraftPayrolls: vi.fn(),
     synchronizeWorkerDraftPayrollsInTx: vi.fn(),
     db: {
-        select: vi.fn(),
-        update: vi.fn(),
-        insert: vi.fn(),
         transaction: vi.fn(),
     },
-}));
-
-vi.mock("next/cache", () => ({
-    revalidatePath: (...args: unknown[]) => mocks.revalidatePath(...args),
 }));
 
 vi.mock("@/lib/db", () => ({
     db: mocks.db,
 }));
 
-vi.mock("@/utils/permissions/require-permission", () => ({
-    requirePermission: (...args: unknown[]) => mocks.requirePermission(...args),
-}));
-
 vi.mock("@/services/payroll/synchronize-worker-draft-payrolls", () => ({
-    synchronizeWorkerDraftPayrolls: (...args: unknown[]) =>
-        mocks.synchronizeWorkerDraftPayrolls(...args),
     synchronizeWorkerDraftPayrollsInTx: (...args: unknown[]) =>
         mocks.synchronizeWorkerDraftPayrollsInTx(...args),
 }));
 
-import { massUpdateWorkerMinimumWorkingHours } from "@/app/dashboard/worker/actions";
+import { massUpdateWorkerMinimumWorkingHours } from "@/services/worker/mass-update-minimum-working-hours";
 
 type WorkerRow = {
     id: string;
@@ -75,10 +59,18 @@ function makeTx(workerRow: WorkerRow | null) {
 describe("massUpdateWorkerMinimumWorkingHours", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.requirePermission.mockResolvedValue({ userId: "user-1" });
         mocks.synchronizeWorkerDraftPayrollsInTx.mockResolvedValue({
             success: true,
         });
+    });
+
+    it("returns early when updates are empty", async () => {
+        const result = await massUpdateWorkerMinimumWorkingHours({
+            updates: [],
+        });
+
+        expect(result).toEqual({ updatedCount: 0, failed: [] });
+        expect(mocks.db.transaction).not.toHaveBeenCalled();
     });
 
     it("returns partial success and preserves failures when one worker sync fails", async () => {
@@ -108,7 +100,9 @@ describe("massUpdateWorkerMinimumWorkingHours", () => {
 
         mocks.synchronizeWorkerDraftPayrollsInTx
             .mockResolvedValueOnce({ success: true })
-            .mockResolvedValueOnce({ error: "Failed to synchronize draft payrolls" });
+            .mockResolvedValueOnce({
+                error: "Failed to synchronize draft payrolls",
+            });
 
         const result = await massUpdateWorkerMinimumWorkingHours({
             updates: [
@@ -124,8 +118,9 @@ describe("massUpdateWorkerMinimumWorkingHours", () => {
             workerName: "Bob",
             error: "Failed to synchronize draft payrolls",
         });
-        expect(mocks.synchronizeWorkerDraftPayrollsInTx).toHaveBeenCalledTimes(2);
-        expect(mocks.revalidatePath).toHaveBeenCalled();
+        expect(mocks.synchronizeWorkerDraftPayrollsInTx).toHaveBeenCalledTimes(
+            2,
+        );
     });
 
     it("enforces Active + Full Time eligibility", async () => {
@@ -137,7 +132,9 @@ describe("massUpdateWorkerMinimumWorkingHours", () => {
                 employmentId: "employment-3",
                 employmentType: "Full Time",
             });
-            const result = await (callback as (tx: unknown) => Promise<unknown>)(tx);
+            const result = await (callback as (tx: unknown) => Promise<unknown>)(
+                tx,
+            );
             expect(updateWhere).not.toHaveBeenCalled();
             return result;
         });
@@ -157,7 +154,6 @@ describe("massUpdateWorkerMinimumWorkingHours", () => {
             ],
         });
         expect(mocks.synchronizeWorkerDraftPayrollsInTx).not.toHaveBeenCalled();
-        expect(mocks.revalidatePath).not.toHaveBeenCalled();
     });
 
     it("fails invalid minimum working hours before database work", async () => {
@@ -210,6 +206,8 @@ describe("massUpdateWorkerMinimumWorkingHours", () => {
             workerId: "worker-5",
             error: "Worker not found",
         });
-        expect(mocks.synchronizeWorkerDraftPayrollsInTx).toHaveBeenCalledTimes(1);
+        expect(mocks.synchronizeWorkerDraftPayrollsInTx).toHaveBeenCalledTimes(
+            1,
+        );
     });
 });

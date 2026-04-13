@@ -59,9 +59,9 @@ Move the worker mass-edit workflow onto `app/api` while preserving the current w
 
 ### Acceptance criteria
 
-- [ ] Mass minimum-hours update is performed through `app/api` with structured success and failure results.
-- [ ] Worker create and update forms still submit successfully through server actions.
-- [ ] Payroll synchronization and page invalidation behavior remain correct after worker bulk updates.
+- [x] Mass minimum-hours update is performed through `app/api` with structured success and failure results.
+- [x] Worker create and update forms still submit successfully through server actions.
+- [x] Payroll synchronization and page invalidation behavior remain correct after worker bulk updates.
 
 ---
 
