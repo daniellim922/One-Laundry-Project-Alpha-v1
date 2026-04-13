@@ -55,7 +55,9 @@ export default async function Page() {
                         <Users className="text-muted-foreground h-4 w-4" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{workersCount}</div>
+                        <div className="text-2xl font-bold">
+                            {workersCount.toLocaleString()}
+                        </div>
                         <p className="text-muted-foreground text-xs">
                             Active workers in your workforce
                         </p>
