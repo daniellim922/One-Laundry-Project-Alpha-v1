@@ -10,9 +10,13 @@ This document maps the live `app/api/` surface and its request flows.
 | `/api/advance/[id]/pdf` | `GET` | Session + `Advance:read` | Generate printable advance summary PDF |
 | `/api/iam/users/[id]/status` | `PATCH` | Session + `IAM (Identity and Access Management):update` | Ban or unban a user from a client-triggered HTTP workflow |
 | `/api/payroll/[id]/revert-preview` | `GET` | Session + `Payroll:read` | Lazy-load the revert impact preview for the payroll detail dialog |
+| `/api/payroll/[id]/revert` | `POST` | Session + `Payroll:update` | Reopen a Settled payroll and unwind timesheet + advance recovery |
+| `/api/payroll/[id]/settle` | `POST` | Session + `Payroll:update` | Settle a single Draft payroll run |
+| `/api/payroll/[id]/voucher-days` | `PATCH` | Session + `Payroll:update` | Update rest-day and public-holiday counts on a payroll voucher |
 | `/api/payroll/[id]/pdf` | `GET` | Session + `Payroll:read` | Generate payroll summary or voucher PDF |
 | `/api/payroll/download-selection` | `GET` | Session + `Payroll:read` | Lazy-load payroll rows for the download-selection dialog |
 | `/api/payroll/download-zip` | `POST` | Session + `Payroll:read` | Bundle multiple payroll PDFs into a ZIP |
+| `/api/payroll/settle` | `POST` | Session + `Payroll:update` | Bulk-settle multiple Draft payrolls from the settlement dialog |
 | `/api/payroll/settlement-candidates` | `GET` | Session + `Payroll:read` | Lazy-load Draft payroll rows for the bulk-settlement dialog |
 | `/api/timesheets/[id]` | `DELETE` | Session + `Timesheet:delete` | Delete a timesheet entry from the dashboard row-actions flow and re-sync draft payrolls |
 | `/api/timesheets/import` | `POST` | Session + `Timesheet:create` | Import AttendRecord-style timesheets from the client-side import workflow and re-sync draft payrolls |
@@ -74,6 +78,72 @@ flowchart TD
     I --> J[Open print page and wait for fonts]
     J --> K[Render PDF]
     K --> L[Return application/pdf attachment]
+```
+
+## Payroll Settle Command
+
+```mermaid
+flowchart TD
+    A[Client POST /api/payroll/:id/settle] --> B[requireApiPermission helper]
+    B -->|no session| C[401 JSON error]
+    B -->|forbidden| D[403 JSON error]
+    B --> E[services/payroll/settle-payroll]
+    E -->|payroll missing| F[404 JSON error]
+    E -->|not Draft| G[409 JSON error]
+    E --> H[Mark payroll Settled, flip timesheets to Timesheet Paid, apply advance recovery]
+    H --> I[revalidate payroll + advance + timesheet dashboard paths]
+    I --> J[200 JSON success]
+```
+
+## Payroll Revert Command
+
+```mermaid
+flowchart TD
+    A[Client POST /api/payroll/:id/revert] --> B[requireApiPermission helper]
+    B -->|no session| C[401 JSON error]
+    B -->|forbidden| D[403 JSON error]
+    B --> E[services/payroll/revert-payroll]
+    E -->|payroll missing| F[404 JSON error]
+    E -->|not Settled| G[409 JSON error]
+    E --> H[Mark payroll Draft, revert timesheets to Timesheet Unpaid, unwind advance recovery to Installment Loan]
+    H --> I[revalidate payroll + advance + timesheet dashboard paths]
+    I --> J[200 JSON success]
+```
+
+## Payroll Voucher-Day Edit Command
+
+```mermaid
+flowchart TD
+    A[Client PATCH /api/payroll/:id/voucher-days] --> B[requireApiPermission helper]
+    B -->|no session| C[401 JSON error]
+    B -->|forbidden| D[403 JSON error]
+    B --> E[Parse JSON body with voucherId, restDays, publicHolidays]
+    E -->|invalid JSON| F[400 INVALID_JSON]
+    E -->|invalid body| G[400 VALIDATION_ERROR]
+    E --> H[services/payroll/update-voucher-days]
+    H -->|voucher missing| I[404 JSON error]
+    H -->|payroll not Draft| J[409 JSON error]
+    H --> K[Update rest-day + public-holiday counts and recompute voucher]
+    K --> L[revalidate payroll dashboard paths]
+    L --> M[200 JSON success]
+```
+
+## Payroll Bulk Settle Command
+
+```mermaid
+flowchart TD
+    A[Client POST /api/payroll/settle with payrollIds] --> B[requireApiPermission helper]
+    B -->|no session| C[401 JSON error]
+    B -->|forbidden| D[403 JSON error]
+    B --> E[Parse JSON body with payrollIds]
+    E -->|invalid JSON| F[400 INVALID_JSON]
+    E -->|invalid body| G[400 VALIDATION_ERROR]
+    E --> H[services/payroll/settle-draft-payrolls]
+    H -->|any payroll missing| I[404 JSON error]
+    H -->|any payroll not Draft| J[409 JSON error]
+    H --> K[Settle each Draft payroll in tx, flip timesheets + advances]
+    K --> L[revalidate settled payroll detail paths + payroll/advance/timesheet dashboards]
+    L --> M[200 JSON success with settledPayrollIds]
 ```
 
 ## Payroll Revert Preview Read
