@@ -32,7 +32,7 @@ import {
 import {
     settlePayroll,
     revertPayroll,
-} from "../actions";
+} from "../command-api";
 import type { RevertPreviewRow } from "@/services/payroll/get-revert-preview";
 import { cn } from "@/lib/utils";
 import {
@@ -130,7 +130,7 @@ export function PayrollStepProgress({
         try {
             const result = await settlePayroll(payrollId);
 
-            if (result?.error) {
+            if ("error" in result) {
                 setError(result.error);
                 return;
             }
@@ -153,7 +153,7 @@ export function PayrollStepProgress({
         try {
             const result = await revertPayroll(payrollId);
 
-            if (result?.error) {
+            if ("error" in result) {
                 setRevertError(result.error);
                 return;
             }

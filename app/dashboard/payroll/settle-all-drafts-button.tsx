@@ -20,7 +20,7 @@ import { createRowSelectionColumn } from "@/components/data-table/column-builder
 import { DataTable } from "@/components/data-table/data-table";
 import {
     settleDraftPayrolls,
-} from "./actions";
+} from "./command-api";
 import { fetchSettlementCandidates } from "./read-api";
 import { columns as baseColumns, type PayrollWithWorker } from "./all/columns";
 
@@ -145,12 +145,12 @@ export function SettleAllDraftPayrollsButton() {
         const result = await settleDraftPayrolls(selectedIds);
 
         setPending(false);
-        if (result?.error) {
+        if ("error" in result) {
             setError(result.error);
             return;
         }
 
-        const ids = result?.settledPayrollIds ?? [];
+        const ids = result.settledPayrollIds;
         if (ids.length > 0) {
             setDownloadingZip(true);
             try {

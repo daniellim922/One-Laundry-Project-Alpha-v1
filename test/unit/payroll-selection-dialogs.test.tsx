@@ -27,7 +27,7 @@ vi.mock("@/app/dashboard/payroll/read-api", () => ({
         mocks.fetchPayrollDownloadSelection(...args),
 }));
 
-vi.mock("@/app/dashboard/payroll/actions", () => ({
+vi.mock("@/app/dashboard/payroll/command-api", () => ({
     settleDraftPayrolls: (...args: unknown[]) =>
         mocks.settleDraftPayrolls(...args),
 }));

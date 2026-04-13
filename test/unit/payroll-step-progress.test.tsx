@@ -25,7 +25,7 @@ vi.mock("@/components/ui/step-progress-panel", () => ({
     }) => <div>{finalAction?.content ?? null}</div>,
 }));
 
-vi.mock("@/app/dashboard/payroll/actions", () => ({
+vi.mock("@/app/dashboard/payroll/command-api", () => ({
     settlePayroll: (...args: unknown[]) => mocks.settlePayroll(...args),
     revertPayroll: (...args: unknown[]) => mocks.revertPayroll(...args),
 }));

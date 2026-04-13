@@ -123,9 +123,9 @@ Move payroll command-style interactions that are not semantic form submissions i
 
 ### Acceptance criteria
 
-- [ ] Payroll command workflows use `app/api` with stable HTTP and JSON contracts.
-- [ ] Domain transitions preserve current business behavior, including structured conflict and validation errors.
-- [ ] High-risk payroll side effects are covered through TDD at the service and route boundary.
+- [x] Payroll command workflows use `app/api` with stable HTTP and JSON contracts.
+- [x] Domain transitions preserve current business behavior, including structured conflict and validation errors.
+- [x] High-risk payroll side effects are covered through TDD at the service and route boundary.
 
 ---
 
