@@ -9,6 +9,7 @@ import { updatePayroll } from "../actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { PayrollOverlapErrorResult } from "@/services/payroll/save-payroll";
 import { payrollStatusBadgeTone } from "@/types/badge-tones";
 import type { PayrollStatus } from "@/types/status";
 
@@ -30,6 +31,19 @@ function formatDate(d: string | Date): string {
         month: "2-digit",
         day: "2-digit",
     });
+}
+
+function isPayrollOverlapErrorResult(
+    result: unknown,
+): result is PayrollOverlapErrorResult {
+    return (
+        !!result &&
+        typeof result === "object" &&
+        "code" in result &&
+        result.code === "OVERLAP_CONFLICT" &&
+        "conflicts" in result &&
+        Array.isArray(result.conflicts)
+    );
 }
 
 export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
@@ -58,7 +72,7 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
         setPending(false);
         if ("error" in result) {
             setError(result.error);
-            if ("code" in result && result.code === "OVERLAP_CONFLICT") {
+            if (isPayrollOverlapErrorResult(result)) {
                 setConflictPayrollId(result.conflicts[0]?.payrollId ?? null);
             }
             return;

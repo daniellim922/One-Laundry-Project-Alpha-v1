@@ -31,17 +31,16 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[Client GET /api/advance/:id/pdf] --> B[auth.api.getSession]
-    B -->|no session| C[401 Unauthorized]
-    B --> D[checkPermission Advance read]
-    D -->|forbidden| E[403 Unauthorized]
-    D --> F[Load advance request + worker metadata]
-    F --> G[Build internal summary URL with print=1]
-    G --> H[Launch Playwright chromium]
-    H --> I[Forward session cookie]
-    I --> J[Open summary page and wait for networkidle]
-    J --> K[Wait for fonts and render PDF]
-    K --> L[Return application/pdf attachment]
+    A[Client GET /api/advance/:id/pdf] --> B[requireApiPermission helper]
+    B -->|no session| C[401 JSON error]
+    B -->|forbidden| D[403 JSON error]
+    B --> E[Load advance request + worker metadata]
+    E --> F[Build internal summary URL with print=1]
+    F --> G[Launch Playwright chromium]
+    G --> H[Forward session cookie]
+    H --> I[Open summary page and wait for networkidle]
+    I --> J[Wait for fonts and render PDF]
+    J --> K[Return application/pdf attachment]
 ```
 
 ## IAM User Status Command
@@ -64,18 +63,17 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[Client GET /api/payroll/:id/pdf] --> B[auth.api.getSession]
-    B -->|no session| C[401 Unauthorized]
-    B --> D[checkPermission Payroll read]
-    D -->|forbidden| E[403 Unauthorized]
-    D --> F[Read mode query param]
-    F --> G[Load payroll + worker metadata]
-    G --> H[Build internal summary or voucher print URL]
-    H --> I[Launch Playwright chromium]
-    I --> J[Forward session cookie]
-    J --> K[Open print page and wait for fonts]
-    K --> L[Render PDF]
-    L --> M[Return application/pdf attachment]
+    A[Client GET /api/payroll/:id/pdf] --> B[requireApiPermission helper]
+    B -->|no session| C[401 JSON error]
+    B -->|forbidden| D[403 JSON error]
+    B --> E[Read mode query param]
+    E --> F[Load payroll + worker metadata]
+    F --> G[Build internal summary or voucher print URL]
+    G --> H[Launch Playwright chromium]
+    H --> I[Forward session cookie]
+    I --> J[Open print page and wait for fonts]
+    J --> K[Render PDF]
+    K --> L[Return application/pdf attachment]
 ```
 
 ## Payroll Revert Preview Read
@@ -182,14 +180,14 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[Client POST /api/payroll/download-zip with payrollIds] --> B[auth.api.getSession]
-    B -->|no session| C[401 Unauthorized]
-    B --> D[checkPermission Payroll read]
-    D -->|forbidden| E[403 Unauthorized]
-    D --> F[Parse JSON body]
-    F -->|invalid or empty| G[400 error]
-    F --> H[Dedupe payrollIds]
-    H --> I[Load payroll metadata for filenames and ZIP range]
+    A[Client POST /api/payroll/download-zip with payrollIds] --> B[requireApiPermission helper]
+    B -->|no session| C[401 JSON error]
+    B -->|forbidden| D[403 JSON error]
+    B --> E[Parse JSON body]
+    E -->|invalid JSON| F[400 INVALID_JSON]
+    E --> G[Dedupe payrollIds]
+    G -->|empty| H[400 VALIDATION_ERROR]
+    G --> I[Load payroll metadata for filenames and ZIP range]
     I --> J[Loop payrollIds]
     J --> K[Fetch internal /api/payroll/:id/pdf with session cookie]
     K -->|failure| L[Record failure for report]
@@ -207,7 +205,7 @@ flowchart TD
 - All document/export routes declare `runtime = "nodejs"`.
 - JSON command routes should prefer the shared transport helpers in `app/api/_shared/` for auth, permission, response, and revalidation handling.
 - Bulk worker minimum-hours updates stay action-free on the client side: the dashboard dialog calls the route, while worker create and edit forms remain server-action submissions.
-- Payroll revert preview, bulk settlement candidate loading, and payroll download selection now lazy-load through GET `app/api` routes, while payroll settle and revert mutations remain command-style action or API flows until later phases.
+- Payroll revert preview, bulk settlement candidate loading, payroll download selection, payroll settle/revert commands, voucher-day edits, and export flows now run through `app/api`; only payroll create and update remain server-action form submissions.
 - Timesheet delete and AttendRecord import now call `app/api` from client components, while timesheet create and edit remain server-action submissions.
 - PDF generation relies on Playwright-driven rendering of existing dashboard summary pages.
 - ZIP creation fans out by calling the internal payroll PDF endpoint, so permission and print rendering logic stay centralized.
