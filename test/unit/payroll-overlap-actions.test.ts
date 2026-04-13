@@ -29,7 +29,10 @@ vi.mock("@/utils/payroll/payroll-period-conflicts", async () => {
     };
 });
 
-import { createPayrolls, updatePayroll } from "@/app/dashboard/payroll/actions";
+import {
+    createPayrollRecords,
+    updatePayrollRecord,
+} from "@/services/payroll/save-payroll";
 
 function mockSelectWithLimitResolved(value: unknown) {
     const limit = vi.fn().mockResolvedValue(value);
@@ -58,7 +61,12 @@ describe("payroll overlap action handling", () => {
         fd.set("periodEnd", "2026-03-01");
         fd.set("payrollDate", "2026-04-05");
 
-        const result = await createPayrolls(fd);
+        const result = await createPayrollRecords({
+            workerIds: fd.getAll("workerId") as string[],
+            periodStart: fd.get("periodStart") as string,
+            periodEnd: fd.get("periodEnd") as string,
+            payrollDate: fd.get("payrollDate") as string,
+        });
 
         expect(result).toEqual({
             error: "Period end must be on or after period start",
@@ -90,7 +98,12 @@ describe("payroll overlap action handling", () => {
         fd.set("periodEnd", "2026-03-31");
         fd.set("payrollDate", "2026-04-05");
 
-        const result = await createPayrolls(fd);
+        const result = await createPayrollRecords({
+            workerIds: fd.getAll("workerId") as string[],
+            periodStart: fd.get("periodStart") as string,
+            periodEnd: fd.get("periodEnd") as string,
+            payrollDate: fd.get("payrollDate") as string,
+        });
 
         expect(result).toEqual({
             success: true,
@@ -133,7 +146,12 @@ describe("payroll overlap action handling", () => {
         fd.set("periodEnd", "2026-04-20");
         fd.set("payrollDate", "2026-04-25");
 
-        const result = await updatePayroll("payroll-editing", fd);
+        const result = await updatePayrollRecord({
+            payrollId: "payroll-editing",
+            periodStart: fd.get("periodStart") as string,
+            periodEnd: fd.get("periodEnd") as string,
+            payrollDate: fd.get("payrollDate") as string,
+        });
 
         expect(result).toEqual({
             error: "Payroll period overlaps with existing payroll for Alicia (2026-03-15 to 2026-04-10)",
@@ -143,4 +161,3 @@ describe("payroll overlap action handling", () => {
         expect(mocks.db.transaction).not.toHaveBeenCalled();
     });
 });
-
