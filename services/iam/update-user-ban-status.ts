@@ -11,7 +11,7 @@ export type UpdateUserBanStatusResult =
       }
     | {
           success: false;
-          code: "VALIDATION_ERROR" | "NOT_FOUND";
+          code: "VALIDATION_ERROR" | "NOT_FOUND" | "CONFLICT";
           error: string;
       };
 
@@ -30,7 +30,7 @@ export async function updateUserBanStatus(input: {
     }
 
     const [existingUser] = await db
-        .select({ id: user.id })
+        .select({ id: user.id, banned: user.banned })
         .from(user)
         .where(eq(user.id, userId))
         .limit(1);
@@ -39,6 +39,16 @@ export async function updateUserBanStatus(input: {
             success: false,
             code: "NOT_FOUND",
             error: "User not found.",
+        };
+    }
+
+    if (existingUser.banned === input.banned) {
+        return {
+            success: false,
+            code: "CONFLICT",
+            error: input.banned
+                ? "User is already banned."
+                : "User is not banned.",
         };
     }
 

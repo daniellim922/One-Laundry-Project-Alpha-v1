@@ -150,6 +150,31 @@ describe("PATCH /api/iam/users/[id]/status", () => {
         });
     });
 
+    it("maps duplicate status transitions to 409", async () => {
+        mocks.auth.api.getSession.mockResolvedValue({
+            user: { id: "admin-1" },
+        });
+        mocks.checkPermission.mockResolvedValue(true);
+        mocks.updateUserBanStatus.mockResolvedValue({
+            success: false,
+            code: "CONFLICT",
+            error: "User is already banned.",
+        });
+
+        const response = await PATCH(makeRequest(JSON.stringify({ banned: true })) as never, {
+            params: Promise.resolve({ id: "user-1" }),
+        });
+
+        expect(response.status).toBe(409);
+        await expect(response.json()).resolves.toEqual({
+            ok: false,
+            error: {
+                code: "CONFLICT",
+                message: "User is already banned.",
+            },
+        });
+    });
+
     it("returns structured success and revalidates IAM pages", async () => {
         mocks.auth.api.getSession.mockResolvedValue({
             user: { id: "admin-1" },

@@ -43,9 +43,9 @@ Migrate IAM workflows that are triggered from buttons or menu actions rather tha
 
 ### Acceptance criteria
 
-- [ ] Non-form IAM workflows use `app/api` instead of direct server-action RPC.
-- [ ] IAM form submissions continue to work through server actions with unchanged user-visible behavior.
-- [ ] IAM permission failures and duplicate/error cases are covered through service or route tests using the new API contract.
+- [x] Non-form IAM workflows use `app/api` instead of direct server-action RPC.
+- [x] IAM form submissions continue to work through server actions with unchanged user-visible behavior.
+- [x] IAM permission failures and duplicate/error cases are covered through service or route tests using the new API contract.
 
 ---
 

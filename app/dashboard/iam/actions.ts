@@ -11,7 +11,6 @@ import {
     loginUrlWithReturn,
 } from "@/utils/auth/return-url";
 import { checkPermission } from "@/utils/permissions/permissions";
-import { updateUserBanStatus } from "@/services/iam/update-user-ban-status";
 import { db } from "@/lib/db";
 import { user } from "@/db/auth-schema";
 import { rolesTable } from "@/db/tables/auth/rolesTable";
@@ -240,38 +239,4 @@ export async function updateUser(
     revalidatePath("/dashboard/iam");
     revalidatePath("/dashboard/iam/roles");
     redirect("/dashboard/iam/roles");
-}
-
-export async function banUser(
-    userId: string,
-    reason?: string,
-): Promise<{ error?: string }> {
-    const perm = await requireIamPermission("update");
-    if (perm.error) return perm;
-
-    const result = await updateUserBanStatus({
-        userId,
-        banned: true,
-        reason,
-    });
-    if (!result.success) return { error: result.error };
-
-    revalidatePath("/dashboard/iam");
-    revalidatePath("/dashboard/iam/roles");
-    return {};
-}
-
-export async function unbanUser(userId: string): Promise<{ error?: string }> {
-    const perm = await requireIamPermission("update");
-    if (perm.error) return perm;
-
-    const result = await updateUserBanStatus({
-        userId,
-        banned: false,
-    });
-    if (!result.success) return { error: result.error };
-
-    revalidatePath("/dashboard/iam");
-    revalidatePath("/dashboard/iam/roles");
-    return {};
 }

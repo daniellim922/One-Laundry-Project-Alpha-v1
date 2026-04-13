@@ -78,7 +78,12 @@ export async function PATCH(
 
     if (!result.success) {
         return apiError({
-            status: result.code === "NOT_FOUND" ? 404 : 400,
+            status:
+                result.code === "NOT_FOUND"
+                    ? 404
+                    : result.code === "CONFLICT"
+                      ? 409
+                      : 400,
             code: result.code,
             message: result.error,
         });
