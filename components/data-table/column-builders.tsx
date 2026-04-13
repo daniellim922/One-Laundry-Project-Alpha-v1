@@ -86,10 +86,12 @@ export function createRowSelectionColumn<TData>({
 export function RowActionsMenu({
     label = "Open row actions",
     modal = true,
+    contentProps,
     children,
 }: {
     label?: string;
     modal?: boolean;
+    contentProps?: React.ComponentProps<typeof DropdownMenuContent>;
     children: React.ReactNode;
 }) {
     return (
@@ -103,7 +105,9 @@ export function RowActionsMenu({
                     <MoreHorizontal className="h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">{children}</DropdownMenuContent>
+            <DropdownMenuContent align="end" {...contentProps}>
+                {children}
+            </DropdownMenuContent>
         </DropdownMenu>
     );
 }

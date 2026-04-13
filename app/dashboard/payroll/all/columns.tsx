@@ -92,7 +92,9 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
     },
     createActionsColumn<PayrollWithWorker>({
         cell: (payroll) => (
-            <RowActionsMenu modal={false}>
+            <RowActionsMenu
+                modal={false}
+                contentProps={{ side: "top", align: "end" }}>
                 <DropdownMenuItem asChild>
                     <Link
                         href={`/dashboard/payroll/${payroll.id}/breakdown`}
