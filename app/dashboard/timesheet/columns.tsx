@@ -23,7 +23,7 @@ import {
 import { deleteTimesheetEntry } from "./delete-timesheet-entry";
 import type { TimesheetPaymentStatus } from "@/types/status";
 import { timesheetPaymentStatusBadgeTone } from "@/types/badge-tones";
-import { localDateDmy } from "@/utils/time/local-iso-date";
+import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 import { localTimeHm } from "@/utils/time/local-time";
 import {
     createBadgeCell,
@@ -161,12 +161,12 @@ export const columns: ColumnDef<TimesheetEntryWithWorker>[] = [
     {
         accessorKey: "dateIn",
         header: createSortableHeader("Date in"),
-        cell: ({ row }) => localDateDmy(row.original.dateIn),
+        cell: ({ row }) => formatEnGbDmyNumericFromCalendar(row.original.dateIn),
     },
     {
         accessorKey: "dateOut",
         header: createSortableHeader("Date out"),
-        cell: ({ row }) => localDateDmy(row.original.dateOut),
+        cell: ({ row }) => formatEnGbDmyNumericFromCalendar(row.original.dateOut),
     },
     {
         accessorKey: "timeIn",

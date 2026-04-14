@@ -45,7 +45,7 @@ import {
     FieldLabel,
 } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
-import { localDateDmy } from "@/utils/time/local-iso-date";
+import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 import { createWorker, updateWorker } from "./actions";
 
 const workerFormSchema = z
@@ -316,12 +316,12 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                             </div>
                             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                                 <span>
-                                    Created: {localDateDmy(worker.createdAt)}
+                                    Created: {formatEnGbDmyNumericFromCalendar(worker.createdAt)}
                                 </span>
                             </div>
                             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                                 <span>
-                                    Updated: {localDateDmy(worker.updatedAt)}
+                                    Updated: {formatEnGbDmyNumericFromCalendar(worker.updatedAt)}
                                 </span>
                             </div>
                         </CardDescription>

@@ -44,20 +44,32 @@ export function isIsoDateStrict(value: string): boolean {
     return parseIsoToDateStrict(value) !== null;
 }
 
-export function isoToDmy(value: string): string {
-    const date = parseIsoToDateStrict(value);
-    if (!date) return "";
-
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const year = String(date.getFullYear()).padStart(4, "0");
-
-    return `${day}/${month}/${year}`;
+/** Local calendar YYYY-MM-DD (wire format; matches `<input type="date">`). */
+export function dateToLocalIsoYmd(d: Date = new Date()): string {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
 }
 
-export function dateToIso(date: Date): string {
-    const year = String(date.getFullYear()).padStart(4, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+/** Compare two ISO YYYY-MM-DD strings (inclusive calendar order). */
+export function compareIsoDate(a: string, b: string): number {
+    if (a === b) return 0;
+    return a < b ? -1 : 1;
+}
+
+export function clampIsoDateToRange(
+    iso: string,
+    min?: string,
+    max?: string,
+): string {
+    if (!isIsoDateStrict(iso)) return iso;
+    let out = iso;
+    if (min && isIsoDateStrict(min) && compareIsoDate(out, min) < 0) {
+        out = min;
+    }
+    if (max && isIsoDateStrict(max) && compareIsoDate(out, max) > 0) {
+        out = max;
+    }
+    return out;
 }

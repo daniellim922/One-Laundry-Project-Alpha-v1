@@ -64,11 +64,15 @@ test.describe("Advance dashboard", () => {
         const y = future.getFullYear();
         const m = String(future.getMonth() + 1).padStart(2, "0");
         const d = String(future.getDate()).padStart(2, "0");
-        const repaymentIso = `${y}-${m}-${d}`;
+        /** DatePickerInput masks DD/MM/YYYY; ISO strings digit-strip incorrectly. */
+        const repaymentDmy = `${d}/${m}/${y}`;
 
         await page.getByLabel("Amount requested").fill("777");
         await page.getByLabel("Installment amount").first().fill("777");
-        await page.getByLabel("Expected repayment date").first().fill(repaymentIso);
+        await page
+            .getByLabel("Expected repayment date")
+            .first()
+            .fill(repaymentDmy);
 
         await page.getByTestId("advance-request-submit").click();
 

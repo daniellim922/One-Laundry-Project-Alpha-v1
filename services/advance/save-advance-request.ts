@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
-import { localIsoDateYmd } from "@/utils/time/local-iso-date";
+import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
 import {
     advanceRequestTable,
     type InsertAdvanceRequest,
@@ -186,7 +186,7 @@ function validateAdvanceInput(
         }
     }
 
-    const today = localIsoDateYmd();
+    const today = dateToLocalIsoYmd();
     for (const inst of validInstallments) {
         if (inst.status !== "Installment Paid" && inst.repaymentDate < today) {
             return {

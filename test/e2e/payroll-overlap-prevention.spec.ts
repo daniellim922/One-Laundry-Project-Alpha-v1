@@ -37,13 +37,26 @@ async function selectFirstWorkerOrSkip(page: Page) {
     await checkbox.click();
 }
 
+function isoCalendarToDmy(iso: string): string {
+    const [y, m, d] = iso.split("-");
+    if (!y || !m || !d) return iso;
+    return `${d}/${m}/${y}`;
+}
+
 async function fillPayrollDates(
     page: Page,
     input: { periodStart: string; periodEnd: string; payrollDate: string },
 ) {
-    await page.getByLabel("Period start").fill(input.periodStart);
-    await page.getByLabel("Period end").fill(input.periodEnd);
-    await page.getByLabel("Payroll date").fill(input.payrollDate);
+    /** DatePickerInput masks DD/MM/YYYY; raw ISO digit-strips incorrectly. */
+    await page
+        .getByLabel("Period start")
+        .fill(isoCalendarToDmy(input.periodStart));
+    await page
+        .getByLabel("Period end")
+        .fill(isoCalendarToDmy(input.periodEnd));
+    await page
+        .getByLabel("Payroll date")
+        .fill(isoCalendarToDmy(input.payrollDate));
 }
 
 test.describe("Payroll overlap prevention", () => {

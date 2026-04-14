@@ -13,7 +13,7 @@ import type { PayrollPeriodConflict } from "@/utils/payroll/payroll-period-confl
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     Table,
@@ -30,6 +30,8 @@ import {
     FieldLabel,
 } from "@/components/ui/field";
 import { columns, type WorkerForPayrollSelection as Worker } from "./columns";
+import { parseIsoToDateStrict } from "@/utils/time/calendar-date";
+import { formatEnGbDmyNumeric } from "@/utils/time/intl-en-gb";
 
 const formSchema = z
     .object({
@@ -59,13 +61,8 @@ const formSchema = z
 type FormValues = z.infer<typeof formSchema>;
 
 function toDisplayDate(date: string): string {
-    const parsed = new Date(`${date}T00:00:00`);
-    if (Number.isNaN(parsed.getTime())) return date;
-    return parsed.toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-    });
+    const parsed = parseIsoToDateStrict(date);
+    return parsed ? formatEnGbDmyNumeric(parsed) : date;
 }
 
 export function PayrollForm({ workers }: { workers: Worker[] }) {
@@ -174,10 +171,10 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
                                         <FieldLabel htmlFor="periodStart">
                                             Period start
                                         </FieldLabel>
-                                        <Input
-                                            {...field}
+                                        <DatePickerInput
                                             id="periodStart"
-                                            type="date"
+                                            value={field.value}
+                                            onValueChange={field.onChange}
                                             disabled={pending}
                                             aria-invalid={fieldState.invalid}
                                             required
@@ -198,10 +195,10 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
                                         <FieldLabel htmlFor="periodEnd">
                                             Period end
                                         </FieldLabel>
-                                        <Input
-                                            {...field}
+                                        <DatePickerInput
                                             id="periodEnd"
-                                            type="date"
+                                            value={field.value}
+                                            onValueChange={field.onChange}
                                             disabled={pending}
                                             aria-invalid={fieldState.invalid}
                                             required
@@ -224,10 +221,10 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
                                     <FieldLabel htmlFor="payrollDate">
                                         Payroll date
                                     </FieldLabel>
-                                    <Input
-                                        {...field}
+                                    <DatePickerInput
                                         id="payrollDate"
-                                        type="date"
+                                        value={field.value}
+                                        onValueChange={field.onChange}
                                         disabled={pending}
                                         aria-invalid={fieldState.invalid}
                                         required

@@ -1,13 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Clock2Icon } from "lucide-react";
 
 import {
     InputGroup,
-    InputGroupAddon,
     InputGroupInput,
+    InputGroupAddon,
 } from "@/components/ui/input-group";
+import { Clock2Icon } from "lucide-react";
 import { normalizeHmTime } from "./timesheet-time-utils";
 
 type TimesheetTimeFieldProps = {

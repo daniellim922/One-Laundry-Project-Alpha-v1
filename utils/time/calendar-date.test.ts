@@ -1,25 +1,22 @@
 import { describe, expect, it } from "vitest";
 
 import {
-    dateToIso,
+    clampIsoDateToRange,
+    compareIsoDate,
+    dateToLocalIsoYmd,
     formatDmyInput,
     isIsoDateStrict,
-    isoToDmy,
     parseDmyToIsoStrict,
     parseIsoToDateStrict,
-} from "@/app/dashboard/timesheet/timesheet-date-utils";
+} from "@/utils/time/calendar-date";
 
-describe("timesheet-date-utils", () => {
+describe("calendar-date", () => {
     it("parses valid DD/MM/YYYY to ISO", () => {
         expect(parseDmyToIsoStrict("06/04/2026")).toBe("2026-04-06");
     });
 
     it("rejects invalid DD/MM/YYYY date", () => {
         expect(parseDmyToIsoStrict("31/02/2026")).toBeNull();
-    });
-
-    it("formats ISO to DD/MM/YYYY", () => {
-        expect(isoToDmy("2026-04-06")).toBe("06/04/2026");
     });
 
     it("formats typed digits to DD/MM/YYYY mask", () => {
@@ -35,6 +32,24 @@ describe("timesheet-date-utils", () => {
     it("parses strict ISO date and serializes Date back to ISO", () => {
         const parsed = parseIsoToDateStrict("2026-04-06");
         expect(parsed).not.toBeNull();
-        expect(dateToIso(parsed!)).toBe("2026-04-06");
+        expect(dateToLocalIsoYmd(parsed!)).toBe("2026-04-06");
+    });
+
+    it("compares ISO dates", () => {
+        expect(compareIsoDate("2026-01-01", "2026-01-02")).toBeLessThan(0);
+        expect(compareIsoDate("2026-01-02", "2026-01-01")).toBeGreaterThan(0);
+        expect(compareIsoDate("2026-01-01", "2026-01-01")).toBe(0);
+    });
+
+    it("clamps ISO date to min/max", () => {
+        expect(clampIsoDateToRange("2026-01-01", "2026-02-01", undefined)).toBe(
+            "2026-02-01",
+        );
+        expect(clampIsoDateToRange("2026-06-01", undefined, "2026-05-01")).toBe(
+            "2026-05-01",
+        );
+        expect(clampIsoDateToRange("invalid", "2026-01-01", "2026-12-31")).toBe(
+            "invalid",
+        );
     });
 });

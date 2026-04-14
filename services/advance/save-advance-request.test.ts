@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
     synchronizeWorkerDraftPayrolls: vi.fn(),
-    localIsoDateYmd: vi.fn(),
+    dateToLocalIsoYmd: vi.fn(),
     db: {
         select: vi.fn(),
         transaction: vi.fn(),
@@ -18,9 +18,13 @@ vi.mock("@/services/payroll/synchronize-worker-draft-payrolls", () => ({
         mocks.synchronizeWorkerDraftPayrolls(...args),
 }));
 
-vi.mock("@/utils/time/local-iso-date", () => ({
-    localIsoDateYmd: () => mocks.localIsoDateYmd(),
-}));
+vi.mock("@/utils/time/calendar-date", async (importOriginal) => {
+    const actual = await importOriginal<typeof import("@/utils/time/calendar-date")>();
+    return {
+        ...actual,
+        dateToLocalIsoYmd: () => mocks.dateToLocalIsoYmd(),
+    };
+});
 
 import {
     createAdvanceRequestRecord,
@@ -30,7 +34,7 @@ import {
 describe("services/advance/save-advance-request", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.localIsoDateYmd.mockReturnValue("2026-04-13");
+        mocks.dateToLocalIsoYmd.mockReturnValue("2026-04-13");
         mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({ success: true });
     });
 

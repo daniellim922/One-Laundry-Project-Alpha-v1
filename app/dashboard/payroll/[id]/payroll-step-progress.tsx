@@ -41,7 +41,7 @@ import {
     installmentToneClassName,
     advanceLoanToneClassName,
 } from "@/types/badge-tones";
-import { localDateDmy } from "@/utils/time/local-iso-date";
+import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 import { localTimeHm } from "@/utils/time/local-time";
 import { fetchRevertPreview } from "../read-api";
 
@@ -316,8 +316,8 @@ function RevertPreviewExpandedLines({ row }: { row: RevertPreviewRow }) {
                 <TableBody>
                     {row.timesheetLines.map((line) => (
                         <TableRow key={line.id}>
-                            <TableCell>{localDateDmy(line.dateIn)}</TableCell>
-                            <TableCell>{localDateDmy(line.dateOut)}</TableCell>
+                            <TableCell>{formatEnGbDmyNumericFromCalendar(line.dateIn)}</TableCell>
+                            <TableCell>{formatEnGbDmyNumericFromCalendar(line.dateOut)}</TableCell>
                             <TableCell>{localTimeHm(line.timeIn)}</TableCell>
                             <TableCell>{localTimeHm(line.timeOut)}</TableCell>
                             <TableCell>
@@ -344,7 +344,7 @@ function RevertPreviewExpandedLines({ row }: { row: RevertPreviewRow }) {
                         <TableRow key={line.id}>
                             <TableCell>
                                 {line.repaymentDate
-                                    ? localDateDmy(line.repaymentDate)
+                                    ? formatEnGbDmyNumericFromCalendar(line.repaymentDate)
                                     : "—"}
                             </TableCell>
                             <TableCell>{`$${line.amount}`}</TableCell>

@@ -1,4 +1,12 @@
 import type { SelectTimesheet } from "@/db/tables/payroll/timesheetTable";
+import {
+    dateFromIsoLocalMidnight,
+    timesheetDateInKey,
+} from "@/utils/time/iso-local-midnight";
+import {
+    formatEnGbDayMonthLongYear,
+    formatEnGbDayMonthShort,
+} from "@/utils/time/intl-en-gb";
 import { localTimeHm } from "@/utils/time/local-time";
 import {
     Table,
@@ -16,46 +24,15 @@ interface SummarizedTimesheetProps {
     workerName: string;
 }
 
-function pad2(n: number): string {
-    return String(n).padStart(2, "0");
-}
-
-function dateKey(d: string | Date): string {
-    if (d instanceof Date) {
-        return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-    }
-    const s = String(d);
-    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-    const parsed = new Date(s + "T00:00:00");
-    return `${parsed.getFullYear()}-${pad2(parsed.getMonth() + 1)}-${pad2(parsed.getDate())}`;
-}
-
-function dateFromKey(key: string): Date {
-    return new Date(`${key}T00:00:00`);
-}
-
-function formatShortDate(d: Date): string {
-    return d.toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-    });
-}
-
-function formatPeriod(d: Date): string {
-    return d.toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-    });
-}
-
 export function SummarizedTimesheet({
     entries,
     payroll,
     workerName,
 }: SummarizedTimesheetProps) {
-    const start = dateFromKey(dateKey(payroll.periodStart));
-    const end = dateFromKey(dateKey(payroll.periodEnd));
+    const start = dateFromIsoLocalMidnight(
+        timesheetDateInKey(payroll.periodStart),
+    );
+    const end = dateFromIsoLocalMidnight(timesheetDateInKey(payroll.periodEnd));
     const entriesByDateIn = new Map<
         string,
         Pick<
@@ -64,7 +41,7 @@ export function SummarizedTimesheet({
         >[]
     >();
     for (const entry of entries) {
-        const key = dateKey(entry.dateIn);
+        const key = timesheetDateInKey(entry.dateIn);
         const existing = entriesByDateIn.get(key);
         if (existing) {
             existing.push(entry);
@@ -76,13 +53,13 @@ export function SummarizedTimesheet({
     const periodDateKeys: string[] = [];
     const cursor = new Date(start);
     while (cursor <= end) {
-        periodDateKeys.push(dateKey(cursor));
+        periodDateKeys.push(timesheetDateInKey(cursor));
         cursor.setDate(cursor.getDate() + 1);
     }
 
     const totalHours = entries.reduce((sum, e) => sum + Number(e.hours), 0);
 
-    const periodLabel = `${formatPeriod(start)} to ${formatPeriod(end)}`;
+    const periodLabel = `${formatEnGbDayMonthLongYear(start)} to ${formatEnGbDayMonthLongYear(end)}`;
 
     return (
         <div className="voucher-download-root overflow-hidden border border-neutral-300 bg-white text-black print:border-black print:break-inside-avoid timesheet-download-compact">
@@ -142,7 +119,9 @@ export function SummarizedTimesheet({
                                         key={`missing-${dayKey}`}
                                         className="border-b border-neutral-200 text-black">
                                         <TableCell className="py-2 pl-2 font-medium print:py-0.5 print:pl-1">
-                                            {formatShortDate(dateFromKey(dayKey))}
+                                            {formatEnGbDayMonthShort(
+                                                dateFromIsoLocalMidnight(dayKey),
+                                            )}
                                         </TableCell>
                                         <TableCell className="py-2 text-center print:py-0.5">
                                             -
@@ -165,17 +144,21 @@ export function SummarizedTimesheet({
                                     key={`${dayKey}-${String(entry.timeIn)}-${String(entry.timeOut)}-${idx}`}
                                     className="border-b border-neutral-200">
                                     <TableCell className="py-2 pl-2 font-medium print:py-0.5 print:pl-1">
-                                        {formatShortDate(
-                                            dateFromKey(dateKey(entry.dateIn)),
+                                        {formatEnGbDayMonthShort(
+                                            dateFromIsoLocalMidnight(
+                                                timesheetDateInKey(entry.dateIn),
+                                            ),
                                         )}
                                     </TableCell>
                                     <TableCell className="py-2 text-center print:py-0.5">
                                         {localTimeHm(entry.timeIn)}
                                     </TableCell>
                                     <TableCell className="py-2 text-center print:py-0.5">
-                                        {formatShortDate(
-                                            dateFromKey(
-                                                dateKey(entry.dateOut),
+                                        {formatEnGbDayMonthShort(
+                                            dateFromIsoLocalMidnight(
+                                                timesheetDateInKey(
+                                                    entry.dateOut,
+                                                ),
                                             ),
                                         )}
                                     </TableCell>

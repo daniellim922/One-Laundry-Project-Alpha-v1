@@ -17,6 +17,11 @@ import {
     DownloadMetadataTable,
 } from "@/components/ui/download-document-shell";
 import { VoucherSignatureSection } from "@/components/ui/signature-section";
+import { parseIsoToDateStrict } from "@/utils/time/calendar-date";
+import {
+    formatEnGbDayMonthLongYear,
+    formatEnGbDmyNumeric,
+} from "@/utils/time/intl-en-gb";
 
 interface PaymentVoucherProps {
     voucher: {
@@ -86,25 +91,17 @@ export function PaymentVoucher({
         return `${d}_${m}_${y}`;
     }
 
-    const periodStartDate = new Date(payroll.periodStart + "T00:00:00");
-    const periodEndDate = new Date(payroll.periodEnd + "T00:00:00");
-    const periodLabel = `${periodStartDate.toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-    })} to ${periodEndDate.toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-    })}`;
+    const periodStartDate = parseIsoToDateStrict(payroll.periodStart);
+    const periodEndDate = parseIsoToDateStrict(payroll.periodEnd);
+    const periodLabel =
+        periodStartDate && periodEndDate
+            ? `${formatEnGbDayMonthLongYear(periodStartDate)} to ${formatEnGbDayMonthLongYear(periodEndDate)}`
+            : "";
 
-    const voucherDate = new Date(
-        payroll.payrollDate + "T00:00:00",
-    ).toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-    });
+    const payrollDateParsed = parseIsoToDateStrict(payroll.payrollDate);
+    const voucherDate = payrollDateParsed
+        ? formatEnGbDmyNumeric(payrollDateParsed)
+        : "";
     const earnings: LineItem[] = [];
     const deductions: LineItem[] = [];
     const isPartTime = voucher.employmentType === "Part Time";
