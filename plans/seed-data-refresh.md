@@ -27,10 +27,12 @@ Introduce a month-aware seed backbone that generates the full 12-month period ra
 
 ### Acceptance criteria
 
-- [ ] The seed produces monthly periods from `2025-04` through `2026-03` with no missing or extra months.
-- [ ] Every active worker receives monthly seed coverage across the full period range.
-- [ ] Payroll insertion is enabled again and the seed completes successfully on a clean database.
-- [ ] The generated data remains deterministic across repeated runs.
+- [x] The seed produces monthly periods from `2025-04` through `2026-03` with no missing or extra months.
+- [x] Every active worker receives monthly seed coverage across the full period range.
+- [x] Payroll insertion is enabled again and the seed completes successfully on a clean database.
+- [x] The generated data remains deterministic across repeated runs.
+
+Verified on `2026-04-14` via `npx vitest run db/seed/payrolls.test.ts`, `npm run db:seed`, `npx tsc --noEmit`, and `npm run test`.
 
 ---
 
@@ -44,11 +46,13 @@ Apply the minimum-hours business story to the foreign full-time cohort. Seed tim
 
 ### Acceptance criteria
 
-- [ ] Foreign full-time workers are normalized to the agreed live minimum-hours baseline for employment terms.
-- [ ] Payroll vouchers snapshot `250` for 30-day months and `260` for 31-day months.
-- [ ] Most foreign-full-time worker-months meet target and land within the agreed overtime band above target.
-- [ ] Exactly `3` foreign-full-time worker-months intentionally miss target across the 12-month dataset.
-- [ ] Local full-time workers remain outside minimum-hours enforcement.
+- [x] Foreign full-time workers are normalized to the agreed live minimum-hours baseline for employment terms.
+- [x] Payroll vouchers snapshot `250` for 30-day months and `260` for 31-day months.
+- [x] Most foreign-full-time worker-months meet target and land within the agreed overtime band above target.
+- [x] Exactly `3` foreign-full-time worker-months intentionally miss target across the 12-month dataset.
+- [x] Local full-time workers remain outside minimum-hours enforcement.
+
+Verified on `2026-04-14` via `npx vitest run db/seed/payrolls.test.ts`, `npm run db:seed`, `npx tsc --noEmit`, and `npm run test`.
 
 ---
 

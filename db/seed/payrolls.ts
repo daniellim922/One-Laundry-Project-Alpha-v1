@@ -3,6 +3,10 @@
  * Computes month-scoped values from the generated timesheets.
  */
 
+import {
+    getVoucherMinimumWorkingHours,
+    isForeignFullTimeWorker,
+} from "./minimum-hours";
 import { seedPeriods } from "./periods";
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
@@ -68,10 +72,11 @@ function generatePayrolls(): PayrollEntry[] {
                     (hoursMap.get(`${workerIndex}:${period.key}`) ?? 0) * 100,
                 ) / 100;
 
-            const minimumWorkingHours =
-                "minimumWorkingHours" in worker
-                    ? worker.minimumWorkingHours ?? null
-                    : null;
+            const minimumWorkingHours = isForeignFullTimeWorker(worker)
+                ? getVoucherMinimumWorkingHours(period)
+                : "minimumWorkingHours" in worker
+                  ? worker.minimumWorkingHours ?? null
+                  : null;
             const overtimeHours =
                 minimumWorkingHours != null
                     ? Math.max(
