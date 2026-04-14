@@ -106,7 +106,9 @@ Harden the refreshed seed with focused regression coverage and update project do
 
 ### Acceptance criteria
 
-- [ ] Focused tests cover period generation, cohort selection, minimum-hours attainment, quarterly advances, and settlement-state distribution.
-- [ ] A seed smoke run verifies the database can be populated end to end without manual fixes.
-- [ ] Documentation reflects the new 12-month historical seed and its major business rules.
-- [ ] The refreshed seed remains stable enough to support existing payroll and advance workflows without ad hoc cleanup.
+- [x] Focused tests cover period generation, cohort selection, minimum-hours attainment, quarterly advances, and settlement-state distribution.
+- [x] A seed smoke run verifies the database can be populated end to end without manual fixes.
+- [x] Documentation reflects the new 12-month historical seed and its major business rules.
+- [x] The refreshed seed remains stable enough to support existing payroll and advance workflows without ad hoc cleanup.
+
+Verified on `2026-04-14` via `npx vitest run db/seed/payrolls.test.ts`, `npx tsc --noEmit`, `npm run test`, and `npm run db:seed` (seed completed successfully; `better-auth` emitted a non-blocking base URL warning during auth-user seeding).
