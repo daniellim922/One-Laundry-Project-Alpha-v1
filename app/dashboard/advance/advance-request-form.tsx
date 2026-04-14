@@ -32,6 +32,7 @@ import {
     FieldGroup,
     FieldLabel,
 } from "@/components/ui/field";
+import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { Input } from "@/components/ui/input";
 import {
     InputGroup,
@@ -41,7 +42,8 @@ import {
 import { SelectSearch } from "@/components/ui/SelectSearch";
 import { Badge } from "@/components/ui/badge";
 import { installmentToneClassName } from "@/types/badge-tones";
-import { localDateDmy, localIsoDateYmd } from "@/utils/time/local-iso-date";
+import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
+import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 import { cn } from "@/lib/utils";
 import {
     Table,
@@ -82,7 +84,7 @@ const formSchema = z
         ),
     })
     .superRefine((values, ctx) => {
-        const today = localIsoDateYmd();
+        const today = dateToLocalIsoYmd();
         let hasValidInstallment = false;
         const amountRequested = Number(values.amount);
         const validInstallmentAmounts: number[] = [];
@@ -234,7 +236,7 @@ function AdvanceRequestReadOnlyBody({
                         data-testid="advance-detail-request-date">
                         <Calendar className="size-5 shrink-0 text-muted-foreground" />
                         <span className="text-primary">
-                            {localDateDmy(request.requestDate)}
+                            {formatEnGbDmyNumericFromCalendar(request.requestDate)}
                         </span>
                     </div>
 
@@ -282,7 +284,7 @@ function AdvanceRequestReadOnlyBody({
                                     <TableCell>{`$${adv.amount}`}</TableCell>
                                     <TableCell>
                                         {adv.repaymentDate
-                                            ? localDateDmy(adv.repaymentDate)
+                                            ? formatEnGbDmyNumericFromCalendar(adv.repaymentDate)
                                             : "—"}
                                     </TableCell>
                                     <TableCell>
@@ -344,7 +346,7 @@ function AdvanceRequestFormEditable({
             ? detailToDefaultValues(initialData)
             : {
                   workerId: initialWorkerId ?? "",
-                  requestDate: localIsoDateYmd(),
+                  requestDate: dateToLocalIsoYmd(),
                   amount: "",
                   purpose: "",
                   installmentAmounts: [
@@ -479,10 +481,10 @@ function AdvanceRequestFormEditable({
                                             htmlFor={`${formId}-request-date`}>
                                             Date of request
                                         </FieldLabel>
-                                        <Input
-                                            {...field}
+                                        <DatePickerInput
                                             id={`${formId}-request-date`}
-                                            type="date"
+                                            value={field.value}
+                                            onValueChange={field.onChange}
                                             disabled={pending}
                                             aria-invalid={fieldState.invalid}
                                         />
@@ -686,14 +688,16 @@ function AdvanceRequestFormEditable({
                                                                 fieldState.invalid
                                                             }
                                                             className="min-w-0 gap-1.5">
-                                                            <Input
-                                                                {...field}
+                                                            <DatePickerInput
                                                                 id={`${formId}-repayment-${index}`}
-                                                                type="date"
+                                                                value={field.value}
+                                                                onValueChange={
+                                                                    field.onChange
+                                                                }
                                                                 min={
                                                                     isPaidInstallment
                                                                         ? undefined
-                                                                        : localIsoDateYmd()
+                                                                        : dateToLocalIsoYmd()
                                                                 }
                                                                 disabled={
                                                                     pending ||

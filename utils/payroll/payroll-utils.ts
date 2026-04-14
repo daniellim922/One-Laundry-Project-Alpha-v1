@@ -1,3 +1,8 @@
+import {
+    parseDmyToIsoStrict,
+    parseIsoToDateStrict,
+} from "@/utils/time/calendar-date";
+
 /**
  * Parse time string (HH:MM or HH:MM:SS) to decimal hours since midnight.
  */
@@ -9,33 +14,53 @@ function timeToHours(timeStr: string): number {
     return hours + minutes + seconds;
 }
 
-/** Parse date string (YYYY-MM-DD or DD/MM/YYYY) to Date. Returns null if invalid. */
+/**
+ * Parse date string (YYYY-MM-DD or DD/MM/YYYY) to local calendar Date.
+ * Delegates to strict `calendar-date` parsers when the string matches UI/form
+ * formats; keeps a narrow lenient branch for single-digit segments (e.g. imports).
+ */
 function parseDateForHours(dateStr: string): Date | null {
     const s = String(dateStr).trim();
-    let year: number;
-    let month: number;
-    let day: number;
-    const isoMatch = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-    const dmyMatch = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (isoMatch) {
-        year = parseInt(isoMatch[1]!, 10);
-        month = parseInt(isoMatch[2]!, 10) - 1;
-        day = parseInt(isoMatch[3]!, 10);
-    } else if (dmyMatch) {
-        day = parseInt(dmyMatch[1]!, 10);
-        month = parseInt(dmyMatch[2]!, 10) - 1;
-        year = parseInt(dmyMatch[3]!, 10);
-    } else {
-        return null;
+
+    const strictIso = parseIsoToDateStrict(s);
+    if (strictIso) return strictIso;
+
+    const isoFromDmy = parseDmyToIsoStrict(s);
+    if (isoFromDmy) {
+        return parseIsoToDateStrict(isoFromDmy);
     }
-    const d = new Date(year, month, day);
-    if (
-        d.getFullYear() !== year ||
-        d.getMonth() !== month ||
-        d.getDate() !== day
-    )
-        return null;
-    return d;
+
+    const isoLoose = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (isoLoose) {
+        const year = parseInt(isoLoose[1]!, 10);
+        const month = parseInt(isoLoose[2]!, 10);
+        const day = parseInt(isoLoose[3]!, 10);
+        const d = new Date(year, month - 1, day);
+        if (
+            d.getFullYear() === year &&
+            d.getMonth() === month - 1 &&
+            d.getDate() === day
+        ) {
+            return d;
+        }
+    }
+
+    const dmyLoose = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (dmyLoose) {
+        const day = parseInt(dmyLoose[1]!, 10);
+        const month = parseInt(dmyLoose[2]!, 10);
+        const year = parseInt(dmyLoose[3]!, 10);
+        const d = new Date(year, month - 1, day);
+        if (
+            d.getFullYear() === year &&
+            d.getMonth() === month - 1 &&
+            d.getDate() === day
+        ) {
+            return d;
+        }
+    }
+
+    return null;
 }
 
 /** Parse time string (HH:MM or HH:MM:SS) to { h, m }. Returns null if invalid. */

@@ -32,6 +32,8 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
+import { parseIsoToDateStrict } from "@/utils/time/calendar-date";
+import { formatEnGbDmyNumeric } from "@/utils/time/intl-en-gb";
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
@@ -64,14 +66,6 @@ interface DataTableProps<TData, TValue> {
 
 type ColumnMeta = ColumnFilterMeta & { globalSearch?: boolean };
 
-function formatEnGbDate(d: Date): string {
-    return d.toLocaleDateString("en-GB", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-    });
-}
-
 function looksLikeIsoDateString(s: string): boolean {
     return /^\d{4}-\d{2}-\d{2}$/.test(s);
 }
@@ -80,7 +74,9 @@ function filterHaystacksFromValue(v: unknown): string[] {
     if (v == null) return [];
 
     if (v instanceof Date) {
-        return [v.toISOString(), formatEnGbDate(v)].map((x) => x.toLowerCase());
+        return [v.toISOString(), formatEnGbDmyNumeric(v)].map((x) =>
+            x.toLowerCase(),
+        );
     }
 
     const s = String(v);
@@ -89,9 +85,9 @@ function filterHaystacksFromValue(v: unknown): string[] {
     // Common case in this app: dates stored as ISO calendar strings (YYYY-MM-DD)
     // but displayed as DD/MM/YYYY. Let users filter using the displayed format.
     if (typeof v === "string" && looksLikeIsoDateString(v)) {
-        const d = new Date(`${v}T00:00:00`);
-        if (!Number.isNaN(d.getTime())) {
-            out.push(formatEnGbDate(d).toLowerCase());
+        const d = parseIsoToDateStrict(v);
+        if (d) {
+            out.push(formatEnGbDmyNumeric(d).toLowerCase());
         }
     }
 

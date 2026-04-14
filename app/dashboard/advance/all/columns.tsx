@@ -7,7 +7,7 @@ import { Eye, Pencil } from "lucide-react";
 import {
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { localDateDmy } from "@/utils/time/local-iso-date";
+import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 import { advanceLoanToneClassName } from "@/types/badge-tones";
 import type { AdvanceRequestWithWorker } from "@/utils/advance/queries";
 import {
@@ -41,7 +41,7 @@ export const columns: ColumnDef<AdvanceRequestWithWorker>[] = [
     {
         accessorKey: "requestDate",
         header: createSortableHeader("Request date"),
-        cell: ({ row }) => localDateDmy(row.original.requestDate),
+        cell: ({ row }) => formatEnGbDmyNumericFromCalendar(row.original.requestDate),
     },
     createActionsColumn<AdvanceRequestWithWorker>({
         cell: (advanceRequest) => {

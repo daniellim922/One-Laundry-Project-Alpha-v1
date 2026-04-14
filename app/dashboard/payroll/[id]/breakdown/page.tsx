@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { TimesheetPaymentStatus } from "@/types/status";
 import { timesheetPaymentStatusBadgeTone } from "@/types/badge-tones";
-import { localDateDmy } from "@/utils/time/local-iso-date";
+import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 import { localTimeHm } from "@/utils/time/local-time";
 import { cn } from "@/lib/utils";
 import { getPayrollDetailData } from "../payroll-detail-data";
@@ -37,7 +37,7 @@ interface PageProps {
     params: Promise<{ id: string }>;
 }
 
-const formatDate = localDateDmy;
+const formatDate = formatEnGbDmyNumericFromCalendar;
 const formatTime = localTimeHm;
 
 export default async function PayrollBreakdownPage({ params }: PageProps) {
@@ -586,9 +586,7 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                         <span
                                             key={k}
                                             className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800 dark:bg-blue-500/20 dark:text-blue-300">
-                                            {formatDate(
-                                                new Date(`${k}T00:00:00`),
-                                            )}
+                                            {formatDate(k)}
                                         </span>
                                     ))}
                                 </div>

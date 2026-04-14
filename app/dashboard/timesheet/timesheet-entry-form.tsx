@@ -11,10 +11,10 @@ import { SelectSearch } from "@/components/ui/SelectSearch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { localIsoDateYmd } from "@/utils/time/local-iso-date";
+import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
 import type { TimesheetPaymentStatus } from "@/types/status";
-import { TimesheetDateField } from "./timesheet-date-field";
-import { isIsoDateStrict } from "./timesheet-date-utils";
+import { DatePickerInput } from "@/components/ui/date-picker-input";
+import { isIsoDateStrict } from "@/utils/time/calendar-date";
 import { TimesheetTimeField } from "./timesheet-time-field";
 import { isHmTimeStrict, normalizeHmTime } from "./timesheet-time-utils";
 
@@ -84,7 +84,7 @@ export function TimesheetEntryForm({
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
 
-    const today = localIsoDateYmd();
+    const today = dateToLocalIsoYmd();
     const defaultDateIn = entry?.dateIn ?? today;
     const defaultDateOut = entry?.dateOut ?? defaultDateIn;
     const defaultTimeIn = normalizeHmTime(entry?.timeIn?.slice(0, 5) ?? "09:00");
@@ -180,7 +180,7 @@ export function TimesheetEntryForm({
                         render={({ field, fieldState }) => (
                             <Field data-invalid={fieldState.invalid}>
                                 <FieldLabel htmlFor="dateIn">Date in</FieldLabel>
-                                <TimesheetDateField
+                                <DatePickerInput
                                     id="dateIn"
                                     value={field.value}
                                     onValueChange={field.onChange}
@@ -201,7 +201,7 @@ export function TimesheetEntryForm({
                         render={({ field, fieldState }) => (
                             <Field data-invalid={fieldState.invalid}>
                                 <FieldLabel htmlFor="dateOut">Date out</FieldLabel>
-                                <TimesheetDateField
+                                <DatePickerInput
                                     id="dateOut"
                                     value={field.value}
                                     onValueChange={field.onChange}

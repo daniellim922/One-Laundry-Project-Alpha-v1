@@ -35,7 +35,7 @@ vi.mock("@/app/dashboard/payroll/read-api", () => ({
 }));
 
 import { PayrollStepProgress } from "@/app/dashboard/payroll/[id]/payroll-step-progress";
-import { localDateDmy } from "@/utils/time/local-iso-date";
+import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 import { localTimeHm } from "@/utils/time/local-time";
 
 function createDeferred<T>() {
@@ -340,8 +340,8 @@ describe("PayrollStepProgress", () => {
         expect(
             await screen.findByRole("columnheader", { name: "Date in" }),
         ).toBeTruthy();
-        expect(screen.getByText(localDateDmy("2025-03-01"))).toBeTruthy();
-        expect(screen.getByText(localDateDmy("2025-03-02"))).toBeTruthy();
+        expect(screen.getByText(formatEnGbDmyNumericFromCalendar("2025-03-01"))).toBeTruthy();
+        expect(screen.getByText(formatEnGbDmyNumericFromCalendar("2025-03-02"))).toBeTruthy();
         expect(screen.getByText(localTimeHm("09:15:00"))).toBeTruthy();
         expect(screen.getByText(localTimeHm("17:30:00"))).toBeTruthy();
         expect(screen.getByText("8.25")).toBeTruthy();
@@ -391,7 +391,7 @@ describe("PayrollStepProgress", () => {
         expect(
             screen.getByRole("columnheader", { name: "Amount" }),
         ).toBeTruthy();
-        expect(screen.getByText(localDateDmy("2025-03-10"))).toBeTruthy();
+        expect(screen.getByText(formatEnGbDmyNumericFromCalendar("2025-03-10"))).toBeTruthy();
         expect(screen.getByText("$40")).toBeTruthy();
     });
 

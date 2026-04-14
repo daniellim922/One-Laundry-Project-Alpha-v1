@@ -62,7 +62,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 | Data table components | `components/data-table/` |
 | Form page shell | `components/form-page-layout.tsx` |
 | Third-party integrations (DB, auth, Tailwind `cn`) | `lib/db.ts`, `lib/auth.ts`, `lib/auth-client.ts`, `lib/utils.ts` |
-| App utilities, domain helpers, RBAC | `utils/` grouped: `permissions/` (`permissions.ts`, `require-permission.ts`), `nav/` (`nav-config.ts`, `dashboard-nav-features.ts`), `time/` (`local-iso-date.ts`, `local-time.ts`), `payroll/` (`payroll-utils.ts`, `parse-attendrecord.ts`, `payroll-period-conflicts.ts`), `advance/` (`queries.ts`) |
+| App utilities, domain helpers, RBAC | `utils/` grouped: `permissions/` (`permissions.ts`, `require-permission.ts`), `nav/` (`nav-config.ts`, `dashboard-nav-features.ts`), `time/` (`calendar-date.ts`, `intl-en-gb.ts`, `iso-local-midnight.ts`, `local-time.ts`), `payroll/` (`payroll-utils.ts`, `parse-attendrecord.ts`, `payroll-period-conflicts.ts`), `advance/` (`queries.ts`) |
 | All Drizzle table schemas | `db/tables/` (re-exported via `db/schema.ts`) |
 | Domain status enums + badge tones | `types/status.ts`, `types/badge-tones.ts` |
 | Seeds | `db/seed/` |

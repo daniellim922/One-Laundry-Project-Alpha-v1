@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/download-document-shell";
 import { VoucherSignatureSection } from "@/components/ui/signature-section";
 import type { AdvanceRequestDetail } from "@/utils/advance/queries";
+import { parseIsoToDateStrict } from "@/utils/time/calendar-date";
+import { formatEnGbDayMonthLongYear } from "@/utils/time/intl-en-gb";
 
 const currencyFmt = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
@@ -21,12 +23,8 @@ const currencyFmt = new Intl.NumberFormat("en-US", {
 
 function formatDate(iso: string | null): string {
     if (!iso) return "—";
-    const d = new Date(iso + "T00:00:00");
-    return d.toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-    });
+    const d = parseIsoToDateStrict(String(iso).slice(0, 10));
+    return d ? formatEnGbDayMonthLongYear(d) : "—";
 }
 
 export function AdvanceDownloadVoucher({

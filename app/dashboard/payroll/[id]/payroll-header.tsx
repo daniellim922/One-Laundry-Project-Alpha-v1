@@ -7,11 +7,12 @@ import { ArrowLeft, Pencil } from "lucide-react";
 
 import { updatePayroll } from "../actions";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { Label } from "@/components/ui/label";
 import type { PayrollOverlapErrorResult } from "@/services/payroll/save-payroll";
 import { payrollStatusBadgeTone } from "@/types/badge-tones";
 import type { PayrollStatus } from "@/types/status";
+import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 
 interface PayrollHeaderProps {
     payroll: {
@@ -22,15 +23,6 @@ interface PayrollHeaderProps {
         status: PayrollStatus;
     };
     workerName: string;
-}
-
-function formatDate(d: string | Date): string {
-    const date = d instanceof Date ? d : new Date(d + "T00:00:00");
-    return date.toLocaleDateString("en-GB", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-    });
 }
 
 function isPayrollOverlapErrorResult(
@@ -54,6 +46,21 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
     const [conflictPayrollId, setConflictPayrollId] = React.useState<
         string | null
     >(null);
+    const [periodStart, setPeriodStart] = React.useState(payroll.periodStart);
+    const [periodEnd, setPeriodEnd] = React.useState(payroll.periodEnd);
+    const [payrollDate, setPayrollDate] = React.useState(payroll.payrollDate);
+
+    React.useEffect(() => {
+        if (editing) return;
+        setPeriodStart(payroll.periodStart);
+        setPeriodEnd(payroll.periodEnd);
+        setPayrollDate(payroll.payrollDate);
+    }, [
+        editing,
+        payroll.periodStart,
+        payroll.periodEnd,
+        payroll.payrollDate,
+    ]);
 
     const isDraft = payroll.status === "Draft";
 
@@ -103,6 +110,9 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
 
                 {editing ? (
                     <form onSubmit={handleSave} className="space-y-3 pt-1">
+                        <input type="hidden" name="periodStart" value={periodStart} />
+                        <input type="hidden" name="periodEnd" value={periodEnd} />
+                        <input type="hidden" name="payrollDate" value={payrollDate} />
                         <div className="flex flex-wrap items-end gap-3">
                             <div className="space-y-1">
                                 <Label
@@ -110,12 +120,12 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
                                     className="text-md">
                                     Period start
                                 </Label>
-                                <Input
+                                <DatePickerInput
                                     id="periodStart"
-                                    name="periodStart"
-                                    type="date"
-                                    defaultValue={payroll.periodStart}
+                                    value={periodStart}
+                                    onValueChange={setPeriodStart}
                                     required
+                                    disabled={pending}
                                     className="h-8 w-auto"
                                 />
                             </div>
@@ -123,12 +133,12 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
                                 <Label htmlFor="periodEnd" className="text-md">
                                     Period end
                                 </Label>
-                                <Input
+                                <DatePickerInput
                                     id="periodEnd"
-                                    name="periodEnd"
-                                    type="date"
-                                    defaultValue={payroll.periodEnd}
+                                    value={periodEnd}
+                                    onValueChange={setPeriodEnd}
                                     required
+                                    disabled={pending}
                                     className="h-8 w-auto"
                                 />
                             </div>
@@ -138,12 +148,12 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
                                     className="text-md">
                                     Payroll date
                                 </Label>
-                                <Input
+                                <DatePickerInput
                                     id="payrollDate"
-                                    name="payrollDate"
-                                    type="date"
-                                    defaultValue={payroll.payrollDate}
+                                    value={payrollDate}
+                                    onValueChange={setPayrollDate}
                                     required
+                                    disabled={pending}
                                     className="h-8 w-auto"
                                 />
                             </div>
@@ -180,15 +190,22 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
                     </form>
                 ) : (
                     <p className="text-muted-foreground flex items-center gap-1">
-                        Period: {formatDate(payroll.periodStart)} –{" "}
-                        {formatDate(payroll.periodEnd)} | Payroll date:{" "}
-                        {formatDate(payroll.payrollDate)}
+                        Period:{" "}
+                        {formatEnGbDmyNumericFromCalendar(payroll.periodStart)} –{" "}
+                        {formatEnGbDmyNumericFromCalendar(payroll.periodEnd)} |
+                        Payroll date:{" "}
+                        {formatEnGbDmyNumericFromCalendar(payroll.payrollDate)}
                         {isDraft && (
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 className="h-6 w-6"
-                                onClick={() => setEditing(true)}>
+                                onClick={() => {
+                                    setPeriodStart(payroll.periodStart);
+                                    setPeriodEnd(payroll.periodEnd);
+                                    setPayrollDate(payroll.payrollDate);
+                                    setEditing(true);
+                                }}>
                                 <Pencil className="h-3 w-3" />
                             </Button>
                         )}
