@@ -1,11 +1,11 @@
 /**
- * Timesheet seed entries for March 2025.
+ * Timesheet seed entries for April 2025 through March 2026.
  * workerIndex references the workers array in workers.ts (0-based).
  * Resolved to workerId when seeding.
- *
- * Full-time workers (indices 0-7, 18-31): Mon-Sat, ~8-10 hrs/day.
- * Part-time workers (indices 8-17): Mon-Sat, ~4-6 hrs/day, 12-16 days/month.
  */
+
+import { seedPeriods } from "./periods";
+import { workers } from "./workers";
 
 type TimesheetEntry = {
     workerIndex: number;
@@ -39,83 +39,85 @@ function formatTime(h: number, m: number): string {
     return `${pad(h)}:${pad(m)}:00`;
 }
 
-function formatDate(day: number): string {
-    return `2026-03-${pad(day)}`;
+function formatDate(year: number, month: number, day: number): string {
+    return `${year}-${pad(month)}-${pad(day)}`;
 }
 
 function generateTimesheets(): TimesheetEntry[] {
     const rand = seededRandom(42);
     const entries: TimesheetEntry[] = [];
 
-    // Mon-Sat working days in March 2025 (Sunday = day-of-week 0)
-    const workingDays: number[] = [];
-    for (let d = 1; d <= 31; d++) {
-        if (new Date(2025, 2, d).getDay() !== 0) workingDays.push(d);
-    }
+    for (const period of seedPeriods) {
+        const workingDays: number[] = [];
 
-    const FULL_TIME = [
-        ...Array.from({ length: 8 }, (_, i) => i),
-        ...Array.from({ length: 14 }, (_, i) => i + 18),
-    ];
-    const PART_TIME = Array.from({ length: 10 }, (_, i) => i + 8);
-
-    for (const wi of FULL_TIME) {
-        const missCount = 1 + Math.floor(rand() * 3); // miss 1-3 days
-        const missedDays = new Set<number>();
-        while (missedDays.size < missCount) {
-            missedDays.add(
-                workingDays[Math.floor(rand() * workingDays.length)],
-            );
+        for (let day = 1; day <= Number(period.periodEnd.slice(-2)); day += 1) {
+            if (new Date(Date.UTC(period.year, period.month - 1, day)).getUTCDay() !== 0) {
+                workingDays.push(day);
+            }
         }
 
-        for (const day of workingDays) {
-            if (missedDays.has(day)) continue;
+        for (const [workerIndex, worker] of workers.entries()) {
+            const isPartTime = worker.employmentType === "Part Time";
 
-            // Clock in 07:00-08:30 → 420-510 min
-            const clockIn = roundTo15(420 + Math.floor(rand() * 91));
-            // Duration 8-10 hrs (480-600 min)
-            const duration = roundTo15(480 + Math.floor(rand() * 121));
-            const outMin =
-                clockIn.h * 60 + clockIn.m + duration.h * 60 + duration.m;
-            const clockOut = { h: Math.floor(outMin / 60), m: outMin % 60 };
+            if (isPartTime) {
+                const dayCount = 12 + Math.floor(rand() * 5);
+                const shuffled = [...workingDays].sort(() => rand() - 0.5);
+                const selectedDays = shuffled
+                    .slice(0, Math.min(dayCount, workingDays.length))
+                    .sort((a, b) => a - b);
 
-            const hours = (duration.h * 60 + duration.m) / 60;
+                for (const day of selectedDays) {
+                    const clockIn = roundTo15(480 + Math.floor(rand() * 121));
+                    const duration = roundTo15(240 + Math.floor(rand() * 121));
+                    const outMin =
+                        clockIn.h * 60 + clockIn.m + duration.h * 60 + duration.m;
+                    const clockOut = {
+                        h: Math.floor(outMin / 60),
+                        m: outMin % 60,
+                    };
 
-            entries.push({
-                workerIndex: wi,
-                dateIn: formatDate(day),
-                timeIn: formatTime(clockIn.h, clockIn.m),
-                dateOut: formatDate(day),
-                timeOut: formatTime(clockOut.h, clockOut.m),
-                hours,
-            });
-        }
-    }
+                    entries.push({
+                        workerIndex,
+                        dateIn: formatDate(period.year, period.month, day),
+                        timeIn: formatTime(clockIn.h, clockIn.m),
+                        dateOut: formatDate(period.year, period.month, day),
+                        timeOut: formatTime(clockOut.h, clockOut.m),
+                        hours: (duration.h * 60 + duration.m) / 60,
+                    });
+                }
 
-    for (const wi of PART_TIME) {
-        const dayCount = 12 + Math.floor(rand() * 5); // 12-16 days
-        const shuffled = [...workingDays].sort(() => rand() - 0.5);
-        const selectedDays = shuffled.slice(0, dayCount).sort((a, b) => a - b);
+                continue;
+            }
 
-        for (const day of selectedDays) {
-            // Clock in 08:00-10:00 → 480-600 min
-            const clockIn = roundTo15(480 + Math.floor(rand() * 121));
-            // Duration 4-6 hrs (240-360 min)
-            const duration = roundTo15(240 + Math.floor(rand() * 121));
-            const outMin =
-                clockIn.h * 60 + clockIn.m + duration.h * 60 + duration.m;
-            const clockOut = { h: Math.floor(outMin / 60), m: outMin % 60 };
+            const missCount = 1 + Math.floor(rand() * 3);
+            const missedDays = new Set<number>();
 
-            const hours = (duration.h * 60 + duration.m) / 60;
+            while (
+                missedDays.size < Math.min(missCount, Math.max(1, workingDays.length - 1))
+            ) {
+                missedDays.add(workingDays[Math.floor(rand() * workingDays.length)]);
+            }
 
-            entries.push({
-                workerIndex: wi,
-                dateIn: formatDate(day),
-                timeIn: formatTime(clockIn.h, clockIn.m),
-                dateOut: formatDate(day),
-                timeOut: formatTime(clockOut.h, clockOut.m),
-                hours,
-            });
+            for (const day of workingDays) {
+                if (missedDays.has(day)) {
+                    continue;
+                }
+
+                const clockIn = roundTo15(420 + Math.floor(rand() * 91));
+                const duration = roundTo15(480 + Math.floor(rand() * 121));
+                const outMin =
+                    clockIn.h * 60 + clockIn.m + duration.h * 60 + duration.m;
+                const clockOut = { h: Math.floor(outMin / 60), m: outMin % 60 };
+
+                entries.push({
+                    workerIndex,
+                    dateIn: formatDate(period.year, period.month, day),
+                    timeIn: formatTime(clockIn.h, clockIn.m),
+                    dateOut: formatDate(period.year, period.month, day),
+                    timeOut: formatTime(clockOut.h, clockOut.m),
+                    hours: (duration.h * 60 + duration.m) / 60,
+                });
+            }
         }
     }
 
