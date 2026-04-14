@@ -13,6 +13,10 @@ import {
     type PayrollPeriodConflict,
     validatePayrollPeriodRange,
 } from "@/utils/payroll/payroll-period-conflicts";
+import {
+    countMissingTimesheetDateIns,
+    restDaysFromMissingDateCount,
+} from "@/utils/payroll/missing-timesheet-dates";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type CreatePayrollExecutor = Pick<DbTransaction, "select" | "insert">;
@@ -147,7 +151,12 @@ async function createPayrollForWorkerInExecutor(
         (sum, entry) => sum + Number(entry.hours),
         0,
     );
-    const restDays = 4;
+    const missingCount = countMissingTimesheetDateIns({
+        periodStart,
+        periodEnd,
+        presentDateInKeys: entries.map((e) => e.dateIn),
+    });
+    const restDays = restDaysFromMissingDateCount(missingCount);
     const publicHolidays = 0;
     const payCalc = calculatePay({
         employmentType: employment.employmentType,
@@ -474,14 +483,18 @@ export async function updatePayrollRecord(input: {
     const totalHoursWorked = entries.reduce((sum, e) => sum + Number(e.hours), 0);
     const [currentVoucher] = await db
         .select({
-            restDays: payrollVoucherTable.restDays,
             publicHolidays: payrollVoucherTable.publicHolidays,
         })
         .from(payrollVoucherTable)
         .where(eq(payrollVoucherTable.id, existing.payrollVoucherId))
         .limit(1);
 
-    const restDays = currentVoucher?.restDays ?? 0;
+    const missingCount = countMissingTimesheetDateIns({
+        periodStart,
+        periodEnd,
+        presentDateInKeys: entries.map((e) => e.dateIn),
+    });
+    const restDays = restDaysFromMissingDateCount(missingCount);
     const publicHolidays = currentVoucher?.publicHolidays ?? 0;
     const payCalc = calculatePay({
         employmentType: row.employment.employmentType,
@@ -546,6 +559,7 @@ export async function updatePayrollRecord(input: {
                     hourlyRate: row.employment.hourlyRate,
                     overtimePay: payCalc.overtimePay,
                     restDayRate: row.employment.restDayRate,
+                    restDays,
                     restDayPay: payCalc.restDayPay,
                     publicHolidayPay: payCalc.publicHolidayPay,
                     cpf: row.employment.cpf,

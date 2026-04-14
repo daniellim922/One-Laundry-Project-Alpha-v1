@@ -9,6 +9,10 @@ import { payrollVoucherTable } from "@/db/tables/payroll/payrollVoucherTable";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { calculatePay } from "@/utils/payroll/payroll-utils";
+import {
+    countMissingTimesheetDateIns,
+    restDaysFromMissingDateCount,
+} from "@/utils/payroll/missing-timesheet-dates";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type PayrollSyncExecutor = Pick<typeof db, "select" | "update">;
@@ -87,7 +91,10 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
 
         for (const payroll of drafts) {
             const entryRows = await executor
-                .select({ hours: timesheetTable.hours })
+                .select({
+                    hours: timesheetTable.hours,
+                    dateIn: timesheetTable.dateIn,
+                })
                 .from(timesheetTable)
                 .where(
                     and(
@@ -103,12 +110,18 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
 
             const [currentVoucher] = await executor
                 .select({
-                    restDays: payrollVoucherTable.restDays,
                     publicHolidays: payrollVoucherTable.publicHolidays,
                 })
                 .from(payrollVoucherTable)
                 .where(eq(payrollVoucherTable.id, payroll.payrollVoucherId))
                 .limit(1);
+
+            const missingCount = countMissingTimesheetDateIns({
+                periodStart: payroll.periodStart,
+                periodEnd: payroll.periodEnd,
+                presentDateInKeys: entryRows.map((e) => e.dateIn),
+            });
+            const restDays = restDaysFromMissingDateCount(missingCount);
 
             const payCalc = calculatePay({
                 employmentType: employment.employmentType,
@@ -117,7 +130,7 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
                 monthlyPay: employment.monthlyPay,
                 hourlyRate: employment.hourlyRate,
                 restDayRate: employment.restDayRate,
-                restDays: currentVoucher?.restDays ?? 0,
+                restDays,
                 publicHolidays: currentVoucher?.publicHolidays ?? 0,
             });
 
@@ -177,6 +190,7 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
                     hourlyRate: employment.hourlyRate,
                     overtimePay: payCalc.overtimePay,
                     restDayRate: employment.restDayRate,
+                    restDays,
                     restDayPay: payCalc.restDayPay,
                     publicHolidayPay: payCalc.publicHolidayPay,
                     cpf: employment.cpf,
