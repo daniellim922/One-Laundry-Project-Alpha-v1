@@ -13,10 +13,7 @@ npm run build                   # production build
 npm run lint                    # ESLint (flat config, core-web-vitals + TS)
 npm run test                    # all Vitest tests
 npm run test:watch              # Vitest watch mode
-npm run test:unit               # unit tests only
-npm run test:integration        # integration tests only
-npm run test:unit:worker        # worker-focused unit tests
-npm run test:integration:worker # worker-focused integration tests
+npm run test:worker             # worker-focused tests
 npm run test:e2e                # Playwright E2E
 npm run test:e2e:worker         # worker E2E subset
 npm run test:e2e:ui             # Playwright UI runner
@@ -32,8 +29,7 @@ npm run db:wipe                 # wipe database
 ```bash
 npx tsc --noEmit                            # typecheck entire project
 npx eslint <file>                           # lint a single file
-npx vitest run test/unit/<file>             # run one unit test file
-npx vitest run test/integration/<file>      # run one integration test file
+npx vitest run <path/to/file.test.ts>       # run one Vitest file (co-located with source)
 npx playwright test <spec> --project=chromium
 ```
 
@@ -76,7 +72,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 
 ## Testing
 
-- **Unit/integration** — Vitest, node environment, files in `test/unit/` and `test/integration/` as `*.test.ts`.
+- **Vitest** — node environment, tests co-located with source as `*.test.ts` / `*.test.tsx` under `app/`, `components/`, `utils/`, `lib/`, `db/`, `services/`.
 - **E2E** — Playwright (Chromium), files in `test/e2e/` as `*.spec.ts`. Auth setup persists storage state to `test/e2e/.auth/user.json`.
 - **Fixtures** live in `test/fixtures/`, output in `test/results/`.
 - **Codex post-change verification** is wired through `.codex/hooks.json`; when product code changes, the stop hook runs `npm run test`.
