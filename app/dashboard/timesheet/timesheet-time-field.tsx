@@ -2,7 +2,12 @@
 
 import * as React from "react";
 
-import { Input } from "@/components/ui/input";
+import {
+    InputGroup,
+    InputGroupInput,
+    InputGroupAddon,
+} from "@/components/ui/input-group";
+import { Clock2Icon } from "lucide-react";
 import { normalizeHmTime } from "./timesheet-time-utils";
 
 type TimesheetTimeFieldProps = {
@@ -23,18 +28,23 @@ export function TimesheetTimeField({
     onValueChange,
 }: TimesheetTimeFieldProps) {
     return (
-        <Input
-            id={id}
-            type="time"
-            step="60"
-            value={value}
-            required={required}
-            disabled={disabled}
-            aria-invalid={ariaInvalid}
-            className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
-            onChange={(event) => {
-                onValueChange(normalizeHmTime(event.target.value));
-            }}
-        />
+        <InputGroup data-disabled={disabled || undefined}>
+            <InputGroupInput
+                id={id}
+                type="time"
+                step="60"
+                value={value}
+                required={required}
+                disabled={disabled}
+                aria-invalid={ariaInvalid}
+                className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+                onChange={(event) => {
+                    onValueChange(normalizeHmTime(event.target.value));
+                }}
+            />
+            <InputGroupAddon align="inline-end">
+                <Clock2Icon className="text-muted-foreground" />
+            </InputGroupAddon>
+        </InputGroup>
     );
 }
