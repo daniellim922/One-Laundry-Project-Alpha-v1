@@ -1,5 +1,4 @@
 import { db } from "@/lib/db";
-import { calculateHoursFromDateTimes } from "@/utils/payroll/payroll-utils";
 import { eq } from "drizzle-orm";
 import {
     workerTable,
@@ -145,7 +144,7 @@ async function seedAdvances(
         const advanceInserts: InsertAdvance[] = a.repaymentTerms.map((t) => ({
             advanceRequestId: insertedRequest!.id,
             amount: t.installmentAmt,
-            status: "Installment Loan" as const,
+            status: t.status,
             repaymentDate: t.installmentDate,
             createdAt: SEED_TIMESTAMP,
             updatedAt: SEED_TIMESTAMP,

@@ -66,11 +66,13 @@ Seed a fixed advance cohort within the foreign full-time workers. For each quart
 
 ### Acceptance criteria
 
-- [ ] Only the fixed 5-worker foreign-full-time cohort receives seeded advances.
-- [ ] No local worker receives any seeded advance request or installment.
-- [ ] Each quarterly advance request uses the agreed fixed amount and is repaid through 3 monthly installments within the same quarter.
-- [ ] Advance history is deterministic and repeats consistently across runs.
-- [ ] Payroll periods containing unpaid installments reflect the correct advance deduction totals.
+- [x] Only the fixed 5-worker foreign-full-time cohort receives seeded advances.
+- [x] No local worker receives any seeded advance request or installment.
+- [x] Each quarterly advance request uses the agreed fixed amount and is repaid through 3 monthly installments within the same quarter.
+- [x] Advance history is deterministic and repeats consistently across runs.
+- [x] Payroll periods containing unpaid installments reflect the correct advance deduction totals.
+
+Verified on `2026-04-14` via `npx eslint db/seed/advances.ts db/seed/payrolls.ts db/seed/payrolls.test.ts db/seed/seed.ts`, `npx vitest run db/seed/payrolls.test.ts`, `npm run db:seed`, `npx tsc --noEmit`, and `npm run test`.
 
 ---
 

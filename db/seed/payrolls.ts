@@ -7,6 +7,7 @@ import {
     getVoucherMinimumWorkingHours,
     isForeignFullTimeWorker,
 } from "./minimum-hours";
+import { getAdvanceDeductionForWorkerPeriod } from "./advances";
 import { seedPeriods } from "./periods";
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
@@ -127,7 +128,10 @@ function generatePayrolls(): PayrollEntry[] {
             }
 
             const cpf = "cpf" in worker ? worker.cpf ?? 0 : 0;
-            const advance = 0;
+            const advance = getAdvanceDeductionForWorkerPeriod(
+                workerIndex,
+                period.periodStart,
+            );
             const hoursNotMetDeduction =
                 hoursNotMet != null && hoursNotMet !== 0
                     ? -roundMoney(Math.max(0, -hoursNotMet) * (hourlyRate ?? 0))
