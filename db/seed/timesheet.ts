@@ -10,7 +10,9 @@ import {
     isForeignFullTimeWorker,
 } from "./minimum-hours";
 import { seedPeriods } from "./periods";
+import { getSeedTimesheetStatus } from "./settlement-state";
 import { workers } from "./workers";
+import type { TimesheetPaymentStatus } from "@/types/status";
 
 type TimesheetEntry = {
     workerIndex: number;
@@ -19,6 +21,7 @@ type TimesheetEntry = {
     dateOut: string;
     timeOut: string;
     hours: number;
+    status: TimesheetPaymentStatus;
 };
 
 function seededRandom(seed: number): () => number {
@@ -76,6 +79,7 @@ function generateTimesheets(): TimesheetEntry[] {
         for (const [workerIndex, worker] of workers.entries()) {
             const isPartTime = worker.employmentType === "Part Time";
             const isForeignFullTime = isForeignFullTimeWorker(worker);
+            const status = getSeedTimesheetStatus(period);
 
             if (isPartTime) {
                 const dayCount = 12 + Math.floor(rand() * 5);
@@ -101,6 +105,7 @@ function generateTimesheets(): TimesheetEntry[] {
                         dateOut: formatDate(period.year, period.month, day),
                         timeOut: formatTime(clockOut.h, clockOut.m),
                         hours: (duration.h * 60 + duration.m) / 60,
+                        status,
                     });
                 }
 
@@ -128,6 +133,7 @@ function generateTimesheets(): TimesheetEntry[] {
                         dateOut: formatDate(period.year, period.month, day),
                         timeOut: formatTime(clockOut.h, clockOut.m),
                         hours: dailyHours[dayIndex]!,
+                        status,
                     });
                 }
 
@@ -161,6 +167,7 @@ function generateTimesheets(): TimesheetEntry[] {
                     dateOut: formatDate(period.year, period.month, day),
                     timeOut: formatTime(clockOut.h, clockOut.m),
                     hours: (duration.h * 60 + duration.m) / 60,
+                    status,
                 });
             }
         }

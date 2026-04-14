@@ -9,6 +9,7 @@ import {
 } from "./minimum-hours";
 import { getAdvanceDeductionForWorkerPeriod } from "./advances";
 import { seedPeriods } from "./periods";
+import { getSeedPayrollStatus } from "./settlement-state";
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
 
@@ -63,8 +64,7 @@ function generatePayrolls(): PayrollEntry[] {
     const payrolls: PayrollEntry[] = [];
 
     for (const period of seedPeriods) {
-        const status: "Draft" | "Settled" =
-            period.year === 2025 ? "Settled" : "Draft";
+        const status = getSeedPayrollStatus(period);
 
         for (let workerIndex = 0; workerIndex < workers.length; workerIndex += 1) {
             const worker = workers[workerIndex];

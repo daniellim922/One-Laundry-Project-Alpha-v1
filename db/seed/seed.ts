@@ -101,6 +101,7 @@ async function seedTimesheets(
         dateOut: t.dateOut,
         timeOut: t.timeOut,
         hours: t.hours,
+        status: t.status,
         createdAt: SEED_TIMESTAMP,
         updatedAt: SEED_TIMESTAMP,
     }));

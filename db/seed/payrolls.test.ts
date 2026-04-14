@@ -18,6 +18,12 @@ import {
 } from "./minimum-hours";
 import { payrolls } from "./payrolls";
 import { seedPeriods } from "./periods";
+import {
+    getSeedAdvanceRequestStatus,
+    getSeedInstallmentStatus,
+    getSeedPayrollStatus,
+    getSeedTimesheetStatus,
+} from "./settlement-state";
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
 
@@ -279,6 +285,50 @@ describe("phase 3 quarterly advance cohort", () => {
             } else {
                 expect(payroll.voucher.advance).toBe(0);
             }
+        }
+    });
+});
+
+describe("phase 4 historical settlement states", () => {
+    it("seeds all 2025 payrolls as Settled and 2026 Q1 payrolls as Draft", () => {
+        for (const payroll of payrolls) {
+            const period = seedPeriods.find(
+                (candidate) => candidate.periodStart === payroll.periodStart,
+            );
+
+            expect(period).toBeDefined();
+            expect(payroll.status).toBe(getSeedPayrollStatus(period!));
+        }
+    });
+
+    it("marks 2025 timesheets paid and keeps 2026 Q1 timesheets unpaid", () => {
+        for (const timesheet of timesheets) {
+            const period = seedPeriods.find((candidate) =>
+                timesheet.dateIn.startsWith(candidate.key),
+            );
+
+            expect(period).toBeDefined();
+            expect(timesheet.status).toBe(getSeedTimesheetStatus(period!));
+        }
+    });
+
+    it("marks settled-period advance installments paid and fully repaid requests paid", () => {
+        for (const advance of advances) {
+            const expectedInstallmentStatuses = advance.repaymentTerms.map((term) => {
+                const period = seedPeriods.find((candidate) =>
+                    term.installmentDate.startsWith(candidate.key),
+                );
+
+                expect(period).toBeDefined();
+                return getSeedInstallmentStatus(period!);
+            });
+
+            expect(advance.repaymentTerms.map((term) => term.status)).toEqual(
+                expectedInstallmentStatuses,
+            );
+            expect(advance.status).toBe(
+                getSeedAdvanceRequestStatus(expectedInstallmentStatuses),
+            );
         }
     });
 });

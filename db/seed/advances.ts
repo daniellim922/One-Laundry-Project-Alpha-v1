@@ -5,6 +5,10 @@
 
 import { isForeignFullTimeWorker } from "./minimum-hours";
 import { seedPeriods } from "./periods";
+import {
+    getSeedAdvanceRequestStatus,
+    getSeedInstallmentStatus,
+} from "./settlement-state";
 import { workers } from "./workers";
 
 export const ADVANCE_COHORT_SIZE = 5;
@@ -93,21 +97,16 @@ function generateAdvances(): SeedAdvanceRequest[] {
             const repaymentTerms = periods.map((period) => ({
                 installmentAmt: QUARTERLY_ADVANCE_INSTALLMENT_AMOUNT,
                 installmentDate: `${period.key}-10`,
-                status:
-                    period.year === 2025
-                        ? ("Installment Paid" as const)
-                        : ("Installment Loan" as const),
+                status: getSeedInstallmentStatus(period),
             }));
 
             return {
                 workerIndex,
                 workerName: worker.name,
                 amount: QUARTERLY_ADVANCE_AMOUNT,
-                status: repaymentTerms.every(
-                    (term) => term.status === "Installment Paid",
-                )
-                    ? ("Advance Paid" as const)
-                    : ("Advance Loan" as const),
+                status: getSeedAdvanceRequestStatus(
+                    repaymentTerms.map((term) => term.status),
+                ),
                 dateRequested: `${periods[0]!.key}-05`,
                 purpose: getQuarterlyAdvancePurpose(quarterIndex),
                 repaymentTerms,

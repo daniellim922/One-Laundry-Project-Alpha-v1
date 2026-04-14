@@ -86,11 +86,13 @@ Apply the historical status model across payrolls, timesheets, and advances. Thi
 
 ### Acceptance criteria
 
-- [ ] All payrolls in `2025` are seeded as `Settled`.
-- [ ] All payrolls in `2026-01` through `2026-03` are seeded as `Draft`.
-- [ ] Timesheets inside settled 2025 payroll periods are marked paid.
-- [ ] Advance installments inside settled 2025 payroll periods are marked paid, and fully repaid requests are marked paid.
-- [ ] Draft 2026 Q1 payroll periods leave related timesheets and installments unpaid.
+- [x] All payrolls in `2025` are seeded as `Settled`.
+- [x] All payrolls in `2026-01` through `2026-03` are seeded as `Draft`.
+- [x] Timesheets inside settled 2025 payroll periods are marked paid.
+- [x] Advance installments inside settled 2025 payroll periods are marked paid, and fully repaid requests are marked paid.
+- [x] Draft 2026 Q1 payroll periods leave related timesheets and installments unpaid.
+
+Verified on `2026-04-14` via `npx eslint db/seed/settlement-state.ts db/seed/timesheet.ts db/seed/advances.ts db/seed/payrolls.ts db/seed/seed.ts db/seed/payrolls.test.ts`, `npx vitest run db/seed/payrolls.test.ts`, `npx tsc --noEmit`, `npm run db:seed`, and `npm run test`.
 
 ---
 
