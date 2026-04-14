@@ -1,5 +1,4 @@
 import { db } from "@/lib/db";
-import { calculateHoursFromDateTimes } from "@/utils/payroll/payroll-utils";
 import { eq } from "drizzle-orm";
 import {
     workerTable,
@@ -38,6 +37,7 @@ import { advances } from "./advances";
 import { payrolls } from "./payrolls";
 import { FEATURES, ROLES, ROLE_PERMISSIONS } from "./iam";
 import { seedDefaultAuthUsers } from "./auth";
+import { SEED_TIMESTAMP } from "./constants";
 
 type SplitWorkerSeed = {
     employment: InsertEmployment;
@@ -101,10 +101,17 @@ async function seedTimesheets(
         dateOut: t.dateOut,
         timeOut: t.timeOut,
         hours: t.hours,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        status: t.status,
+        createdAt: SEED_TIMESTAMP,
+        updatedAt: SEED_TIMESTAMP,
     }));
-    await db.insert(timesheetTable).values(timesheetInserts);
+
+    const batchSize = 500;
+    for (let index = 0; index < timesheetInserts.length; index += batchSize) {
+        await db
+            .insert(timesheetTable)
+            .values(timesheetInserts.slice(index, index + batchSize));
+    }
 }
 
 async function seedAdvances(
@@ -127,8 +134,8 @@ async function seedAdvances(
             requestDate: a.dateRequested,
             amountRequested: a.amount,
             purpose: a.purpose,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: SEED_TIMESTAMP,
+            updatedAt: SEED_TIMESTAMP,
         };
         const [insertedRequest] = await db
             .insert(advanceRequestTable)
@@ -138,10 +145,10 @@ async function seedAdvances(
         const advanceInserts: InsertAdvance[] = a.repaymentTerms.map((t) => ({
             advanceRequestId: insertedRequest!.id,
             amount: t.installmentAmt,
-            status: "Installment Loan" as const,
+            status: t.status,
             repaymentDate: t.installmentDate,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: SEED_TIMESTAMP,
+            updatedAt: SEED_TIMESTAMP,
         }));
         await db.insert(advanceTable).values(advanceInserts);
     }
@@ -151,8 +158,8 @@ async function seedPayrolls(insertedWorkers: { id: string }[]): Promise<void> {
     for (const p of payrolls) {
         const voucherInsert: InsertPayrollVoucher = {
             ...p.voucher,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: SEED_TIMESTAMP,
+            updatedAt: SEED_TIMESTAMP,
         };
         const [insertedVoucher] = await db
             .insert(payrollVoucherTable)
@@ -166,8 +173,8 @@ async function seedPayrolls(insertedWorkers: { id: string }[]): Promise<void> {
             periodEnd: p.periodEnd,
             payrollDate: p.payrollDate,
             status: p.status,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: SEED_TIMESTAMP,
+            updatedAt: SEED_TIMESTAMP,
         };
         await db.insert(payrollTable).values(payrollInsert);
     }
@@ -226,8 +233,8 @@ async function seed() {
     await seedAdvances(insertedWorkers);
     console.log("New advance entries created!");
 
-    // await seedPayrolls(insertedWorkers);
-    // console.log("New payroll entries created!");
+    await seedPayrolls(insertedWorkers);
+    console.log("New payroll entries created!");
 
     // Seed IAM roles, features, permissions, and admin user
     await db.insert(rolesTable).values(ROLES);
