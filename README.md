@@ -23,8 +23,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 ## Worker Test Commands
 
 ```bash
-npm run test:unit:worker
-npm run test:integration:worker
+npm run test:worker
 npm run test:e2e:worker
 ```
 

@@ -32,9 +32,8 @@ import {
 import {
     settlePayroll,
     revertPayroll,
-    getRevertPreview,
-    type RevertPreviewRow,
-} from "../actions";
+} from "../command-api";
+import type { RevertPreviewRow } from "@/services/payroll/get-revert-preview";
 import { cn } from "@/lib/utils";
 import {
     payrollStatusBadgeTone,
@@ -44,6 +43,7 @@ import {
 } from "@/types/badge-tones";
 import { localDateDmy } from "@/utils/time/local-iso-date";
 import { localTimeHm } from "@/utils/time/local-time";
+import { fetchRevertPreview } from "../read-api";
 
 interface PayrollStepProgressProps {
     className?: string;
@@ -85,15 +85,23 @@ export function PayrollStepProgress({
         }
         let cancelled = false;
         setPreviewLoading(true);
-        getRevertPreview(payrollId).then((result) => {
-            if (cancelled) return;
-            if ("error" in result) {
-                setPreviewError(result.error);
-            } else {
-                setPreviewData(result.data);
-            }
-            setPreviewLoading(false);
-        });
+        fetchRevertPreview(payrollId)
+            .then((data) => {
+                if (cancelled) return;
+                setPreviewData(data);
+            })
+            .catch((error: unknown) => {
+                if (cancelled) return;
+                setPreviewError(
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to load revert preview",
+                );
+            })
+            .finally(() => {
+                if (cancelled) return;
+                setPreviewLoading(false);
+            });
         return () => {
             cancelled = true;
         };
@@ -122,7 +130,7 @@ export function PayrollStepProgress({
         try {
             const result = await settlePayroll(payrollId);
 
-            if (result?.error) {
+            if ("error" in result) {
                 setError(result.error);
                 return;
             }
@@ -145,7 +153,7 @@ export function PayrollStepProgress({
         try {
             const result = await revertPayroll(payrollId);
 
-            if (result?.error) {
+            if ("error" in result) {
                 setRevertError(result.error);
                 return;
             }

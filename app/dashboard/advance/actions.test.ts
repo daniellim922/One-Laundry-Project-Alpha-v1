@@ -1,0 +1,101 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+    revalidatePath: vi.fn(),
+    requirePermission: vi.fn(),
+    createAdvanceRequestRecord: vi.fn(),
+    updateAdvanceRequestRecord: vi.fn(),
+}));
+
+vi.mock("next/cache", () => ({
+    revalidatePath: (...args: unknown[]) => mocks.revalidatePath(...args),
+}));
+
+vi.mock("@/utils/permissions/require-permission", () => ({
+    requirePermission: (...args: unknown[]) => mocks.requirePermission(...args),
+}));
+
+vi.mock("@/services/advance/save-advance-request", () => ({
+    createAdvanceRequestRecord: (...args: unknown[]) =>
+        mocks.createAdvanceRequestRecord(...args),
+    updateAdvanceRequestRecord: (...args: unknown[]) =>
+        mocks.updateAdvanceRequestRecord(...args),
+}));
+
+import { createAdvanceRequest } from "@/app/dashboard/advance/new/actions";
+import { updateAdvanceRequest } from "@/app/dashboard/advance/[id]/edit/actions";
+
+const baseInput = {
+    workerId: "worker-1",
+    requestDate: "2026-04-20",
+    amount: "700",
+    purpose: "Emergency cash flow",
+    installmentAmounts: [{ amount: "700", repaymentDate: "2026-04-25" }],
+};
+
+describe("advance actions", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mocks.requirePermission.mockResolvedValue(undefined);
+    });
+
+    it("createAdvanceRequest delegates to the service and revalidates related pages", async () => {
+        mocks.createAdvanceRequestRecord.mockResolvedValue({
+            success: true,
+            id: "advance-request-1",
+        });
+
+        await expect(createAdvanceRequest(baseInput)).resolves.toEqual({
+            success: true,
+        });
+
+        expect(mocks.requirePermission).toHaveBeenCalledWith("Advance", "create");
+        expect(mocks.createAdvanceRequestRecord).toHaveBeenCalledWith(baseInput);
+        expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/advance");
+        expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/advance/all");
+        expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/payroll");
+        expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/payroll/all");
+    });
+
+    it("updateAdvanceRequest delegates to the service and revalidates the detail page", async () => {
+        mocks.updateAdvanceRequestRecord.mockResolvedValue({
+            success: true,
+            id: "advance-request-1",
+        });
+
+        await expect(
+            updateAdvanceRequest("advance-request-1", {
+                ...baseInput,
+                installmentAmounts: [
+                    {
+                        amount: "700",
+                        repaymentDate: "2026-04-25",
+                        status: "Installment Loan" as const,
+                    },
+                ],
+            }),
+        ).resolves.toEqual({
+            success: true,
+        });
+
+        expect(mocks.requirePermission).toHaveBeenCalledWith("Advance", "update");
+        expect(mocks.updateAdvanceRequestRecord).toHaveBeenCalled();
+        expect(mocks.revalidatePath).toHaveBeenCalledWith(
+            "/dashboard/advance/advance-request-1",
+        );
+    });
+
+    it("does not revalidate when the shared service returns an error", async () => {
+        mocks.createAdvanceRequestRecord.mockResolvedValue({
+            success: false,
+            error: "Failed to synchronize Draft payrolls",
+        });
+
+        await expect(createAdvanceRequest(baseInput)).resolves.toEqual({
+            success: false,
+            error: "Failed to synchronize Draft payrolls",
+        });
+
+        expect(mocks.revalidatePath).not.toHaveBeenCalled();
+    });
+});

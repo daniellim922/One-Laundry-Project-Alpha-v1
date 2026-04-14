@@ -6,7 +6,6 @@ import type { RowSelectionState } from "@tanstack/react-table";
 import { ListChecks } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { massUpdateWorkerMinimumWorkingHours } from "../actions";
 import { DataTable } from "@/components/data-table/data-table";
 import {
     createBadgeCell,
@@ -26,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import type { MassEditWorkingHoursResultRow } from "./mass-edit-working-hours-result-table";
+import { updateWorkerMinimumWorkingHours } from "./update-worker-minimum-working-hours";
 import { employmentArrangementBadgeTone } from "@/types/badge-tones";
 import type { WorkerEmploymentArrangement } from "@/types/status";
 
@@ -254,8 +254,13 @@ export function MassEditWorkingHoursButton({
         try {
             const result =
                 updates.length > 0
-                    ? await massUpdateWorkerMinimumWorkingHours({ updates })
+                    ? await updateWorkerMinimumWorkingHours({ updates })
                     : { updatedCount: 0, failed: [] as MassEditFailure[] };
+
+            if ("error" in result) {
+                setDialogError(result.error);
+                return;
+            }
 
             const clientFailuresByWorkerId = new Set(
                 failedFromClientValidation.map((failure) => failure.workerId),

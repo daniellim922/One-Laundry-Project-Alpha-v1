@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { updateVoucherDays } from "../actions";
+import { updateVoucherDays } from "../command-api";
 import { Input } from "@/components/ui/input";
 
 type Props = {
@@ -101,4 +101,3 @@ export function VoucherEditableNumber({
         </div>
     );
 }
-

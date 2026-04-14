@@ -2,9 +2,8 @@ import { NextRequest } from "next/server";
 import { chromium } from "playwright";
 import { eq } from "drizzle-orm";
 
-import { auth } from "@/lib/auth";
+import { requireApiPermission } from "@/app/api/_shared/auth";
 import { db } from "@/lib/db";
-import { checkPermission } from "@/utils/permissions/permissions";
 import { payrollTable } from "@/db/tables/payroll/payrollTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 
@@ -26,25 +25,13 @@ function isoToDdmmyyyy(iso: string): string {
     return `${d}_${m}_${y}`;
 }
 
-async function requireApiPermission(req: NextRequest) {
-    const session = await auth.api.getSession({ headers: req.headers });
-    if (!session) {
-        return { ok: false as const, status: 401 as const };
-    }
-    const allowed = await checkPermission(session.user.id, "Payroll", "read");
-    if (!allowed) {
-        return { ok: false as const, status: 403 as const };
-    }
-    return { ok: true as const, userId: session.user.id };
-}
-
 export async function GET(
     req: NextRequest,
     ctx: { params: Promise<{ id: string }> },
 ) {
-    const perm = await requireApiPermission(req);
-    if (!perm.ok) {
-        return new Response("Unauthorized", { status: perm.status });
+    const permission = await requireApiPermission(req, "Payroll", "read");
+    if (permission instanceof Response) {
+        return permission;
     }
 
     const { id } = await ctx.params;
@@ -116,4 +103,3 @@ export async function GET(
         await browser.close();
     }
 }
-

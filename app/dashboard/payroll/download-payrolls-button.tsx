@@ -20,7 +20,7 @@ import {
 import { DataTable } from "@/components/data-table/data-table";
 import { createRowSelectionColumn } from "@/components/data-table/column-builders";
 import { columns as baseColumns, type PayrollWithWorker } from "./all/columns";
-import { getAllPayrollsForDownload } from "./actions";
+import { fetchPayrollDownloadSelection } from "./read-api";
 
 const selectableColumns: ColumnDef<PayrollWithWorker>[] = [
     createRowSelectionColumn<PayrollWithWorker>({
@@ -104,7 +104,7 @@ export function DownloadPayrollsButton() {
             setError(null);
             setRowSelection({});
             try {
-                const rows = await getAllPayrollsForDownload();
+                const rows = await fetchPayrollDownloadSelection();
                 if (cancelled) return;
                 setPayrolls(rows as PayrollWithWorker[]);
             } catch (e) {

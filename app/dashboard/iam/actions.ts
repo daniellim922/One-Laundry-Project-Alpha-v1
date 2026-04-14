@@ -12,7 +12,7 @@ import {
 } from "@/utils/auth/return-url";
 import { checkPermission } from "@/utils/permissions/permissions";
 import { db } from "@/lib/db";
-import { user, session } from "@/db/auth-schema";
+import { user } from "@/db/auth-schema";
 import { rolesTable } from "@/db/tables/auth/rolesTable";
 import { rolePermissionsTable } from "@/db/tables/auth/rolePermissionsTable";
 import { userRolesTable } from "@/db/tables/auth/userRolesTable";
@@ -239,61 +239,4 @@ export async function updateUser(
     revalidatePath("/dashboard/iam");
     revalidatePath("/dashboard/iam/roles");
     redirect("/dashboard/iam/roles");
-}
-
-export async function banUser(
-    userId: string,
-    reason?: string,
-): Promise<{ error?: string }> {
-    const perm = await requireIamPermission("update");
-    if (perm.error) return perm;
-
-    const [u] = await db
-        .select()
-        .from(user)
-        .where(eq(user.id, userId))
-        .limit(1);
-    if (!u) return { error: "User not found." };
-
-    await db
-        .update(user)
-        .set({
-            banned: true,
-            banReason: reason ?? null,
-            banExpires: null,
-            updatedAt: new Date(),
-        })
-        .where(eq(user.id, userId));
-
-    await db.delete(session).where(eq(session.userId, userId));
-
-    revalidatePath("/dashboard/iam");
-    revalidatePath("/dashboard/iam/roles");
-    return {};
-}
-
-export async function unbanUser(userId: string): Promise<{ error?: string }> {
-    const perm = await requireIamPermission("update");
-    if (perm.error) return perm;
-
-    const [u] = await db
-        .select()
-        .from(user)
-        .where(eq(user.id, userId))
-        .limit(1);
-    if (!u) return { error: "User not found." };
-
-    await db
-        .update(user)
-        .set({
-            banned: false,
-            banReason: null,
-            banExpires: null,
-            updatedAt: new Date(),
-        })
-        .where(eq(user.id, userId));
-
-    revalidatePath("/dashboard/iam");
-    revalidatePath("/dashboard/iam/roles");
-    return {};
 }

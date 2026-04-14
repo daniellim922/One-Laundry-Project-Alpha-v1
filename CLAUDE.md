@@ -15,8 +15,7 @@ npm install               # install deps
 npm run dev               # dev server (Turbopack)
 npm run build             # production build
 npm run lint              # ESLint (flat config, core-web-vitals + TS)
-npm run test              # all Vitest tests (unit + integration)
-npm run test:unit         # unit tests only
+npm run test              # all Vitest tests (co-located with source)
 npm run test:e2e          # Playwright E2E (auto-starts dev server)
 npm run db:generate       # generate Drizzle migration
 npm run db:migrate        # run migrations
@@ -30,8 +29,7 @@ npm run db:wipe           # wipe database
 ```bash
 npx tsc --noEmit                       # typecheck entire project
 npx eslint <file>                      # lint a single file
-npx vitest run test/unit/<file>        # run one unit test file
-npx vitest run test/integration/<file> # run one integration test file
+npx vitest run <path/to/file.test.ts>  # run a single test file (tests live next to source)
 ```
 
 ## Stack
@@ -64,7 +62,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 
 ## Testing
 
-- **Unit/integration** — Vitest, node environment, `test/unit/*.test.ts` and `test/integration/*.test.ts`.
+- **Vitest** — node environment, tests co-located with source as `*.test.ts` / `*.test.tsx` under `app/`, `components/`, `utils/`, `lib/`, `db/`, `services/`.
 - **E2E** — Playwright (Chromium), `test/e2e/*.spec.ts`. Auth setup persists to `test/e2e/.auth/user.json`.
 - **Fixtures** in `test/fixtures/`, output in `test/results/`.
 - E2E worker tests are deterministic and assume seeded data. Run `npm run db:seed` first.

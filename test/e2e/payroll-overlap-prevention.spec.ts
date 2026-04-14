@@ -81,7 +81,10 @@ test.describe("Payroll overlap prevention", () => {
         await expect(page).toHaveURL(/\/dashboard\/payroll\/new$/);
         await expect(page.getByText(/skipped due to overlap/i)).toBeVisible();
         await expect(
-            page.getByText(/overlaps 2099-01-01 to 2099-01-31/i).first(),
+            page.getByRole("cell", { name: "01/01/2099" }).first(),
+        ).toBeVisible();
+        await expect(
+            page.getByRole("cell", { name: "31/01/2099" }).first(),
         ).toBeVisible();
     });
 });

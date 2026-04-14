@@ -3,7 +3,7 @@
 import * as React from "react";
 import * as XLSX from "xlsx";
 
-import { importAttendRecordTimesheet } from "../actions";
+import { importAttendRecordTimesheet } from "./import-attend-record-timesheet";
 import { SelectSearch } from "@/components/ui/SelectSearch";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -359,6 +359,10 @@ export function TimesheetImportClient({ workers }: { workers: Worker[] }) {
                 tablingDate: parsedData.tablingDate,
             });
             const result = await importAttendRecordTimesheet(dataToImport);
+            if ("error" in result) {
+                setError(result.error);
+                return;
+            }
             setSubmitResult(result);
             if (result.imported && result.imported > 0) {
                 setFile(null);

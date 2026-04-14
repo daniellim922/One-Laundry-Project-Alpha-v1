@@ -14,8 +14,12 @@ import {
 } from "@/db/tables/payroll/employmentTable";
 import {
     synchronizeWorkerDraftPayrolls,
-    synchronizeWorkerDraftPayrollsInTx,
-} from "@/app/dashboard/payroll/actions";
+} from "@/services/payroll/synchronize-worker-draft-payrolls";
+import {
+    massUpdateWorkerMinimumWorkingHours as massUpdateWorkerMinimumWorkingHoursService,
+    type WorkerHoursBulkUpdateInput,
+    type WorkerHoursBulkUpdateResult,
+} from "@/services/worker/mass-update-minimum-working-hours";
 import { requirePermission } from "@/utils/permissions/require-permission";
 import type { WorkerStatus } from "@/types/status";
 
@@ -56,33 +60,6 @@ function parseWorkerStatus(input: unknown): WorkerStatus | null {
 type ActionResult =
     | { success: true; id: string }
     | { success: false; error: string };
-
-type WorkerHoursBulkUpdateInput = {
-    updates: Array<{
-        workerId: string;
-        minimumWorkingHours: number;
-    }>;
-};
-
-type WorkerHoursBulkUpdateResult = {
-    updatedCount: number;
-    failed: Array<{
-        workerId: string;
-        workerName: string;
-        error: string;
-    }>;
-};
-
-class MassEditWorkingHoursError extends Error {
-    workerId: string;
-    workerName: string;
-
-    constructor(input: { workerId: string; workerName: string; error: string }) {
-        super(input.error);
-        this.workerId = input.workerId;
-        this.workerName = input.workerName;
-    }
-}
 
 export async function createWorker(formData: FormData): Promise<ActionResult> {
     const name = (formData.get("name") ?? "").toString().trim();
@@ -308,124 +285,9 @@ export async function massUpdateWorkerMinimumWorkingHours(
     input: WorkerHoursBulkUpdateInput,
 ): Promise<WorkerHoursBulkUpdateResult> {
     await requirePermission("Workers", "update");
+    const result = await massUpdateWorkerMinimumWorkingHoursService(input);
 
-    const updates = Array.isArray(input?.updates) ? input.updates : [];
-    if (updates.length === 0) {
-        return { updatedCount: 0, failed: [] };
-    }
-
-    let updatedCount = 0;
-    const failed: WorkerHoursBulkUpdateResult["failed"] = [];
-
-    for (const update of updates) {
-        const workerId = update.workerId?.trim();
-        const minimumWorkingHours = Number(update.minimumWorkingHours);
-
-        if (!workerId) {
-            failed.push({
-                workerId: "",
-                workerName: "Unknown worker",
-                error: "Missing worker ID",
-            });
-            continue;
-        }
-
-        if (
-            !Number.isFinite(minimumWorkingHours) ||
-            minimumWorkingHours < 0
-        ) {
-            failed.push({
-                workerId,
-                workerName: "Unknown worker",
-                error: "Minimum working hours must be a non-negative number",
-            });
-            continue;
-        }
-
-        try {
-            await db.transaction(async (tx) => {
-                const [worker] = await tx
-                    .select({
-                        id: workerTable.id,
-                        name: workerTable.name,
-                        status: workerTable.status,
-                        employmentId: workerTable.employmentId,
-                        employmentType: employmentTable.employmentType,
-                    })
-                    .from(workerTable)
-                    .innerJoin(
-                        employmentTable,
-                        eq(workerTable.employmentId, employmentTable.id),
-                    )
-                    .where(eq(workerTable.id, workerId))
-                    .limit(1);
-
-                const workerName = worker?.name ?? "Unknown worker";
-                if (!worker) {
-                    throw new MassEditWorkingHoursError({
-                        workerId,
-                        workerName,
-                        error: "Worker not found",
-                    });
-                }
-
-                if (worker.status !== "Active") {
-                    throw new MassEditWorkingHoursError({
-                        workerId,
-                        workerName,
-                        error: "Only active workers can be updated",
-                    });
-                }
-
-                if (worker.employmentType !== "Full Time") {
-                    throw new MassEditWorkingHoursError({
-                        workerId,
-                        workerName,
-                        error: "Only Full Time workers can be updated",
-                    });
-                }
-
-                await tx
-                    .update(employmentTable)
-                    .set({
-                        minimumWorkingHours,
-                        updatedAt: new Date(),
-                    })
-                    .where(eq(employmentTable.id, worker.employmentId));
-
-                const sync = await synchronizeWorkerDraftPayrollsInTx(tx, {
-                    workerId,
-                });
-                if ("error" in sync) {
-                    throw new MassEditWorkingHoursError({
-                        workerId,
-                        workerName,
-                        error: sync.error,
-                    });
-                }
-            });
-
-            updatedCount += 1;
-        } catch (error) {
-            if (error instanceof MassEditWorkingHoursError) {
-                failed.push({
-                    workerId: error.workerId,
-                    workerName: error.workerName,
-                    error: error.message,
-                });
-                continue;
-            }
-
-            console.error("Error mass editing worker minimum hours", error);
-            failed.push({
-                workerId,
-                workerName: "Unknown worker",
-                error: "Failed to update worker minimum hours",
-            });
-        }
-    }
-
-    if (updatedCount > 0) {
+    if (result.updatedCount > 0) {
         revalidatePath("/dashboard/worker");
         revalidatePath("/dashboard/worker/all");
         revalidatePath("/dashboard/payroll");
@@ -434,5 +296,5 @@ export async function massUpdateWorkerMinimumWorkingHours(
         revalidatePath("/dashboard/payroll/[id]/breakdown", "page");
     }
 
-    return { updatedCount, failed };
+    return result;
 }
