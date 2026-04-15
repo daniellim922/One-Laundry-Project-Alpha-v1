@@ -1,7 +1,6 @@
 import { ReactNode } from "react";
 
-import { getVisibleNavItems } from "@/utils/nav/nav-config";
-import { requirePermission } from "@/utils/permissions/require-permission";
+import { getAllNavItems } from "@/utils/nav/nav-config";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import { DashboardBreadcrumbs } from "@/components/dashboard/dashboard-breadcrumbs";
 import { Separator } from "@/components/ui/separator";
@@ -16,8 +15,7 @@ export default async function DashboardLayout({
 }: {
     children: ReactNode;
 }) {
-    const { userId } = await requirePermission("Home", "read");
-    const navItems = await getVisibleNavItems(userId);
+    const navItems = getAllNavItems();
 
     return (
         <SidebarProvider>

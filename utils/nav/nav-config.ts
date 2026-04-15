@@ -51,6 +51,10 @@ function toSerializable(item: NavItemConfig): NavItemSerializable {
     return rest;
 }
 
+export function getAllNavItems(): NavItemSerializable[] {
+    return NAV_ITEMS.map((item) => toSerializable(item));
+}
+
 export async function getVisibleNavItems(
     userId: string,
 ): Promise<NavItemSerializable[]> {

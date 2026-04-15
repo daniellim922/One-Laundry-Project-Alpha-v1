@@ -6,14 +6,10 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { authClient } from "@/lib/auth-client";
 
-type LoginFormProps = {
-    /** Sanitized post-login path (under /dashboard). */
-    afterLoginPath: string;
-};
+const DASHBOARD_PATH = "/dashboard";
 
-export function LoginForm({ afterLoginPath }: LoginFormProps) {
+export function LoginForm() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
@@ -23,31 +19,14 @@ export function LoginForm({ afterLoginPath }: LoginFormProps) {
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setError(null);
-        setIsSubmitting(true);
-        let didSucceed = false;
 
-        try {
-            await authClient.signIn.username(
-                {
-                    username,
-                    password,
-                    callbackURL: afterLoginPath,
-                },
-                {
-                    onSuccess: () => {
-                        didSucceed = true;
-                        router.push(afterLoginPath);
-                    },
-                    onError: (ctx) => {
-                        setError(ctx.error.message);
-                    },
-                },
-            );
-        } finally {
-            if (!didSucceed) {
-                setIsSubmitting(false);
-            }
+        if (!username.trim() || !password.trim()) {
+            setError("Enter any username and password to continue.");
+            return;
         }
+
+        setIsSubmitting(true);
+        router.push(DASHBOARD_PATH);
     }
 
     return (
@@ -63,13 +42,14 @@ export function LoginForm({ afterLoginPath }: LoginFormProps) {
                         Log in
                     </h2>
                     <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                        Enter your credentials to access your account.
+                        Enter any username and password to continue to the dashboard.
                     </p>
                 </div>
                 <form
                     onSubmit={handleSubmit}
                     className="space-y-6"
-                    aria-busy={isSubmitting}>
+                    aria-busy={isSubmitting}
+                    noValidate>
                     <div className="space-y-2">
                         <Label htmlFor="username">Username</Label>
                         <Input

@@ -7,7 +7,6 @@ import userEvent from "@testing-library/user-event";
 
 const mocks = vi.hoisted(() => ({
     push: vi.fn(),
-    signInUsername: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -28,17 +27,7 @@ vi.mock("next/link", () => ({
     }) => React.createElement("a", { href, className }, children),
 }));
 
-vi.mock("@/lib/auth-client", () => ({
-    authClient: {
-        signIn: {
-            username: (...args: unknown[]) => mocks.signInUsername(...args),
-        },
-    },
-}));
-
 import { LoginForm } from "./login-form";
-
-const DEFAULT_AFTER = "/dashboard";
 
 describe("LoginForm — unit", () => {
     afterEach(() => {
@@ -47,17 +36,16 @@ describe("LoginForm — unit", () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.signInUsername.mockImplementation(async (_creds, opts) => {
-            opts?.onSuccess?.();
-        });
     });
 
     it("renders title, helper copy, and back link to home", () => {
-        render(<LoginForm afterLoginPath={DEFAULT_AFTER} />);
+        render(<LoginForm />);
 
         expect(screen.getByRole("heading", { name: "Log in" })).toBeTruthy();
         expect(
-            screen.getByText("Enter your credentials to access your account."),
+            screen.getByText(
+                "Enter any username and password to continue to the dashboard.",
+            ),
         ).toBeTruthy();
 
         const back = screen.getByRole("link", { name: /back to home/i });
@@ -65,7 +53,7 @@ describe("LoginForm — unit", () => {
     });
 
     it("renders username and password fields with labels and placeholders", () => {
-        render(<LoginForm afterLoginPath={DEFAULT_AFTER} />);
+        render(<LoginForm />);
 
         const userField = screen.getByLabelText("Username");
         expect(userField.getAttribute("autocomplete")).toBe("username");
@@ -75,39 +63,21 @@ describe("LoginForm — unit", () => {
         expect(screen.getByPlaceholderText("Enter your password")).toBeTruthy();
     });
 
-    it("marks the form aria-busy while a sign-in request is in flight", async () => {
-        let release!: () => void;
-        const gate = new Promise<void>((resolve) => {
-            release = resolve;
-        });
-
-        mocks.signInUsername.mockImplementationOnce(async () => {
-            await gate;
-        });
-
+    it("sets the expected browser validation hints on the form fields", () => {
         const user = userEvent.setup();
-        render(<LoginForm afterLoginPath={DEFAULT_AFTER} />);
+        void user;
+        render(<LoginForm />);
 
-        await user.type(screen.getByLabelText("Username"), "alice");
-        await user.type(screen.getByLabelText("Password"), "secret");
-        await user.click(screen.getByRole("button", { name: "Log in" }));
-
-        const form = screen
-            .getByRole("textbox", { name: "Username" })
-            .closest("form");
-        expect(form?.getAttribute("aria-busy")).toBe("true");
-        expect(
-            screen.getByRole("button", { name: /logging in/i }),
-        ).toBeTruthy();
-
-        release();
-        await waitFor(() =>
-            expect(form?.getAttribute("aria-busy")).toBe("false"),
+        expect(screen.getByLabelText("Username").hasAttribute("required")).toBe(
+            true,
+        );
+        expect(screen.getByLabelText("Password").hasAttribute("required")).toBe(
+            true,
         );
     });
 });
 
-describe("LoginForm — integration (auth + navigation)", () => {
+describe("LoginForm — integration", () => {
     afterEach(() => {
         cleanup();
     });
@@ -116,55 +86,29 @@ describe("LoginForm — integration (auth + navigation)", () => {
         vi.clearAllMocks();
     });
 
-    it("calls signIn.username with credentials and callback URL, then navigates on success", async () => {
-        const afterPath = "/dashboard/payroll";
-        mocks.signInUsername.mockImplementation(async (_creds, opts) => {
-            opts?.onSuccess?.();
-        });
-
+    it("routes to /dashboard when both fields are non-empty", async () => {
         const user = userEvent.setup();
-        render(<LoginForm afterLoginPath={afterPath} />);
+        render(<LoginForm />);
 
         await user.type(screen.getByLabelText("Username"), "testuser");
         await user.type(screen.getByLabelText("Password"), "hunter2");
         await user.click(screen.getByRole("button", { name: "Log in" }));
 
         await waitFor(() => {
-            expect(mocks.signInUsername).toHaveBeenCalledTimes(1);
-        });
-
-        const [credentials] = mocks.signInUsername.mock.calls[0] as [
-            { username: string; password: string; callbackURL: string },
-            unknown,
-        ];
-        expect(credentials.username).toBe("testuser");
-        expect(credentials.password).toBe("hunter2");
-        expect(credentials.callbackURL).toBe(afterPath);
-
-        await waitFor(() => {
-            expect(mocks.push).toHaveBeenCalledWith(afterPath);
+            expect(mocks.push).toHaveBeenCalledWith("/dashboard");
         });
     });
 
-    it("surfaces auth error message from onError and re-enables the form", async () => {
-        mocks.signInUsername.mockImplementation(async (_creds, opts) => {
-            opts?.onError?.({
-                error: { message: "Invalid username or password" },
-            });
-        });
-
+    it("shows a validation message and stays on the page when either field is blank", async () => {
         const user = userEvent.setup();
-        render(<LoginForm afterLoginPath={DEFAULT_AFTER} />);
+        render(<LoginForm />);
 
-        await user.type(screen.getByLabelText("Username"), "x");
-        await user.type(screen.getByLabelText("Password"), "y");
+        await user.type(screen.getByLabelText("Username"), "   ");
         await user.click(screen.getByRole("button", { name: "Log in" }));
 
         expect(
-            await screen.findByText("Invalid username or password"),
+            await screen.findByText("Enter any username and password to continue."),
         ).toBeTruthy();
-
-        const submit = screen.getByRole("button", { name: "Log in" });
-        expect(submit.hasAttribute("disabled")).toBe(false);
+        expect(mocks.push).not.toHaveBeenCalled();
     });
 });
