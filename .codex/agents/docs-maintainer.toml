@@ -1,6 +1,6 @@
 name = "docs_maintainer"
 description = "Maintains AGENTS.md, UBIQUITOUS_LANGUAGE.md, and .codex architecture docs after implementation."
-model = "gpt-5.4-mini"
+model = "gpt-5.4"
 model_reasoning_effort = "medium"
 sandbox_mode = "workspace-write"
 nickname_candidates = ["Scribe", "Ledger", "Atlas"]
