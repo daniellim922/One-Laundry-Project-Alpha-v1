@@ -17,11 +17,11 @@ npm run build             # production build
 npm run lint              # ESLint (flat config, core-web-vitals + TS)
 npm run test              # all Vitest tests (co-located with source)
 npm run test:e2e          # Playwright E2E (auto-starts dev server)
-npm run db:generate       # generate Drizzle migration
-npm run db:migrate        # run migrations
-npm run db:seed           # push schema + seed
-npm run db:studio         # Drizzle Studio GUI
-npm run db:wipe           # wipe database
+npm run supabase:db:generate  # generate Drizzle migration
+npm run supabase:db:migrate   # run migrations
+npm run supabase:db:seed      # push schema + seed
+npm run supabase:studio       # local Supabase Studio GUI
+npm run supabase:db:wipe      # wipe database
 ```
 
 ### Single-file validation
@@ -65,7 +65,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 - **Vitest** — node environment, tests co-located with source as `*.test.ts` / `*.test.tsx` under `app/`, `components/`, `utils/`, `lib/`, `db/`, `services/`, `scripts/`.
 - **E2E** — Playwright (Chromium), `test/e2e/*.spec.ts`. Auth setup persists to `test/e2e/.auth/user.json`.
 - **Fixtures** in `test/fixtures/`, output in `test/results/`.
-- E2E worker tests are deterministic and assume seeded data. Run `npm run db:seed` first.
+- E2E worker tests are deterministic and assume seeded data. Run `npm run supabase:db:seed` first.
 
 ## Domain terminology (critical)
 

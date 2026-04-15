@@ -3,13 +3,16 @@
 The default local database platform is Supabase local.
 
 1. Copy `.env.example` to `.env`.
-2. Start the local database stack with `npm run db:local:start`.
-3. Check the local service endpoints with `npm run db:local:status`.
-4. Build the app-ready local database state with `npm run db:reset`.
-5. Run schema/admin workflows individually with `npm run db:generate`, `npm run db:migrate`, `npm run db:seed`, `npm run db:wipe`, or `npm run db:studio`.
-6. Run the app with `npm run dev`.
+2. Start the local database stack with `npm run supabase:start`.
+3. Check the local service endpoints with `npm run supabase:status`.
+4. Build the app-ready local database state with `npm run supabase:db:reset`.
+5. Run schema/admin workflows individually with `npm run supabase:db:generate`, `npm run supabase:db:migrate`, `npm run supabase:db:seed`, or `npm run supabase:db:wipe`.
+6. Open the primary local database UI with `npm run supabase:studio`.
+7. Run the app with `npm run dev`.
 
-`npm run db:reset` is the end-to-end local Supabase workflow. It will reset, migrate, and seed the database so the deterministic historical payroll dataset is ready for app use and test flows.
+`npm run supabase:db:reset` is the end-to-end local Supabase workflow. It will reset, migrate, and seed the database so the deterministic historical payroll dataset is ready for app use and test flows.
+
+Legacy `db:*` scripts remain as compatibility aliases, but the Supabase-first `supabase:*` commands are the default path for local development.
 
 The app runtime reads `DATABASE_RUNTIME_URL` first and falls back to `DATABASE_URL`.
 Schema and migration tooling read `DATABASE_ADMIN_URL` first and fall back to `DATABASE_URL`.
@@ -24,12 +27,12 @@ For hosted Supabase, keep the responsibilities split:
 - `DATABASE_RUNTIME_URL`: app traffic, typically the pooled/session connection path.
 - `DATABASE_ADMIN_URL`: Drizzle migrations, schema management, Drizzle Studio, wipe/reset, and seeding against the direct admin-capable connection path.
 
-Supabase Studio is available at `http://127.0.0.1:54323` after the stack starts.
+Supabase Studio is available at `http://127.0.0.1:54323` after the stack starts, and `npm run supabase:studio` opens that URL when possible.
 
 Stop the local stack with:
 
 ```bash
-npm run db:local:stop
+npm run supabase:stop
 ```
 
 ## Worker Test Commands
@@ -39,7 +42,7 @@ npm run test:worker
 npm run test:e2e:worker
 ```
 
-`test:e2e:worker` is deterministic and assumes seeded data/users are present. Run `npm run db:reset` first.
+`test:e2e:worker` is deterministic and assumes seeded data/users are present. Run `npm run supabase:db:reset` first.
 
 ## Learn More
 

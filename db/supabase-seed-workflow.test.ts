@@ -9,25 +9,37 @@ function readRepoFile(path: string): string {
 }
 
 describe("Supabase local seeded workflow contract", () => {
-    it("separates reset, migrate, and seed responsibilities for the local database flow", () => {
+    it("exposes a Supabase-first command surface while keeping reset, migrate, and seed responsibilities split", () => {
         const packageJson = JSON.parse(readRepoFile("package.json")) as {
             scripts?: Record<string, string>;
         };
 
-        expect(packageJson.scripts?.["db:reset"]).toBe(
-            "npm run db:wipe && npm run db:migrate && npm run db:seed",
+        expect(packageJson.scripts?.["supabase:db:reset"]).toBe(
+            "npm run supabase:db:wipe && npm run supabase:db:migrate && npm run supabase:db:seed",
         );
-        expect(packageJson.scripts?.["db:seed"]).toBe("npx tsx db/seed/seed.ts");
+        expect(packageJson.scripts?.["supabase:db:generate"]).toBe(
+            "drizzle-kit generate",
+        );
+        expect(packageJson.scripts?.["supabase:db:migrate"]).toBe(
+            "npx tsx db/migrate-db.ts",
+        );
+        expect(packageJson.scripts?.["supabase:db:seed"]).toBe(
+            "npx tsx db/seed/seed.ts",
+        );
+        expect(packageJson.scripts?.["supabase:db:wipe"]).toBe(
+            "npx tsx db/wipe-db.ts",
+        );
+        expect(packageJson.scripts?.["db:reset"]).toBe("npm run supabase:db:reset");
     });
 
-    it("documents the end-to-end seeded local workflow for developers and tests", () => {
+    it("documents the Supabase-first seeded local workflow for developers and tests", () => {
         const readme = readRepoFile("README.md");
         const agents = readRepoFile("AGENTS.md");
 
-        expect(readme).toContain("npm run db:reset");
+        expect(readme).toContain("npm run supabase:db:reset");
         expect(readme).toContain("reset, migrate, and seed");
-        expect(readme).toContain("Run `npm run db:reset` first.");
-        expect(agents).toContain("npm run db:reset");
+        expect(readme).toContain("Run `npm run supabase:db:reset` first.");
+        expect(agents).toContain("npm run supabase:db:reset");
         expect(agents).toContain("loads a deterministic 12-month historical dataset");
     });
 
