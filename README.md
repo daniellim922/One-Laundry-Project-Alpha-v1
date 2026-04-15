@@ -5,14 +5,21 @@ The default local database platform is Supabase local.
 1. Copy `.env.example` to `.env`.
 2. Start the local database stack with `npm run db:local:start`.
 3. Check the local service endpoints with `npm run db:local:status`.
-4. Run the app with `npm run dev`.
+4. Run schema/admin workflows with `npm run db:generate`, `npm run db:migrate`, `npm run db:seed`, `npm run db:wipe`, or `npm run db:studio`.
+5. Run the app with `npm run dev`.
 
 The app runtime reads `DATABASE_RUNTIME_URL` first and falls back to `DATABASE_URL`.
-For local Supabase both point at:
+Schema and migration tooling read `DATABASE_ADMIN_URL` first and fall back to `DATABASE_URL`.
+For local Supabase all three can point at:
 
 ```bash
 postgresql://postgres:postgres@127.0.0.1:54322/postgres
 ```
+
+For hosted Supabase, keep the responsibilities split:
+
+- `DATABASE_RUNTIME_URL`: app traffic, typically the pooled/session connection path.
+- `DATABASE_ADMIN_URL`: Drizzle migrations, schema management, Drizzle Studio, wipe/reset, and seeding against the direct admin-capable connection path.
 
 Supabase Studio is available at `http://127.0.0.1:54323` after the stack starts.
 

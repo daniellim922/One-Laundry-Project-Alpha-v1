@@ -21,8 +21,12 @@ describe("Supabase local bootstrap contract", () => {
             "npx supabase status",
         );
         expect(readRepoFile(".env.example")).toContain(
+            "DATABASE_ADMIN_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres",
+        );
+        expect(readRepoFile(".env.example")).toContain(
             "DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres",
         );
         expect(readRepoFile("README.md")).toContain("npm run db:local:start");
+        expect(readRepoFile("README.md")).toContain("DATABASE_ADMIN_URL");
     });
 });

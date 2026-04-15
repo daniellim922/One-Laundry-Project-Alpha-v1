@@ -17,11 +17,11 @@ npm run test:worker             # worker-focused tests
 npm run test:e2e                # Playwright E2E
 npm run test:e2e:worker         # worker E2E subset
 npm run test:e2e:ui             # Playwright UI runner
-npm run db:studio               # Drizzle Studio
-npm run db:generate             # generate Drizzle migration
-npm run db:migrate              # run migrations
-npm run db:seed                 # push schema + seed
-npm run db:wipe                 # wipe database
+npm run db:studio               # Drizzle Studio via admin DB contract
+npm run db:generate             # generate Drizzle migration via admin DB contract
+npm run db:migrate              # run migrations via admin DB contract
+npm run db:seed                 # push schema + seed via admin DB contract
+npm run db:wipe                 # wipe database via admin DB contract
 ```
 
 ### File-scoped validation
@@ -50,6 +50,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 - **Data tables** use the shared `DataTable` from `components/data-table/`. Columns are defined in `columns.tsx` next to the route. Use `createSortableHeader`, `createBadgeCell`, `createActionsColumn` from `column-builders.tsx`.
 - **Async UX** must expose loading state. Interactive client components show pending/disabled UI for submits and fetches; async route sections should use Suspense or a route-level loading fallback where the wait is user-visible.
 - **Database tables** use `pgTable("snake_case", { ... })` with UUID PKs. Enums are `text(..., { enum: [...] as const })` aligned with `types/status.ts`. Types are exported via `$inferSelect` / `$inferInsert`.
+- **Database connection roles are explicit.** App/runtime reads use `DATABASE_RUNTIME_URL` first via `lib/db.ts`; schema management, Drizzle Kit, Studio, wipe/reset, and seed flows use `DATABASE_ADMIN_URL` first via `lib/admin-db.ts`. `DATABASE_URL` remains the legacy fallback for each boundary.
 - **Codex workspace automation** lives under `.codex/` for repo rules, hooks, prompts, custom agents, and architecture docs.
 
 ## Seed Dataset
