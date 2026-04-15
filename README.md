@@ -7,7 +7,8 @@ The default local database platform is Supabase local.
 3. Check the local service endpoints with `npm run db:local:status`.
 4. Run the app with `npm run dev`.
 
-The local Postgres endpoint exposed to the app is:
+The app runtime reads `DATABASE_RUNTIME_URL` first and falls back to `DATABASE_URL`.
+For local Supabase both point at:
 
 ```bash
 postgresql://postgres:postgres@127.0.0.1:54322/postgres
