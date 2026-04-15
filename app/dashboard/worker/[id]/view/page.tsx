@@ -2,8 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 
-import { requirePermission } from "@/utils/permissions/require-permission";
-import { checkPermission } from "@/utils/permissions/permissions";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { Button } from "@/components/ui/button";
 import { EntityStatusBadge } from "@/components/ui/entity-status-badge";
@@ -23,8 +21,6 @@ interface PageProps {
 }
 
 export default async function ViewWorkerPage({ params }: PageProps) {
-    const { userId } = await requirePermission("Workers", "read");
-
     const { id } = await params;
 
     const [worker] = (await db
@@ -62,29 +58,20 @@ export default async function ViewWorkerPage({ params }: PageProps) {
         notFound();
     }
 
-    const canEdit = await checkPermission(userId, "Workers", "update");
-
     return (
         <FormPageLayout
             title="View worker"
             subtitle="Worker details (read-only)."
             status={<EntityStatusBadge status={worker.status} />}
             actions={
-                canEdit ? (
-                    <Button asChild variant="outline">
-                        <Link
-                            href={`/dashboard/worker/${id}/edit`}
-                            className="flex items-center gap-2">
-                            <Pencil className="h-4 w-4" />
-                            Edit
-                        </Link>
-                    </Button>
-                ) : (
-                    <Button variant="outline" disabled>
+                <Button asChild variant="outline">
+                    <Link
+                        href={`/dashboard/worker/${id}/edit`}
+                        className="flex items-center gap-2">
                         <Pencil className="h-4 w-4" />
                         Edit
-                    </Button>
-                )
+                    </Link>
+                </Button>
             }>
             <WorkerForm worker={worker} disabled />
         </FormPageLayout>

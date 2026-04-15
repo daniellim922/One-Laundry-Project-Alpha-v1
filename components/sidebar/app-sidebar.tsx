@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 
 import { NavMain } from "@/components/sidebar/nav-main";
-import { NavUser } from "@/components/sidebar/nav-user";
 import { SidebarModeToggle } from "@/components/ui/theme-switcher";
 import {
     Sidebar,
@@ -97,7 +96,6 @@ export function AppSidebar({
             </SidebarContent>
             <SidebarFooter>
                 <SidebarModeToggle />
-                <NavUser />
             </SidebarFooter>
             <SidebarRail />
         </Sidebar>

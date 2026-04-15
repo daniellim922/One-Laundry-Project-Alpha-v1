@@ -2,8 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 
-import { requirePermission } from "@/utils/permissions/require-permission";
-import { checkPermission } from "@/utils/permissions/permissions";
 import { db } from "@/lib/db";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
@@ -20,8 +18,6 @@ interface PageProps {
 }
 
 export default async function ViewTimesheetEntryPage({ params }: PageProps) {
-    const { userId } = await requirePermission("Timesheet", "read");
-
     const { id } = await params;
 
     const [entry] = await db
@@ -40,10 +36,6 @@ export default async function ViewTimesheetEntryPage({ params }: PageProps) {
 
     if (!entry) notFound();
 
-    const canEdit =
-        entry.status !== "Timesheet Paid" &&
-        (await checkPermission(userId, "Timesheet", "update"));
-
     const workers = await db
         .select({ id: workerTable.id, name: workerTable.name })
         .from(workerTable)
@@ -55,7 +47,12 @@ export default async function ViewTimesheetEntryPage({ params }: PageProps) {
             subtitle="Clock in/out and worker for this entry (read-only)"
             status={<EntityStatusBadge status={entry.status} />}
             actions={
-                canEdit ? (
+                entry.status === "Timesheet Paid" ? (
+                    <Button variant="outline" disabled>
+                        <Pencil className="h-4 w-4" />
+                        Edit
+                    </Button>
+                ) : (
                     <Button asChild variant="outline">
                         <Link
                             href={`/dashboard/timesheet/${id}/edit`}
@@ -63,11 +60,6 @@ export default async function ViewTimesheetEntryPage({ params }: PageProps) {
                             <Pencil className="h-4 w-4" />
                             Edit
                         </Link>
-                    </Button>
-                ) : (
-                    <Button variant="outline" disabled>
-                        <Pencil className="h-4 w-4" />
-                        Edit
                     </Button>
                 )
             }>

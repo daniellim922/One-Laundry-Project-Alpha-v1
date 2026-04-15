@@ -4,8 +4,6 @@ import { count, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { advanceRequestTable } from "@/db/tables/payroll/advanceRequestTable";
 import { Button } from "@/components/ui/button";
-import { requirePermission } from "@/utils/permissions/require-permission";
-import { checkPermission } from "@/utils/permissions/permissions";
 import {
     Card,
     CardContent,
@@ -17,9 +15,6 @@ import { SimpleDonutChart } from "@/components/dashboard/simple-donut-chart";
 import { ArrowRight, Banknote, Plus } from "lucide-react";
 
 export default async function AdvanceOverviewPage() {
-    const { userId } = await requirePermission("Advance", "read");
-    const canCreate = await checkPermission(userId, "Advance", "create");
-
     const [[{ total }], [{ advanceLoanCount }]] = await Promise.all([
         db.select({ total: count() }).from(advanceRequestTable),
         db
@@ -64,14 +59,12 @@ export default async function AdvanceOverviewPage() {
                         <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                 </Button>
-                {canCreate ? (
-                    <Button variant="outline" asChild>
-                        <Link href="/dashboard/advance/new">
-                            <Plus className="mr-2 h-4 w-4" />
-                            New advance
-                        </Link>
-                    </Button>
-                ) : null}
+                <Button variant="outline" asChild>
+                    <Link href="/dashboard/advance/new">
+                        <Plus className="mr-2 h-4 w-4" />
+                        New advance
+                    </Link>
+                </Button>
             </div>
 
             <Card>

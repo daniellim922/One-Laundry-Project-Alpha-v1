@@ -14,53 +14,38 @@ import {
 } from "@/components/ui/card";
 import { SimpleDonutChart } from "@/components/dashboard/simple-donut-chart";
 import { ArrowRight, Plus, Users } from "lucide-react";
-import { requirePermission } from "@/utils/permissions/require-permission";
-import { checkPermission } from "@/utils/permissions/permissions";
 import { MassEditWorkingHoursButton } from "./mass-edit/mass-edit-working-hours-button";
 
 export default async function WorkerOverviewPage() {
-    const { userId } = await requirePermission("Workers", "read");
-
-    const canMassEditWorkingHours = await checkPermission(
-        userId,
-        "Workers",
-        "update",
-    );
-
-    const [[{ total }], [{ active }]] = await Promise.all([
+    const [[{ total }], [{ active }], workersForMassEdit] = await Promise.all([
         db.select({ total: count() }).from(workerTable),
         db
             .select({ active: count() })
             .from(workerTable)
             .where(eq(workerTable.status, "Active")),
+        db
+            .select({
+                id: workerTable.id,
+                name: workerTable.name,
+                employmentArrangement: employmentTable.employmentArrangement,
+                minimumWorkingHours: employmentTable.minimumWorkingHours,
+            })
+            .from(workerTable)
+            .innerJoin(
+                employmentTable,
+                eq(workerTable.employmentId, employmentTable.id),
+            )
+            .where(
+                and(
+                    eq(workerTable.status, "Active"),
+                    eq(employmentTable.employmentType, "Full Time"),
+                    eq(employmentTable.employmentArrangement, "Foreign Worker"),
+                ),
+            )
+            .orderBy(desc(workerTable.updatedAt)),
     ]);
 
     const inactive = Number(total) - Number(active);
-    const workersForMassEdit = canMassEditWorkingHours
-        ? await db
-              .select({
-                  id: workerTable.id,
-                  name: workerTable.name,
-                  employmentArrangement: employmentTable.employmentArrangement,
-                  minimumWorkingHours: employmentTable.minimumWorkingHours,
-              })
-              .from(workerTable)
-              .innerJoin(
-                  employmentTable,
-                  eq(workerTable.employmentId, employmentTable.id),
-              )
-              .where(
-                  and(
-                      eq(workerTable.status, "Active"),
-                      eq(employmentTable.employmentType, "Full Time"),
-                      eq(
-                          employmentTable.employmentArrangement,
-                          "Foreign Worker",
-                      ),
-                  ),
-              )
-              .orderBy(desc(workerTable.updatedAt))
-        : [];
 
     return (
         <div className="space-y-6">
@@ -101,9 +86,7 @@ export default async function WorkerOverviewPage() {
                         New worker
                     </Link>
                 </Button>
-                {canMassEditWorkingHours ? (
-                    <MassEditWorkingHoursButton workers={workersForMassEdit} />
-                ) : null}
+                <MassEditWorkingHoursButton workers={workersForMassEdit} />
             </div>
 
             <Card>

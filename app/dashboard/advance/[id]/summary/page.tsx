@@ -6,8 +6,6 @@ import { EntityStatusBadge } from "@/components/ui/entity-status-badge";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { StepProgressPanel } from "@/components/ui/step-progress-panel";
 import { getAdvanceRequestByIdWithWorker } from "@/utils/advance/queries";
-import { requirePermission } from "@/utils/permissions/require-permission";
-import { checkPermission } from "@/utils/permissions/permissions";
 import { Pencil } from "lucide-react";
 
 import { getAdvanceStepItems } from "../page";
@@ -19,15 +17,11 @@ interface PageProps {
 }
 
 export default async function AdvanceSummaryPage({ params }: PageProps) {
-    const { userId } = await requirePermission("Advance", "read");
-
     const { id } = await params;
     const detail = await getAdvanceRequestByIdWithWorker(id);
     if (!detail) {
         notFound();
     }
-    const canUpdate = await checkPermission(userId, "Advance", "update");
-
     return (
         <FormPageLayout
             title="Advance request"
@@ -35,7 +29,7 @@ export default async function AdvanceSummaryPage({ params }: PageProps) {
             status={<EntityStatusBadge status={detail.request.status} />}
             maxWidthClassName="max-w-none"
             actions={
-                !canUpdate || detail.request.status === "Advance Paid" ? (
+                detail.request.status === "Advance Paid" ? (
                     <Button variant="outline" disabled>
                         <Pencil className="h-4 w-4" />
                         Edit

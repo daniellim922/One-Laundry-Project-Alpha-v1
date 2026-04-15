@@ -23,8 +23,6 @@ export type DashboardNavFeature = {
     subFeatures: DashboardNavSubFeature[];
     featureName: string;
     iconName: DashboardNavIconName;
-    /** When true, sidebar shows without read check */
-    alwaysVisible?: boolean;
 };
 
 export const DASHBOARD_NAV_FEATURES: DashboardNavFeature[] = [

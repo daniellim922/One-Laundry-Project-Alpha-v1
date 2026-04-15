@@ -74,9 +74,9 @@ Simplify dashboard presentation for the new open-access model. All non-IAM featu
 
 ### Acceptance criteria
 
-- [ ] Non-IAM navigation items are always shown.
-- [ ] Remaining create, update, delete, and export controls are no longer permission-gated.
-- [ ] No current-user card, logout action, or account menu remains in the dashboard shell.
+- [x] Non-IAM navigation items are always shown.
+- [x] Remaining create, update, delete, and export controls are no longer permission-gated.
+- [x] No current-user card, logout action, or account menu remains in the dashboard shell.
 
 ---
 

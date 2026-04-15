@@ -1,8 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { requirePermission } from "@/utils/permissions/require-permission";
-import { checkPermission } from "@/utils/permissions/permissions";
 import {
     workerTable,
     type WorkerWithEmployment,
@@ -11,14 +9,6 @@ import { employmentTable } from "@/db/tables/payroll/employmentTable";
 import { WorkerAllTableSection } from "./worker-all-table-section";
 
 export default async function Page() {
-    const { userId } = await requirePermission("Workers", "read");
-    const canCreateWorker = await checkPermission(userId, "Workers", "create");
-    const canMassEditWorkingHours = await checkPermission(
-        userId,
-        "Workers",
-        "update",
-    );
-
     const workers = (await db
         .select({
             id: workerTable.id,
@@ -49,21 +39,19 @@ export default async function Page() {
         )
         .orderBy(desc(workerTable.updatedAt))) as WorkerWithEmployment[];
 
-    const workersForMassEdit = canMassEditWorkingHours
-        ? workers
-              .filter(
-                  (worker) =>
-                      worker.status === "Active" &&
-                      worker.employmentType === "Full Time" &&
-                      worker.employmentArrangement === "Foreign Worker",
-              )
-              .map((worker) => ({
-                  id: worker.id,
-                  name: worker.name,
-                  employmentArrangement: worker.employmentArrangement,
-                  minimumWorkingHours: worker.minimumWorkingHours,
-              }))
-        : [];
+    const workersForMassEdit = workers
+        .filter(
+            (worker) =>
+                worker.status === "Active" &&
+                worker.employmentType === "Full Time" &&
+                worker.employmentArrangement === "Foreign Worker",
+        )
+        .map((worker) => ({
+            id: worker.id,
+            name: worker.name,
+            employmentArrangement: worker.employmentArrangement,
+            minimumWorkingHours: worker.minimumWorkingHours,
+        }));
 
     return (
         <div className="space-y-6">
@@ -78,8 +66,6 @@ export default async function Page() {
 
             <WorkerAllTableSection
                 workers={workers}
-                canCreateWorker={canCreateWorker}
-                canMassEditWorkingHours={canMassEditWorkingHours}
                 workersForMassEdit={workersForMassEdit}
             />
         </div>

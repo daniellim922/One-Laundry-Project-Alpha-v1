@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { EntityStatusBadge } from "@/components/ui/entity-status-badge";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { getAdvanceRequestByIdWithWorker } from "@/utils/advance/queries";
-import { requirePermission } from "@/utils/permissions/require-permission";
-import { checkPermission } from "@/utils/permissions/permissions";
 import { StepProgressPanel } from "@/components/ui/step-progress-panel";
 import { Pencil } from "lucide-react";
 
@@ -18,9 +16,6 @@ export default async function AdvanceBreakdownPage({
 }: {
     params: Promise<{ id: string }>;
 }) {
-    const { userId } = await requirePermission("Advance", "read");
-    const canUpdate = await checkPermission(userId, "Advance", "update");
-
     const { id } = await params;
     const detail = await getAdvanceRequestByIdWithWorker(id);
     if (!detail) {
@@ -34,7 +29,7 @@ export default async function AdvanceBreakdownPage({
             status={<EntityStatusBadge status={detail.request.status} />}
             maxWidthClassName="max-w-none"
             actions={
-                !canUpdate || detail.request.status === "Advance Paid" ? (
+                detail.request.status === "Advance Paid" ? (
                     <Button variant="outline" disabled>
                         <Pencil className="h-4 w-4" />
                         Edit

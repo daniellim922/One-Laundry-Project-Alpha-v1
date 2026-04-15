@@ -17,13 +17,9 @@ import {
 
 export function WorkerAllTableSection({
     workers,
-    canCreateWorker,
-    canMassEditWorkingHours,
     workersForMassEdit,
 }: {
     workers: WorkerWithEmployment[];
-    canCreateWorker: boolean;
-    canMassEditWorkingHours: boolean;
     workersForMassEdit: Array<{
         id: string;
         name: string;
@@ -44,20 +40,16 @@ export function WorkerAllTableSection({
                 searchParamKey="search"
                 actions={
                     <div className="flex flex-wrap items-center gap-2">
-                        {canCreateWorker ? (
-                            <Button asChild>
-                                <Link href="/dashboard/worker/new">
-                                    <Plus className="mr-2 h-4 w-4" />
-                                    New worker
-                                </Link>
-                            </Button>
-                        ) : null}
-                        {canMassEditWorkingHours ? (
-                            <MassEditWorkingHoursButton
-                                workers={workersForMassEdit}
-                                onResult={setMassEditResults}
-                            />
-                        ) : null}
+                        <Button asChild>
+                            <Link href="/dashboard/worker/new">
+                                <Plus className="mr-2 h-4 w-4" />
+                                New worker
+                            </Link>
+                        </Button>
+                        <MassEditWorkingHoursButton
+                            workers={workersForMassEdit}
+                            onResult={setMassEditResults}
+                        />
                     </div>
                 }
             />

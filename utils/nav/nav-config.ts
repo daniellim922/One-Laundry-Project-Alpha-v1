@@ -1,5 +1,4 @@
 import { DASHBOARD_NAV_FEATURES } from "./dashboard-nav-features";
-import { checkPermission } from "../permissions/permissions";
 
 export type NavSubItem = {
     title: string;
@@ -20,9 +19,7 @@ export type NavItemSerializable = {
     items?: NavSubItem[];
 };
 
-type NavItemConfig = NavItemSerializable & {
-    alwaysVisible?: boolean;
-};
+type NavItemConfig = NavItemSerializable;
 
 function toNavItemConfig(f: (typeof DASHBOARD_NAV_FEATURES)[number]): NavItemConfig {
     const items =
@@ -35,16 +32,13 @@ function toNavItemConfig(f: (typeof DASHBOARD_NAV_FEATURES)[number]): NavItemCon
         iconName: f.iconName,
         featureName: f.featureName,
         items,
-        alwaysVisible: f.alwaysVisible,
     };
 }
 
 const NAV_ITEMS: NavItemConfig[] = DASHBOARD_NAV_FEATURES.map(toNavItemConfig);
 
 function toSerializable(item: NavItemConfig): NavItemSerializable {
-    const { alwaysVisible, ...rest } = item;
-    void alwaysVisible;
-    return rest;
+    return item;
 }
 
 export function getAllNavItems(): NavItemSerializable[] {
@@ -54,20 +48,6 @@ export function getAllNavItems(): NavItemSerializable[] {
 export async function getVisibleNavItems(
     userId: string,
 ): Promise<NavItemSerializable[]> {
-    const results = await Promise.all(
-        NAV_ITEMS.map(async (item) => {
-            if (item.alwaysVisible) {
-                return { item, hasAccess: true as const };
-            }
-            return {
-                item,
-                hasAccess: await checkPermission(
-                    userId,
-                    item.featureName,
-                    "read",
-                ),
-            };
-        }),
-    );
-    return results.filter((r) => r.hasAccess).map((r) => toSerializable(r.item));
+    void userId;
+    return getAllNavItems();
 }
