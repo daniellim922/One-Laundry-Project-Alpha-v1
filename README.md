@@ -1,24 +1,25 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Local Setup
 
-## Getting Started
+The default local database platform is Supabase local.
 
-First, run the development server:
+1. Copy `.env.example` to `.env`.
+2. Start the local database stack with `npm run db:local:start`.
+3. Check the local service endpoints with `npm run db:local:status`.
+4. Run the app with `npm run dev`.
+
+The local Postgres endpoint exposed to the app is:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+postgresql://postgres:postgres@127.0.0.1:54322/postgres
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Supabase Studio is available at `http://127.0.0.1:54323` after the stack starts.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Stop the local stack with:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run db:local:stop
+```
 
 ## Worker Test Commands
 
