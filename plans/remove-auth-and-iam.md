@@ -122,6 +122,6 @@ Stabilize the removal by updating verification coverage and repository documenta
 
 ### Acceptance criteria
 
-- [ ] Remaining tests validate open-access entry and core dashboard flows.
-- [ ] Auth- and IAM-specific documentation is removed or rewritten.
-- [ ] `AGENTS.md`, glossary references, and generated architecture docs describe the auth-free system accurately.
+- [x] Remaining tests validate open-access entry and core dashboard flows.
+- [x] Auth- and IAM-specific documentation is removed or rewritten.
+- [x] `AGENTS.md`, glossary references, and generated architecture docs describe the auth-free system accurately.

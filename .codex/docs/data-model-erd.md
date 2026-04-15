@@ -1,6 +1,6 @@
 # One Laundry Data Model ERD
 
-This ERD documents the live Drizzle/Postgres model across payroll operations, IAM, auth, and expenses.
+This ERD documents the live Drizzle/Postgres model across payroll operations and expenses.
 
 ## Mermaid ERD
 
@@ -84,78 +84,18 @@ erDiagram
         timestamp date
     }
 
-    USER {
-        text id PK
-        text email
-        text username
-        boolean banned
-    }
-
-    SESSION {
-        text id PK
-        text user_id FK
-        timestamp expires_at
-        text token
-    }
-
-    ACCOUNT {
-        text id PK
-        text user_id FK
-        text provider_id
-        text account_id
-    }
-
-    VERIFICATION {
-        text id PK
-        text identifier
-        text value
-        timestamp expires_at
-    }
-
-    FEATURE {
-        uuid id PK
-        text name
-    }
-
-    ROLE {
-        uuid id PK
-        text name
-    }
-
-    ROLE_PERMISSION {
-        uuid id PK
-        uuid role_id FK
-        uuid feature_id FK
-        boolean create
-        boolean read
-        boolean update
-        boolean delete
-    }
-
-    USER_ROLE {
-        uuid id PK
-        text user_id FK
-        uuid role_id FK
-    }
-
     EMPLOYMENT ||--|| WORKER : "assigned to"
     WORKER ||--o{ TIMESHEET : "logs"
     WORKER ||--o{ ADVANCE_REQUEST : "submits"
     ADVANCE_REQUEST ||--o{ ADVANCE : "repays as"
     WORKER ||--o{ PAYROLL : "paid through"
     PAYROLL_VOUCHER ||--o{ PAYROLL : "backs"
-    USER ||--o{ SESSION : "owns"
-    USER ||--o{ ACCOUNT : "links"
-    USER ||--o{ USER_ROLE : "receives"
-    ROLE ||--o{ USER_ROLE : "assigned via"
-    ROLE ||--o{ ROLE_PERMISSION : "grants"
-    FEATURE ||--o{ ROLE_PERMISSION : "scopes"
 ```
 
 ## Notes
 
 - `expenses` is currently standalone and does not link to `worker` or `payroll`.
-- `verification` is standalone support data for auth flows.
+- Legacy auth and IAM table definitions may still exist under `db/tables/auth/`, but they are not re-exported from `db/schema.ts` and are not part of the live Drizzle schema.
 - App logic treats `payroll` and `payroll_voucher` as one voucher per payroll run, but the current schema stores the foreign key on `payroll` without a unique constraint on `payroll_voucher_id`.
 
 ## Status Enums

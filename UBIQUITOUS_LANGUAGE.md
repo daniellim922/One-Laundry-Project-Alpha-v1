@@ -1,6 +1,6 @@
 # Ubiquitous Language
 
-Domain vocabulary inferred from the implemented schema, payroll calculations, and dashboard. **Agreed product scope:** this application covers **internal operations only** (workforce payroll, advances, expenses, IAM) for a laundry business; **customer-facing laundry** (orders, customers, service delivery) lives in another system or is out of scope here. The **bounded context in code** is **workforce payroll and back-office spend**.
+Domain vocabulary inferred from the implemented schema, payroll calculations, and dashboard. **Agreed product scope:** this application covers **internal operations only** (workforce payroll, advances, and expenses) for a laundry business; **customer-facing laundry** (orders, customers, service delivery) lives in another system or is out of scope here. The **bounded context in code** is **workforce payroll and back-office spend**.
 
 ## People and employment
 
@@ -78,14 +78,14 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 | **Expense category** | The optional free-text label used to group or filter an **Expense** operationally. | Ledger code (unless accounting adopts that field formally) |
 
 
-## Access control (supporting bounded context)
+## Entry flow
 
 
-| Term        | Definition                                                                                                | Aliases to avoid                                             |
-| ----------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| **User**    | A login identity in the app; permissions come from **Roles** on **Features**.                             | Worker (a **User** may manage **Workers** without being one) |
-| **Feature** | A named area of the product (e.g. **Workers**, **Payroll**) that **Roles** may create/read/update/delete. | Module (implementation slang)                                |
-| **Role**    | A named bundle of permissions over **Features**.                                                          | Group                                                        |
+| Term | Definition | Aliases to avoid |
+| ---- | ---------- | ---------------- |
+| **Landing page** | The public `/` page that introduces the product and links into the internal app. | Home dashboard |
+| **Gateway login** | The `/login` screen; it is a UI-only entry form that accepts any non-empty username and password and then routes to `/dashboard`. | Authentication, sign-in policy |
+| **Open dashboard access** | The current operating rule that all dashboard routes and internal APIs are available without a user identity or role check. | Guest mode, temporary bypass |
 
 
 ## Relationships
@@ -107,10 +107,6 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 > **Dev:** "We **reopen** a **Settled** run to fix a mistake — what happens to **Advances** and **Timesheets**?"
 
 > **Domain expert:** "Recovery unwinds: installments go back to **Installment Loan** and timesheet entries revert to **Timesheet Unpaid** until we **Settle** again. We only **reopen** the **whole** payroll for that worker and period, and periods must not overlap across runs."
-
-> **Dev:** "Who can **Reopen**?"
-
-> **Domain expert:** "Whoever can **Settle**. **Workers** are still not the same as **Users** — managers sign in as **Users**; **Workers** are who we pay."
 
 ## Flagged ambiguities
 
