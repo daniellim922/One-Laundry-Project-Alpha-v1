@@ -6,16 +6,16 @@ The default local database platform is Supabase local.
 2. Start the local database stack with `npm run supabase:start`.
 3. Check the local service endpoints with `npm run supabase:status`.
 4. Build the app-ready local database state with `npm run supabase:db:reset`.
-5. Run schema/admin workflows individually with `npm run supabase:db:generate`, `npm run supabase:db:migrate`, `npm run supabase:db:seed`, or `npm run supabase:db:wipe`.
+5. Run schema/admin workflows individually with `npm run supabase:db:migrate` (applies `db/schema.ts` via `drizzle-kit push`), `npm run supabase:db:seed`, or `npm run supabase:db:wipe`.
 6. Open the primary local database UI with `npm run supabase:studio`.
 7. Run the app with `npm run dev`.
 
-`npm run supabase:db:reset` is the end-to-end local Supabase workflow. It will reset, migrate, and seed the database so the deterministic historical payroll dataset is ready for app use and test flows.
+`npm run supabase:db:reset` is the end-to-end local Supabase workflow. It will reset, push schema, and seed the database so the deterministic historical payroll dataset is ready for app use and test flows.
 
 Legacy `db:*` scripts remain as compatibility aliases, but the Supabase-first `supabase:*` commands are the default path for local development.
 
 The app runtime reads `DATABASE_RUNTIME_URL` first and falls back to `DATABASE_URL`.
-Schema and migration tooling read `DATABASE_ADMIN_URL` first and fall back to `DATABASE_URL`.
+Schema tooling (`drizzle-kit push`, Drizzle Studio, wipe/reset, seed) read `DATABASE_ADMIN_URL` first and fall back to `DATABASE_URL`.
 For local Supabase all three can point at:
 
 ```bash
@@ -25,13 +25,13 @@ postgresql://postgres:postgres@127.0.0.1:54322/postgres
 For hosted Supabase, keep the responsibilities split:
 
 - `DATABASE_RUNTIME_URL`: app traffic, typically the pooled/session connection path.
-- `DATABASE_ADMIN_URL`: Drizzle migrations, schema management, Drizzle Studio, wipe/reset, and seeding against the direct admin-capable connection path.
+- `DATABASE_ADMIN_URL`: `drizzle-kit push`, schema management, Drizzle Studio, wipe/reset, and seeding against the direct admin-capable connection path.
 
-## Migration ownership
+## Schema ownership
 
 - `lib/db.ts` owns the runtime database boundary for app traffic.
-- `lib/admin-db.ts` owns migration, schema-management, wipe/reset, and seed workflows.
-- Drizzle is the schema source of truth; Supabase CLI manages local platform lifecycle only.
+- `lib/admin-db.ts` owns schema-management, wipe/reset, and seed workflows. `npm run supabase:db:migrate` runs `drizzle-kit push` from `db/push-schema.ts`.
+- Drizzle (`db/schema.ts`) is the schema source of truth; Supabase CLI manages local platform lifecycle only.
 - The production rollout contract lives in `.codex/docs/supabase-rollout-contract.md`.
 
 Supabase Studio is available at `http://127.0.0.1:54323` after the stack starts, and `npm run supabase:studio` opens that URL when possible.
@@ -66,10 +66,10 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-## Payroll Overlap Migration Diagnostics
+## Payroll overlap diagnostics
 
 The payroll table enforces no overlapping payroll periods for the same worker.
-If migration `0017_payroll_worker_period_overlap_exclusion.sql` fails, run:
+If inserting or updating payroll rows fails with an exclusion constraint violation on overlapping periods, run:
 
 ```sql
 SELECT

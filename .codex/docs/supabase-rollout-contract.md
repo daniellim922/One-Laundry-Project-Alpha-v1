@@ -2,12 +2,12 @@
 
 Status: Draft until human review is recorded on Issue #63.
 
-This contract defines how One Laundry moves from the local Supabase-first workflow to a hosted Supabase production database without changing Drizzle ownership of schema and migrations.
+This contract defines how One Laundry moves from the local Supabase-first workflow to a hosted Supabase production database without changing Drizzle ownership of the schema.
 
 ## Scope
 
 - Supabase is the database platform for local development and hosted production.
-- Drizzle remains the source of truth for schema and migrations.
+- Drizzle (`db/schema.ts`) remains the source of truth for the relational schema; the database is synchronized with **`drizzle-kit push`** (no committed SQL migration chain in git).
 - The Next.js app stays separately hosted; this contract only covers the database rollout boundary.
 - Live data migration is out of scope for this refactor and must be planned separately before any cutover.
 
@@ -18,30 +18,29 @@ This contract defines how One Laundry moves from the local Supabase-first workfl
 - `DATABASE_URL` remains a legacy fallback only and should not be the primary production contract once the rollout is prepared.
 - Local Supabase may set all three variables to `postgresql://postgres:postgres@127.0.0.1:54322/postgres`.
 
-## Migration Ownership
+## Schema ownership
 
 - `lib/db.ts` owns runtime database access for app reads and writes.
-- `lib/admin-db.ts` owns schema-management, migration, wipe, reset, and seed access.
-- `npm run supabase:db:generate` is the only repo-supported path for generating new Drizzle migrations.
-- `npm run supabase:db:migrate` is the repo-supported path for applying committed Drizzle migrations.
+- `lib/admin-db.ts` owns schema-management, wipe, reset, and seed access.
+- `npm run supabase:db:migrate` runs `drizzle-kit push` via `db/push-schema.ts` using `drizzle.config.ts` and the admin URL contract.
 - Supabase CLI manages the local platform lifecycle, not schema authorship.
-- Production schema changes must run from committed Drizzle migrations before any app deployment that depends on them.
+- **Production risk:** `drizzle-kit push` applies diffs directly and can drop or alter columns without a reviewed SQL migration file. Treat production pushes like destructive DDL: review `db/schema.ts` changes, back up first, and run smoke checks after.
 
 ## Launch Prerequisites
 
 - Hosted Supabase project exists with production connection values prepared for both runtime and admin roles.
-- The committed Drizzle migration chain is clean, reviewed, and ready to run in order.
+- `db/schema.ts` on the release branch is reviewed for intended DDL impact (including data loss) before push.
 - Local verification has passed on the current branch with `npm run test:db:contracts` and any feature checks required by the release.
 - Seed policy is explicit: deterministic seed data is for local and test environments only, not for production.
-- Operators know the local reset workflow, the production migration owner, and the smoke-check path after migration.
+- Operators know the local reset workflow, who approves production schema changes, and the smoke-check path after push.
 
 ## Execution Order
 
 1. Confirm the hosted Supabase project is reachable through both `DATABASE_RUNTIME_URL` and `DATABASE_ADMIN_URL`.
 2. Back up the target database according to the hosting environment policy before applying schema changes.
-3. Apply committed Drizzle migrations through the admin connection with `npm run supabase:db:migrate`.
+3. Apply the schema through the admin connection with `npm run supabase:db:migrate` (drizzle-kit push).
 4. Do not run `npm run supabase:db:seed` against production.
-5. Deploy or restart the application only after migrations finish successfully.
+5. Deploy or restart the application only after the schema push finishes successfully.
 6. Run the smoke checks below before treating the release as healthy.
 
 ## Smoke Checks
@@ -54,10 +53,10 @@ This contract defines how One Laundry moves from the local Supabase-first workfl
 
 ## Rollback Expectations
 
-- If a migration fails before application deploy, stop and restore database access from backup or platform recovery procedures before retrying.
+- If a schema push fails before application deploy, stop and restore database access from backup or platform recovery procedures before retrying.
 - If the app deploy succeeds but smoke checks fail, prefer rolling the application back first when the schema remains backward-compatible.
 - If a schema change is not backward-compatible, rollback requires an explicit database recovery decision; do not improvise ad hoc reverse SQL in production.
-- Record the failed migration tag, observed error, and recovery action before the next rollout attempt.
+- Record the failed operation, observed error, and recovery action before the next rollout attempt.
 
 ## Human Review
 

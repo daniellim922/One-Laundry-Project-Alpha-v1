@@ -30,10 +30,9 @@ function rowsFromExecute<T extends Record<string, unknown>>(
 
 /**
  * Destroys the application schema by dropping all app-owned tables in `public`
- * plus Drizzle's migration ledger in the `drizzle` schema, then custom enum
- * types in `public`. The reset flow needs the migration ledger gone so
- * `drizzle-kit migrate` can replay the schema from scratch against local
- * Supabase.
+ * plus Drizzle's migration ledger in the `drizzle` schema (if present), then custom enum
+ * types in `public`. The reset flow clears the database so `drizzle-kit push` can
+ * apply `db/schema.ts` from scratch against local Supabase.
  */
 async function wipeDb() {
     console.log("Discovering tables to drop...");

@@ -43,6 +43,9 @@ next-env.d.ts
 
 test/results/
 
+# Drizzle: schema is applied with drizzle-kit push; do not commit generated SQL/meta
+/drizzle/
+
 # Python (Codex hooks)
 __pycache__/
 *.py[cod]

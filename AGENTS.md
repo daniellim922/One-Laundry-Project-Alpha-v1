@@ -19,9 +19,8 @@ npm run test:e2e:worker         # worker E2E subset
 npm run test:e2e:ui             # Playwright UI runner
 npm run supabase:start          # start the local Supabase stack
 npm run supabase:status         # print local Supabase service endpoints
-npm run supabase:db:reset       # wipe + migrate + seed via admin DB contract
-npm run supabase:db:generate    # generate Drizzle migration via admin DB contract
-npm run supabase:db:migrate     # run migrations via admin DB contract
+npm run supabase:db:reset       # wipe + push schema + seed via admin DB contract
+npm run supabase:db:migrate     # drizzle-kit push (db/schema.ts) via admin DB contract
 npm run supabase:db:seed        # seed the database via admin DB contract
 npm run supabase:db:wipe        # wipe database via admin DB contract
 npm run supabase:studio         # open the local Supabase Studio URL
@@ -54,13 +53,13 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 - **Async UX** must expose loading state. Interactive client components show pending/disabled UI for submits and fetches; async route sections should use Suspense or a route-level loading fallback where the wait is user-visible.
 - **Database tables** use `pgTable("snake_case", { ... })` with UUID PKs. Enums are `text(..., { enum: [...] as const })` aligned with `types/status.ts`. Types are exported via `$inferSelect` / `$inferInsert`.
 - **Database connection roles are explicit.** App/runtime reads use `DATABASE_RUNTIME_URL` first via `lib/db.ts`; schema management, Drizzle Kit, Studio, wipe/reset, and seed flows use `DATABASE_ADMIN_URL` first via `lib/admin-db.ts`. `DATABASE_URL` remains the legacy fallback for each boundary.
-- **Migration ownership is explicit.** `lib/db.ts` is the runtime path for application traffic, while `lib/admin-db.ts` owns Drizzle migrations and other admin workflows. Supabase CLI manages the local platform lifecycle only; it does not replace Drizzle as schema authority.
+- **Schema ownership is explicit.** `lib/db.ts` is the runtime path for application traffic, while `lib/admin-db.ts` owns Drizzle schema push, wipe/reset, and other admin workflows. Supabase CLI manages the local platform lifecycle only; it does not replace Drizzle as schema authority.
 - **Codex workspace automation** lives under `.codex/` for repo rules, hooks, prompts, custom agents, and architecture docs.
 
 ## Seed Dataset
 
 - `npm run supabase:db:seed` loads a deterministic 12-month historical dataset spanning `2025-04` through `2026-03` from `db/seed/`.
-- `npm run supabase:db:reset` is the default local bootstrap for a seeded app-ready database: wipe, migrate, then seed.
+- `npm run supabase:db:reset` is the default local bootstrap for a seeded app-ready database: wipe, push schema, then seed.
 - Legacy `db:*` scripts are compatibility aliases only; the Supabase-first `supabase:*` commands are the primary documented workflow.
 - Every active worker receives seeded monthly timesheets and payroll rows across that full window so payroll, advance, and reporting screens have browseable history.
 - Foreign full-time workers keep a live employment minimum of `260`, while payroll vouchers snapshot the month-specific minimum-hours target of `250` or `260`.
@@ -82,7 +81,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 | All Drizzle table schemas | `db/tables/` (re-exported via `db/schema.ts`) |
 | Domain status enums + badge tones | `types/status.ts`, `types/badge-tones.ts` |
 | Seeds | `db/seed/` |
-| Migrations | `drizzle/` |
+| Schema push | `db/push-schema.ts`, `drizzle.config.ts` (generated `drizzle/` is gitignored) |
 | Codex rules, hooks, agents, prompts | `.codex/rules/`, `.codex/hooks.json`, `.codex/agents/`, `.codex/prompts/` |
 | Generated architecture docs | `.codex/docs/data-model-erd.md`, `.codex/docs/api-workflows.md`, `.codex/docs/supabase-rollout-contract.md` |
 

@@ -1,8 +1,3 @@
-/**
- * Canonical dashboard sidebar URLs and labels (aligned with features.js).
- * Permission checks use featureName against the features table — keep DB names in sync.
- */
-
 export type DashboardNavSubFeature = {
     name: string;
     url: string;

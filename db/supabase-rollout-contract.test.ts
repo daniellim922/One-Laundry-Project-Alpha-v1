@@ -24,7 +24,7 @@ describe("Supabase rollout documentation contract", () => {
         const agents = readRepoFile("AGENTS.md");
         const rollout = readRepoFile(".codex/docs/supabase-rollout-contract.md");
 
-        expect(readme).toContain("Migration ownership");
+        expect(readme).toContain("Schema ownership");
         expect(readme).toContain("DATABASE_RUNTIME_URL");
         expect(readme).toContain("DATABASE_ADMIN_URL");
 

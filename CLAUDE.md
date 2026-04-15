@@ -17,9 +17,8 @@ npm run build             # production build
 npm run lint              # ESLint (flat config, core-web-vitals + TS)
 npm run test              # all Vitest tests (co-located with source)
 npm run test:e2e          # Playwright E2E (auto-starts dev server)
-npm run supabase:db:generate  # generate Drizzle migration
-npm run supabase:db:migrate   # run migrations
-npm run supabase:db:seed      # push schema + seed
+npm run supabase:db:migrate   # drizzle-kit push (schema from db/schema.ts)
+npm run supabase:db:seed      # seed database
 npm run supabase:studio       # local Supabase Studio GUI
 npm run supabase:db:wipe      # wipe database
 ```
@@ -56,7 +55,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 | Payroll calculations | `utils/payroll/payroll-utils.ts`, `utils/payroll/parse-attendrecord.ts` |
 | Domain status enums + badge tones | `types/status.ts`, `types/badge-tones.ts` |
 | All Drizzle table schemas | `db/tables/` (re-exported via `db/schema.ts`) |
-| Seeds & migrations | `db/seed/`, `drizzle/` |
+| Seeds & schema push | `db/seed/`, `db/push-schema.ts`, `drizzle.config.ts` |
 
 ## Testing
 

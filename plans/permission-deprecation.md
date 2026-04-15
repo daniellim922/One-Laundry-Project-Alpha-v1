@@ -1,5 +1,7 @@
 # Plan: Permission Layer Deprecation
 
+> **Note (2026-04):** References below to committed `drizzle/*.sql` migrations and `npm run db:generate` are historical. The repo now applies schema with `drizzle-kit push` (`npm run supabase:db:migrate`) and does not commit migration SQL.
+
 > Source: Derived from grill-me interview on 2026-04-15. No formal PRD; scope captured below.
 
 ## Context / PRD summary
