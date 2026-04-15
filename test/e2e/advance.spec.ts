@@ -3,7 +3,9 @@ import { expect, test } from "@playwright/test";
 test.describe("Advance dashboard", () => {
     test("sidebar navigates to advance overview", async ({ page }) => {
         await page.goto("/dashboard");
-        await page.getByRole("link", { name: "Advance" }).click();
+        const sidebar = page.locator('[data-slot="sidebar-container"]');
+        await sidebar.getByRole("link", { name: "Advance" }).click();
+        await page.waitForURL(/\/dashboard\/advance$/);
         await expect(page).toHaveURL(/\/dashboard\/advance$/);
         await expect(
             page
@@ -19,7 +21,9 @@ test.describe("Advance dashboard", () => {
 
         await expect(page).toHaveURL(/\/dashboard\/advance\/all$/);
 
-        const actionsButton = page
+        const main = page.locator("main");
+        await expect(main.getByRole("table")).toBeVisible({ timeout: 25_000 });
+        const actionsButton = main
             .getByRole("button", { name: "Open row actions" })
             .first();
         await expect(actionsButton).toBeVisible();
@@ -39,12 +43,14 @@ test.describe("Advance dashboard", () => {
             .getByRole("main")
             .getByRole("link", { name: "New advance" })
             .click();
+        await page.waitForURL(/\/dashboard\/advance\/new$/);
         await expect(page).toHaveURL(/\/dashboard\/advance\/new$/);
         await expect(page.getByTestId("advance-request-form")).toBeVisible();
 
         await page.getByTestId("advance-request-worker").click();
         await page
             .getByRole("option", { name: "Nguyen Thi Thao" })
+            .first()
             .click();
 
         const future = new Date();

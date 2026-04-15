@@ -83,13 +83,19 @@ export function createRowSelectionColumn<TData>({
     };
 }
 
+/**
+ * Per-row actions in dense tables. Defaults to `modal={false}` on the underlying Radix
+ * `DropdownMenu` so focus trapping does not block or hang pointer interactions (common
+ * with stacked table layers; see Playwright row-action specs).
+ */
 export function RowActionsMenu({
     label = "Open row actions",
-    modal = true,
+    modal = false,
     contentProps,
     children,
 }: {
     label?: string;
+    /** When true, Radix uses modal focus management (default in Radix; avoid in table row menus). */
     modal?: boolean;
     contentProps?: React.ComponentProps<typeof DropdownMenuContent>;
     children: React.ReactNode;
