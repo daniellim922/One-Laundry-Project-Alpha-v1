@@ -1,13 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-    requireApiPermission: vi.fn(),
     getPayrollRevertPreview: vi.fn(),
-}));
-
-vi.mock("@/app/api/_shared/auth", () => ({
-    requireApiPermission: (...args: unknown[]) =>
-        mocks.requireApiPermission(...args),
 }));
 
 vi.mock("@/services/payroll/get-revert-preview", () => ({
@@ -20,10 +14,6 @@ import { GET } from "@/app/api/payroll/[id]/revert-preview/route";
 describe("GET /api/payroll/[id]/revert-preview", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.requireApiPermission.mockResolvedValue({
-            session: null,
-            userId: "open-access",
-        });
     });
 
     it("returns structured preview data on success", async () => {

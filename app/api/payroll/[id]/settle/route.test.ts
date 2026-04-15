@@ -1,14 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-    requireApiPermission: vi.fn(),
     revalidateTransportPaths: vi.fn(),
     settlePayroll: vi.fn(),
-}));
-
-vi.mock("@/app/api/_shared/auth", () => ({
-    requireApiPermission: (...args: unknown[]) =>
-        mocks.requireApiPermission(...args),
 }));
 
 vi.mock("@/app/api/_shared/revalidate", () => ({
@@ -25,10 +19,6 @@ import { POST } from "@/app/api/payroll/[id]/settle/route";
 describe("POST /api/payroll/[id]/settle", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.requireApiPermission.mockResolvedValue({
-            session: { user: { id: "admin-1" } },
-            userId: "admin-1",
-        });
     });
 
     it("returns structured success and revalidates payroll side-effect pages", async () => {

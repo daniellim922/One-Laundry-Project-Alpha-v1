@@ -1,17 +1,11 @@
-import { requireApiPermission } from "@/app/api/_shared/auth";
 import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
 import { apiError, apiSuccess } from "@/app/api/_shared/responses";
 import { settlePayroll } from "@/services/payroll/settle-payroll";
 
 export async function POST(
-    request: Request,
+    _request: Request,
     context: { params: Promise<{ id: string }> },
 ) {
-    const permission = await requireApiPermission(request, "Payroll", "update");
-    if (permission instanceof Response) {
-        return permission;
-    }
-
     const { id } = await context.params;
     const result = await settlePayroll({ payrollId: id });
 

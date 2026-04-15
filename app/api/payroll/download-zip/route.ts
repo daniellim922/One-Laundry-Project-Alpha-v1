@@ -3,7 +3,6 @@ import archiver from "archiver";
 import { Readable } from "node:stream";
 import { eq, inArray } from "drizzle-orm";
 
-import { requireApiPermission } from "@/app/api/_shared/auth";
 import { apiError } from "@/app/api/_shared/responses";
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payroll/payrollTable";
@@ -87,11 +86,6 @@ export function createZipFilename(args: {
 }
 
 export async function POST(req: NextRequest) {
-    const permission = await requireApiPermission(req, "Payroll", "read");
-    if (permission instanceof Response) {
-        return permission;
-    }
-
     let parsed: Body;
     try {
         parsed = (await req.json()) as Body;

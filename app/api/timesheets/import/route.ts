@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import { requireApiPermission } from "@/app/api/_shared/auth";
 import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
 import { apiError, apiSuccess } from "@/app/api/_shared/responses";
 import { importAttendRecordTimesheet } from "@/services/timesheet/import-attend-record-timesheet";
@@ -29,11 +28,6 @@ const attendRecordSchema = z.object({
 });
 
 export async function POST(request: Request) {
-    const permission = await requireApiPermission(request, "Timesheet", "create");
-    if (permission instanceof Response) {
-        return permission;
-    }
-
     let body: unknown;
     try {
         body = await request.json();

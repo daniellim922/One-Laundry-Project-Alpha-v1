@@ -1,13 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-    requireApiPermission: vi.fn(),
     listPayrollsForDownload: vi.fn(),
-}));
-
-vi.mock("@/app/api/_shared/auth", () => ({
-    requireApiPermission: (...args: unknown[]) =>
-        mocks.requireApiPermission(...args),
 }));
 
 vi.mock("@/services/payroll/list-payrolls-for-download", () => ({
@@ -20,10 +14,6 @@ import { GET } from "@/app/api/payroll/download-selection/route";
 describe("GET /api/payroll/download-selection", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.requireApiPermission.mockResolvedValue({
-            session: { user: { id: "admin-1" } },
-            userId: "admin-1",
-        });
     });
 
     it("returns download selection rows", async () => {
@@ -44,9 +34,7 @@ describe("GET /api/payroll/download-selection", () => {
             },
         ]);
 
-        const response = await GET(
-            new Request("http://localhost/api/payroll/download-selection"),
-        );
+        const response = await GET();
 
         expect(response.status).toBe(200);
         await expect(response.json()).resolves.toEqual({
@@ -73,9 +61,7 @@ describe("GET /api/payroll/download-selection", () => {
     it("returns an empty state without error", async () => {
         mocks.listPayrollsForDownload.mockResolvedValue([]);
 
-        const response = await GET(
-            new Request("http://localhost/api/payroll/download-selection"),
-        );
+        const response = await GET();
 
         expect(response.status).toBe(200);
         await expect(response.json()).resolves.toEqual({
