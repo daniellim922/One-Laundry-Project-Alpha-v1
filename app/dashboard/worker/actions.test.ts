@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
     revalidatePath: vi.fn(),
-    requirePermission: vi.fn(),
     synchronizeWorkerDraftPayrolls: vi.fn(),
     synchronizeWorkerDraftPayrollsInTx: vi.fn(),
     db: {
@@ -19,10 +18,6 @@ vi.mock("next/cache", () => ({
 
 vi.mock("@/lib/db", () => ({
     db: mocks.db,
-}));
-
-vi.mock("@/utils/permissions/require-permission", () => ({
-    requirePermission: (...args: unknown[]) => mocks.requirePermission(...args),
 }));
 
 vi.mock("@/services/payroll/synchronize-worker-draft-payrolls", () => ({

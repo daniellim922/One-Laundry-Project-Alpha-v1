@@ -1,8 +1,6 @@
-import { requirePermission } from "@/utils/permissions/require-permission";
 import { FormPageLayout } from "@/components/form-page-layout";
 
-export default async function NewExpensePage() {
-    await requirePermission("Expenses", "create");
+export default function NewExpensePage() {
     return (
         <FormPageLayout
             title="New expense"

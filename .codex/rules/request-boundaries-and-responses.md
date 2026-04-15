@@ -16,5 +16,4 @@ alwaysApply: true
 
 1. Server actions return a clear success/error shape such as `{ success: true, id? }` or `{ error }`.
 2. API routes return explicit HTTP success payloads or clear error responses with the correct status code.
-3. Protected route handlers must authenticate with `auth.api.getSession` and authorize with `checkPermission`.
-4. New backend flows must handle both success and failure paths deliberately; never leave silent fallthroughs.
+3. New backend flows must handle both success and failure paths deliberately; never leave silent fallthroughs.

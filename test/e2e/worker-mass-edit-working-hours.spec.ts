@@ -35,22 +35,24 @@ test.describe("Worker mass edit minimum hours", () => {
         await workerFilterInput.fill(WORKER_FIXTURE_NAMES.massEditTarget);
 
         await expect(
-            dialog.getByRole("cell", {
-                name: WORKER_FIXTURE_NAMES.massEditTarget,
-                exact: true,
-            }),
+            dialog
+                .getByRole("cell", {
+                    name: WORKER_FIXTURE_NAMES.massEditTarget,
+                    exact: true,
+                })
+                .first(),
         ).toBeVisible();
 
-        await dialog
-            .getByRole("checkbox", {
-                name: `Select ${WORKER_FIXTURE_NAMES.massEditTarget}`,
-            })
-            .click();
+        const targetWorkerCheckbox = dialog.getByRole("checkbox", {
+            name: `Select ${WORKER_FIXTURE_NAMES.massEditTarget}`,
+        }).first();
+        await targetWorkerCheckbox.click();
 
         await dialog.getByLabel("Shared minimum hours").fill("250");
         await dialog.getByRole("button", { name: "Apply to selected" }).click();
 
-        await dialog
+        await targetWorkerCheckbox
+            .locator("xpath=ancestor::tr[1]")
             .getByLabel(
                 `New minimum hours for ${WORKER_FIXTURE_NAMES.massEditTarget}`,
             )
@@ -62,9 +64,11 @@ test.describe("Worker mass edit minimum hours", () => {
         const results = page.getByTestId("mass-edit-working-hours-results");
         await expect(results).toBeVisible();
         await expect(
-            results.getByRole("cell", {
-                name: WORKER_FIXTURE_NAMES.massEditTarget,
-            }),
+            results
+                .getByRole("cell", {
+                    name: WORKER_FIXTURE_NAMES.massEditTarget,
+                })
+                .first(),
         ).toBeVisible();
         await expect(
             results.getByRole("cell", { name: "260h" }).first(),

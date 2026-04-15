@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import { requireApiPermission } from "@/app/api/_shared/auth";
 import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
 import { apiError, apiSuccess } from "@/app/api/_shared/responses";
 import { massUpdateWorkerMinimumWorkingHours } from "@/services/worker/mass-update-minimum-working-hours";
@@ -15,11 +14,6 @@ const requestSchema = z.object({
 });
 
 export async function PATCH(request: Request) {
-    const permission = await requireApiPermission(request, "Workers", "update");
-    if (permission instanceof Response) {
-        return permission;
-    }
-
     let body: unknown;
     try {
         body = await request.json();

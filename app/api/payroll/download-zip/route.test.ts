@@ -1,24 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-const mocks = vi.hoisted(() => ({
-    requireApiPermission: vi.fn(),
-}));
-
-vi.mock("@/app/api/_shared/auth", () => ({
-    requireApiPermission: (...args: unknown[]) =>
-        mocks.requireApiPermission(...args),
-}));
-
 import { POST } from "@/app/api/payroll/download-zip/route";
 
 describe("POST /api/payroll/download-zip", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.requireApiPermission.mockResolvedValue({
-            session: null,
-            userId: "open-access",
-        });
     });
 
     it("returns INVALID_JSON for malformed payloads", async () => {

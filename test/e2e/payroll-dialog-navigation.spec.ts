@@ -20,7 +20,12 @@ async function assertPageStillInteractive(page: Page) {
     );
     expect(bodyPointerEvents).not.toBe("none");
 
-    await page.getByRole("link", { name: "Payroll" }).first().click();
+    await page
+        .locator('[data-slot="sidebar-container"]')
+        .getByRole("link", { name: "Payroll" })
+        .first()
+        .click();
+    await page.waitForURL(/\/dashboard\/payroll$/);
     await expect(page).toHaveURL(/\/dashboard\/payroll$/);
 }
 
@@ -34,8 +39,11 @@ test.describe("Payroll dialog navigation", () => {
         await page.getByRole("button", { name: "Download payrolls" }).click();
         const dialog = page.getByRole("dialog");
         await expect(dialog).toBeVisible();
+        await expect(dialog.getByRole("table")).toBeVisible({ timeout: 25_000 });
 
-        const actionButton = await requireRowActionOrSkip(dialog);
+        const actionButton = await requireRowActionOrSkip(
+            dialog.getByRole("table"),
+        );
         await actionButton.click();
         await page.getByRole("menuitem", { name: "View" }).click();
 
@@ -52,7 +60,10 @@ test.describe("Payroll dialog navigation", () => {
             page.getByRole("heading", { name: "All payrolls" }),
         ).toBeVisible();
 
-        const actionButton = await requireRowActionOrSkip(page.locator("body"));
+        const payrollTable = page.locator("main").getByRole("table");
+        await expect(payrollTable).toBeVisible({ timeout: 25_000 });
+
+        const actionButton = await requireRowActionOrSkip(payrollTable);
         await actionButton.click();
         await page.getByRole("menuitem", { name: "View" }).click();
 

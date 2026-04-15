@@ -1,14 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-    requireApiPermission: vi.fn(),
     revalidateTransportPaths: vi.fn(),
     massUpdateWorkerMinimumWorkingHours: vi.fn(),
-}));
-
-vi.mock("@/app/api/_shared/auth", () => ({
-    requireApiPermission: (...args: unknown[]) =>
-        mocks.requireApiPermission(...args),
 }));
 
 vi.mock("@/app/api/_shared/revalidate", () => ({
@@ -26,10 +20,6 @@ import { PATCH } from "@/app/api/workers/minimum-working-hours/route";
 describe("PATCH /api/workers/minimum-working-hours", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.requireApiPermission.mockResolvedValue({
-            session: { user: { id: "admin-1" } },
-            userId: "admin-1",
-        });
     });
 
     it("returns structured success and revalidates worker + payroll pages", async () => {

@@ -16,7 +16,6 @@ const mocks = vi.hoisted(() => {
     };
 
     return {
-        requireApiPermission: vi.fn(),
         eq: vi.fn(),
         db: {
             select: vi.fn(),
@@ -26,11 +25,6 @@ const mocks = vi.hoisted(() => {
         browser,
     };
 });
-
-vi.mock("@/app/api/_shared/auth", () => ({
-    requireApiPermission: (...args: unknown[]) =>
-        mocks.requireApiPermission(...args),
-}));
 
 vi.mock("drizzle-orm", () => ({
     eq: (...args: unknown[]) => mocks.eq(...args),
@@ -51,11 +45,6 @@ import { GET } from "@/app/api/payroll/[id]/pdf/route";
 describe("GET /api/payroll/[id]/pdf", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-
-        mocks.requireApiPermission.mockResolvedValue({
-            session: null,
-            userId: "open-access",
-        });
 
         mocks.page.pdf.mockResolvedValue(Buffer.from("payroll-pdf"));
         mocks.browser.newPage.mockResolvedValue(mocks.page);

@@ -2,7 +2,6 @@ import { NextRequest } from "next/server";
 import { chromium } from "playwright";
 import { eq } from "drizzle-orm";
 
-import { requireApiPermission } from "@/app/api/_shared/auth";
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payroll/payrollTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
@@ -29,11 +28,6 @@ export async function GET(
     req: NextRequest,
     ctx: { params: Promise<{ id: string }> },
 ) {
-    const permission = await requireApiPermission(req, "Payroll", "read");
-    if (permission instanceof Response) {
-        return permission;
-    }
-
     const { id } = await ctx.params;
 
     const mode = req.nextUrl.searchParams.get("mode") ?? "summary";

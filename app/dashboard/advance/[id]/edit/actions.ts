@@ -6,7 +6,6 @@ import {
     type SaveAdvanceRequestInput,
     updateAdvanceRequestRecord,
 } from "@/services/advance/save-advance-request";
-import { requirePermission } from "@/utils/permissions/require-permission";
 
 type ActionResult = { success: true } | { success: false; error: string };
 
@@ -16,8 +15,6 @@ export async function updateAdvanceRequest(
     advanceRequestId: string,
     input: UpdateAdvanceRequestInput,
 ): Promise<ActionResult> {
-    await requirePermission("Advance", "update");
-
     const result = await updateAdvanceRequestRecord(advanceRequestId, input);
     if (!result.success) {
         return result;

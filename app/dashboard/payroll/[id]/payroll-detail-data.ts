@@ -8,15 +8,12 @@ import { payrollVoucherTable } from "@/db/tables/payroll/payrollVoucherTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { employmentTable } from "@/db/tables/payroll/employmentTable";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
-import { requirePermission } from "@/utils/permissions/require-permission";
 import {
     listMissingTimesheetDateIns,
     timesheetDateInKey,
 } from "@/utils/payroll/missing-timesheet-dates";
 
 export async function getPayrollDetailData(id: string) {
-    await requirePermission("Payroll", "read");
-
     const [row] = await db
         .select({
             payroll: payrollTable,

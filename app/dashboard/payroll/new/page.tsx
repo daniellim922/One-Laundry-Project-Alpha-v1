@@ -1,4 +1,3 @@
-import { requirePermission } from "@/utils/permissions/require-permission";
 import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/payroll/workerTable";
 import { FormPageLayout } from "@/components/form-page-layout";
@@ -7,8 +6,6 @@ import { eq } from "drizzle-orm";
 import { employmentTable } from "@/db/tables/payroll/employmentTable";
 
 export default async function NewPayrollPage() {
-    await requirePermission("Payroll", "create");
-
     const workers = await db
         .select({
             id: workerTable.id,

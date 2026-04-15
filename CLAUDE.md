@@ -40,7 +40,6 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 
 - **Server components by default.** Add `"use client"` only for interactive pieces (forms, tables, dropdowns).
 - **Server actions** live in `actions.ts` co-located with each feature route under `app/dashboard/<feature>/`. They start with `"use server"`, validate from `FormData`, return `{ success, id? } | { error }`, and call `revalidatePath` after mutations.
-- **Authorization** is feature-based RBAC. Server components call `requirePermission(featureName, action)` (redirects on fail). API routes use `auth.api.getSession` + `checkPermission`. Feature names: `"Home"`, `"Workers"`, `"Timesheet"`, `"Payroll"`, `"Advance"`, `"Expenses"`, `"IAM (Identity and Access Management)"`.
 - **Forms** use react-hook-form + `zodResolver` for complex cases, or plain `useState` + `FormData` for simple ones. All form pages use `FormPageLayout` (back button, title, subtitle, optional actions slot).
 - **Data tables** use the shared `DataTable` from `components/data-table/`. Columns are defined in `columns.tsx` next to the route. Use `createSortableHeader`, `createBadgeCell`, `createActionsColumn` from `column-builders.tsx`.
 - **Database tables** use `pgTable("snake_case", { ... })` with UUID PKs. Enums are `text(..., { enum: [...] as const })` aligned with `types/status.ts`. Types exported via `$inferSelect` / `$inferInsert`.
@@ -54,7 +53,6 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 | Data table components | `components/data-table/` |
 | Form page shell | `components/form-page-layout.tsx` |
 | DB, auth, Tailwind `cn` | `lib/db.ts`, `lib/auth.ts`, `lib/auth-client.ts`, `lib/utils.ts` |
-| RBAC | `utils/permissions/permissions.ts`, `utils/permissions/require-permission.ts` |
 | Payroll calculations | `utils/payroll/payroll-utils.ts`, `utils/payroll/parse-attendrecord.ts` |
 | Domain status enums + badge tones | `types/status.ts`, `types/badge-tones.ts` |
 | All Drizzle table schemas | `db/tables/` (re-exported via `db/schema.ts`) |

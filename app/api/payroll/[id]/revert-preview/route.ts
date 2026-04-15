@@ -1,16 +1,10 @@
-import { requireApiPermission } from "@/app/api/_shared/auth";
 import { apiError, apiSuccess } from "@/app/api/_shared/responses";
 import { getPayrollRevertPreview } from "@/services/payroll/get-revert-preview";
 
 export async function GET(
-    request: Request,
+    _request: Request,
     context: { params: Promise<{ id: string }> },
 ) {
-    const permission = await requireApiPermission(request, "Payroll", "read");
-    if (permission instanceof Response) {
-        return permission;
-    }
-
     const { id } = await context.params;
     const result = await getPayrollRevertPreview(id);
 

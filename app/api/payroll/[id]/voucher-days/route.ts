@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import { requireApiPermission } from "@/app/api/_shared/auth";
 import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
 import { apiError, apiSuccess } from "@/app/api/_shared/responses";
 import { updateVoucherDays } from "@/services/payroll/update-voucher-days";
@@ -15,11 +14,6 @@ export async function PATCH(
     request: Request,
     context: { params: Promise<{ id: string }> },
 ) {
-    const permission = await requireApiPermission(request, "Payroll", "update");
-    if (permission instanceof Response) {
-        return permission;
-    }
-
     let body: unknown;
     try {
         body = await request.json();

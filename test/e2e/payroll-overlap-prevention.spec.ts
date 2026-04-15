@@ -14,8 +14,20 @@ const OVERLAP_PERIOD = {
     payrollDate: "2099-02-20",
 };
 
+function payrollGenerateForm(page: Page) {
+    /** Single `<form>` on `/dashboard/payroll/new` (`PayrollForm`); use for date ids + worker table + Generate. */
+    return page.locator("form").first();
+}
+
+/** Submit without a synthetic pointer event (avoids stuck `click()` when overlays intercept hits on the Generate button). */
+async function submitPayrollGenerateForm(page: Page) {
+    await payrollGenerateForm(page).evaluate((el) =>
+        (el as HTMLFormElement).requestSubmit(),
+    );
+}
+
 async function selectFirstWorkerOrSkip(page: Page) {
-    const checkbox = page
+    const checkbox = payrollGenerateForm(page)
         .locator(
             "button[role='checkbox'][aria-label^='Select ']:not([aria-label*='all'])",
         )
@@ -25,6 +37,7 @@ async function selectFirstWorkerOrSkip(page: Page) {
     } catch {
         test.skip(true, NO_WORKERS_SKIP_REASON);
     }
+    await expect(checkbox).toBeEnabled();
     await checkbox.click();
 }
 
@@ -38,16 +51,11 @@ async function fillPayrollDates(
     page: Page,
     input: { periodStart: string; periodEnd: string; payrollDate: string },
 ) {
-    /** DatePickerInput masks DD/MM/YYYY; raw ISO digit-strips incorrectly. */
-    await page
-        .getByLabel("Period start")
-        .fill(isoCalendarToDmy(input.periodStart));
-    await page
-        .getByLabel("Period end")
-        .fill(isoCalendarToDmy(input.periodEnd));
-    await page
-        .getByLabel("Payroll date")
-        .fill(isoCalendarToDmy(input.payrollDate));
+    /** DatePickerInput expects DD/MM/YYYY. Targets `#periodStart` / `#periodEnd` / `#payrollDate` from `payroll-form.tsx`. */
+    const form = payrollGenerateForm(page);
+    await form.locator("#periodStart").fill(isoCalendarToDmy(input.periodStart));
+    await form.locator("#periodEnd").fill(isoCalendarToDmy(input.periodEnd));
+    await form.locator("#payrollDate").fill(isoCalendarToDmy(input.payrollDate));
 }
 
 test.describe("Payroll overlap prevention", () => {
@@ -58,10 +66,13 @@ test.describe("Payroll overlap prevention", () => {
         await expect(
             page.getByRole("heading", { name: "Generate payroll" }),
         ).toBeVisible();
+        await expect(
+            payrollGenerateForm(page).locator("#periodStart"),
+        ).toBeEditable({ timeout: 30_000 });
 
         await fillPayrollDates(page, BASE_PERIOD);
         await selectFirstWorkerOrSkip(page);
-        await page.getByRole("button", { name: "Generate" }).click();
+        await submitPayrollGenerateForm(page);
 
         if (page.url().includes("/dashboard/payroll/all")) {
             await expect(
@@ -75,10 +86,13 @@ test.describe("Payroll overlap prevention", () => {
         await expect(
             page.getByRole("heading", { name: "Generate payroll" }),
         ).toBeVisible();
+        await expect(
+            payrollGenerateForm(page).locator("#periodStart"),
+        ).toBeEditable({ timeout: 30_000 });
 
         await fillPayrollDates(page, OVERLAP_PERIOD);
         await selectFirstWorkerOrSkip(page);
-        await page.getByRole("button", { name: "Generate" }).click();
+        await submitPayrollGenerateForm(page);
 
         await expect(page).toHaveURL(/\/dashboard\/payroll\/new$/);
         await expect(page.getByText(/skipped due to overlap/i)).toBeVisible();
