@@ -26,7 +26,7 @@
         "db:migrate": "npm run supabase:db:migrate",
         "db:wipe": "npm run supabase:db:wipe",
         "test": "vitest run",
-        "test:db:contracts": "vitest run lib/database/runtime-config.test.ts lib/database/runtime-client.test.ts lib/database/admin-config.test.ts lib/database/admin-client.test.ts db/supabase-local-bootstrap.test.ts db/admin-connection-workflow.test.ts db/supabase-seed-workflow.test.ts db/database-contracts-ci.test.ts",
+        "test:db:contracts": "vitest run lib/database/runtime-config.test.ts lib/database/runtime-client.test.ts lib/database/admin-config.test.ts lib/database/admin-client.test.ts db/supabase-local-bootstrap.test.ts db/admin-connection-workflow.test.ts db/supabase-seed-workflow.test.ts db/supabase-rollout-contract.test.ts db/database-contracts-ci.test.ts",
         "test:watch": "vitest",
         "test:worker": "vitest run app/dashboard/worker services/worker app/api/workers",
         "test:e2e": "playwright test",

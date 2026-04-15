@@ -55,6 +55,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 - **Async UX** must expose loading state. Interactive client components show pending/disabled UI for submits and fetches; async route sections should use Suspense or a route-level loading fallback where the wait is user-visible.
 - **Database tables** use `pgTable("snake_case", { ... })` with UUID PKs. Enums are `text(..., { enum: [...] as const })` aligned with `types/status.ts`. Types are exported via `$inferSelect` / `$inferInsert`.
 - **Database connection roles are explicit.** App/runtime reads use `DATABASE_RUNTIME_URL` first via `lib/db.ts`; schema management, Drizzle Kit, Studio, wipe/reset, and seed flows use `DATABASE_ADMIN_URL` first via `lib/admin-db.ts`. `DATABASE_URL` remains the legacy fallback for each boundary.
+- **Migration ownership is explicit.** `lib/db.ts` is the runtime path for application traffic, while `lib/admin-db.ts` owns Drizzle migrations and other admin workflows. Supabase CLI manages the local platform lifecycle only; it does not replace Drizzle as schema authority.
 - **Codex workspace automation** lives under `.codex/` for repo rules, hooks, prompts, custom agents, and architecture docs.
 
 ## Seed Dataset
@@ -84,7 +85,12 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 | Seeds | `db/seed/` |
 | Migrations | `drizzle/` |
 | Codex rules, hooks, agents, prompts | `.codex/rules/`, `.codex/hooks.json`, `.codex/agents/`, `.codex/prompts/` |
-| Generated architecture docs | `.codex/docs/data-model-erd.md`, `.codex/docs/api-workflows.md` |
+| Generated architecture docs | `.codex/docs/data-model-erd.md`, `.codex/docs/api-workflows.md`, `.codex/docs/supabase-rollout-contract.md` |
+
+## Production rollout
+
+- The Supabase production rollout contract lives in `.codex/docs/supabase-rollout-contract.md`.
+- Treat that document as draft guidance until a human review is recorded on GitHub issue `#63`.
 
 ## Testing
 

@@ -27,6 +27,13 @@ For hosted Supabase, keep the responsibilities split:
 - `DATABASE_RUNTIME_URL`: app traffic, typically the pooled/session connection path.
 - `DATABASE_ADMIN_URL`: Drizzle migrations, schema management, Drizzle Studio, wipe/reset, and seeding against the direct admin-capable connection path.
 
+## Migration ownership
+
+- `lib/db.ts` owns the runtime database boundary for app traffic.
+- `lib/admin-db.ts` owns migration, schema-management, wipe/reset, and seed workflows.
+- Drizzle is the schema source of truth; Supabase CLI manages local platform lifecycle only.
+- The production rollout contract lives in `.codex/docs/supabase-rollout-contract.md`.
+
 Supabase Studio is available at `http://127.0.0.1:54323` after the stack starts, and `npm run supabase:studio` opens that URL when possible.
 
 Stop the local stack with:

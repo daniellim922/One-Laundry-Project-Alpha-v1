@@ -12,6 +12,7 @@ on:
       - "supabase/**"
       - "README.md"
       - "AGENTS.md"
+      - ".codex/docs/**"
       - ".env.example"
   push:
     branches:
@@ -26,6 +27,7 @@ on:
       - "supabase/**"
       - "README.md"
       - "AGENTS.md"
+      - ".codex/docs/**"
       - ".env.example"
 
 jobs:

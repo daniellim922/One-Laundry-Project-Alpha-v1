@@ -15,7 +15,7 @@ describe("database workflow CI contract", () => {
         };
 
         expect(packageJson.scripts?.["test:db:contracts"]).toBe(
-            "vitest run lib/database/runtime-config.test.ts lib/database/runtime-client.test.ts lib/database/admin-config.test.ts lib/database/admin-client.test.ts db/supabase-local-bootstrap.test.ts db/admin-connection-workflow.test.ts db/supabase-seed-workflow.test.ts db/database-contracts-ci.test.ts",
+            "vitest run lib/database/runtime-config.test.ts lib/database/runtime-client.test.ts lib/database/admin-config.test.ts lib/database/admin-client.test.ts db/supabase-local-bootstrap.test.ts db/admin-connection-workflow.test.ts db/supabase-seed-workflow.test.ts db/supabase-rollout-contract.test.ts db/database-contracts-ci.test.ts",
         );
     });
 
@@ -35,6 +35,7 @@ describe("database workflow CI contract", () => {
         expect(workflow).toContain("supabase/");
         expect(workflow).toContain("README.md");
         expect(workflow).toContain("AGENTS.md");
+        expect(workflow).toContain(".codex/docs/");
         expect(workflow).toContain("npm ci");
         expect(workflow).toContain("npm run test:db:contracts");
         expect(workflow).not.toContain("supabase start");
