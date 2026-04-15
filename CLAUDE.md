@@ -62,7 +62,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 
 ## Testing
 
-- **Vitest** — node environment, tests co-located with source as `*.test.ts` / `*.test.tsx` under `app/`, `components/`, `utils/`, `lib/`, `db/`, `services/`.
+- **Vitest** — node environment, tests co-located with source as `*.test.ts` / `*.test.tsx` under `app/`, `components/`, `utils/`, `lib/`, `db/`, `services/`, `scripts/`.
 - **E2E** — Playwright (Chromium), `test/e2e/*.spec.ts`. Auth setup persists to `test/e2e/.auth/user.json`.
 - **Fixtures** in `test/fixtures/`, output in `test/results/`.
 - E2E worker tests are deterministic and assume seeded data. Run `npm run db:seed` first.
