@@ -1,5 +1,4 @@
 import { db } from "@/lib/db";
-import { eq } from "drizzle-orm";
 import {
     workerTable,
     type InsertWorker,
@@ -28,15 +27,10 @@ import {
     payrollVoucherTable,
     type InsertPayrollVoucher,
 } from "@/db/tables/payroll/payrollVoucherTable";
-import { featuresTable } from "../tables/auth/featuresTable";
-import { rolesTable } from "@/db/tables/auth/rolesTable";
-import { rolePermissionsTable } from "@/db/tables/auth/rolePermissionsTable";
 import { workers } from "@/db/seed/workers";
 import { timesheets } from "./timesheet";
 import { advances } from "./advances";
 import { payrolls } from "./payrolls";
-import { FEATURES, ROLES, ROLE_PERMISSIONS } from "./iam";
-import { seedDefaultAuthUsers } from "./auth";
 import { SEED_TIMESTAMP } from "./constants";
 
 type SplitWorkerSeed = {
@@ -180,32 +174,6 @@ async function seedPayrolls(insertedWorkers: { id: string }[]): Promise<void> {
     }
 }
 
-async function seedRolePermissions(): Promise<void> {
-    for (const rolePermission of ROLE_PERMISSIONS) {
-        const roleId = await db
-            .select({ id: rolesTable.id })
-            .from(rolesTable)
-            .where(eq(rolesTable.name, rolePermission.role));
-        for (const feature of rolePermission.features) {
-            const featureId = await db
-                .select({ id: featuresTable.id })
-                .from(featuresTable)
-                .where(eq(featuresTable.name, feature.featureName))
-                .limit(1);
-            if (featureId.length > 0) {
-                await db.insert(rolePermissionsTable).values({
-                    roleId: roleId[0].id,
-                    featureId: featureId[0].id,
-                    create: feature.create,
-                    read: feature.read,
-                    update: feature.update,
-                    delete: feature.delete,
-                });
-            }
-        }
-    }
-}
-
 async function seed() {
     // Normalize workers into employment + worker props
     const split = workers.map(splitWorkerSeed);
@@ -235,21 +203,6 @@ async function seed() {
 
     await seedPayrolls(insertedWorkers);
     console.log("New payroll entries created!");
-
-    // Seed IAM roles, features, permissions, and admin user
-    await db.insert(rolesTable).values(ROLES);
-    console.log("New roles created!");
-    await db.insert(featuresTable).values(FEATURES);
-    console.log("New features created!");
-    await seedRolePermissions();
-    console.log("New role permissions created!");
-
-    const seededUsers = await seedDefaultAuthUsers();
-    for (const seededUser of seededUsers) {
-        console.log(
-            `Seeded user: ${seededUser.email} (username: ${seededUser.username}) linked to roleId ${seededUser.roleId}`,
-        );
-    }
     process.exit(0);
 }
 seed();

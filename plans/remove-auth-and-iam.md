@@ -90,9 +90,9 @@ Delete auth and IAM tables from the schema and align database setup with the new
 
 ### Acceptance criteria
 
-- [ ] Auth and IAM tables are no longer part of the live Drizzle schema.
-- [ ] Database setup succeeds without seeded users, roles, permissions, or credential env vars.
-- [ ] Remaining seed data still supports worker, timesheet, payroll, advance, and expense workflows.
+- [x] Auth and IAM tables are no longer part of the live Drizzle schema.
+- [x] Database setup succeeds without seeded users, roles, permissions, or credential env vars.
+- [x] Remaining seed data still supports worker, timesheet, payroll, advance, and expense workflows.
 
 ---
 
