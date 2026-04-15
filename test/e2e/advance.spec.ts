@@ -1,18 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-const NOT_AUTHENTICATED_SKIP_REASON =
-    "Not authenticated (auth setup did not produce a valid session). Configure DB/env and re-run e2e.";
-
-async function requireAuthenticatedOrSkip(page: { url(): string }) {
-    if (page.url().includes("/login")) {
-        test.skip(true, NOT_AUTHENTICATED_SKIP_REASON);
-    }
-}
-
 test.describe("Advance dashboard", () => {
     test("sidebar navigates to advance overview", async ({ page }) => {
         await page.goto("/dashboard");
-        await requireAuthenticatedOrSkip(page);
         await page.getByRole("link", { name: "Advance" }).click();
         await expect(page).toHaveURL(/\/dashboard\/advance$/);
         await expect(
@@ -26,7 +16,6 @@ test.describe("Advance dashboard", () => {
         page,
     }) => {
         await page.goto("/dashboard/advance/all");
-        await requireAuthenticatedOrSkip(page);
 
         await expect(page).toHaveURL(/\/dashboard\/advance\/all$/);
 
@@ -46,7 +35,6 @@ test.describe("Advance dashboard", () => {
         page,
     }) => {
         await page.goto("/dashboard/advance/all");
-        await requireAuthenticatedOrSkip(page);
         await page
             .getByRole("main")
             .getByRole("link", { name: "New advance" })

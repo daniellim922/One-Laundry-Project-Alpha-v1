@@ -106,9 +106,9 @@ Clean out auth-specific tooling, dependencies, and automated setup. Remove the a
 
 ### Acceptance criteria
 
-- [ ] `better-auth` and related runtime plumbing are removed.
-- [ ] Playwright no longer depends on authenticated storage state or seeded credentials.
-- [ ] No auth- or RBAC-only test helper remains in active use.
+- [x] `better-auth` and related runtime plumbing are removed.
+- [x] Playwright no longer depends on authenticated storage state or seeded credentials.
+- [x] No auth- or RBAC-only test helper remains in active use.
 
 ---
 

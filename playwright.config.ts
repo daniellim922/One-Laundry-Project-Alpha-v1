@@ -4,7 +4,7 @@ const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL ?? "http://127.0.0.1:3000";
 
 export default defineConfig({
     testDir: "test/e2e",
-    testMatch: ["**/*.spec.ts", "**/auth.setup.ts"],
+    testMatch: ["**/*.spec.ts"],
     outputDir: "test/results",
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
@@ -16,15 +16,11 @@ export default defineConfig({
         trace: "on-first-retry",
     },
     projects: [
-        { name: "setup", testMatch: /auth\.setup\.ts/ },
         {
             name: "chromium",
             use: {
                 ...devices["Desktop Chrome"],
-                storageState: "test/e2e/.auth/user.json",
             },
-            dependencies: ["setup"],
-            testIgnore: /auth\.setup\.ts/,
         },
     ],
     webServer: {

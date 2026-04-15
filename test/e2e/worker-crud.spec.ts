@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { assertAuthenticated } from "./worker-test-helpers";
+import { assertOpenDashboardAccess } from "./worker-test-helpers";
 
 test.describe("Worker CRUD", () => {
     test.describe.serial("same worker lifecycle", () => {
@@ -15,7 +15,7 @@ test.describe("Worker CRUD", () => {
             page,
         }) => {
             await page.goto("/dashboard/worker/new");
-            await assertAuthenticated(page);
+            await assertOpenDashboardAccess(page);
 
             await expect(
                 page.getByRole("heading", { name: "Add New Worker" }),
@@ -60,7 +60,7 @@ test.describe("Worker CRUD", () => {
             expect(workerId).not.toBe("");
 
             await page.goto(`/dashboard/worker/${workerId}/view`);
-            await assertAuthenticated(page);
+            await assertOpenDashboardAccess(page);
 
             await expect(page).toHaveURL(
                 new RegExp(`/dashboard/worker/${workerId}/view$`, "i"),
@@ -78,7 +78,7 @@ test.describe("Worker CRUD", () => {
             expect(workerId).not.toBe("");
 
             await page.goto(`/dashboard/worker/${workerId}/edit`);
-            await assertAuthenticated(page);
+            await assertOpenDashboardAccess(page);
 
             await expect(
                 page.getByRole("heading", { name: "Edit worker" }),

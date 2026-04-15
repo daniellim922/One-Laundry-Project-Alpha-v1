@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-import { assertAuthenticated } from "./worker-test-helpers";
+import { assertOpenDashboardAccess } from "./worker-test-helpers";
 
 test.describe("DataTable column filter typing", () => {
     test("allows typing multiple characters into column filter input", async ({
         page,
     }) => {
         await page.goto("/dashboard/worker/all");
-        await assertAuthenticated(page);
+        await assertOpenDashboardAccess(page);
 
         const main = page.getByRole("main");
         await expect(
@@ -26,4 +26,3 @@ test.describe("DataTable column filter typing", () => {
         await expect(nameFilterInput).toHaveValue("abc");
     });
 });
-

@@ -1,7 +1,4 @@
 import { expect, test, type Page } from "@playwright/test";
-
-const NOT_AUTHENTICATED_SKIP_REASON =
-    "Not authenticated (auth setup did not produce a valid session). Configure DB/env and re-run e2e.";
 const NO_WORKERS_SKIP_REASON =
     "No worker rows available to generate payroll. Seed workers and re-run e2e.";
 
@@ -16,12 +13,6 @@ const OVERLAP_PERIOD = {
     periodEnd: "2099-02-15",
     payrollDate: "2099-02-20",
 };
-
-function requireAuthenticatedOrSkip(page: { url(): string }) {
-    if (page.url().includes("/login")) {
-        test.skip(true, NOT_AUTHENTICATED_SKIP_REASON);
-    }
-}
 
 async function selectFirstWorkerOrSkip(page: Page) {
     const checkbox = page
@@ -64,7 +55,6 @@ test.describe("Payroll overlap prevention", () => {
         page,
     }) => {
         await page.goto("/dashboard/payroll/new");
-        requireAuthenticatedOrSkip(page);
         await expect(
             page.getByRole("heading", { name: "Generate payroll" }),
         ).toBeVisible();
@@ -82,7 +72,6 @@ test.describe("Payroll overlap prevention", () => {
         }
 
         await page.goto("/dashboard/payroll/new");
-        requireAuthenticatedOrSkip(page);
         await expect(
             page.getByRole("heading", { name: "Generate payroll" }),
         ).toBeVisible();

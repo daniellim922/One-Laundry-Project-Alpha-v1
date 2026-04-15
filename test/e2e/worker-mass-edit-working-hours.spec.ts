@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import {
-    assertAuthenticated,
+    assertOpenDashboardAccess,
     WORKER_FIXTURE_NAMES,
 } from "./worker-test-helpers";
 
@@ -10,7 +10,7 @@ test.describe("Worker mass edit minimum hours", () => {
         page,
     }) => {
         await page.goto("/dashboard/worker/all");
-        await assertAuthenticated(page);
+        await assertOpenDashboardAccess(page);
 
         await expect(
             page.getByRole("heading", { name: "All workers" }),

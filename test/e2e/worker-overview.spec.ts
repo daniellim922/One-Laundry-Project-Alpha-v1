@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-import { assertAuthenticated } from "./worker-test-helpers";
+import { assertOpenDashboardAccess } from "./worker-test-helpers";
 
 test.describe("Worker overview page", () => {
     test("loads overview and can navigate to worker list", async ({ page }) => {
         await page.goto("/dashboard/worker");
-        await assertAuthenticated(page);
+        await assertOpenDashboardAccess(page);
 
         await expect(
             page.getByRole("heading", { name: "Worker", exact: true }),
