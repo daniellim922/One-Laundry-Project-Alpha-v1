@@ -5,8 +5,11 @@ The default local database platform is Supabase local.
 1. Copy `.env.example` to `.env`.
 2. Start the local database stack with `npm run db:local:start`.
 3. Check the local service endpoints with `npm run db:local:status`.
-4. Run schema/admin workflows with `npm run db:generate`, `npm run db:migrate`, `npm run db:seed`, `npm run db:wipe`, or `npm run db:studio`.
-5. Run the app with `npm run dev`.
+4. Build the app-ready local database state with `npm run db:reset`.
+5. Run schema/admin workflows individually with `npm run db:generate`, `npm run db:migrate`, `npm run db:seed`, `npm run db:wipe`, or `npm run db:studio`.
+6. Run the app with `npm run dev`.
+
+`npm run db:reset` is the end-to-end local Supabase workflow. It will reset, migrate, and seed the database so the deterministic historical payroll dataset is ready for app use and test flows.
 
 The app runtime reads `DATABASE_RUNTIME_URL` first and falls back to `DATABASE_URL`.
 Schema and migration tooling read `DATABASE_ADMIN_URL` first and fall back to `DATABASE_URL`.
@@ -36,7 +39,7 @@ npm run test:worker
 npm run test:e2e:worker
 ```
 
-`test:e2e:worker` is deterministic and assumes seeded data/users are present. Run `npm run db:seed` first.
+`test:e2e:worker` is deterministic and assumes seeded data/users are present. Run `npm run db:reset` first.
 
 ## Learn More
 

@@ -29,36 +29,43 @@ function rowsFromExecute<T extends Record<string, unknown>>(
 }
 
 /**
- * Destroys the application schema by dropping all user tables, then custom
- * enum types in `public`. Enum cleanup matters after enum renames (e.g.
- * `loan_paid_status` → `advance_loan_status`): `drizzle-kit push` can fail if
- * a stale enum type still exists with the wrong labels.
+ * Destroys the application schema by dropping all app-owned tables in `public`
+ * plus Drizzle's migration ledger in the `drizzle` schema, then custom enum
+ * types in `public`. The reset flow needs the migration ledger gone so
+ * `drizzle-kit migrate` can replay the schema from scratch against local
+ * Supabase.
  */
 async function wipeDb() {
     console.log("Discovering tables to drop...");
 
     const tableResult: unknown = await adminDb.execute(sql`
-        SELECT tablename
+        SELECT schemaname, tablename
         FROM pg_tables
-        WHERE schemaname = 'public'
-          AND tablename NOT LIKE 'drizzle_%'
+        WHERE schemaname IN ('public', 'drizzle')
     `);
 
-    const tables = rowsFromExecute<{ tablename: string }>(
+    const tables = rowsFromExecute<{
+        schemaname: string;
+        tablename: string;
+    }>(
         tableResult,
         "tablename",
-    ).map((r) => r.tablename);
+    );
 
     if (tables.length > 0) {
         const dropStmt = `DROP TABLE IF EXISTS ${tables
-            .map((t) => `"${t}"`)
+            .map((table) => `"${table.schemaname}"."${table.tablename}"`)
             .join(", ")} CASCADE`;
 
-        console.log(`Dropping tables: ${tables.join(", ")}`);
+        console.log(
+            `Dropping tables: ${tables
+                .map((table) => `${table.schemaname}.${table.tablename}`)
+                .join(", ")}`,
+        );
         await adminDb.execute(sql.raw(dropStmt));
-        console.log("All user tables dropped successfully.");
+        console.log("All schema tables dropped successfully.");
     } else {
-        console.log("No user tables found to drop.");
+        console.log("No schema tables found to drop.");
     }
 
     console.log("Discovering custom enum types in public to drop...");

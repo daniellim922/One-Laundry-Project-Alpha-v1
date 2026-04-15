@@ -2,6 +2,7 @@
 -- Dev-only migration: assumes database will be re-seeded after running.
 
 ALTER TABLE "timesheet" ALTER COLUMN "status" SET DATA TYPE text;--> statement-breakpoint
+ALTER TABLE "timesheet" ALTER COLUMN "status" DROP DEFAULT;--> statement-breakpoint
 
 ALTER TABLE "timesheet" DROP CONSTRAINT IF EXISTS "timesheet_status_check";--> statement-breakpoint
 

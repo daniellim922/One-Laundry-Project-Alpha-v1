@@ -18,9 +18,10 @@ npm run test:e2e                # Playwright E2E
 npm run test:e2e:worker         # worker E2E subset
 npm run test:e2e:ui             # Playwright UI runner
 npm run db:studio               # Drizzle Studio via admin DB contract
+npm run db:reset                # wipe + migrate + seed via admin DB contract
 npm run db:generate             # generate Drizzle migration via admin DB contract
 npm run db:migrate              # run migrations via admin DB contract
-npm run db:seed                 # push schema + seed via admin DB contract
+npm run db:seed                 # seed the database via admin DB contract
 npm run db:wipe                 # wipe database via admin DB contract
 ```
 
@@ -56,6 +57,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 ## Seed Dataset
 
 - `npm run db:seed` loads a deterministic 12-month historical dataset spanning `2025-04` through `2026-03` from `db/seed/`.
+- `npm run db:reset` is the default local bootstrap for a seeded app-ready database: wipe, migrate, then seed.
 - Every active worker receives seeded monthly timesheets and payroll rows across that full window so payroll, advance, and reporting screens have browseable history.
 - Foreign full-time workers keep a live employment minimum of `260`, while payroll vouchers snapshot the month-specific minimum-hours target of `250` or `260`.
 - Exactly 5 foreign full-time workers form the quarterly advance cohort; they request a fixed-amount advance once per quarter and repay it over 3 monthly installments in the same quarter.
