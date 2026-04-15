@@ -127,7 +127,7 @@ Update docs to reflect that the app is open-access and no longer has a permissio
 
 ### Acceptance criteria
 
-- [ ] Final repo-wide grep returns zero matches: `requirePermission | requireApiPermission | checkPermission | getApiSession`.
-- [ ] No doc references surviving helpers or feature-name RBAC constants.
-- [ ] `npm run build` succeeds.
+- [x] Final repo-wide grep returns zero matches: `requirePermission | requireApiPermission | checkPermission | getApiSession`. (Only the plan doc itself still contains these terms as historical context.)
+- [x] No doc references surviving helpers or feature-name RBAC constants.
+- [ ] `npm run build` succeeds. (Fails on a pre-existing `/dashboard/worker/all` `useSearchParams` suspense prerender error, unrelated to this phase's doc edits.)
 - [ ] (Optional) `npm run test:e2e` passes against seeded DB.

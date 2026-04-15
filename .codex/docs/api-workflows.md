@@ -22,16 +22,14 @@ This document maps the live `app/api/` surface and its request flows after auth 
 
 ## Access Contract
 
-- `app/api/_shared/auth.ts` keeps the old helper shape but no longer enforces session or feature permission checks.
-- `requireApiPermission(...)` returns an `open-access` user id so route handlers can keep their call sites stable while the app stays fully open.
+- The app is fully open access; API routes do not authenticate or authorize callers.
 - No live API route returns a login redirect or auth-specific `401` / `403` branch.
 
 ## Advance PDF Export
 
 ```mermaid
 flowchart TD
-    A[Client GET /api/advance/:id/pdf] --> B[Open-access helper returns open-access user id]
-    B --> C[Load advance request + worker metadata]
+    A[Client GET /api/advance/:id/pdf] --> C[Load advance request + worker metadata]
     C --> D[Build internal summary URL with print=1]
     D --> E[Launch Playwright chromium]
     E --> F[Open summary page and wait for networkidle]
@@ -43,8 +41,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[Client GET /api/payroll/:id/pdf] --> B[Open-access helper returns open-access user id]
-    B --> C[Read mode query param]
+    A[Client GET /api/payroll/:id/pdf] --> C[Read mode query param]
     C --> D[Load payroll + worker metadata]
     D --> E[Build summary or voucher print URL]
     E --> F[Launch Playwright chromium]
@@ -57,8 +54,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[Client POST or PATCH payroll command] --> B[Open-access helper returns open-access user id]
-    B --> C[Validate body or params]
+    A[Client POST or PATCH payroll command] --> C[Validate body or params]
     C --> D[Call payroll service]
     D -->|domain conflict| E[409 JSON error]
     D -->|record missing| F[404 JSON error]
@@ -71,8 +67,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[Client POST /api/timesheets/import] --> B[Open-access helper returns open-access user id]
-    B --> C[Parse JSON body with AttendRecord schema]
+    A[Client POST /api/timesheets/import] --> C[Parse JSON body with AttendRecord schema]
     C -->|invalid body| D[400 JSON validation error]
     C --> E[services/timesheet/import-attend-record-timesheet]
     E --> F[Insert imported timesheet rows]
@@ -85,8 +80,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    A[Client POST /api/payroll/download-zip] --> B[Open-access helper returns open-access user id]
-    B --> C[Parse and dedupe payrollIds]
+    A[Client POST /api/payroll/download-zip] --> C[Parse and dedupe payrollIds]
     C --> D[Load payroll metadata for filenames and ZIP date range]
     D --> E[Fetch internal /api/payroll/:id/pdf responses]
     E --> F[Append PDF buffers to ZIP stream]
