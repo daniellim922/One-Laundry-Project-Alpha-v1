@@ -2,17 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
     revalidatePath: vi.fn(),
-    requirePermission: vi.fn(),
     createAdvanceRequestRecord: vi.fn(),
     updateAdvanceRequestRecord: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({
     revalidatePath: (...args: unknown[]) => mocks.revalidatePath(...args),
-}));
-
-vi.mock("@/utils/permissions/require-permission", () => ({
-    requirePermission: (...args: unknown[]) => mocks.requirePermission(...args),
 }));
 
 vi.mock("@/services/advance/save-advance-request", () => ({
@@ -36,7 +31,6 @@ const baseInput = {
 describe("advance actions", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.requirePermission.mockResolvedValue(undefined);
     });
 
     it("createAdvanceRequest delegates to the service and revalidates related pages", async () => {
@@ -49,7 +43,6 @@ describe("advance actions", () => {
             success: true,
         });
 
-        expect(mocks.requirePermission).toHaveBeenCalledWith("Advance", "create");
         expect(mocks.createAdvanceRequestRecord).toHaveBeenCalledWith(baseInput);
         expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/advance");
         expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/advance/all");
@@ -78,7 +71,6 @@ describe("advance actions", () => {
             success: true,
         });
 
-        expect(mocks.requirePermission).toHaveBeenCalledWith("Advance", "update");
         expect(mocks.updateAdvanceRequestRecord).toHaveBeenCalled();
         expect(mocks.revalidatePath).toHaveBeenCalledWith(
             "/dashboard/advance/advance-request-1",

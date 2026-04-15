@@ -1,11 +1,9 @@
 import { ReactNode } from "react";
-import { requirePermission } from "@/utils/permissions/require-permission";
 
-export default async function TimesheetLayout({
+export default function TimesheetLayout({
     children,
 }: {
     children: ReactNode;
 }) {
-    await requirePermission("Timesheet", "read");
     return <>{children}</>;
 }

@@ -1,7 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 
-import { requirePermission } from "@/utils/permissions/require-permission";
 import { db } from "@/lib/db";
 import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
 import { workerTable } from "@/db/tables/payroll/workerTable";
@@ -16,8 +15,6 @@ interface PageProps {
 }
 
 export default async function EditTimesheetEntryPage({ params }: PageProps) {
-    await requirePermission("Timesheet", "update");
-
     const { id } = await params;
 
     const [entry] = await db

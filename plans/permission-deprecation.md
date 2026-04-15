@@ -82,9 +82,9 @@ After callsites are clean, delete `utils/permissions/permissions.ts`, `utils/per
 
 ### Acceptance criteria
 
-- [ ] No file imports from `@/utils/permissions/*`.
-- [ ] `utils/permissions/` directory removed.
-- [ ] `npx tsc --noEmit`, `npm run lint`, `npm run test` all clean.
+- [x] No file imports from `@/utils/permissions/*`.
+- [x] `utils/permissions/` directory removed.
+- [x] `npx tsc --noEmit`, `npm run lint`, `npm run test` all clean. (Lint clean for this phase; same 3 pre-existing `react-hooks` errors in `components/data-table/column-filter-cell.tsx` remain from phase 1.)
 - [ ] Manual smoke in dev: each dashboard route still loads (`/dashboard/worker`, `/dashboard/payroll`, `/dashboard/timesheet`, `/dashboard/expenses`, `/dashboard/advance`).
 
 ---

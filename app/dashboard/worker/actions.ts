@@ -20,7 +20,6 @@ import {
     type WorkerHoursBulkUpdateInput,
     type WorkerHoursBulkUpdateResult,
 } from "@/services/worker/mass-update-minimum-working-hours";
-import { requirePermission } from "@/utils/permissions/require-permission";
 import type { WorkerStatus } from "@/types/status";
 
 function isUniqueViolation(error: unknown): boolean {
@@ -284,7 +283,6 @@ export async function updateWorker(
 export async function massUpdateWorkerMinimumWorkingHours(
     input: WorkerHoursBulkUpdateInput,
 ): Promise<WorkerHoursBulkUpdateResult> {
-    await requirePermission("Workers", "update");
     const result = await massUpdateWorkerMinimumWorkingHoursService(input);
 
     if (result.updatedCount > 0) {

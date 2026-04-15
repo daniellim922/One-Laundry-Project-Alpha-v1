@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 
-import { requirePermission } from "@/utils/permissions/require-permission";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { EntityStatusBadge } from "@/components/ui/entity-status-badge";
 import { db } from "@/lib/db";
@@ -19,8 +18,6 @@ interface PageProps {
 }
 
 export default async function EditWorkerPage({ params }: PageProps) {
-    await requirePermission("Workers", "update");
-
     const { id } = await params;
 
     const [worker] = (await db
