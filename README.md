@@ -1,24 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Local Setup
 
-## Getting Started
+The default local database platform is Supabase local.
 
-First, run the development server:
+1. Copy `.env.example` to `.env`.
+2. Start the local database stack with `npm run supabase:start`.
+3. Check the local service endpoints with `npm run supabase:status`.
+4. Build the app-ready local database state with `npm run supabase:db:reset`.
+5. Run schema/admin workflows individually with `npm run supabase:db:generate`, `npm run supabase:db:migrate`, `npm run supabase:db:seed`, or `npm run supabase:db:wipe`.
+6. Open the primary local database UI with `npm run supabase:studio`.
+7. Run the app with `npm run dev`.
+
+`npm run supabase:db:reset` is the end-to-end local Supabase workflow. It will reset, migrate, and seed the database so the deterministic historical payroll dataset is ready for app use and test flows.
+
+Legacy `db:*` scripts remain as compatibility aliases, but the Supabase-first `supabase:*` commands are the default path for local development.
+
+The app runtime reads `DATABASE_RUNTIME_URL` first and falls back to `DATABASE_URL`.
+Schema and migration tooling read `DATABASE_ADMIN_URL` first and fall back to `DATABASE_URL`.
+For local Supabase all three can point at:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+postgresql://postgres:postgres@127.0.0.1:54322/postgres
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+For hosted Supabase, keep the responsibilities split:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `DATABASE_RUNTIME_URL`: app traffic, typically the pooled/session connection path.
+- `DATABASE_ADMIN_URL`: Drizzle migrations, schema management, Drizzle Studio, wipe/reset, and seeding against the direct admin-capable connection path.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Migration ownership
+
+- `lib/db.ts` owns the runtime database boundary for app traffic.
+- `lib/admin-db.ts` owns migration, schema-management, wipe/reset, and seed workflows.
+- Drizzle is the schema source of truth; Supabase CLI manages local platform lifecycle only.
+- The production rollout contract lives in `.codex/docs/supabase-rollout-contract.md`.
+
+Supabase Studio is available at `http://127.0.0.1:54323` after the stack starts, and `npm run supabase:studio` opens that URL when possible.
+
+Stop the local stack with:
+
+```bash
+npm run supabase:stop
+```
 
 ## Worker Test Commands
 
@@ -27,7 +49,7 @@ npm run test:worker
 npm run test:e2e:worker
 ```
 
-`test:e2e:worker` is deterministic and assumes seeded data/users are present. Run `npm run db:seed` first.
+`test:e2e:worker` is deterministic and assumes seeded data/users are present. Run `npm run supabase:db:reset` first.
 
 ## Learn More
 

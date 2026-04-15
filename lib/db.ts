@@ -1,4 +1,8 @@
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { createRuntimeDatabaseConnection } from "@/lib/database/runtime-client";
 
-export const db = drizzle(process.env.DATABASE_URL!);
+const runtimeDatabase = createRuntimeDatabaseConnection();
+
+export const db = runtimeDatabase.db;
+export const runtimeDbConfig = runtimeDatabase.config;
+export const runtimeSql = runtimeDatabase.sql;

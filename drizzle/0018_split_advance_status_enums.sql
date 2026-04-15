@@ -6,6 +6,8 @@ CREATE TYPE "public"."installment_status" AS ENUM('Installment Loan', 'Installme
 
 ALTER TABLE "advance_request" ALTER COLUMN "status" SET DATA TYPE text;--> statement-breakpoint
 ALTER TABLE "advance" ALTER COLUMN "status" SET DATA TYPE text;--> statement-breakpoint
+ALTER TABLE "advance_request" ALTER COLUMN "status" DROP DEFAULT;--> statement-breakpoint
+ALTER TABLE "advance" ALTER COLUMN "status" DROP DEFAULT;--> statement-breakpoint
 
 ALTER TABLE "advance_request" DROP CONSTRAINT IF EXISTS "advance_request_status_check";--> statement-breakpoint
 ALTER TABLE "advance" DROP CONSTRAINT IF EXISTS "advance_status_check";--> statement-breakpoint
