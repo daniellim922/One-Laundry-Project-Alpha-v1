@@ -42,9 +42,9 @@ Remove authentication and authorization enforcement from the runtime boundary. T
 
 ### Acceptance criteria
 
-- [ ] Dashboard routes render without any session or permission dependency.
-- [ ] Internal APIs no longer return auth- or permission-related failures.
-- [ ] No remaining runtime path depends on session retrieval or feature permission checks.
+- [x] Dashboard routes render without any session or permission dependency.
+- [x] Internal APIs no longer return auth- or permission-related failures.
+- [x] No remaining runtime path depends on session retrieval or feature permission checks.
 
 ---
 

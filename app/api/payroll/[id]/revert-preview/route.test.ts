@@ -21,8 +21,8 @@ describe("GET /api/payroll/[id]/revert-preview", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mocks.requireApiPermission.mockResolvedValue({
-            session: { user: { id: "admin-1" } },
-            userId: "admin-1",
+            session: null,
+            userId: "open-access",
         });
     });
 
@@ -56,32 +56,6 @@ describe("GET /api/payroll/[id]/revert-preview", () => {
             ],
         });
         expect(mocks.getPayrollRevertPreview).toHaveBeenCalledWith("payroll-1");
-    });
-
-    it("passes through permission failures", async () => {
-        mocks.requireApiPermission.mockResolvedValue(
-            Response.json(
-                {
-                    ok: false,
-                    error: { code: "FORBIDDEN", message: "Forbidden" },
-                },
-                { status: 403 },
-            ),
-        );
-
-        const response = await GET(
-            new Request("http://localhost/api/payroll/payroll-1/revert-preview"),
-            {
-                params: Promise.resolve({ id: "payroll-1" }),
-            },
-        );
-
-        expect(response.status).toBe(403);
-        await expect(response.json()).resolves.toEqual({
-            ok: false,
-            error: { code: "FORBIDDEN", message: "Forbidden" },
-        });
-        expect(mocks.getPayrollRevertPreview).not.toHaveBeenCalled();
     });
 
     it("returns structured not-found errors", async () => {

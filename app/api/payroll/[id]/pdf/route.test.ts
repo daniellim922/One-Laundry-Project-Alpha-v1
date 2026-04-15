@@ -53,8 +53,8 @@ describe("GET /api/payroll/[id]/pdf", () => {
         vi.clearAllMocks();
 
         mocks.requireApiPermission.mockResolvedValue({
-            session: { user: { id: "admin-1" } },
-            userId: "admin-1",
+            session: null,
+            userId: "open-access",
         });
 
         mocks.page.pdf.mockResolvedValue(Buffer.from("payroll-pdf"));
@@ -78,32 +78,10 @@ describe("GET /api/payroll/[id]/pdf", () => {
         });
     });
 
-    it("passes through shared permission failures", async () => {
-        mocks.requireApiPermission.mockResolvedValueOnce(
-            new Response("forbidden", { status: 403 }),
-        );
-
-        const response = await GET(
-            new NextRequest("http://localhost/api/payroll/payroll-1/pdf"),
-            {
-                params: Promise.resolve({ id: "payroll-1" }),
-            },
-        );
-
-        expect(response.status).toBe(403);
-        expect(mocks.chromiumLaunch).not.toHaveBeenCalled();
-        expect(mocks.db.select).not.toHaveBeenCalled();
-    });
-
     it("renders the voucher PDF and returns an attachment filename", async () => {
         const response = await GET(
             new NextRequest(
                 "http://localhost/api/payroll/payroll-1/pdf?mode=voucher",
-                {
-                    headers: {
-                        cookie: "session=abc",
-                    },
-                },
             ),
             {
                 params: Promise.resolve({ id: "payroll-1" }),
@@ -124,9 +102,7 @@ describe("GET /api/payroll/[id]/pdf", () => {
         expect(mocks.browser.newPage).toHaveBeenCalledWith({
             viewport: { width: 1240, height: 1754 },
         });
-        expect(mocks.page.setExtraHTTPHeaders).toHaveBeenCalledWith({
-            cookie: "session=abc",
-        });
+        expect(mocks.page.setExtraHTTPHeaders).not.toHaveBeenCalled();
         expect(mocks.page.goto).toHaveBeenCalledWith(
             "http://localhost/dashboard/payroll/payroll-1/summary?mode=voucher&print=1",
             { waitUntil: "networkidle" },

@@ -53,8 +53,8 @@ describe("GET /api/advance/[id]/pdf", () => {
         vi.clearAllMocks();
 
         mocks.requireApiPermission.mockResolvedValue({
-            session: { user: { id: "admin-1" } },
-            userId: "admin-1",
+            session: null,
+            userId: "open-access",
         });
 
         mocks.page.pdf.mockResolvedValue(Buffer.from("advance-pdf"));
@@ -80,11 +80,7 @@ describe("GET /api/advance/[id]/pdf", () => {
 
     it("renders the advance summary PDF and returns an attachment filename", async () => {
         const response = await GET(
-            new NextRequest("http://localhost/api/advance/adv-1/pdf", {
-                headers: {
-                    cookie: "session=abc",
-                },
-            }),
+            new NextRequest("http://localhost/api/advance/adv-1/pdf"),
             {
                 params: Promise.resolve({ id: "adv-1" }),
             },
@@ -95,9 +91,7 @@ describe("GET /api/advance/[id]/pdf", () => {
         expect(response.headers.get("content-disposition")).toBe(
             'attachment; filename="Jamie - Tan - Advance - $700 - 20_04_2026.pdf"',
         );
-        expect(mocks.page.setExtraHTTPHeaders).toHaveBeenCalledWith({
-            cookie: "session=abc",
-        });
+        expect(mocks.page.setExtraHTTPHeaders).not.toHaveBeenCalled();
         expect(mocks.page.goto).toHaveBeenCalledWith(
             "http://localhost/dashboard/advance/adv-1/summary?print=1",
             { waitUntil: "networkidle" },

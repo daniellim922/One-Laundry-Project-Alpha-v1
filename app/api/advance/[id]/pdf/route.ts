@@ -44,8 +44,6 @@ export async function GET(
         .where(eq(advanceRequestTable.id, id))
         .limit(1);
 
-    const cookie = req.headers.get("cookie") ?? "";
-
     const browser = await chromium.launch({
         headless: true,
         args: ["--no-sandbox"],
@@ -54,10 +52,6 @@ export async function GET(
         const page = await browser.newPage({
             viewport: { width: 1240, height: 1754 },
         });
-        if (cookie) {
-            await page.setExtraHTTPHeaders({ cookie });
-        }
-
         await page.goto(url, { waitUntil: "networkidle" });
         await page.emulateMedia({ media: "print" });
         await page.evaluate(async () => {

@@ -1,16 +1,14 @@
-import { auth } from "@/lib/auth";
-import {
-    checkPermission,
-    type PermissionAction,
-} from "@/utils/permissions/permissions";
-import { apiError } from "./responses";
+import { type PermissionAction } from "@/utils/permissions/permissions";
 
 type RequestLike = {
     headers: Headers;
 };
 
+const OPEN_ACCESS_USER_ID = "open-access";
+
 export async function getApiSession(request: RequestLike) {
-    return auth.api.getSession({ headers: request.headers });
+    void request;
+    return null;
 }
 
 export async function requireApiPermission(
@@ -18,26 +16,11 @@ export async function requireApiPermission(
     featureName: string,
     action: PermissionAction,
 ) {
-    const session = await getApiSession(request);
-    if (!session) {
-        return apiError({
-            status: 401,
-            code: "UNAUTHORIZED",
-            message: "Authentication required",
-        });
-    }
-
-    const allowed = await checkPermission(session.user.id, featureName, action);
-    if (!allowed) {
-        return apiError({
-            status: 403,
-            code: "FORBIDDEN",
-            message: "Forbidden",
-        });
-    }
-
+    void request;
+    void featureName;
+    void action;
     return {
-        session,
-        userId: session.user.id,
+        session: null,
+        userId: OPEN_ACCESS_USER_ID,
     };
 }
