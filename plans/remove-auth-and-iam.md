@@ -58,9 +58,9 @@ Remove the IAM product surface end-to-end. This includes IAM navigation, pages, 
 
 ### Acceptance criteria
 
-- [ ] IAM no longer appears in dashboard navigation or breadcrumbs.
-- [ ] IAM pages and APIs are removed and no longer accessible.
-- [ ] No remaining user-management workflow exists for bans, roles, or feature permissions.
+- [x] IAM no longer appears in dashboard navigation or breadcrumbs.
+- [x] IAM pages and APIs are removed and no longer accessible.
+- [x] No remaining user-management workflow exists for bans, roles, or feature permissions.
 
 ---
 

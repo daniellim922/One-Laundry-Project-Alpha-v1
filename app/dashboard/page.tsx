@@ -156,7 +156,9 @@ export default async function Page() {
                         </Link>
                     </Button>
                     <Button variant="outline" asChild>
-                        <Link href="/dashboard/iam/roles">Manage IAM</Link>
+                        <Link href="/dashboard/payroll/all">
+                            View payrolls
+                        </Link>
                     </Button>
                 </CardContent>
             </Card>

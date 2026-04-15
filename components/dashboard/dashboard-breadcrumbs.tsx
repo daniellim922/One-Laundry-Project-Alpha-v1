@@ -19,9 +19,6 @@ const LABEL_MAP: Record<string, string> = {
     timesheet: "Timesheet",
     payroll: "Payroll",
     expenses: "Expenses",
-    iam: "IAM",
-    roles: "Roles",
-    users: "Users",
     new: "New",
     all: "All",
     edit: "Edit",
@@ -91,4 +88,3 @@ export function DashboardBreadcrumbs() {
         </Breadcrumb>
     );
 }
-

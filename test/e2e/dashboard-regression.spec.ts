@@ -27,12 +27,15 @@ test.describe("Dashboard regression smoke", () => {
         await requireAuthenticatedOrSkip(page);
         await expect(page).toHaveURL(/\/dashboard\/worker\/all$/);
 
-        await page.goto("/dashboard/iam");
-        await requireAuthenticatedOrSkip(page);
-        await expect(page).toHaveURL(/\/dashboard\/iam$/);
-
         await page.goto("/dashboard/expenses");
         await requireAuthenticatedOrSkip(page);
         await expect(page).toHaveURL(/\/dashboard\/expenses$/);
+    });
+
+    test("iam routes are no longer accessible", async ({ page }) => {
+        const response = await page.goto("/dashboard/iam");
+
+        expect(response?.status()).toBe(404);
+        await expect(page.getByText("This page could not be found.")).toBeVisible();
     });
 });

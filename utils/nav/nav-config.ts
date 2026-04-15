@@ -15,7 +15,6 @@ export type NavItemSerializable = {
         | "Timesheet"
         | "Payroll"
         | "Expenses"
-        | "IAM"
         | "Advance";
     featureName: string;
     items?: NavSubItem[];
@@ -42,9 +41,6 @@ function toNavItemConfig(f: (typeof DASHBOARD_NAV_FEATURES)[number]): NavItemCon
 
 const NAV_ITEMS: NavItemConfig[] = DASHBOARD_NAV_FEATURES.map(toNavItemConfig);
 
-/**
- * Returns nav items the user has read permission for (serializable, no icon components).
- */
 function toSerializable(item: NavItemConfig): NavItemSerializable {
     const { alwaysVisible, ...rest } = item;
     void alwaysVisible;

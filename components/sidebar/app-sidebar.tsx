@@ -7,7 +7,6 @@ import {
     DollarSign,
     FileSpreadsheet,
     Home,
-    Shield,
     Shirt,
     User,
     Wallet,
@@ -34,7 +33,6 @@ const ICON_MAP = {
     Payroll: Wallet,
     Advance: Banknote,
     Expenses: DollarSign,
-    IAM: Shield,
 } as const;
 
 export function AppSidebar({
@@ -50,8 +48,7 @@ export function AppSidebar({
             | "Timesheet"
             | "Payroll"
             | "Advance"
-            | "Expenses"
-            | "IAM";
+            | "Expenses";
         featureName: string;
         items?: { title: string; url: string }[];
     }[];

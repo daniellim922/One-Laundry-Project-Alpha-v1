@@ -14,7 +14,6 @@ export type DashboardNavIconName =
     | "Timesheet"
     | "Payroll"
     | "Expenses"
-    | "IAM"
     | "Advance";
 
 export type DashboardNavFeature = {
@@ -22,7 +21,6 @@ export type DashboardNavFeature = {
     url: string;
     description: string[];
     subFeatures: DashboardNavSubFeature[];
-    /** IAM permission feature name in DB */
     featureName: string;
     iconName: DashboardNavIconName;
     /** When true, sidebar shows without read check */
@@ -111,16 +109,5 @@ export const DASHBOARD_NAV_FEATURES: DashboardNavFeature[] = [
         ],
         featureName: "Expenses",
         iconName: "Expenses",
-    },
-    {
-        name: "IAM",
-        url: "/dashboard/iam",
-        description: [
-            "This should display an overview of identity and access using charts from Shadcn UI where helpful",
-            "It should provide quick access to manage users, roles, and permissions",
-        ],
-        subFeatures: [{ name: "Users & Roles", url: "/dashboard/iam/roles" }],
-        featureName: "IAM (Identity and Access Management)",
-        iconName: "IAM",
     },
 ];
