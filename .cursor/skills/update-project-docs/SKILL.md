@@ -70,7 +70,7 @@ Present findings to the user as a numbered list:
 Detected changes:
 1. New route `app/dashboard/reports/` (not in Key file locations)
 2. New DB table `reports` with status enum (no glossary entry)
-3. New npm script `db:studio`
+3. New npm script `foo:bar`
 
 Proposed updates:
 - AGENTS.md: add row to Key file locations, add script to Setup and commands

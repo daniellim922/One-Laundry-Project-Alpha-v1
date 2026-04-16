@@ -23,7 +23,6 @@ npm run supabase:db:reset       # wipe + push schema + seed via admin DB contrac
 npm run supabase:db:migrate     # drizzle-kit push (db/schema.ts) via admin DB contract
 npm run supabase:db:seed        # seed the database via admin DB contract
 npm run supabase:db:wipe        # wipe database via admin DB contract
-npm run supabase:studio         # open the local Supabase Studio URL
 npm run supabase:stop           # stop the local Supabase stack
 ```
 

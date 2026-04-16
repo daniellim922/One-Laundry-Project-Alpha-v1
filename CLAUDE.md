@@ -19,7 +19,6 @@ npm run test              # all Vitest tests (co-located with source)
 npm run test:e2e          # Playwright E2E (auto-starts dev server)
 npm run supabase:db:migrate   # drizzle-kit push (schema from db/schema.ts)
 npm run supabase:db:seed      # seed database
-npm run supabase:studio       # local Supabase Studio GUI
 npm run supabase:db:wipe      # wipe database
 ```
 
