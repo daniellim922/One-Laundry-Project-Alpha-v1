@@ -34,8 +34,8 @@ enabled = false
 
 [studio]
 enabled = true
-port = 54323
-api_url = "http://127.0.0.1"
+api_url = "env(SUPABASE_STUDIO_URL)"
+port = "env(SUPABASE_STUDIO_URL)"
 openai_api_key = "env(OPENAI_API_KEY)"
 
 [inbucket]

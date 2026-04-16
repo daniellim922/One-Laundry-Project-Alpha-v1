@@ -15,11 +15,12 @@ npm install               # install deps
 npm run dev               # dev server (Turbopack)
 npm run build             # production build
 npm run lint              # ESLint (flat config, core-web-vitals + TS)
-npm run test              # all Vitest tests (co-located with source)
+npm run test              # Vitest then Playwright (`test:unit` + `test:e2e`)
+npm run test:unit         # all Vitest tests (co-located with source)
 npm run test:e2e          # Playwright E2E (auto-starts dev server)
-npm run supabase:db:migrate   # drizzle-kit push (schema from db/schema.ts)
-npm run supabase:db:seed      # seed database
-npm run supabase:db:wipe      # wipe database
+npm run db:migrate   # drizzle-kit push (schema from db/schema.ts)
+npm run db:seed      # seed database
+npm run db:wipe      # wipe database
 ```
 
 ### Single-file validation
@@ -54,14 +55,14 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 | Payroll calculations              | `utils/payroll/payroll-utils.ts`, `utils/payroll/parse-attendrecord.ts` |
 | Domain status enums + badge tones | `types/status.ts`, `types/badge-tones.ts`                               |
 | All Drizzle table schemas         | `db/tables/` (re-exported via `db/schema.ts`)                           |
-| Seeds & schema push               | `db/seed/`, `drizzle.config.ts` (`npm run supabase:db:migrate`)         |
+| Seeds & schema push               | `db/seed/`, `drizzle.config.ts` (`npm run db:migrate`)         |
 
 ## Testing
 
 - **Vitest** — node environment, tests co-located with source as `*.test.ts` / `*.test.tsx` under `app/`, `components/`, `utils/`, `lib/`, `db/`, `services/`, `scripts/`.
 - **E2E** — Playwright (Chromium), `test/e2e/*.spec.ts`. Coverage includes the `/login` compatibility redirect and direct dashboard access.
 - **Fixtures** in `test/fixtures/`, output in `test/results/`.
-- E2E worker tests are deterministic and assume seeded data. Run `npm run supabase:db:seed` first.
+- E2E worker tests are deterministic and assume seeded data. Run `npm run db:seed` first.
 
 ## Domain terminology (critical)
 

@@ -22,7 +22,7 @@ This contract defines how One Laundry moves from the local Supabase-first workfl
 
 - `lib/db.ts` owns runtime database access for app reads and writes.
 - `lib/admin-db.ts` owns schema-management, wipe, reset, and seed access.
-- `npm run supabase:db:migrate` runs `drizzle-kit push` using `drizzle.config.ts` and the admin URL contract.
+- `npm run db:migrate` runs `drizzle-kit push` using `drizzle.config.ts` and the admin URL contract.
 - Supabase CLI manages the local platform lifecycle, not schema authorship.
 - **Production risk:** `drizzle-kit push` applies diffs directly and can drop or alter columns without a reviewed SQL migration file. Treat production pushes like destructive DDL: review `db/schema.ts` changes, back up first, and run smoke checks after.
 
@@ -38,8 +38,8 @@ This contract defines how One Laundry moves from the local Supabase-first workfl
 
 1. Confirm the hosted Supabase project is reachable through both `DATABASE_RUNTIME_URL` and `DATABASE_ADMIN_URL`.
 2. Back up the target database according to the hosting environment policy before applying schema changes.
-3. Apply the schema through the admin connection with `npm run supabase:db:migrate` (drizzle-kit push).
-4. Do not run `npm run supabase:db:seed` against production.
+3. Apply the schema through the admin connection with `npm run db:migrate` (drizzle-kit push).
+4. Do not run `npm run db:seed` against production.
 5. Deploy or restart the application only after the schema push finishes successfully.
 6. Run the smoke checks below before treating the release as healthy.
 

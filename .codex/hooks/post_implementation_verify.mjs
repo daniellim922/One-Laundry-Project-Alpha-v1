@@ -104,11 +104,11 @@ function main() {
     return;
   }
 
-  const testRun = run("npm", ["run", "test"], repoRoot);
+  const testRun = run("npm", ["run", "test:unit"], repoRoot);
   if (testRun.status === 0) {
     emit({
       continue: true,
-      systemMessage: "Post-implementation verification passed: npm run test",
+      systemMessage: "Post-implementation verification passed: npm run test:unit",
     });
     return;
   }
@@ -125,7 +125,7 @@ function main() {
     continue: false,
     stopReason: "Post-implementation verification failed.",
     systemMessage:
-      "Post-implementation verification failed: `npm run test`\n\n" + tail,
+      "Post-implementation verification failed: `npm run test:unit`\n\n" + tail,
   });
 }
 

@@ -3,16 +3,14 @@
 The default local database platform is Supabase local.
 
 1. Copy `.env.example` to `.env`.
-2. Start the local database stack with `npm run supabase:start`.
-3. Check the local service endpoints with `npm run supabase:status`.
-4. Build the app-ready local database state with `npm run supabase:db:reset`.
-5. Run schema/admin workflows individually with `npm run supabase:db:migrate` (applies `db/schema.ts` via `drizzle-kit push`), `npm run supabase:db:seed`, or `npm run supabase:db:wipe`.
+2. Start the local database stack with `npm run sb:start`.
+3. Check the local service endpoints with `npm run sb:status`.
+4. Build the app-ready local database state with `npm run db:reset`.
+5. Run schema/admin workflows individually with `npm run db:migrate` (applies `db/schema.ts` via `drizzle-kit push`), `npm run db:seed`, or `npm run db:wipe`.
 6. Open Supabase Studio in a browser at `http://127.0.0.1:54323` (default port from `supabase/config.toml` `[studio]`).
 7. Run the app with `npm run dev`.
 
-`npm run supabase:db:reset` is the end-to-end local Supabase workflow. It will reset, push schema, and seed the database so the deterministic historical payroll dataset is ready for app use and test flows.
-
-Legacy `db:*` scripts remain as compatibility aliases, but the Supabase-first `supabase:*` commands are the default path for local development.
+`npm run db:reset` wipes, pushes schema, and seeds the database so the deterministic historical payroll dataset is ready for app use and test flows. Start the stack with `npm run sb:start` first.
 
 The app runtime reads `DATABASE_RUNTIME_URL` first and falls back to `DATABASE_URL`.
 Schema tooling (`drizzle-kit push`, Drizzle Studio, wipe/reset, seed) read `DATABASE_ADMIN_URL` first and fall back to `DATABASE_URL`.
@@ -30,24 +28,24 @@ For hosted Supabase, keep the responsibilities split:
 ## Schema ownership
 
 - `lib/db.ts` owns the runtime database boundary for app traffic.
-- `lib/admin-db.ts` owns schema-management, wipe/reset, and seed workflows. `npm run supabase:db:migrate` runs `drizzle-kit push` via `drizzle.config.ts`.
+- `lib/admin-db.ts` owns schema-management, wipe/reset, and seed workflows. `npm run db:migrate` runs `drizzle-kit push` via `drizzle.config.ts`.
 - Drizzle (`db/schema.ts`) is the schema source of truth; Supabase CLI manages local platform lifecycle only.
 - The production rollout contract lives in `.codex/docs/supabase-rollout-contract.md`.
 
 Stop the local stack with:
 
 ```bash
-npm run supabase:stop
+npm run sb:stop
 ```
 
 ## Worker Test Commands
 
 ```bash
-npm run test:worker
+npm run test:unit:worker
 npm run test:e2e:worker
 ```
 
-`test:e2e:worker` is deterministic and assumes seeded data/users are present. Run `npm run supabase:db:reset` first.
+`test:e2e:worker` is deterministic and assumes seeded data/users are present. Run `npm run db:reset` first.
 
 ## Learn More
 

@@ -11,19 +11,20 @@ npm install                     # install deps
 npm run dev                     # dev server (Turbopack)
 npm run build                   # production build
 npm run lint                    # ESLint (flat config, core-web-vitals + TS)
-npm run test                    # all Vitest tests
-npm run test:watch              # Vitest watch mode
-npm run test:worker             # worker-focused tests
+npm run test                    # unit tests (Vitest) then E2E (Playwright)
+npm run test:unit               # Vitest (all unit tests)
+npm run test:unit:watch         # Vitest watch mode
+npm run test:unit:worker        # worker-focused Vitest paths
 npm run test:e2e                # Playwright E2E
 npm run test:e2e:worker         # worker E2E subset
 npm run test:e2e:ui             # Playwright UI runner
-npm run supabase:start          # start the local Supabase stack
-npm run supabase:status         # print local Supabase service endpoints
-npm run supabase:db:reset       # wipe + push schema + seed via admin DB contract
-npm run supabase:db:migrate     # drizzle-kit push (db/schema.ts) via admin DB contract
-npm run supabase:db:seed        # seed the database via admin DB contract
-npm run supabase:db:wipe        # wipe database via admin DB contract
-npm run supabase:stop           # stop the local Supabase stack
+npm run sb:start                # start the local Supabase stack
+npm run sb:status               # print local Supabase service endpoints
+npm run sb:stop                 # stop the local Supabase stack
+npm run db:reset                # wipe + push schema + seed via admin DB contract
+npm run db:migrate              # drizzle-kit push (db/schema.ts) via admin DB contract
+npm run db:seed                 # seed the database via admin DB contract
+npm run db:wipe                 # wipe database via admin DB contract
 ```
 
 ### File-scoped validation
@@ -57,9 +58,9 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 
 ## Seed Dataset
 
-- `npm run supabase:db:seed` loads a deterministic 12-month historical dataset spanning `2025-04` through `2026-03` from `db/seed/`.
-- `npm run supabase:db:reset` is the default local bootstrap for a seeded app-ready database: wipe, push schema, then seed.
-- Legacy `db:*` scripts are compatibility aliases only; the Supabase-first `supabase:*` commands are the primary documented workflow.
+- `npm run db:seed` loads a deterministic 12-month historical dataset spanning `2025-04` through `2026-03` from `db/seed/`.
+- `npm run db:reset` is the default local bootstrap for a seeded app-ready database: wipe, push schema, then seed.
+- `sb:*` runs the local Supabase stack (CLI); `db:*` runs Drizzle push, wipe, and seed via the admin DB contract.
 - Every active worker receives seeded monthly timesheets and payroll rows across that full window so payroll, advance, and reporting screens have browseable history.
 - Foreign full-time workers keep a live employment minimum of `260`, while payroll vouchers snapshot the month-specific minimum-hours target of `250` or `260`.
 - Exactly 5 foreign full-time workers form the quarterly advance cohort; they request a fixed-amount advance once per quarter and repay it over 3 monthly installments in the same quarter.
@@ -80,7 +81,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 | All Drizzle table schemas | `db/tables/` (re-exported via `db/schema.ts`) |
 | Domain status enums + badge tones | `types/status.ts`, `types/badge-tones.ts` |
 | Seeds | `db/seed/` |
-| Schema push | `drizzle.config.ts` via `npm run supabase:db:migrate` (`drizzle-kit push`; generated `drizzle/` is gitignored) |
+| Schema push | `drizzle.config.ts` via `npm run db:migrate` (`drizzle-kit push`; generated `drizzle/` is gitignored) |
 | Codex rules, hooks, agents, prompts | `.codex/rules/`, `.codex/hooks.json`, `.codex/agents/`, `.codex/prompts/` |
 | Generated architecture docs | `.codex/docs/data-model-erd.md`, `.codex/docs/api-workflows.md`, `.codex/docs/supabase-rollout-contract.md` |
 
@@ -94,7 +95,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 - **Vitest** — node environment, tests co-located with source as `*.test.ts` / `*.test.tsx` under `app/`, `components/`, `utils/`, `lib/`, `db/`, `services/`, `scripts/`.
 - **E2E** — Playwright (Chromium), files in `test/e2e/` as `*.spec.ts`. Coverage includes the open landing page, the `/login` compatibility redirect, direct `/dashboard` access, and core feature regressions.
 - **Fixtures** live in `test/fixtures/`, output in `test/results/`.
-- **Codex post-change verification** is wired through `.codex/hooks.json`; when product code changes, the stop hook runs `npm run test`.
+- **Codex post-change verification** is wired through `.codex/hooks.json`; when product code changes, the stop hook runs `npm run test:unit` (fast Vitest only; run `npm run test` for the full suite).
 
 ## Dos
 
