@@ -257,7 +257,7 @@ export function DataTable<TData, TValue>({
     );
 
     return (
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
             {showSearch || actions ? (
                 <div className="flex items-center justify-between gap-2">
                     {showSearch ? (
@@ -276,7 +276,7 @@ export function DataTable<TData, TValue>({
                 </div>
             ) : null}
 
-            <div className="rounded-md border">
+            <div className="min-w-0 rounded-md border">
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (
