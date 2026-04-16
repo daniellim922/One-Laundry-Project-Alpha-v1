@@ -4,8 +4,8 @@ import { eq } from "drizzle-orm";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { EntityStatusBadge } from "@/components/ui/entity-status-badge";
 import { db } from "@/lib/db";
-import { workerTable } from "@/db/tables/payroll/workerTable";
-import { employmentTable } from "@/db/tables/payroll/employmentTable";
+import { workerTable } from "@/db/tables/workerTable";
+import { employmentTable } from "@/db/tables/employmentTable";
 import {
     WorkerForm,
     type WorkerWithEmployment,

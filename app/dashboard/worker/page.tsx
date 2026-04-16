@@ -2,8 +2,8 @@ import Link from "next/link";
 import { and, count, desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { workerTable } from "@/db/tables/payroll/workerTable";
-import { employmentTable } from "@/db/tables/payroll/employmentTable";
+import { workerTable } from "@/db/tables/workerTable";
+import { employmentTable } from "@/db/tables/employmentTable";
 import { Button } from "@/components/ui/button";
 import {
     Card,

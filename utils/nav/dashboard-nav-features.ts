@@ -16,7 +16,6 @@ export type DashboardNavFeature = {
     url: string;
     description: string[];
     subFeatures: DashboardNavSubFeature[];
-    featureName: string;
     iconName: DashboardNavIconName;
 };
 
@@ -29,7 +28,6 @@ export const DASHBOARD_NAV_FEATURES: DashboardNavFeature[] = [
             "It should surface key metrics and shortcuts into the main operational areas",
         ],
         subFeatures: [],
-        featureName: "Home",
         iconName: "Home",
     },
     {
@@ -43,7 +41,6 @@ export const DASHBOARD_NAV_FEATURES: DashboardNavFeature[] = [
             { name: "All workers", url: "/dashboard/worker/all" },
             { name: "New worker", url: "/dashboard/worker/new" },
         ],
-        featureName: "Workers",
         iconName: "Worker",
     },
     {
@@ -57,7 +54,6 @@ export const DASHBOARD_NAV_FEATURES: DashboardNavFeature[] = [
             { name: "All advances", url: "/dashboard/advance/all" },
             { name: "New advance", url: "/dashboard/advance/new" },
         ],
-        featureName: "Advance",
         iconName: "Advance",
     },
     {
@@ -72,7 +68,6 @@ export const DASHBOARD_NAV_FEATURES: DashboardNavFeature[] = [
             { name: "New timesheet", url: "/dashboard/timesheet/new" },
             { name: "Import timesheets", url: "/dashboard/timesheet/import" },
         ],
-        featureName: "Timesheet",
         iconName: "Timesheet",
     },
     {
@@ -86,7 +81,6 @@ export const DASHBOARD_NAV_FEATURES: DashboardNavFeature[] = [
             { name: "All payrolls", url: "/dashboard/payroll/all" },
             { name: "New payroll", url: "/dashboard/payroll/new" },
         ],
-        featureName: "Payroll",
         iconName: "Payroll",
     },
     {
@@ -100,7 +94,6 @@ export const DASHBOARD_NAV_FEATURES: DashboardNavFeature[] = [
             { name: "All expenses", url: "/dashboard/expenses/all" },
             { name: "Add expense", url: "/dashboard/expenses/new" },
         ],
-        featureName: "Expenses",
         iconName: "Expenses",
     },
 ];

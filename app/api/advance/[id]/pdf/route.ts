@@ -3,8 +3,8 @@ import { chromium } from "playwright";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { advanceRequestTable } from "@/db/tables/payroll/advanceRequestTable";
-import { workerTable } from "@/db/tables/payroll/workerTable";
+import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
+import { workerTable } from "@/db/tables/workerTable";
 
 export const runtime = "nodejs";
 

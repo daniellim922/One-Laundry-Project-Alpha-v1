@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { payrollTable } from "@/db/tables/payroll/payrollTable";
+import { payrollTable } from "@/db/tables/payrollTable";
 import { revertPayrollInTx } from "./payroll-command-shared";
 
 export type RevertPayrollResult =

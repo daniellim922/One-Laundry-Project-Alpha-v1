@@ -3,8 +3,8 @@ import { Suspense } from "react";
 import { asc, desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
-import { workerTable } from "@/db/tables/payroll/workerTable";
+import { timesheetTable } from "@/db/tables/timesheetTable";
+import { workerTable } from "@/db/tables/workerTable";
 import { columns } from "../columns";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";

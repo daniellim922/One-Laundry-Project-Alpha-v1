@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { SelectExpense } from "@/db/expensesTable";
+import type { SelectExpense } from "@/db/tables/expensesTable";
 import { createSortableHeader } from "@/components/data-table/column-builders";
 
 export const columns: ColumnDef<SelectExpense>[] = [

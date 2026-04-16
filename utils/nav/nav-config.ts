@@ -15,7 +15,6 @@ export type NavItemSerializable = {
         | "Payroll"
         | "Expenses"
         | "Advance";
-    featureName: string;
     items?: NavSubItem[];
 };
 
@@ -30,7 +29,6 @@ function toNavItemConfig(f: (typeof DASHBOARD_NAV_FEATURES)[number]): NavItemCon
         title: f.name,
         url: f.url,
         iconName: f.iconName,
-        featureName: f.featureName,
         items,
     };
 }
@@ -43,11 +41,4 @@ function toSerializable(item: NavItemConfig): NavItemSerializable {
 
 export function getAllNavItems(): NavItemSerializable[] {
     return NAV_ITEMS.map((item) => toSerializable(item));
-}
-
-export async function getVisibleNavItems(
-    userId: string,
-): Promise<NavItemSerializable[]> {
-    void userId;
-    return getAllNavItems();
 }

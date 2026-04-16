@@ -1,8 +1,8 @@
 import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 
-import { advanceRequestTable } from "@/db/tables/payroll/advanceRequestTable";
-import { advanceTable } from "@/db/tables/payroll/advanceTable";
-import { workerTable } from "@/db/tables/payroll/workerTable";
+import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
+import { advanceTable } from "@/db/tables/advanceTable";
+import { workerTable } from "@/db/tables/workerTable";
 import type { AdvanceLoanStatus, InstallmentStatus } from "@/types/status";
 import { db } from "@/lib/db";
 

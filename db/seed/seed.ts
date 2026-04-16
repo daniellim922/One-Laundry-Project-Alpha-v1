@@ -2,31 +2,31 @@ import { adminDb } from "@/lib/admin-db";
 import {
     workerTable,
     type InsertWorker,
-} from "@/db/tables/payroll/workerTable";
+} from "@/db/tables/workerTable";
 import {
     employmentTable,
     type InsertEmployment,
-} from "@/db/tables/payroll/employmentTable";
+} from "@/db/tables/employmentTable";
 import {
     timesheetTable,
     type InsertTimesheet,
-} from "@/db/tables/payroll/timesheetTable";
+} from "@/db/tables/timesheetTable";
 import {
     advanceRequestTable,
     type InsertAdvanceRequest,
-} from "@/db/tables/payroll/advanceRequestTable";
+} from "@/db/tables/advanceRequestTable";
 import {
     advanceTable,
     type InsertAdvance,
-} from "@/db/tables/payroll/advanceTable";
+} from "@/db/tables/advanceTable";
 import {
     payrollTable,
     type InsertPayroll,
-} from "@/db/tables/payroll/payrollTable";
+} from "@/db/tables/payrollTable";
 import {
     payrollVoucherTable,
     type InsertPayrollVoucher,
-} from "@/db/tables/payroll/payrollVoucherTable";
+} from "@/db/tables/payrollVoucherTable";
 import { workers } from "@/db/seed/workers";
 import { timesheets } from "./timesheet";
 import { advances } from "./advances";

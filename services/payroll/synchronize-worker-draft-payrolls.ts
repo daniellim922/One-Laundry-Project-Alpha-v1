@@ -1,13 +1,13 @@
 import { and, eq, gte, lte } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { advanceRequestTable } from "@/db/tables/payroll/advanceRequestTable";
-import { advanceTable } from "@/db/tables/payroll/advanceTable";
-import { employmentTable } from "@/db/tables/payroll/employmentTable";
-import { payrollTable } from "@/db/tables/payroll/payrollTable";
-import { payrollVoucherTable } from "@/db/tables/payroll/payrollVoucherTable";
-import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
-import { workerTable } from "@/db/tables/payroll/workerTable";
+import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
+import { advanceTable } from "@/db/tables/advanceTable";
+import { employmentTable } from "@/db/tables/employmentTable";
+import { payrollTable } from "@/db/tables/payrollTable";
+import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
+import { timesheetTable } from "@/db/tables/timesheetTable";
+import { workerTable } from "@/db/tables/workerTable";
 import { calculatePay } from "@/utils/payroll/payroll-utils";
 import {
     countMissingTimesheetDateIns,

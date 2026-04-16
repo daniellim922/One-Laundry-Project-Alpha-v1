@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { payrollTable } from "@/db/tables/payroll/payrollTable";
-import { payrollVoucherTable } from "@/db/tables/payroll/payrollVoucherTable";
+import { payrollTable } from "@/db/tables/payrollTable";
+import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { calculatePay, type PayCalcInput } from "@/utils/payroll/payroll-utils";
 
 export type UpdateVoucherDaysResult =

@@ -1,4 +1,4 @@
-import type { SelectTimesheet } from "@/db/tables/payroll/timesheetTable";
+import type { SelectTimesheet } from "@/db/tables/timesheetTable";
 import {
     dateFromIsoLocalMidnight,
     timesheetDateInKey,

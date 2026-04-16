@@ -8,7 +8,7 @@ import { DataTable } from "@/components/data-table/data-table";
 import { Button } from "@/components/ui/button";
 import { MassEditWorkingHoursButton } from "@/app/dashboard/worker/mass-edit/mass-edit-working-hours-button";
 import { columns } from "./columns";
-import type { WorkerWithEmployment } from "@/db/tables/payroll/workerTable";
+import type { WorkerWithEmployment } from "@/db/tables/workerTable";
 import type { WorkerEmploymentArrangement } from "@/types/status";
 import {
     MassEditWorkingHoursResultTable,

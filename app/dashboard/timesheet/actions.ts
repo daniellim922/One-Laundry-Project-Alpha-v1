@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
-import { workerTable } from "@/db/tables/payroll/workerTable";
+import { timesheetTable } from "@/db/tables/timesheetTable";
+import { workerTable } from "@/db/tables/workerTable";
 import { db } from "@/lib/db";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
 import {

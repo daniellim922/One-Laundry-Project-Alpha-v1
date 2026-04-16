@@ -2,11 +2,11 @@ import { and, eq, gte, lte } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { getAdvancesForPayrollPeriod } from "@/utils/advance/queries";
-import { payrollTable } from "@/db/tables/payroll/payrollTable";
-import { payrollVoucherTable } from "@/db/tables/payroll/payrollVoucherTable";
-import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
-import { employmentTable } from "@/db/tables/payroll/employmentTable";
-import { workerTable } from "@/db/tables/payroll/workerTable";
+import { payrollTable } from "@/db/tables/payrollTable";
+import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
+import { timesheetTable } from "@/db/tables/timesheetTable";
+import { employmentTable } from "@/db/tables/employmentTable";
+import { workerTable } from "@/db/tables/workerTable";
 import { calculatePay } from "@/utils/payroll/payroll-utils";
 import {
     findPayrollPeriodConflicts,

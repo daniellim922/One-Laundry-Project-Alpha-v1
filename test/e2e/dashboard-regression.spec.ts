@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Dashboard regression smoke", () => {
-    test("landing page and open login flow still lead into the dashboard", async ({
+    test("landing page and redirect login route still lead into the dashboard", async ({
         page,
     }) => {
         await page.goto("/");
@@ -13,13 +13,6 @@ test.describe("Dashboard regression smoke", () => {
         await expect(page.getByRole("link", { name: /log in/i })).toBeVisible();
 
         await page.goto("/login");
-        await expect(
-            page.getByRole("heading", { name: "Log in" }),
-        ).toBeVisible();
-        await page.getByLabel("Username").fill("operator");
-        await page.getByLabel("Password").fill("anything");
-        await page.getByRole("button", { name: "Log in" }).click();
-
         await expect(page).toHaveURL(/\/dashboard$/);
     });
 

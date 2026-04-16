@@ -3,7 +3,7 @@ import { count, sum } from "drizzle-orm";
 
 import { SimpleDonutChart } from "@/components/dashboard/simple-donut-chart";
 import { db } from "@/lib/db";
-import { expensesTable } from "@/db/expensesTable";
+import { expensesTable } from "@/db/tables/expensesTable";
 import { Button } from "@/components/ui/button";
 import {
     Card,

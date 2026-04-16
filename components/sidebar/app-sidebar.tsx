@@ -48,7 +48,6 @@ export function AppSidebar({
             | "Payroll"
             | "Advance"
             | "Expenses";
-        featureName: string;
         items?: { title: string; url: string }[];
     }[];
 }) {

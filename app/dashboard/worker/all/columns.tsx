@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { WorkerWithEmployment } from "@/db/tables/payroll/workerTable";
+import type { WorkerWithEmployment } from "@/db/tables/workerTable";
 import Link from "next/link";
 import { Eye, Pencil } from "lucide-react";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";

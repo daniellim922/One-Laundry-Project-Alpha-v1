@@ -7,11 +7,11 @@ import { db } from "@/lib/db";
 import {
     workerTable,
     type InsertWorker,
-} from "@/db/tables/payroll/workerTable";
+} from "@/db/tables/workerTable";
 import {
     employmentTable,
     type InsertEmployment,
-} from "@/db/tables/payroll/employmentTable";
+} from "@/db/tables/employmentTable";
 import {
     synchronizeWorkerDraftPayrolls,
 } from "@/services/payroll/synchronize-worker-draft-payrolls";

@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
-import { workerTable } from "@/db/tables/payroll/workerTable";
+import { timesheetTable } from "@/db/tables/timesheetTable";
+import { workerTable } from "@/db/tables/workerTable";
 import { Button } from "@/components/ui/button";
 import { EntityStatusBadge } from "@/components/ui/entity-status-badge";
 import { FormPageLayout } from "@/components/form-page-layout";

@@ -22,7 +22,7 @@ This contract defines how One Laundry moves from the local Supabase-first workfl
 
 - `lib/db.ts` owns runtime database access for app reads and writes.
 - `lib/admin-db.ts` owns schema-management, wipe, reset, and seed access.
-- `npm run supabase:db:migrate` runs `drizzle-kit push` via `db/push-schema.ts` using `drizzle.config.ts` and the admin URL contract.
+- `npm run supabase:db:migrate` runs `drizzle-kit push` using `drizzle.config.ts` and the admin URL contract.
 - Supabase CLI manages the local platform lifecycle, not schema authorship.
 - **Production risk:** `drizzle-kit push` applies diffs directly and can drop or alter columns without a reviewed SQL migration file. Treat production pushes like destructive DDL: review `db/schema.ts` changes, back up first, and run smoke checks after.
 
@@ -30,7 +30,7 @@ This contract defines how One Laundry moves from the local Supabase-first workfl
 
 - Hosted Supabase project exists with production connection values prepared for both runtime and admin roles.
 - `db/schema.ts` on the release branch is reviewed for intended DDL impact (including data loss) before push.
-- Local verification has passed on the current branch with `npm run test:db:contracts` and any feature checks required by the release.
+- Local verification has passed on the current branch with `npm run test` and any feature checks required by the release.
 - Seed policy is explicit: deterministic seed data is for local and test environments only, not for production.
 - Operators know the local reset workflow, who approves production schema changes, and the smoke-check path after push.
 
@@ -45,7 +45,7 @@ This contract defines how One Laundry moves from the local Supabase-first workfl
 
 ## Smoke Checks
 
-- Open the landing page, login page, and direct `/dashboard` route successfully.
+- Open the landing page, `/login` redirect, and direct `/dashboard` route successfully.
 - Load workers, timesheets, payroll, advances, and expenses screens without database connection errors.
 - Create or update one low-risk record in a non-production-like validation environment before repeating in production if write verification is required.
 - Generate one payroll PDF or advance PDF to confirm the app runtime can read the production dataset.

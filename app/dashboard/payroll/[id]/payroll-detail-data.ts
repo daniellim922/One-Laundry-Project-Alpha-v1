@@ -3,11 +3,11 @@ import { notFound } from "next/navigation";
 
 import { getAdvancesForPayrollPeriod } from "@/utils/advance/queries";
 import { db } from "@/lib/db";
-import { payrollTable } from "@/db/tables/payroll/payrollTable";
-import { payrollVoucherTable } from "@/db/tables/payroll/payrollVoucherTable";
-import { workerTable } from "@/db/tables/payroll/workerTable";
-import { employmentTable } from "@/db/tables/payroll/employmentTable";
-import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
+import { payrollTable } from "@/db/tables/payrollTable";
+import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
+import { workerTable } from "@/db/tables/workerTable";
+import { employmentTable } from "@/db/tables/employmentTable";
+import { timesheetTable } from "@/db/tables/timesheetTable";
 import {
     listMissingTimesheetDateIns,
     timesheetDateInKey,

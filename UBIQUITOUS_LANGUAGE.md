@@ -84,8 +84,8 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 | Term | Definition | Aliases to avoid |
 | ---- | ---------- | ---------------- |
 | **Landing page** | The public `/` page that introduces the product and links into the internal app. | Home dashboard |
-| **Gateway login** | The `/login` screen; it is a UI-only entry form that accepts any non-empty username and password and then routes to `/dashboard`. | Authentication, sign-in policy |
-| **Open dashboard access** | The current operating rule that all dashboard routes and internal APIs are available without a user identity or role check. | Guest mode, temporary bypass |
+| **Gateway login** | The legacy `/login` route kept for compatibility; it immediately redirects into `/dashboard`. | Authentication, sign-in policy |
+| **Open dashboard access** | The canonical operating rule that all dashboard routes and internal APIs are available without a user identity or role check. | Guest mode, temporary bypass |
 
 
 ## Relationships

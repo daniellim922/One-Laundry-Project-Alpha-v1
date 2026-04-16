@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project
 
 Workforce payroll and back-office operations app for a laundry business.
-Bounded context: **workers, employment, timesheets, payroll, salary advances, expenses, IAM**.
+Bounded context: **workers, employment, timesheets, payroll, salary advances, expenses**.
 Domain glossary: `.cursor/UBIQUITOUS_LANGUAGE.md` — read it before touching payroll or advance logic.
 
 ## Commands
@@ -33,7 +33,7 @@ npx vitest run <path/to/file.test.ts>  # run a single test file (tests live next
 
 ## Stack
 
-Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL + Drizzle ORM 0.45.1 · better-auth (session-based, username plugin) · shadcn/ui (new-york) · Tailwind CSS v4 · TanStack React Table v8 · react-hook-form + Zod · Recharts · Vitest + Playwright.
+Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL + Drizzle ORM 0.45.1 · shadcn/ui (new-york) · Tailwind CSS v4 · TanStack React Table v8 · react-hook-form + Zod · Recharts · Vitest + Playwright.
 
 ## Architecture
 
@@ -45,22 +45,22 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 
 ## Key file locations
 
-| What | Where |
-|---|---|
-| Route pages + server actions | `app/dashboard/<feature>/` |
-| Shared UI primitives (read-only) | `components/ui/` |
-| Data table components | `components/data-table/` |
-| Form page shell | `components/form-page-layout.tsx` |
-| DB, auth, Tailwind `cn` | `lib/db.ts`, `lib/auth.ts`, `lib/auth-client.ts`, `lib/utils.ts` |
-| Payroll calculations | `utils/payroll/payroll-utils.ts`, `utils/payroll/parse-attendrecord.ts` |
-| Domain status enums + badge tones | `types/status.ts`, `types/badge-tones.ts` |
-| All Drizzle table schemas | `db/tables/` (re-exported via `db/schema.ts`) |
-| Seeds & schema push | `db/seed/`, `db/push-schema.ts`, `drizzle.config.ts` |
+| What                              | Where                                                                   |
+| --------------------------------- | ----------------------------------------------------------------------- |
+| Route pages + server actions      | `app/dashboard/<feature>/`                                              |
+| Shared UI primitives (read-only)  | `components/ui/`                                                        |
+| Data table components             | `components/data-table/`                                                |
+| Form page shell                   | `components/form-page-layout.tsx`                                       |
+| DB, Tailwind `cn`                 | `lib/db.ts`, `lib/utils.ts`                                              |
+| Payroll calculations              | `utils/payroll/payroll-utils.ts`, `utils/payroll/parse-attendrecord.ts` |
+| Domain status enums + badge tones | `types/status.ts`, `types/badge-tones.ts`                               |
+| All Drizzle table schemas         | `db/tables/` (re-exported via `db/schema.ts`)                           |
+| Seeds & schema push               | `db/seed/`, `drizzle.config.ts` (`npm run supabase:db:migrate`)         |
 
 ## Testing
 
 - **Vitest** — node environment, tests co-located with source as `*.test.ts` / `*.test.tsx` under `app/`, `components/`, `utils/`, `lib/`, `db/`, `services/`, `scripts/`.
-- **E2E** — Playwright (Chromium), `test/e2e/*.spec.ts`. Auth setup persists to `test/e2e/.auth/user.json`.
+- **E2E** — Playwright (Chromium), `test/e2e/*.spec.ts`. Coverage includes the `/login` compatibility redirect and direct dashboard access.
 - **Fixtures** in `test/fixtures/`, output in `test/results/`.
 - E2E worker tests are deterministic and assume seeded data. Run `npm run supabase:db:seed` first.
 
@@ -71,7 +71,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 - **Timesheet** settlement: **Timesheet Unpaid** / **Timesheet Paid** (always prefixed to disambiguate).
 - **Reopen** reverses a Settled payroll: timesheets revert to Timesheet Unpaid, advance installments revert to Installment Loan.
 - **Pay periods** for the same Worker must not overlap across Payroll runs.
-- **Workers** are who we pay; **Users** are who log in. A User manages Workers but is not necessarily one.
+- The app has no login, session, role, or permission model; operational access is open.
 
 ## Rules
 

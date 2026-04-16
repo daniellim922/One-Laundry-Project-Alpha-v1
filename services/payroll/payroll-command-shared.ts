@@ -1,10 +1,10 @@
 import { and, eq, gte, inArray, lte } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { advanceRequestTable } from "@/db/tables/payroll/advanceRequestTable";
-import { advanceTable } from "@/db/tables/payroll/advanceTable";
-import { payrollTable } from "@/db/tables/payroll/payrollTable";
-import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
+import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
+import { advanceTable } from "@/db/tables/advanceTable";
+import { payrollTable } from "@/db/tables/payrollTable";
+import { timesheetTable } from "@/db/tables/timesheetTable";
 
 export type PayrollCommandTransaction = Parameters<
     Parameters<typeof db.transaction>[0]

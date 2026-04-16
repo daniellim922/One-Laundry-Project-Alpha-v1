@@ -1,7 +1,7 @@
 import { inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { payrollTable } from "@/db/tables/payroll/payrollTable";
+import { payrollTable } from "@/db/tables/payrollTable";
 import { settlePayrollInTx } from "./payroll-command-shared";
 
 export type SettleDraftPayrollsResult =

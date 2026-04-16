@@ -2,8 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
-import { workerTable } from "@/db/tables/payroll/workerTable";
+import { timesheetTable } from "@/db/tables/timesheetTable";
+import { workerTable } from "@/db/tables/workerTable";
 import { EntityStatusBadge } from "@/components/ui/entity-status-badge";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { TimesheetEntryForm } from "../../timesheet-entry-form";

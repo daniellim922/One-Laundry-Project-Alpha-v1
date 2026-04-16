@@ -30,7 +30,7 @@ For hosted Supabase, keep the responsibilities split:
 ## Schema ownership
 
 - `lib/db.ts` owns the runtime database boundary for app traffic.
-- `lib/admin-db.ts` owns schema-management, wipe/reset, and seed workflows. `npm run supabase:db:migrate` runs `drizzle-kit push` from `db/push-schema.ts`.
+- `lib/admin-db.ts` owns schema-management, wipe/reset, and seed workflows. `npm run supabase:db:migrate` runs `drizzle-kit push` via `drizzle.config.ts`.
 - Drizzle (`db/schema.ts`) is the schema source of truth; Supabase CLI manages local platform lifecycle only.
 - The production rollout contract lives in `.codex/docs/supabase-rollout-contract.md`.
 

@@ -6,7 +6,7 @@ import {
 } from "./worker-test-helpers";
 
 test.describe("Worker mass edit minimum hours", () => {
-    test("updates seeded foreign full-time worker and shows result table", async ({
+    test("updates a foreign full-time worker via mass edit and shows result table", async ({
         page,
     }) => {
         await page.goto("/dashboard/worker/all");

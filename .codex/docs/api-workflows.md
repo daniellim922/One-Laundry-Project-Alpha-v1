@@ -96,4 +96,4 @@ flowchart TD
 - Payroll revert preview, bulk settlement candidate loading, payroll download selection, payroll settle/revert commands, voucher-day edits, and export flows now run through `app/api`; only payroll create and update remain server-action form submissions.
 - Timesheet delete and AttendRecord import now call `app/api` from client components, while timesheet create and edit remain server-action submissions.
 - PDF generation relies on Playwright-driven rendering of existing dashboard summary pages.
-- ZIP creation fans out by calling the internal payroll PDF endpoint, so permission and print rendering logic stay centralized.
+- ZIP creation fans out by calling the internal payroll PDF endpoint, so print rendering logic stays centralized.

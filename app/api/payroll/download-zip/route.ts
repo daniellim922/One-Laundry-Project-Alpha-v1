@@ -5,8 +5,8 @@ import { eq, inArray } from "drizzle-orm";
 
 import { apiError } from "@/app/api/_shared/responses";
 import { db } from "@/lib/db";
-import { payrollTable } from "@/db/tables/payroll/payrollTable";
-import { workerTable } from "@/db/tables/payroll/workerTable";
+import { payrollTable } from "@/db/tables/payrollTable";
+import { workerTable } from "@/db/tables/workerTable";
 
 export const runtime = "nodejs";
 

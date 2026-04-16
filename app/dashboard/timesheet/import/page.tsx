@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { workerTable } from "@/db/tables/payroll/workerTable";
+import { workerTable } from "@/db/tables/workerTable";
 import { TimesheetImportClient } from "./timesheet-import-client";
 
 export default async function TimesheetImportPage() {

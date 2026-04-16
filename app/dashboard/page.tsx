@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 import { db } from "@/lib/db";
-import { workerTable } from "@/db/tables/payroll/workerTable";
-import { expensesTable } from "@/db/expensesTable";
+import { workerTable } from "@/db/tables/workerTable";
+import { expensesTable } from "@/db/tables/expensesTable";
 import { count, sum } from "drizzle-orm";
 import {
     Card,

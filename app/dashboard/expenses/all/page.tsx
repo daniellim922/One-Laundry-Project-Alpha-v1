@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { db } from "@/lib/db";
-import { expensesTable } from "@/db/expensesTable";
+import { expensesTable } from "@/db/tables/expensesTable";
 import { columns } from "../columns";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";

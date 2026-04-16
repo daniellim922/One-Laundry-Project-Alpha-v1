@@ -1,10 +1,10 @@
 import { and, asc, eq, gte, inArray, lte } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { payrollTable } from "@/db/tables/payroll/payrollTable";
-import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
-import { advanceTable } from "@/db/tables/payroll/advanceTable";
-import { advanceRequestTable } from "@/db/tables/payroll/advanceRequestTable";
+import { payrollTable } from "@/db/tables/payrollTable";
+import { timesheetTable } from "@/db/tables/timesheetTable";
+import { advanceTable } from "@/db/tables/advanceTable";
+import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
 
 export type RevertPreviewTimesheetLine = {
     id: string;

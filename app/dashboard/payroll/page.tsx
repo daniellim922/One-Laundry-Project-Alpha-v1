@@ -2,7 +2,7 @@ import Link from "next/link";
 import { count, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { payrollTable } from "@/db/tables/payroll/payrollTable";
+import { payrollTable } from "@/db/tables/payrollTable";
 import { Button } from "@/components/ui/button";
 import {
     Card,

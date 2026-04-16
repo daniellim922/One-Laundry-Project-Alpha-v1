@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 
-import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
+import { timesheetTable } from "@/db/tables/timesheetTable";
 import { db } from "@/lib/db";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
 

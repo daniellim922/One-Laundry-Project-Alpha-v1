@@ -6,11 +6,11 @@ import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
 import {
     advanceRequestTable,
     type InsertAdvanceRequest,
-} from "@/db/tables/payroll/advanceRequestTable";
+} from "@/db/tables/advanceRequestTable";
 import {
     advanceTable,
     type InsertAdvance,
-} from "@/db/tables/payroll/advanceTable";
+} from "@/db/tables/advanceTable";
 
 type ActionResult =
     | { success: true; id?: string }

@@ -1,7 +1,7 @@
 import { and, asc, eq, gte, lte, not } from "drizzle-orm";
 
-import { payrollTable } from "@/db/tables/payroll/payrollTable";
-import { workerTable } from "@/db/tables/payroll/workerTable";
+import { payrollTable } from "@/db/tables/payrollTable";
+import { workerTable } from "@/db/tables/workerTable";
 import type { db } from "@/lib/db";
 import type { PayrollStatus } from "@/types/status";
 

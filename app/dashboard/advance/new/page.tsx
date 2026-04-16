@@ -2,7 +2,7 @@ import { asc } from "drizzle-orm";
 
 import { FormPageLayout } from "@/components/form-page-layout";
 import { db } from "@/lib/db";
-import { workerTable } from "@/db/tables/payroll/workerTable";
+import { workerTable } from "@/db/tables/workerTable";
 
 import { AdvanceRequestForm } from "@/app/dashboard/advance/advance-request-form";
 

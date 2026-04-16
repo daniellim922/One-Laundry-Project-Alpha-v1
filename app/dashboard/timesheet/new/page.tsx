@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { workerTable } from "@/db/tables/payroll/workerTable";
+import { workerTable } from "@/db/tables/workerTable";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { TimesheetEntryForm } from "../timesheet-entry-form";
 

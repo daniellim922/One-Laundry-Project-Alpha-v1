@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { workerTable } from "@/db/tables/payroll/workerTable";
-import { timesheetTable } from "@/db/tables/payroll/timesheetTable";
+import { workerTable } from "@/db/tables/workerTable";
+import { timesheetTable } from "@/db/tables/timesheetTable";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
 import { calculateHoursFromDateTimes } from "@/utils/payroll/payroll-utils";
 import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";

@@ -1,8 +1,8 @@
 import { asc, eq } from "drizzle-orm";
 
-import { payrollTable, type SelectPayroll } from "@/db/tables/payroll/payrollTable";
-import { workerTable } from "@/db/tables/payroll/workerTable";
-import { employmentTable } from "@/db/tables/payroll/employmentTable";
+import { payrollTable, type SelectPayroll } from "@/db/tables/payrollTable";
+import { workerTable } from "@/db/tables/workerTable";
+import { employmentTable } from "@/db/tables/employmentTable";
 import { db } from "@/lib/db";
 import type {
     PayrollStatus,

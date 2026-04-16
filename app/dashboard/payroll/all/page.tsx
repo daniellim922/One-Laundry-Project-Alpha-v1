@@ -6,9 +6,9 @@ import { db } from "@/lib/db";
 import {
     payrollTable,
     type SelectPayroll,
-} from "@/db/tables/payroll/payrollTable";
-import { workerTable } from "@/db/tables/payroll/workerTable";
-import { employmentTable } from "@/db/tables/payroll/employmentTable";
+} from "@/db/tables/payrollTable";
+import { workerTable } from "@/db/tables/workerTable";
+import { employmentTable } from "@/db/tables/employmentTable";
 import { columns, type PayrollWithWorker } from "./columns";
 import { DataTable } from "@/components/data-table/data-table";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";

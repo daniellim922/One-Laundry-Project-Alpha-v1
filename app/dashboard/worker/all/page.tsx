@@ -4,8 +4,8 @@ import { db } from "@/lib/db";
 import {
     workerTable,
     type WorkerWithEmployment,
-} from "@/db/tables/payroll/workerTable";
-import { employmentTable } from "@/db/tables/payroll/employmentTable";
+} from "@/db/tables/workerTable";
+import { employmentTable } from "@/db/tables/employmentTable";
 import { WorkerAllTableSection } from "./worker-all-table-section";
 
 export default async function Page() {

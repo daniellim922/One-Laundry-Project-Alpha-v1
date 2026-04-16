@@ -43,7 +43,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 ## Architecture
 
 - **Server components by default.** Add `"use client"` only for interactive pieces (forms, tables, dropdowns).
-- **Entry flow is open access.** `/` remains the marketing landing page, `/login` is a UI-only gateway that accepts any non-empty credentials, and `/dashboard` is directly accessible without session state.
+- **Entry flow is open access.** `/` remains the marketing landing page, `/login` is a compatibility redirect into `/dashboard`, and `/dashboard` is directly accessible without session state.
 - **Server actions** live in `actions.ts` files co-located with each feature route under `app/dashboard/<feature>/`. They start with `"use server"`, validate from `FormData`, return `{ success, id? } | { error }`, and call `revalidatePath` after mutations. Keep them for semantic form submissions only; non-form payroll reads, commands, and exports belong under `app/api/`.
 - **API routes** live under `app/api/` for non-form HTTP workflows such as exports and client-triggered mutations. Prefer the shared transport spine in `app/api/_shared/` for open-access request handling, JSON responses, and route-level revalidation so handlers stay thin. Examples: worker mass minimum-hours updates run through `PATCH /api/workers/minimum-working-hours`; timesheet deletion and AttendRecord imports run through `DELETE /api/timesheets/[id]` and `POST /api/timesheets/import`; payroll lazy reads such as revert previews, settlement candidates, and download selections run through `GET /api/payroll/[id]/revert-preview`, `GET /api/payroll/settlement-candidates`, and `GET /api/payroll/download-selection`; payroll and advance exports run through `GET /api/payroll/[id]/pdf`, `POST /api/payroll/download-zip`, and `GET /api/advance/[id]/pdf`.
 - **Service boundary** keeps business rules out of transport code. Shared use-case modules live under `services/<feature>/`; server actions and route handlers should adapt inputs, call services, and handle revalidation.
@@ -77,11 +77,11 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 | Data table components | `components/data-table/` |
 | Form page shell | `components/form-page-layout.tsx` |
 | Third-party integrations (DB, Tailwind `cn`) | `lib/db.ts`, `lib/utils.ts` |
-| App utilities and domain helpers | `utils/` grouped: `permissions/` (`permissions.ts`, `require-permission.ts` open-access shim), `nav/` (`nav-config.ts`, `dashboard-nav-features.ts`), `time/` (`calendar-date.ts`, `intl-en-gb.ts`, `iso-local-midnight.ts`, `local-time.ts`), `payroll/` (`payroll-utils.ts`, `parse-attendrecord.ts`, `payroll-period-conflicts.ts`), `advance/` (`queries.ts`) |
+| App utilities and domain helpers | `utils/` grouped: `nav/` (`nav-config.ts`, `dashboard-nav-features.ts`), `time/` (`calendar-date.ts`, `intl-en-gb.ts`, `iso-local-midnight.ts`, `local-time.ts`), `payroll/` (`payroll-utils.ts`, `parse-attendrecord.ts`, `payroll-period-conflicts.ts`), `advance/` (`queries.ts`) |
 | All Drizzle table schemas | `db/tables/` (re-exported via `db/schema.ts`) |
 | Domain status enums + badge tones | `types/status.ts`, `types/badge-tones.ts` |
 | Seeds | `db/seed/` |
-| Schema push | `db/push-schema.ts`, `drizzle.config.ts` (generated `drizzle/` is gitignored) |
+| Schema push | `drizzle.config.ts` via `npm run supabase:db:migrate` (`drizzle-kit push`; generated `drizzle/` is gitignored) |
 | Codex rules, hooks, agents, prompts | `.codex/rules/`, `.codex/hooks.json`, `.codex/agents/`, `.codex/prompts/` |
 | Generated architecture docs | `.codex/docs/data-model-erd.md`, `.codex/docs/api-workflows.md`, `.codex/docs/supabase-rollout-contract.md` |
 
@@ -93,7 +93,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 ## Testing
 
 - **Vitest** — node environment, tests co-located with source as `*.test.ts` / `*.test.tsx` under `app/`, `components/`, `utils/`, `lib/`, `db/`, `services/`, `scripts/`.
-- **E2E** — Playwright (Chromium), files in `test/e2e/` as `*.spec.ts`. Coverage includes the open landing page, the fake `/login` entry flow, direct `/dashboard` access, and core feature regressions.
+- **E2E** — Playwright (Chromium), files in `test/e2e/` as `*.spec.ts`. Coverage includes the open landing page, the `/login` compatibility redirect, direct `/dashboard` access, and core feature regressions.
 - **Fixtures** live in `test/fixtures/`, output in `test/results/`.
 - **Codex post-change verification** is wired through `.codex/hooks.json`; when product code changes, the stop hook runs `npm run test`.
 

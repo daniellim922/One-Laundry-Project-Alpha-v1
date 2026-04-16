@@ -1,9 +1,9 @@
 import { db } from "@/lib/db";
-import { workerTable } from "@/db/tables/payroll/workerTable";
+import { workerTable } from "@/db/tables/workerTable";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { PayrollForm } from "./payroll-form";
 import { eq } from "drizzle-orm";
-import { employmentTable } from "@/db/tables/payroll/employmentTable";
+import { employmentTable } from "@/db/tables/employmentTable";
 
 export default async function NewPayrollPage() {
     const workers = await db

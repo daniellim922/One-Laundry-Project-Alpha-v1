@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 
-import { employmentTable } from "@/db/tables/payroll/employmentTable";
-import { workerTable } from "@/db/tables/payroll/workerTable";
+import { employmentTable } from "@/db/tables/employmentTable";
+import { workerTable } from "@/db/tables/workerTable";
 import { db } from "@/lib/db";
 import { synchronizeWorkerDraftPayrollsInTx } from "@/services/payroll/synchronize-worker-draft-payrolls";
 

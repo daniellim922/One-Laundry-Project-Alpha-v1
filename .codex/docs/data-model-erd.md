@@ -95,7 +95,7 @@ erDiagram
 ## Notes
 
 - `expenses` is currently standalone and does not link to `worker` or `payroll`.
-- Legacy auth and IAM table definitions may still exist under `db/tables/auth/`, but they are not re-exported from `db/schema.ts` and are not part of the live Drizzle schema.
+- The live Drizzle schema contains only payroll-domain and expense tables; there are no auth or IAM tables in the repo schema surface.
 - App logic treats `payroll` and `payroll_voucher` as one voucher per payroll run, but the current schema stores the foreign key on `payroll` without a unique constraint on `payroll_voucher_id`.
 
 ## Status Enums

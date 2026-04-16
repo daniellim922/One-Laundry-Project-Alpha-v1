@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { EntityStatusBadge } from "@/components/ui/entity-status-badge";
 import { db } from "@/lib/db";
 import { Pencil } from "lucide-react";
-import { workerTable } from "@/db/tables/payroll/workerTable";
-import { employmentTable } from "@/db/tables/payroll/employmentTable";
+import { workerTable } from "@/db/tables/workerTable";
+import { employmentTable } from "@/db/tables/employmentTable";
 import {
     WorkerForm,
     type WorkerWithEmployment,
