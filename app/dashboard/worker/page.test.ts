@@ -15,9 +15,9 @@ vi.mock("@/app/dashboard/worker/mass-edit/mass-edit-working-hours-button", () =>
     MassEditWorkingHoursButton: () => "<mass-edit-working-hours-button />",
 }));
 
-import WorkerOverviewPage from "@/app/dashboard/worker/page";
+import { WorkerOverviewLoader } from "@/app/dashboard/worker/worker-overview-loader";
 
-describe("WorkerOverviewPage", () => {
+describe("WorkerOverviewLoader", () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
@@ -42,9 +42,8 @@ describe("WorkerOverviewPage", () => {
                 }),
             });
 
-        const html = renderToStaticMarkup(await WorkerOverviewPage());
+        const html = renderToStaticMarkup(await WorkerOverviewLoader());
 
-        expect(html).toContain("Worker");
         expect(html).toContain("Total workers");
         expect(html).toContain("5");
         expect(html).toContain("3 Active, 2 Inactive");
