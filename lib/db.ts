@@ -1,8 +1,11 @@
-import "dotenv/config";
-import { createRuntimeDatabaseConnection } from "@/lib/database/runtime-client";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 
-const runtimeDatabase = createRuntimeDatabaseConnection();
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+    throw new Error("DATABASE_URL is not set in the environment variables");
+}
 
-export const db = runtimeDatabase.db;
-export const runtimeDbConfig = runtimeDatabase.config;
-export const runtimeSql = runtimeDatabase.sql;
+// Disable prefetch as it is not supported for "Transaction" pool mode
+const client = postgres(connectionString, { prepare: false });
+export const db = drizzle(client);

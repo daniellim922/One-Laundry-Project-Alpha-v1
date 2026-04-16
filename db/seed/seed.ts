@@ -1,4 +1,5 @@
-import { adminDb } from "@/lib/admin-db";
+import "dotenv/config";
+import { db } from "@/lib/db";
 import {
     workerTable,
     type InsertWorker,
@@ -102,7 +103,7 @@ async function seedTimesheets(
 
     const batchSize = 500;
     for (let index = 0; index < timesheetInserts.length; index += batchSize) {
-        await adminDb
+        await db
             .insert(timesheetTable)
             .values(timesheetInserts.slice(index, index + batchSize));
     }
@@ -131,7 +132,7 @@ async function seedAdvances(
             createdAt: SEED_TIMESTAMP,
             updatedAt: SEED_TIMESTAMP,
         };
-        const [insertedRequest] = await adminDb
+        const [insertedRequest] = await db
             .insert(advanceRequestTable)
             .values(requestInsert)
             .returning({ id: advanceRequestTable.id });
@@ -144,7 +145,7 @@ async function seedAdvances(
             createdAt: SEED_TIMESTAMP,
             updatedAt: SEED_TIMESTAMP,
         }));
-        await adminDb.insert(advanceTable).values(advanceInserts);
+        await db.insert(advanceTable).values(advanceInserts);
     }
 }
 
@@ -155,7 +156,7 @@ async function seedPayrolls(insertedWorkers: { id: string }[]): Promise<void> {
             createdAt: SEED_TIMESTAMP,
             updatedAt: SEED_TIMESTAMP,
         };
-        const [insertedVoucher] = await adminDb
+        const [insertedVoucher] = await db
             .insert(payrollVoucherTable)
             .values(voucherInsert)
             .returning({ id: payrollVoucherTable.id });
@@ -170,7 +171,7 @@ async function seedPayrolls(insertedWorkers: { id: string }[]): Promise<void> {
             createdAt: SEED_TIMESTAMP,
             updatedAt: SEED_TIMESTAMP,
         };
-        await adminDb.insert(payrollTable).values(payrollInsert);
+        await db.insert(payrollTable).values(payrollInsert);
     }
 }
 
@@ -179,7 +180,7 @@ async function seed() {
     const split = workers.map(splitWorkerSeed);
     const employmentInserts = split.map((s) => s.employment);
 
-    const insertedEmployments = await adminDb
+    const insertedEmployments = await db
         .insert(employmentTable)
         .values(employmentInserts)
         .returning();
@@ -189,7 +190,7 @@ async function seed() {
         employmentId: insertedEmployments[index].id,
     }));
 
-    const insertedWorkers = await adminDb
+    const insertedWorkers = await db
         .insert(workerTable)
         .values(workerInserts)
         .returning();

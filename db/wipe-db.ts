@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { sql } from "drizzle-orm";
-import { adminDb } from "@/lib/admin-db";
+import { db } from "@/lib/db";
 
 function rowsFromExecute<T extends Record<string, unknown>>(
     result: unknown,
@@ -37,7 +37,7 @@ function rowsFromExecute<T extends Record<string, unknown>>(
 async function wipeDb() {
     console.log("Discovering tables to drop...");
 
-    const tableResult: unknown = await adminDb.execute(sql`
+    const tableResult: unknown = await db.execute(sql`
         SELECT schemaname, tablename
         FROM pg_tables
         WHERE schemaname IN ('public', 'drizzle')
@@ -61,14 +61,14 @@ async function wipeDb() {
                 .map((table) => `${table.schemaname}.${table.tablename}`)
                 .join(", ")}`,
         );
-        await adminDb.execute(sql.raw(dropStmt));
+        await db.execute(sql.raw(dropStmt));
         console.log("All schema tables dropped successfully.");
     } else {
         console.log("No schema tables found to drop.");
     }
 
     console.log("Discovering custom enum types in public to drop...");
-    const enumResult: unknown = await adminDb.execute(sql`
+    const enumResult: unknown = await db.execute(sql`
         SELECT t.typname AS typname
         FROM pg_type t
         JOIN pg_namespace n ON n.oid = t.typnamespace
@@ -83,7 +83,7 @@ async function wipeDb() {
 
     if (enumNames.length > 0) {
         for (const name of enumNames) {
-            await adminDb.execute(
+            await db.execute(
                 sql.raw(`DROP TYPE IF EXISTS "public"."${name}" CASCADE`),
             );
         }

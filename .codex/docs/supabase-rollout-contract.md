@@ -13,22 +13,19 @@ This contract defines how One Laundry moves from the local Supabase-first workfl
 
 ## Environment Contract
 
-- `DATABASE_RUNTIME_URL` is the application runtime connection and should point at the runtime-safe Supabase connection path.
-- `DATABASE_ADMIN_URL` is the admin and schema-management connection and should point at the direct admin-capable Supabase connection path.
-- `DATABASE_URL` remains a legacy fallback only and should not be the primary production contract once the rollout is prepared.
-- Local Supabase may set all three variables to `postgresql://postgres:postgres@127.0.0.1:54322/postgres`.
+- `DATABASE_URL` is the single connection string for the Next.js app, `drizzle-kit push`, wipe, and seed (`lib/db.ts` and `drizzle.config.ts`).
+- Local Supabase may set it to `postgresql://postgres:postgres@127.0.0.1:54322/postgres`.
 
 ## Schema ownership
 
-- `lib/db.ts` owns runtime database access for app reads and writes.
-- `lib/admin-db.ts` owns schema-management, wipe, reset, and seed access.
-- `npm run db:migrate` runs `drizzle-kit push` using `drizzle.config.ts` and the admin URL contract.
+- `lib/db.ts` owns database access for app reads and writes, schema push, wipe, reset, and seed.
+- `npm run db:migrate` runs `drizzle-kit push` using `drizzle.config.ts` and `DATABASE_URL`.
 - Supabase CLI manages the local platform lifecycle, not schema authorship.
 - **Production risk:** `drizzle-kit push` applies diffs directly and can drop or alter columns without a reviewed SQL migration file. Treat production pushes like destructive DDL: review `db/schema.ts` changes, back up first, and run smoke checks after.
 
 ## Launch Prerequisites
 
-- Hosted Supabase project exists with production connection values prepared for both runtime and admin roles.
+- Hosted Supabase project exists with a production `DATABASE_URL` prepared for the app and tooling.
 - `db/schema.ts` on the release branch is reviewed for intended DDL impact (including data loss) before push.
 - Local verification has passed on the current branch with `npm run test` and any feature checks required by the release.
 - Seed policy is explicit: deterministic seed data is for local and test environments only, not for production.
@@ -36,9 +33,9 @@ This contract defines how One Laundry moves from the local Supabase-first workfl
 
 ## Execution Order
 
-1. Confirm the hosted Supabase project is reachable through both `DATABASE_RUNTIME_URL` and `DATABASE_ADMIN_URL`.
+1. Confirm the hosted Supabase project is reachable with `DATABASE_URL`.
 2. Back up the target database according to the hosting environment policy before applying schema changes.
-3. Apply the schema through the admin connection with `npm run db:migrate` (drizzle-kit push).
+3. Apply the schema with `npm run db:migrate` (drizzle-kit push).
 4. Do not run `npm run db:seed` against production.
 5. Deploy or restart the application only after the schema push finishes successfully.
 6. Run the smoke checks below before treating the release as healthy.

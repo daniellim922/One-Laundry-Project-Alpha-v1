@@ -1,2 +1,0 @@
-2026-04-15: Completed #60 by separating reset/migrate/seed responsibilities, fixing the Supabase local migration replay path, and verifying the deterministic seeded dataset end to end.
-2026-04-15: Completed #62 by adding a lightweight GitHub Actions workflow and focused contract test suite for the Supabase-ready database boundary.

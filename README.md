@@ -12,23 +12,17 @@ The default local database platform is Supabase local.
 
 `npm run db:reset` wipes, pushes schema, and seeds the database so the deterministic historical payroll dataset is ready for app use and test flows. Start the stack with `npm run sb:start` first.
 
-The app runtime reads `DATABASE_RUNTIME_URL` first and falls back to `DATABASE_URL`.
-Schema tooling (`drizzle-kit push`, Drizzle Studio, wipe/reset, seed) read `DATABASE_ADMIN_URL` first and fall back to `DATABASE_URL`.
-For local Supabase all three can point at:
+The app, `drizzle-kit push`, wipe, and seed all use **`DATABASE_URL`**.
+
+For local Supabase that is typically:
 
 ```bash
 postgresql://postgres:postgres@127.0.0.1:54322/postgres
 ```
 
-For hosted Supabase, keep the responsibilities split:
-
-- `DATABASE_RUNTIME_URL`: app traffic, typically the pooled/session connection path.
-- `DATABASE_ADMIN_URL`: `drizzle-kit push`, schema management, Drizzle Studio, wipe/reset, and seeding against the direct admin-capable connection path.
-
 ## Schema ownership
 
-- `lib/db.ts` owns the runtime database boundary for app traffic.
-- `lib/admin-db.ts` owns schema-management, wipe/reset, and seed workflows. `npm run db:migrate` runs `drizzle-kit push` via `drizzle.config.ts`.
+- `lib/db.ts` is the single database client for app traffic, `drizzle-kit push`, wipe, and seed. `npm run db:migrate` runs `drizzle-kit push` via `drizzle.config.ts`.
 - Drizzle (`db/schema.ts`) is the schema source of truth; Supabase CLI manages local platform lifecycle only.
 - The production rollout contract lives in `.codex/docs/supabase-rollout-contract.md`.
 
