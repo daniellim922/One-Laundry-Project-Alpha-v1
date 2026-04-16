@@ -1,17 +1,10 @@
-import Link from "next/link";
 import { Suspense } from "react";
 
-import { DataTable } from "@/components/data-table/data-table";
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
-import { Button } from "@/components/ui/button";
-import { listAdvanceRequestsWithWorkers } from "@/utils/advance/queries";
-import { Plus } from "lucide-react";
 
-import { columns } from "./columns";
+import { AdvanceAllTableLoader } from "./advance-all-table-loader";
 
-export default async function AdvanceAllPage() {
-    const advanceRequests = await listAdvanceRequestsWithWorkers();
-
+export default function AdvanceAllPage() {
     return (
         <div className="space-y-6">
             <div>
@@ -25,20 +18,11 @@ export default async function AdvanceAllPage() {
                 </p>
             </div>
 
-            <Suspense fallback={<DataTableSkeleton />}>
-                <DataTable
-                    columns={columns}
-                    data={advanceRequests}
-                    searchParamKey="search"
-                    actions={
-                        <Button asChild>
-                            <Link href="/dashboard/advance/new">
-                                <Plus className="mr-2 h-4 w-4" />
-                                New advance
-                            </Link>
-                        </Button>
-                    }
-                />
+            <Suspense
+                fallback={
+                    <DataTableSkeleton columnCount={5} rowCount={10} />
+                }>
+                <AdvanceAllTableLoader />
             </Suspense>
         </div>
     );

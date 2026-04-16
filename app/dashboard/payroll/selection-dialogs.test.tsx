@@ -33,11 +33,21 @@ vi.mock("@/app/dashboard/payroll/command-api", () => ({
 }));
 
 vi.mock("@/components/data-table/data-table", () => ({
-    DataTable: ({ data }: { data: Array<{ workerName: string }> }) => (
-        <div>
-            {data.map((row) => (
-                <div key={row.workerName}>{row.workerName}</div>
-            ))}
+    DataTable: ({
+        data,
+        isLoading,
+    }: {
+        data: Array<{ workerName: string }>;
+        isLoading?: boolean;
+    }) => (
+        <div data-testid="mock-data-table">
+            {isLoading ? (
+                <div data-testid="mock-datatable-loading">Loading table</div>
+            ) : (
+                data.map((row) => (
+                    <div key={row.workerName}>{row.workerName}</div>
+                ))
+            )}
         </div>
     ),
 }));
@@ -92,7 +102,7 @@ describe("Payroll selection dialogs", () => {
             screen.getByRole("button", { name: "Settle all Draft payrolls" }),
         );
 
-        expect(await screen.findByText("Loading Draft payrolls...")).toBeTruthy();
+        expect(await screen.findByTestId("mock-datatable-loading")).toBeTruthy();
 
         deferred.resolve([payrollRow]);
 
@@ -114,7 +124,7 @@ describe("Payroll selection dialogs", () => {
             screen.getByRole("button", { name: "Download payrolls" }),
         );
 
-        expect(await screen.findByText("Loading payrolls...")).toBeTruthy();
+        expect(await screen.findByTestId("mock-datatable-loading")).toBeTruthy();
 
         deferred.resolve([payrollRow]);
 

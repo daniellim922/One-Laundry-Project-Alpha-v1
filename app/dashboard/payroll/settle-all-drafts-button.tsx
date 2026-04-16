@@ -219,22 +219,19 @@ export function SettleAllDraftPayrollsButton() {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-2">
-                    {loadingDrafts ? (
-                        <div className="rounded-md border px-3 py-3 text-sm text-muted-foreground">
-                            Loading Draft payrolls...
-                        </div>
-                    ) : (
-                        <DataTable
-                            columns={selectableColumns}
-                            data={drafts as PayrollWithWorker[]}
-                            syncSearchToUrl={false}
-                            pageSize={5}
-                            enableRowSelection
-                            rowSelection={rowSelection}
-                            onRowSelectionChange={setRowSelection}
-                            getRowId={(row) => row.id}
-                        />
-                    )}
+                    <DataTable
+                        columns={selectableColumns}
+                        data={drafts as PayrollWithWorker[]}
+                        syncSearchToUrl={false}
+                        pageSize={5}
+                        enableRowSelection
+                        rowSelection={rowSelection}
+                        onRowSelectionChange={setRowSelection}
+                        getRowId={(row) => row.id}
+                        isLoading={loadingDrafts}
+                        skeletonColumnCount={selectableColumns.length}
+                        skeletonRowCount={10}
+                    />
                 </div>
                 {error ? (
                     <p className="text-sm text-destructive">{error}</p>

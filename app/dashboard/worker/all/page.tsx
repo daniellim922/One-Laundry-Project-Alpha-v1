@@ -1,58 +1,10 @@
-import { desc, eq } from "drizzle-orm";
+import { Suspense } from "react";
 
-import { db } from "@/lib/db";
-import {
-    workerTable,
-    type WorkerWithEmployment,
-} from "@/db/tables/workerTable";
-import { employmentTable } from "@/db/tables/employmentTable";
-import { WorkerAllTableSection } from "./worker-all-table-section";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 
-export default async function Page() {
-    const workers = (await db
-        .select({
-            id: workerTable.id,
-            name: workerTable.name,
-            nric: workerTable.nric,
-            email: workerTable.email,
-            phone: workerTable.phone,
-            status: workerTable.status,
-            countryOfOrigin: workerTable.countryOfOrigin,
-            race: workerTable.race,
-            employmentId: workerTable.employmentId,
-            createdAt: workerTable.createdAt,
-            updatedAt: workerTable.updatedAt,
-            employmentType: employmentTable.employmentType,
-            employmentArrangement: employmentTable.employmentArrangement,
-            monthlyPay: employmentTable.monthlyPay,
-            minimumWorkingHours: employmentTable.minimumWorkingHours,
-            hourlyRate: employmentTable.hourlyRate,
-            restDayRate: employmentTable.restDayRate,
-            paymentMethod: employmentTable.paymentMethod,
-            payNowPhone: employmentTable.payNowPhone,
-            bankAccountNumber: employmentTable.bankAccountNumber,
-        })
-        .from(workerTable)
-        .innerJoin(
-            employmentTable,
-            eq(workerTable.employmentId, employmentTable.id),
-        )
-        .orderBy(desc(workerTable.updatedAt))) as WorkerWithEmployment[];
+import { WorkerAllTableLoader } from "./worker-all-table-loader";
 
-    const workersForMassEdit = workers
-        .filter(
-            (worker) =>
-                worker.status === "Active" &&
-                worker.employmentType === "Full Time" &&
-                worker.employmentArrangement === "Foreign Worker",
-        )
-        .map((worker) => ({
-            id: worker.id,
-            name: worker.name,
-            employmentArrangement: worker.employmentArrangement,
-            minimumWorkingHours: worker.minimumWorkingHours,
-        }));
-
+export default function Page() {
     return (
         <div className="space-y-6">
             <div>
@@ -64,10 +16,12 @@ export default async function Page() {
                 </p>
             </div>
 
-            <WorkerAllTableSection
-                workers={workers}
-                workersForMassEdit={workersForMassEdit}
-            />
+            <Suspense
+                fallback={
+                    <DataTableSkeleton columnCount={10} rowCount={10} />
+                }>
+                <WorkerAllTableLoader />
+            </Suspense>
         </div>
     );
 }

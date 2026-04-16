@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/table";
 import { parseIsoToDateStrict } from "@/utils/time/calendar-date";
 import { formatEnGbDmyNumeric } from "@/utils/time/intl-en-gb";
+import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
@@ -62,6 +63,12 @@ interface DataTableProps<TData, TValue> {
     initialColumnFilters?: ColumnFiltersState;
     /** Reset key for default column filters (set a new value to re-apply defaults). */
     columnFiltersResetKey?: string | number;
+    /** When true, shows {@link DataTableSkeleton} instead of the table (e.g. client fetch). */
+    isLoading?: boolean;
+    /** Column count for the loading skeleton (defaults to `columns.length`). */
+    skeletonColumnCount?: number;
+    /** Row count for the loading skeleton (defaults to 10). */
+    skeletonRowCount?: number;
 }
 
 type ColumnMeta = ColumnFilterMeta & { globalSearch?: boolean };
@@ -109,6 +116,9 @@ export function DataTable<TData, TValue>({
     getRowId,
     initialColumnFilters,
     columnFiltersResetKey,
+    isLoading = false,
+    skeletonColumnCount,
+    skeletonRowCount = 10,
 }: DataTableProps<TData, TValue>) {
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -185,8 +195,10 @@ export function DataTable<TData, TValue>({
         return true;
     }, [enableRowSelection]);
 
+    const effectiveData = isLoading ? [] : data;
+
     const table = useReactTable({
-        data,
+        data: effectiveData,
         columns,
         initialState: {
             pagination: {
@@ -255,6 +267,16 @@ export function DataTable<TData, TValue>({
         () => React.Children.toArray(actions),
         [actions],
     );
+
+    if (isLoading) {
+        return (
+            <DataTableSkeleton
+                columnCount={skeletonColumnCount ?? columns.length}
+                rowCount={skeletonRowCount}
+                showToolbar={showGlobalSearch || Boolean(actions)}
+            />
+        );
+    }
 
     return (
         <div className="min-w-0 space-y-4">

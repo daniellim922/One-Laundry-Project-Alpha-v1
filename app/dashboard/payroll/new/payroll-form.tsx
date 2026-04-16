@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { Suspense } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
@@ -11,7 +10,6 @@ import * as z from "zod";
 import { createPayrolls } from "../actions";
 import type { PayrollPeriodConflict } from "@/utils/payroll/payroll-period-conflicts";
 import { DataTable } from "@/components/data-table/data-table";
-import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { Button } from "@/components/ui/button";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -241,18 +239,16 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
                     </FieldGroup>
 
                     <div className="space-y-2 mt-8">
-                        <Suspense fallback={<DataTableSkeleton />}>
-                            <DataTable
-                                columns={columns}
-                                searchParamKey="search"
-                                data={workers}
-                                enableRowSelection
-                                rowSelection={rowSelection}
-                                onRowSelectionChange={setRowSelection}
-                                getRowId={(row) => row.id}
-                                pageSize={20}
-                            />
-                        </Suspense>
+                        <DataTable
+                            columns={columns}
+                            searchParamKey="search"
+                            data={workers}
+                            enableRowSelection
+                            rowSelection={rowSelection}
+                            onRowSelectionChange={setRowSelection}
+                            getRowId={(row) => row.id}
+                            pageSize={20}
+                        />
                         {selectedCount > 0 && (
                             <p className="text-muted-foreground text-sm">
                                 {selectedCount} worker

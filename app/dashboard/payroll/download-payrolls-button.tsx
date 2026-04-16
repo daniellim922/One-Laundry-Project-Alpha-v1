@@ -186,22 +186,19 @@ export function DownloadPayrollsButton() {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-auto">
-                    {loading ? (
-                        <div className="rounded-md border px-3 py-3 text-sm text-muted-foreground">
-                            Loading payrolls...
-                        </div>
-                    ) : (
-                        <DataTable
-                            columns={selectableColumns}
-                            data={payrolls}
-                            syncSearchToUrl={false}
-                            pageSize={20}
-                            enableRowSelection
-                            rowSelection={rowSelection}
-                            onRowSelectionChange={setRowSelection}
-                            getRowId={(row) => row.id}
-                        />
-                    )}
+                    <DataTable
+                        columns={selectableColumns}
+                        data={payrolls}
+                        syncSearchToUrl={false}
+                        pageSize={20}
+                        enableRowSelection
+                        rowSelection={rowSelection}
+                        onRowSelectionChange={setRowSelection}
+                        getRowId={(row) => row.id}
+                        isLoading={loading}
+                        skeletonColumnCount={selectableColumns.length}
+                        skeletonRowCount={20}
+                    />
                 </div>
                 {error ? (
                     <p className="text-sm text-destructive">{error}</p>
