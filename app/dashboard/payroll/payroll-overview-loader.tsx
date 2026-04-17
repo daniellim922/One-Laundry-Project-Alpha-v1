@@ -12,9 +12,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { SimpleDonutChart } from "@/components/dashboard/simple-donut-chart";
-import { ArrowRight, Plus, Wallet } from "lucide-react";
-import { SettleAllDraftPayrollsButton } from "./settle-all-drafts-button";
-import { DownloadPayrollsButton } from "./download-payrolls-button";
+import { ArrowRight, Download, Plus, Wallet } from "lucide-react";
 
 export async function PayrollOverviewLoader() {
     const [[{ total }], [{ draftCount }]] = await Promise.all([
@@ -52,8 +50,18 @@ export async function PayrollOverviewLoader() {
                         <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                 </Button>
-                <SettleAllDraftPayrollsButton />
-                <DownloadPayrollsButton />
+                <Button variant="destructive" asChild>
+                    <Link href="/dashboard/payroll/settle-drafts">
+                        Settle drafts
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                    <Link href="/dashboard/payroll/download-payrolls">
+                        <Download className="mr-2 h-4 w-4" />
+                        Download payrolls
+                    </Link>
+                </Button>
                 <Button variant="outline" asChild>
                     <Link href="/dashboard/payroll/new">
                         <Plus className="mr-2 h-4 w-4" />

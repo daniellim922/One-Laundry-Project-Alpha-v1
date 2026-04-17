@@ -3,7 +3,6 @@ import { count, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/workerTable";
-import { getWorkersForMassEditWorkingHours } from "@/app/dashboard/worker/mass-edit/get-workers-for-mass-edit";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -13,17 +12,15 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { SimpleDonutChart } from "@/components/dashboard/simple-donut-chart";
-import { ArrowRight, Plus, Users } from "lucide-react";
-import { MassEditWorkingHoursButton } from "./mass-edit/mass-edit-working-hours-button";
+import { ArrowRight, ListChecks, Plus, Users } from "lucide-react";
 
 export async function WorkerOverviewLoader() {
-    const [[{ total }], [{ active }], workersForMassEdit] = await Promise.all([
+    const [[{ total }], [{ active }]] = await Promise.all([
         db.select({ total: count() }).from(workerTable),
         db
             .select({ active: count() })
             .from(workerTable)
             .where(eq(workerTable.status, "Active")),
-        getWorkersForMassEditWorkingHours(),
     ]);
 
     const inactive = Number(total) - Number(active);
@@ -60,7 +57,12 @@ export async function WorkerOverviewLoader() {
                         New worker
                     </Link>
                 </Button>
-                <MassEditWorkingHoursButton workers={workersForMassEdit} />
+                <Button variant="outline" asChild>
+                    <Link href="/dashboard/worker/mass-edit">
+                        <ListChecks className="mr-2 h-4 w-4" />
+                        Mass edit working hours
+                    </Link>
+                </Button>
             </div>
 
             <Card>

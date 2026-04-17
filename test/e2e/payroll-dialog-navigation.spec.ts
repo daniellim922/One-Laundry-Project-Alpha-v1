@@ -14,6 +14,13 @@ async function requireRowActionOrSkip(scope: Locator) {
     return actionButton;
 }
 
+async function clickRowActionView(page: Page) {
+    const openMenu = page.locator(
+        '[data-slot="dropdown-menu-content"][data-state="open"]',
+    );
+    await openMenu.getByRole("menuitem", { name: "View" }).click();
+}
+
 async function assertPageStillInteractive(page: Page) {
     const bodyPointerEvents = await page.evaluate(
         () => getComputedStyle(document.body).pointerEvents,
@@ -29,23 +36,27 @@ async function assertPageStillInteractive(page: Page) {
     await expect(page).toHaveURL(/\/dashboard\/payroll$/);
 }
 
-test.describe("Payroll dialog navigation", () => {
-    test("Download payrolls dialog view navigation does not lock page", async ({
+test.describe("Payroll download page navigation", () => {
+    test.describe.configure({ mode: "serial" });
+
+    test("Download payrolls page view navigation does not lock page", async ({
         page,
     }) => {
         await page.goto("/dashboard/payroll");
         await expect(page).toHaveURL(/\/dashboard\/payroll$/);
 
-        await page.getByRole("button", { name: "Download payrolls" }).click();
-        const dialog = page.getByRole("dialog");
-        await expect(dialog).toBeVisible();
-        await expect(dialog.getByRole("table")).toBeVisible({ timeout: 25_000 });
+        await page
+            .locator("main")
+            .getByRole("link", { name: "Download payrolls" })
+            .click();
+        await expect(page).toHaveURL(/\/dashboard\/payroll\/download-payrolls$/);
 
-        const actionButton = await requireRowActionOrSkip(
-            dialog.getByRole("table"),
-        );
+        const payrollTable = page.locator("main").getByRole("table");
+        await expect(payrollTable).toBeVisible({ timeout: 25_000 });
+
+        const actionButton = await requireRowActionOrSkip(payrollTable);
         await actionButton.click();
-        await page.getByRole("menuitem", { name: "View" }).click();
+        await clickRowActionView(page);
 
         await expect(page).toHaveURL(
             /\/dashboard\/payroll\/[0-9a-f-]+\/breakdown$/i,
@@ -65,7 +76,7 @@ test.describe("Payroll dialog navigation", () => {
 
         const actionButton = await requireRowActionOrSkip(payrollTable);
         await actionButton.click();
-        await page.getByRole("menuitem", { name: "View" }).click();
+        await clickRowActionView(page);
 
         await expect(page).toHaveURL(
             /\/dashboard\/payroll\/[0-9a-f-]+\/breakdown$/i,

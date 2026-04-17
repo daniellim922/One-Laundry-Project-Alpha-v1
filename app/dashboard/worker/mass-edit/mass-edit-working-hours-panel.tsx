@@ -3,7 +3,6 @@
 import * as React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { RowSelectionState } from "@tanstack/react-table";
-import { ListChecks } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { DataTable } from "@/components/data-table/data-table";
@@ -14,24 +13,35 @@ import {
 } from "@/components/data-table/column-builders";
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import type { MassEditWorkingHoursResultRow } from "./mass-edit-working-hours-result-table";
+import {
+    MassEditWorkingHoursResultTable,
+    type MassEditWorkingHoursResultRow,
+} from "./mass-edit-working-hours-result-table";
 import { updateWorkerMinimumWorkingHours } from "./update-worker-minimum-working-hours";
-import { employmentArrangementBadgeTone } from "@/types/badge-tones";
-import type { WorkerEmploymentArrangement } from "@/types/status";
+import {
+    employmentArrangementBadgeTone,
+    employmentTypeBadgeTone,
+    workerStatusBadgeTone,
+} from "@/types/badge-tones";
+import type {
+    WorkerEmploymentArrangement,
+    WorkerEmploymentType,
+    WorkerStatus,
+} from "@/types/status";
 
-type WorkerForMassEdit = {
+export type WorkerForMassEdit = {
     id: string;
     name: string;
+    status: WorkerStatus;
+    employmentType: WorkerEmploymentType;
     employmentArrangement: WorkerEmploymentArrangement;
     minimumWorkingHours: number | null;
 };
@@ -50,15 +60,12 @@ function parseNonNegativeNumber(text: string): number | null {
     return parsed;
 }
 
-export function MassEditWorkingHoursButton({
+export function MassEditWorkingHoursPanel({
     workers,
-    onResult,
 }: {
     workers: WorkerForMassEdit[];
-    onResult?: (rows: MassEditWorkingHoursResultRow[]) => void;
 }) {
     const router = useRouter();
-    const [open, setOpen] = React.useState(false);
     const [pending, setPending] = React.useState(false);
     const [rowSelection, setRowSelection] = React.useState<RowSelectionState>(
         {},
@@ -68,7 +75,10 @@ export function MassEditWorkingHoursButton({
     >({});
     const [nameFilter, setNameFilter] = React.useState("");
     const [sharedHoursInput, setSharedHoursInput] = React.useState("");
-    const [dialogError, setDialogError] = React.useState<string | null>(null);
+    const [saveError, setSaveError] = React.useState<string | null>(null);
+    const [resultRows, setResultRows] = React.useState<
+        MassEditWorkingHoursResultRow[]
+    >([]);
 
     const selectedIds = React.useMemo(
         () => Object.keys(rowSelection).filter((id) => rowSelection[id]),
@@ -105,14 +115,28 @@ export function MassEditWorkingHoursButton({
                 },
             },
             {
-                accessorKey: "minimumWorkingHours",
-                header: createSortableHeader("Current Minimum Hours"),
+                accessorKey: "status",
+                header: createSortableHeader("Status"),
                 enableColumnFilter: false,
                 meta: { globalSearch: false },
-                cell: ({ row }) =>
-                    row.original.minimumWorkingHours != null
-                        ? `${row.original.minimumWorkingHours}h`
-                        : "—",
+                cell: createBadgeCell<WorkerForMassEdit>({
+                    value: (worker) => worker.status,
+                    variant: "outline",
+                    toneClassNameFor: (worker) =>
+                        workerStatusBadgeTone[worker.status],
+                }),
+            },
+            {
+                accessorKey: "employmentType",
+                header: createSortableHeader("Employment Type"),
+                enableColumnFilter: false,
+                meta: { globalSearch: false },
+                cell: createBadgeCell<WorkerForMassEdit>({
+                    value: (worker) => worker.employmentType,
+                    variant: "outline",
+                    toneClassNameFor: (worker) =>
+                        employmentTypeBadgeTone[worker.employmentType],
+                }),
             },
             {
                 accessorKey: "employmentArrangement",
@@ -127,6 +151,16 @@ export function MassEditWorkingHoursButton({
                             worker.employmentArrangement
                         ],
                 }),
+            },
+            {
+                accessorKey: "minimumWorkingHours",
+                header: createSortableHeader("Current Minimum Hours"),
+                enableColumnFilter: false,
+                meta: { globalSearch: false },
+                cell: ({ row }) =>
+                    row.original.minimumWorkingHours != null
+                        ? `${row.original.minimumWorkingHours}h`
+                        : "—",
             },
             {
                 id: "newMinimumWorkingHours",
@@ -165,33 +199,24 @@ export function MassEditWorkingHoursButton({
         [nameFilter, nextHoursByWorkerId, pending],
     );
 
-    const resetDialogState = React.useCallback(() => {
-        setDialogError(null);
+    const resetFormState = React.useCallback(() => {
+        setSaveError(null);
         setNameFilter("");
         setSharedHoursInput("");
         setNextHoursByWorkerId({});
         setRowSelection({});
     }, []);
 
-    const handleOpenChange = (nextOpen: boolean) => {
-        setOpen(nextOpen);
-        if (nextOpen) {
-            resetDialogState();
-            return;
-        }
-        setDialogError(null);
-    };
-
     const handleApplySharedValue = () => {
-        setDialogError(null);
+        setSaveError(null);
         const parsed = parseNonNegativeNumber(sharedHoursInput);
         if (parsed == null) {
-            setDialogError("Enter a non-negative number before applying.");
+            setSaveError("Enter a non-negative number before applying.");
             return;
         }
 
         if (selectedCount === 0) {
-            setDialogError("Select at least one worker before applying.");
+            setSaveError("Select at least one worker before applying.");
             return;
         }
 
@@ -206,10 +231,10 @@ export function MassEditWorkingHoursButton({
     };
 
     const handleSave = async () => {
-        setDialogError(null);
+        setSaveError(null);
 
         if (selectedCount === 0) {
-            setDialogError("Select at least one worker to update.");
+            setSaveError("Select at least one worker to update.");
             return;
         }
 
@@ -258,7 +283,7 @@ export function MassEditWorkingHoursButton({
                     : { updatedCount: 0, failed: [] as MassEditFailure[] };
 
             if ("error" in result) {
-                setDialogError(result.error);
+                setSaveError(result.error);
                 return;
             }
 
@@ -275,7 +300,7 @@ export function MassEditWorkingHoursButton({
                 ]),
             );
 
-            const resultRows: MassEditWorkingHoursResultRow[] =
+            const nextResultRows: MassEditWorkingHoursResultRow[] =
                 selectedWorkers.map((worker) => {
                     const failed =
                         clientFailuresByWorkerId.has(worker.id) ||
@@ -292,96 +317,88 @@ export function MassEditWorkingHoursButton({
                     };
                 });
 
-            onResult?.(resultRows);
-            setOpen(false);
+            setResultRows(nextResultRows);
+            resetFormState();
             if (result.updatedCount > 0) {
                 router.refresh();
             }
         } catch (error) {
             console.error("Failed to mass edit working hours", error);
-            setDialogError("Failed to save mass edit. Please try again.");
+            setSaveError("Failed to save mass edit. Please try again.");
         } finally {
             setPending(false);
         }
     };
 
     return (
-        <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogTrigger asChild>
-                <Button type="button" variant="outline">
-                    <ListChecks className="mr-2 h-4 w-4" />
-                    Mass edit working hours
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col sm:max-w-[calc(100vw-2rem)] [&_button]:cursor-pointer">
-                <DialogHeader>
-                    <DialogTitle>Mass edit working hours</DialogTitle>
-                    <DialogDescription>
+        <div
+            className="space-y-6"
+            data-testid="mass-edit-working-hours-panel">
+            <MassEditWorkingHoursResultTable rows={resultRows} />
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Mass edit working hours</CardTitle>
+                    <CardDescription>
                         Select workers and set their minimum working hours. Only
                         Active Full Time Foreign Workers are shown.
-                    </DialogDescription>
-                </DialogHeader>
+                    </CardDescription>
+                </CardHeader>
 
-                <div className="flex flex-wrap items-end gap-2 rounded-md border p-3">
-                    <div className="space-y-1">
-                        <label
-                            htmlFor="mass-edit-shared-hours"
-                            className="text-xs font-medium text-muted-foreground">
-                            Shared minimum hours
-                        </label>
-                        <Input
-                            id="mass-edit-shared-hours"
-                            inputMode="decimal"
-                            value={sharedHoursInput}
-                            onChange={(event) =>
-                                setSharedHoursInput(event.target.value)
-                            }
-                            placeholder="e.g. 260"
-                            disabled={pending}
-                            className="h-8 w-40 text-right text-xs"
-                        />
-                    </div>
-                    <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={pending}
-                        onClick={handleApplySharedValue}>
-                        Apply to selected
-                    </Button>
-                    <p className="text-xs text-muted-foreground">
-                        {selectedCount} worker
-                        {selectedCount !== 1 ? "s" : ""} selected
-                    </p>
-                </div>
-
-                <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-auto">
-                    <DataTable
-                        columns={columns}
-                        data={filteredWorkers}
-                        syncSearchToUrl={false}
-                        showGlobalSearch={false}
-                        pageSize={20}
-                        enableRowSelection
-                        rowSelection={rowSelection}
-                        onRowSelectionChange={setRowSelection}
-                        getRowId={(row) => row.id}
-                    />
-                </div>
-
-                {dialogError ? (
-                    <p className="text-sm text-destructive">{dialogError}</p>
-                ) : null}
-
-                <DialogFooter>
-                    <DialogClose asChild>
+                <CardContent className="space-y-4">
+                    <div className="flex flex-wrap items-end gap-2 rounded-md border p-3">
+                        <div className="space-y-1">
+                            <label
+                                htmlFor="mass-edit-shared-hours"
+                                className="text-xs font-medium text-muted-foreground">
+                                Shared minimum hours
+                            </label>
+                            <Input
+                                id="mass-edit-shared-hours"
+                                inputMode="decimal"
+                                value={sharedHoursInput}
+                                onChange={(event) =>
+                                    setSharedHoursInput(event.target.value)
+                                }
+                                placeholder="e.g. 260"
+                                disabled={pending}
+                                className="h-8 w-40 text-right text-xs"
+                            />
+                        </div>
                         <Button
                             type="button"
+                            size="sm"
                             variant="outline"
-                            disabled={pending}>
-                            Cancel
+                            disabled={pending}
+                            onClick={handleApplySharedValue}>
+                            Apply to selected
                         </Button>
-                    </DialogClose>
+                        <p className="text-xs text-muted-foreground">
+                            {selectedCount} worker
+                            {selectedCount !== 1 ? "s" : ""} selected
+                        </p>
+                    </div>
+
+                    <div className="max-h-[min(70vh,720px)] min-h-0 min-w-0 overflow-x-auto overflow-y-auto">
+                        <DataTable
+                            columns={columns}
+                            data={filteredWorkers}
+                            syncSearchToUrl={false}
+                            showGlobalSearch={false}
+                            pageSize={20}
+                            enableRowSelection
+                            rowSelection={rowSelection}
+                            onRowSelectionChange={setRowSelection}
+                            getRowId={(row) => row.id}
+                        />
+                    </div>
+
+                    {saveError ? (
+                        <p className="text-sm text-destructive">{saveError}</p>
+                    ) : null}
+                </CardContent>
+
+                <CardFooter className="justify-end border-t pt-6">
                     <Button
                         type="button"
                         disabled={pending || selectedCount === 0}
@@ -390,8 +407,8 @@ export function MassEditWorkingHoursButton({
                             ? "Saving..."
                             : `Save selected (${selectedCount})`}
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </CardFooter>
+            </Card>
+        </div>
     );
 }

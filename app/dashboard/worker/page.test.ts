@@ -11,10 +11,6 @@ vi.mock("@/lib/db", () => ({
     db: mocks.db,
 }));
 
-vi.mock("@/app/dashboard/worker/mass-edit/mass-edit-working-hours-button", () => ({
-    MassEditWorkingHoursButton: () => "<mass-edit-working-hours-button />",
-}));
-
 import { WorkerOverviewLoader } from "@/app/dashboard/worker/worker-overview-loader";
 
 describe("WorkerOverviewLoader", () => {
@@ -31,15 +27,6 @@ describe("WorkerOverviewLoader", () => {
                 from: vi.fn().mockReturnValue({
                     where: vi.fn().mockResolvedValue([{ active: 3 }]),
                 }),
-            })
-            .mockReturnValueOnce({
-                from: vi.fn().mockReturnValue({
-                    innerJoin: vi.fn().mockReturnValue({
-                        where: vi.fn().mockReturnValue({
-                            orderBy: vi.fn().mockResolvedValue([]),
-                        }),
-                    }),
-                }),
             });
 
         const html = renderToStaticMarkup(await WorkerOverviewLoader());
@@ -49,6 +36,8 @@ describe("WorkerOverviewLoader", () => {
         expect(html).toContain("3 Active, 2 Inactive");
         expect(html).toContain("View all workers");
         expect(html).toContain("New worker");
+        expect(html).toContain("Mass edit working hours");
+        expect(html).toContain('href="/dashboard/worker/mass-edit"');
         expect(html).toContain("Status breakdown");
     });
 });

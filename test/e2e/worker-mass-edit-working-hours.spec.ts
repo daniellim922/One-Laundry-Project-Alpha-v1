@@ -9,33 +9,27 @@ test.describe("Worker mass edit minimum hours", () => {
     test("updates a foreign full-time worker via mass edit and shows result table", async ({
         page,
     }) => {
-        await page.goto("/dashboard/worker/all");
+        await page.goto("/dashboard/worker/mass-edit");
         await assertOpenDashboardAccess(page);
 
         await expect(
-            page.getByRole("heading", { name: "All workers" }),
+            page.getByRole("heading", { name: "Mass edit working hours" }),
         ).toBeVisible();
         await expect(
-            page.getByRole("button", { name: "Mass edit working hours" }),
+            page.getByText(
+                "Only Active Full Time Foreign Workers are shown.",
+            ),
         ).toBeVisible();
 
-        await page
-            .getByRole("button", { name: "Mass edit working hours" })
-            .click();
-        const dialog = page.getByRole("dialog");
-        await expect(dialog).toBeVisible();
-        await expect(
-            dialog.getByText("Only Active Full Time Foreign Workers are shown."),
-        ).toBeVisible();
-
-        const workerFilterInput = dialog
+        const panel = page.getByTestId("mass-edit-working-hours-panel");
+        const workerFilterInput = panel
             .locator("thead tr")
             .nth(1)
             .getByPlaceholder("Filter...");
         await workerFilterInput.fill(WORKER_FIXTURE_NAMES.massEditTarget);
 
         await expect(
-            dialog
+            panel
                 .getByRole("cell", {
                     name: WORKER_FIXTURE_NAMES.massEditTarget,
                     exact: true,
@@ -43,13 +37,13 @@ test.describe("Worker mass edit minimum hours", () => {
                 .first(),
         ).toBeVisible();
 
-        const targetWorkerCheckbox = dialog.getByRole("checkbox", {
+        const targetWorkerCheckbox = panel.getByRole("checkbox", {
             name: `Select ${WORKER_FIXTURE_NAMES.massEditTarget}`,
         }).first();
         await targetWorkerCheckbox.click();
 
-        await dialog.getByLabel("Shared minimum hours").fill("250");
-        await dialog.getByRole("button", { name: "Apply to selected" }).click();
+        await panel.getByLabel("Shared minimum hours").fill("250");
+        await panel.getByRole("button", { name: "Apply to selected" }).click();
 
         await targetWorkerCheckbox
             .locator("xpath=ancestor::tr[1]")
@@ -58,11 +52,10 @@ test.describe("Worker mass edit minimum hours", () => {
             )
             .fill("260");
 
-        await dialog.getByRole("button", { name: /Save selected/ }).click();
-        await expect(dialog).not.toBeVisible({ timeout: 60_000 });
+        await panel.getByRole("button", { name: /Save selected/ }).click();
 
         const results = page.getByTestId("mass-edit-working-hours-results");
-        await expect(results).toBeVisible();
+        await expect(results).toBeVisible({ timeout: 60_000 });
         await expect(
             results
                 .getByRole("cell", {
