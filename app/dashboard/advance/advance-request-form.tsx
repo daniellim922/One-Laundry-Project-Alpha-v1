@@ -585,13 +585,13 @@ function AdvanceRequestFormEditable({
                                 className="space-y-2"
                                 aria-busy="true"
                                 data-testid="installment-rows-ssr-placeholder">
-                                <div className="hidden gap-x-2 sm:grid sm:grid-cols-[1fr_1fr_auto_2.25rem] sm:items-end">
+                                <div className="hidden gap-x-2 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_12rem_2.25rem] sm:items-end">
                                     <div className="bg-muted/30 h-4 w-32 max-w-full rounded" />
                                     <div className="bg-muted/30 h-4 w-36 max-w-full rounded" />
                                     <div className="bg-muted/30 h-4 w-16 max-w-full rounded" />
                                     <div className="size-9" aria-hidden />
                                 </div>
-                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_2.25rem] sm:items-center">
+                                <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.25rem] sm:items-center">
                                     <div className="bg-muted/30 h-9 w-full rounded-md border border-dashed border-muted-foreground/20" />
                                     <div className="bg-muted/30 h-9 w-full rounded-md border border-dashed border-muted-foreground/20" />
                                     <div className="bg-muted/30 size-9 shrink-0 rounded-md border border-dashed border-muted-foreground/20" />
@@ -603,8 +603,8 @@ function AdvanceRequestFormEditable({
                                     className={cn(
                                         "hidden gap-x-2 text-sm leading-none font-medium sm:grid sm:items-end",
                                         showInstallmentStatusColumn
-                                            ? "sm:grid-cols-[1fr_1fr_auto_2.25rem]"
-                                            : "sm:grid-cols-[1fr_1fr_2.25rem]",
+                                            ? "sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_12rem_2.25rem]"
+                                            : "sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.25rem]",
                                     )}>
                                     <span id={`${formId}-installment-col`}>
                                         Installment amount
@@ -635,8 +635,8 @@ function AdvanceRequestFormEditable({
                                                 className={cn(
                                                     "grid grid-cols-1 gap-2 sm:items-start",
                                                     showInstallmentStatusColumn
-                                                        ? "sm:grid-cols-[1fr_1fr_auto_2.25rem]"
-                                                        : "sm:grid-cols-[1fr_1fr_2.25rem]",
+                                                        ? "sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_12rem_2.25rem]"
+                                                        : "sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.25rem]",
                                                 )}>
                                                 <Controller
                                                     name={`installmentAmounts.${index}.amount`}
