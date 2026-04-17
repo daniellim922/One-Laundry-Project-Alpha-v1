@@ -221,39 +221,65 @@ function AdvanceRequestReadOnlyBody({
                         Advance information
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3 pt-4">
-                    <div className="flex items-center gap-2">
-                        <User className="size-5 shrink-0 text-muted-foreground" />
-                        <Link
-                            href={`/dashboard/worker/${request.workerId}/view`}
-                            className="font-medium text-primary underline underline-offset-4 hover:opacity-80">
-                            {request.workerName}
-                        </Link>
+                <CardContent className="space-y-4 pt-4">
+                    <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+                        <div className="flex min-w-0 items-center gap-3">
+                            <User
+                                className="size-6 shrink-0 text-muted-foreground"
+                                aria-hidden
+                            />
+                            <div className="min-w-0 space-y-1">
+                                <p className="text-muted-foreground text-sm leading-none font-medium">
+                                    Employee
+                                </p>
+                                <Link
+                                    href={`/dashboard/worker/${request.workerId}/view`}
+                                    className="font-medium text-primary underline underline-offset-4 hover:opacity-80">
+                                    {request.workerName}
+                                </Link>
+                            </div>
+                        </div>
+
+                        <div
+                            className="flex min-w-0 items-center gap-3"
+                            data-testid="advance-detail-request-date">
+                            <Calendar
+                                className="size-6 shrink-0 text-muted-foreground"
+                                aria-hidden
+                            />
+                            <div className="min-w-0 space-y-1">
+                                <p className="text-muted-foreground text-sm leading-none font-medium">
+                                    Date of request
+                                </p>
+                                <span className="text-primary">
+                                    {formatEnGbDmyNumericFromCalendar(
+                                        request.requestDate,
+                                    )}
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
                     <div
-                        className="flex items-center gap-2"
-                        data-testid="advance-detail-request-date">
-                        <Calendar className="size-5 shrink-0 text-muted-foreground" />
-                        <span className="text-primary">
-                            {formatEnGbDmyNumericFromCalendar(request.requestDate)}
-                        </span>
-                    </div>
-
-                    <div
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-3"
                         data-testid="advance-detail-amount">
-                        <DollarSign className="size-5 shrink-0 text-muted-foreground" />
-                        <span className="text-primary">
-                            {request.amountRequested}
-                        </span>
+                        <DollarSign
+                            className="size-6 shrink-0 text-muted-foreground"
+                            aria-hidden
+                        />
+                        <div className="min-w-0 space-y-1">
+                            <p className="text-muted-foreground text-sm leading-none font-medium">
+                                Amount requested
+                            </p>
+                            <span className="text-primary">
+                                ${request.amountRequested}
+                            </span>
+                        </div>
                     </div>
 
-                    <div className="space-y-1 pt-5">
-                        <p className="text-lg font-medium">
-                            Purpose of advance
-                        </p>
-                        <p className="whitespace-pre-wrap text-md text-muted-foreground">
+                    <div className="space-y-1 border-t pt-4">
+                        <p className="text-lg font-medium">Purpose of advance</p>
+                        <p className="text-md whitespace-pre-wrap text-muted-foreground">
                             {purpose || "—"}
                         </p>
                     </div>
