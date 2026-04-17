@@ -39,24 +39,5 @@ export async function WorkerAllTableLoader() {
         )
         .orderBy(desc(workerTable.updatedAt))) as WorkerWithEmployment[];
 
-    const workersForMassEdit = workers
-        .filter(
-            (worker) =>
-                worker.status === "Active" &&
-                worker.employmentType === "Full Time" &&
-                worker.employmentArrangement === "Foreign Worker",
-        )
-        .map((worker) => ({
-            id: worker.id,
-            name: worker.name,
-            employmentArrangement: worker.employmentArrangement,
-            minimumWorkingHours: worker.minimumWorkingHours,
-        }));
-
-    return (
-        <WorkerAllTableSection
-            workers={workers}
-            workersForMassEdit={workersForMassEdit}
-        />
-    );
+    return <WorkerAllTableSection workers={workers} />;
 }

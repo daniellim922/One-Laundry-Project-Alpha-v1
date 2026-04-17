@@ -2,7 +2,7 @@ import { Suspense } from "react";
 
 import { DashboardHubOverviewSkeleton } from "@/components/dashboard/dashboard-page-skeleton";
 
-import { PayrollOverviewLoader } from "./payroll-overview-loader";
+import { PayrollOverviewLoader } from "@/app/dashboard/payroll/payroll-overview-loader";
 
 export default function PayrollOverviewPage() {
     return (

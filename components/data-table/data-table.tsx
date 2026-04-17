@@ -14,6 +14,7 @@ import {
     type Row,
     type RowSelectionState,
     SortingState,
+    type Table as TanStackTable,
     useReactTable,
 } from "@tanstack/react-table";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -69,6 +70,11 @@ interface DataTableProps<TData, TValue> {
     skeletonColumnCount?: number;
     /** Row count for the loading skeleton (defaults to 10). */
     skeletonRowCount?: number;
+    /**
+     * When row selection is enabled, drop selected row IDs that no longer pass
+     * column/global filters (or are absent from `data`) whenever filters or data change.
+     */
+    pruneRowSelectionOnFilterChange?: boolean;
 }
 
 type ColumnMeta = ColumnFilterMeta & { globalSearch?: boolean };
@@ -119,6 +125,7 @@ export function DataTable<TData, TValue>({
     isLoading = false,
     skeletonColumnCount,
     skeletonRowCount = 10,
+    pruneRowSelectionOnFilterChange = true,
 }: DataTableProps<TData, TValue>) {
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -249,6 +256,53 @@ export function DataTable<TData, TValue>({
             });
         },
     });
+
+    const tableRef = React.useRef<TanStackTable<TData>>(null!);
+    tableRef.current = table;
+
+    React.useEffect(() => {
+        if (
+            !enableRowSelection ||
+            !onRowSelectionChange ||
+            !pruneRowSelectionOnFilterChange ||
+            isLoading
+        ) {
+            return;
+        }
+
+        const allowedIds = new Set(
+            tableRef.current
+                .getFilteredRowModel()
+                .rows.map((row) => row.id),
+        );
+
+        onRowSelectionChange((prev) => {
+            let needsPrune = false;
+            for (const id of Object.keys(prev)) {
+                if (prev[id] && !allowedIds.has(id)) {
+                    needsPrune = true;
+                    break;
+                }
+            }
+            if (!needsPrune) return prev;
+
+            const next: RowSelectionState = {};
+            for (const id of Object.keys(prev)) {
+                if (prev[id] && allowedIds.has(id)) {
+                    next[id] = true;
+                }
+            }
+            return next;
+        });
+    }, [
+        columnFilters,
+        globalFilter,
+        data,
+        isLoading,
+        enableRowSelection,
+        onRowSelectionChange,
+        pruneRowSelectionOnFilterChange,
+    ]);
 
     const canSearchAnyColumn = table
         .getVisibleLeafColumns()

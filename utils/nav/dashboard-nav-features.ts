@@ -40,6 +40,10 @@ export const DASHBOARD_NAV_FEATURES: DashboardNavFeature[] = [
         subFeatures: [
             { name: "All workers", url: "/dashboard/worker/all" },
             { name: "New worker", url: "/dashboard/worker/new" },
+            {
+                name: "Mass edit working hours",
+                url: "/dashboard/worker/mass-edit",
+            },
         ],
         iconName: "Worker",
     },
@@ -80,6 +84,11 @@ export const DASHBOARD_NAV_FEATURES: DashboardNavFeature[] = [
         subFeatures: [
             { name: "All payrolls", url: "/dashboard/payroll/all" },
             { name: "New payroll", url: "/dashboard/payroll/new" },
+            { name: "Settle drafts", url: "/dashboard/payroll/settle-drafts" },
+            {
+                name: "Download payrolls",
+                url: "/dashboard/payroll/download-payrolls",
+            },
         ],
         iconName: "Payroll",
     },

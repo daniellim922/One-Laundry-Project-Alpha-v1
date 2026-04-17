@@ -3,26 +3,24 @@
 import * as React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { RowSelectionState } from "@tanstack/react-table";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
 import { createRowSelectionColumn } from "@/components/data-table/column-builders";
 import { DataTable } from "@/components/data-table/data-table";
+import { settleDraftPayrolls } from "@/app/dashboard/payroll/command-api";
+import { fetchSettlementCandidates } from "@/app/dashboard/payroll/read-api";
 import {
-    settleDraftPayrolls,
-} from "./command-api";
-import { fetchSettlementCandidates } from "./read-api";
-import { columns as baseColumns, type PayrollWithWorker } from "./all/columns";
+    columns as baseColumns,
+    type PayrollWithWorker,
+} from "@/app/dashboard/payroll/columns";
 
 const selectableColumns: ColumnDef<PayrollWithWorker>[] = [
     createRowSelectionColumn<PayrollWithWorker>({
@@ -31,14 +29,12 @@ const selectableColumns: ColumnDef<PayrollWithWorker>[] = [
     ...baseColumns,
 ];
 
-export function SettleAllDraftPayrollsButton() {
+export function SettleDraftPayrollsPanel() {
     const router = useRouter();
-    const pathname = usePathname();
-    const [open, setOpen] = React.useState(false);
     const [pending, setPending] = React.useState(false);
     const [downloadingZip, setDownloadingZip] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
-    const [loadingDrafts, setLoadingDrafts] = React.useState(false);
+    const [loadingDrafts, setLoadingDrafts] = React.useState(true);
     const [drafts, setDrafts] = React.useState<PayrollWithWorker[]>([]);
     const [rowSelection, setRowSelection] = React.useState<RowSelectionState>(
         {},
@@ -49,37 +45,13 @@ export function SettleAllDraftPayrollsButton() {
         (k) => rowSelection[k],
     ).length;
 
-    const resetSettleDialogUi = React.useCallback(() => {
+    const resetUi = React.useCallback(() => {
         setError(null);
-        setLoadingDrafts(false);
-        setRowSelection({});
     }, []);
-
-    const wasSettleDialogOpen = React.useRef(false);
-    const settleDialogOpenedAtPath = React.useRef<string | null>(null);
-
-    React.useEffect(() => {
-        if (open && !wasSettleDialogOpen.current) {
-            settleDialogOpenedAtPath.current = pathname;
-        }
-        if (!open) {
-            settleDialogOpenedAtPath.current = null;
-        }
-        wasSettleDialogOpen.current = open;
-    }, [open, pathname]);
-
-    React.useEffect(() => {
-        if (!open || settleDialogOpenedAtPath.current === null) return;
-        if (pathname !== settleDialogOpenedAtPath.current) {
-            setOpen(false);
-            resetSettleDialogUi();
-        }
-    }, [pathname, open, resetSettleDialogUi]);
 
     React.useEffect(() => {
         let cancelled = false;
         async function load() {
-            if (!open) return;
             setLoadingDrafts(true);
             setError(null);
             setRowSelection({});
@@ -103,14 +75,13 @@ export function SettleAllDraftPayrollsButton() {
         return () => {
             cancelled = true;
         };
-    }, [open]);
+    }, []);
 
     function getDownloadFilenameFromContentDisposition(
         header: string | null,
     ): string | null {
         if (!header) return null;
 
-        // Prefer RFC5987 `filename*=UTF-8''...`
         const star = header.match(/filename\*\s*=\s*([^;]+)/i);
         if (star?.[1]) {
             const raw = star[1].trim();
@@ -124,7 +95,6 @@ export function SettleAllDraftPayrollsButton() {
             }
         }
 
-        // Fallback to `filename="..."`
         const plain = header.match(/filename\s*=\s*([^;]+)/i);
         if (plain?.[1]) {
             return plain[1].trim().replace(/^"(.*)"$/, "$1");
@@ -185,66 +155,39 @@ export function SettleAllDraftPayrollsButton() {
             }
         }
 
-        setOpen(false);
-        resetSettleDialogUi();
+        resetUi();
         router.refresh();
     }
 
     return (
-        <Dialog
-            open={open}
-            onOpenChange={(nextOpen) => {
-                setOpen(nextOpen);
-                if (!nextOpen) {
-                    resetSettleDialogUi();
-                }
-            }}>
-            <DialogTrigger asChild>
-                <Button
-                    type="button"
-                    variant="destructive"
-                    disabled={pending || downloadingZip}>
-                    Settle all Draft payrolls
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-6xl [&_button]:cursor-pointer">
-                <DialogHeader>
-                    <DialogTitle>Confirm settlement</DialogTitle>
-                    <DialogDescription>
-                        {loadingDrafts
-                            ? "Loading Draft payrolls…"
-                            : draftCount === 0
-                              ? "There are no Draft payrolls to settle."
-                              : "Select the Draft payrolls you want to settle. All rows are selected by default."}
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-2">
-                    <DataTable
-                        columns={selectableColumns}
-                        data={drafts as PayrollWithWorker[]}
-                        syncSearchToUrl={false}
-                        pageSize={5}
-                        enableRowSelection
-                        rowSelection={rowSelection}
-                        onRowSelectionChange={setRowSelection}
-                        getRowId={(row) => row.id}
-                        isLoading={loadingDrafts}
-                        skeletonColumnCount={selectableColumns.length}
-                        skeletonRowCount={10}
-                    />
-                </div>
+        <Card>
+            <CardHeader>
+                <CardTitle>Confirm settlement</CardTitle>
+                <CardDescription>
+                    {loadingDrafts
+                        ? "Loading Draft payrolls…"
+                        : draftCount === 0
+                          ? "There are no Draft payrolls to settle."
+                          : "Select the Draft payrolls you want to settle. All rows are selected by default."}
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <DataTable
+                    columns={selectableColumns}
+                    data={drafts as PayrollWithWorker[]}
+                    syncSearchToUrl={false}
+                    enableRowSelection
+                    rowSelection={rowSelection}
+                    onRowSelectionChange={setRowSelection}
+                    getRowId={(row) => row.id}
+                    isLoading={loadingDrafts}
+                    skeletonColumnCount={selectableColumns.length}
+                    skeletonRowCount={20}
+                />
                 {error ? (
                     <p className="text-sm text-destructive">{error}</p>
                 ) : null}
-                <DialogFooter>
-                    <DialogClose asChild>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            disabled={pending || downloadingZip}>
-                            Cancel
-                        </Button>
-                    </DialogClose>
+                <div className="flex flex-wrap justify-end gap-2">
                     <Button
                         type="button"
                         variant="destructive"
@@ -261,8 +204,8 @@ export function SettleAllDraftPayrollsButton() {
                               ? "Preparing ZIP..."
                               : `Settle selected (${selectedCount})`}
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </div>
+            </CardContent>
+        </Card>
     );
 }

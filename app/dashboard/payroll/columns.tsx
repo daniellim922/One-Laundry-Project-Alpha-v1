@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { SelectPayroll } from "@/db/tables/payroll/payrollTable";
+import type { SelectPayroll } from "@/db/tables/payrollTable";
 import Link from "next/link";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
@@ -21,6 +21,7 @@ import type {
     WorkerEmploymentType,
 } from "@/types/status";
 import { Eye } from "lucide-react";
+import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 
 export type PayrollWithWorker = SelectPayroll & {
     workerName: string;
@@ -28,15 +29,6 @@ export type PayrollWithWorker = SelectPayroll & {
     employmentType: WorkerEmploymentType;
     employmentArrangement: WorkerEmploymentArrangement;
 };
-
-function formatDate(d: string | Date): string {
-    const date = d instanceof Date ? d : new Date(d + "T00:00:00");
-    return date.toLocaleDateString("en-GB", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-    });
-}
 
 export const columns: ColumnDef<PayrollWithWorker>[] = [
     {
@@ -78,17 +70,17 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
     {
         accessorKey: "periodStart",
         header: createSortableHeader("Period Start"),
-        cell: ({ row }) => formatDate(row.original.periodStart),
+        cell: ({ row }) => formatEnGbDmyNumericFromCalendar(row.original.periodStart),
     },
     {
         accessorKey: "periodEnd",
         header: createSortableHeader("Period End"),
-        cell: ({ row }) => formatDate(row.original.periodEnd),
+        cell: ({ row }) => formatEnGbDmyNumericFromCalendar(row.original.periodEnd),
     },
     {
         accessorKey: "payrollDate",
         header: createSortableHeader("Payroll Date"),
-        cell: ({ row }) => formatDate(row.original.payrollDate),
+        cell: ({ row }) => formatEnGbDmyNumericFromCalendar(row.original.payrollDate),
     },
     createActionsColumn<PayrollWithWorker>({
         cell: (payroll) => (

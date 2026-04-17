@@ -3,24 +3,16 @@
 import * as React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { RowSelectionState } from "@tanstack/react-table";
-import { Download } from "lucide-react";
-import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/data-table/data-table";
 import { createRowSelectionColumn } from "@/components/data-table/column-builders";
-import { columns as baseColumns, type PayrollWithWorker } from "./all/columns";
-import { fetchPayrollDownloadSelection } from "./read-api";
+import {
+    columns as baseColumns,
+    type PayrollWithWorker,
+} from "@/app/dashboard/payroll/columns";
+import { fetchPayrollDownloadSelection } from "@/app/dashboard/payroll/read-api";
 
 const selectableColumns: ColumnDef<PayrollWithWorker>[] = [
     createRowSelectionColumn<PayrollWithWorker>({
@@ -55,12 +47,10 @@ function getDownloadFilenameFromContentDisposition(
     return null;
 }
 
-export function DownloadPayrollsButton() {
-    const pathname = usePathname();
-    const [open, setOpen] = React.useState(false);
+export function DownloadPayrollsPanel() {
     const [downloading, setDownloading] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
-    const [loading, setLoading] = React.useState(false);
+    const [loading, setLoading] = React.useState(true);
     const [payrolls, setPayrolls] = React.useState<PayrollWithWorker[]>([]);
     const [rowSelection, setRowSelection] = React.useState<RowSelectionState>(
         {},
@@ -70,36 +60,9 @@ export function DownloadPayrollsButton() {
         (k) => rowSelection[k],
     ).length;
 
-    const resetDownloadDialogUi = React.useCallback(() => {
-        setError(null);
-        setLoading(false);
-    }, []);
-
-    const wasDownloadDialogOpen = React.useRef(false);
-    const downloadDialogOpenedAtPath = React.useRef<string | null>(null);
-
-    React.useEffect(() => {
-        if (open && !wasDownloadDialogOpen.current) {
-            downloadDialogOpenedAtPath.current = pathname;
-        }
-        if (!open) {
-            downloadDialogOpenedAtPath.current = null;
-        }
-        wasDownloadDialogOpen.current = open;
-    }, [open, pathname]);
-
-    React.useEffect(() => {
-        if (!open || downloadDialogOpenedAtPath.current === null) return;
-        if (pathname !== downloadDialogOpenedAtPath.current) {
-            setOpen(false);
-            resetDownloadDialogUi();
-        }
-    }, [pathname, open, resetDownloadDialogUi]);
-
     React.useEffect(() => {
         let cancelled = false;
         async function load() {
-            if (!open) return;
             setLoading(true);
             setError(null);
             setRowSelection({});
@@ -120,7 +83,7 @@ export function DownloadPayrollsButton() {
         return () => {
             cancelled = true;
         };
-    }, [open]);
+    }, []);
 
     async function handleDownload() {
         const selectedIds = Object.keys(rowSelection).filter(
@@ -152,8 +115,6 @@ export function DownloadPayrollsButton() {
             a.click();
             a.remove();
             URL.revokeObjectURL(url);
-            setOpen(false);
-            resetDownloadDialogUi();
         } catch (e) {
             console.error(e);
             setError("Failed to download payroll PDFs");
@@ -163,29 +124,13 @@ export function DownloadPayrollsButton() {
     }
 
     return (
-        <Dialog
-            open={open}
-            onOpenChange={(nextOpen) => {
-                setOpen(nextOpen);
-                if (!nextOpen) {
-                    resetDownloadDialogUi();
-                }
-            }}>
-            <DialogTrigger asChild>
-                <Button type="button" variant="outline" disabled={downloading}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Download payrolls
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="flex max-h-[90vh] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col sm:max-w-[calc(100vw-2rem)] [&_button]:cursor-pointer">
-                <DialogHeader>
-                    <DialogTitle>Download payrolls</DialogTitle>
-                    <DialogDescription>
-                        Select the payrolls you want to download as a ZIP of PDF
-                        summaries.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-auto">
+        <Card>
+            <CardContent className="space-y-4 pt-6">
+                <p className="text-muted-foreground text-sm">
+                    Select the payrolls you want to download as a ZIP of PDF
+                    summaries.
+                </p>
+                <div className="max-h-[min(75vh,64rem)] min-h-0 overflow-auto">
                     <DataTable
                         columns={selectableColumns}
                         data={payrolls}
@@ -203,27 +148,17 @@ export function DownloadPayrollsButton() {
                 {error ? (
                     <p className="text-sm text-destructive">{error}</p>
                 ) : null}
-                <DialogFooter>
-                    <DialogClose asChild>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            disabled={downloading}>
-                            Cancel
-                        </Button>
-                    </DialogClose>
+                <div className="flex flex-wrap justify-end gap-2">
                     <Button
                         type="button"
-                        disabled={
-                            downloading || loading || selectedCount === 0
-                        }
+                        disabled={downloading || loading || selectedCount === 0}
                         onClick={handleDownload}>
                         {downloading
                             ? "Preparing ZIP..."
                             : `Download selected (${selectedCount})`}
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </div>
+            </CardContent>
+        </Card>
     );
 }

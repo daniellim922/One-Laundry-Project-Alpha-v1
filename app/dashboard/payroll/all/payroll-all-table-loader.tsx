@@ -9,7 +9,10 @@ import { DataTable } from "@/components/data-table/data-table";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
-import { columns, type PayrollWithWorker } from "./columns";
+import {
+    columns,
+    type PayrollWithWorker,
+} from "@/app/dashboard/payroll/columns";
 
 export async function PayrollAllTableLoader() {
     const rows = await db

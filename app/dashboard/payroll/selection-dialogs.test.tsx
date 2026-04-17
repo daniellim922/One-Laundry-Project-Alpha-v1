@@ -2,7 +2,7 @@
 
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 
 const mocks = vi.hoisted(() => ({
     push: vi.fn(),
@@ -17,7 +17,6 @@ vi.mock("next/navigation", () => ({
         push: mocks.push,
         refresh: mocks.refresh,
     }),
-    usePathname: () => "/dashboard/payroll",
 }));
 
 vi.mock("@/app/dashboard/payroll/read-api", () => ({
@@ -52,8 +51,8 @@ vi.mock("@/components/data-table/data-table", () => ({
     ),
 }));
 
-import { SettleAllDraftPayrollsButton } from "@/app/dashboard/payroll/settle-all-drafts-button";
-import { DownloadPayrollsButton } from "@/app/dashboard/payroll/download-payrolls-button";
+import { SettleDraftPayrollsPanel } from "@/app/dashboard/payroll/settle-draft-payrolls-panel";
+import { DownloadPayrollsPanel } from "@/app/dashboard/payroll/download-payrolls-panel";
 
 function createDeferred<T>() {
     let resolve!: (value: T | PromiseLike<T>) => void;
@@ -80,7 +79,7 @@ const payrollRow = {
     employmentArrangement: "Local Worker" as const,
 };
 
-describe("Payroll selection dialogs", () => {
+describe("Payroll selection panels", () => {
     afterEach(() => {
         cleanup();
     });
@@ -91,18 +90,16 @@ describe("Payroll selection dialogs", () => {
     });
 
     it("lazy-loads settlement candidates and preserves the loading state", async () => {
-        const deferred = createDeferred<typeof payrollRow[]>();
+        const deferred = createDeferred<(typeof payrollRow)[]>();
         mocks.fetchSettlementCandidates.mockImplementationOnce(
             () => deferred.promise,
         );
 
-        render(<SettleAllDraftPayrollsButton />);
+        render(<SettleDraftPayrollsPanel />);
 
-        fireEvent.click(
-            screen.getByRole("button", { name: "Settle all Draft payrolls" }),
-        );
-
-        expect(await screen.findByTestId("mock-datatable-loading")).toBeTruthy();
+        expect(
+            await screen.findByTestId("mock-datatable-loading"),
+        ).toBeTruthy();
 
         deferred.resolve([payrollRow]);
 
@@ -113,18 +110,16 @@ describe("Payroll selection dialogs", () => {
     });
 
     it("lazy-loads download selection rows and preserves the loading state", async () => {
-        const deferred = createDeferred<typeof payrollRow[]>();
+        const deferred = createDeferred<(typeof payrollRow)[]>();
         mocks.fetchPayrollDownloadSelection.mockImplementationOnce(
             () => deferred.promise,
         );
 
-        render(<DownloadPayrollsButton />);
+        render(<DownloadPayrollsPanel />);
 
-        fireEvent.click(
-            screen.getByRole("button", { name: "Download payrolls" }),
-        );
-
-        expect(await screen.findByTestId("mock-datatable-loading")).toBeTruthy();
+        expect(
+            await screen.findByTestId("mock-datatable-loading"),
+        ).toBeTruthy();
 
         deferred.resolve([payrollRow]);
 
