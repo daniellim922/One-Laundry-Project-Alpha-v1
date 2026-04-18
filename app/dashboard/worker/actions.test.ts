@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { WorkerUpsertValues } from "@/db/schemas/worker-employment";
+
 const mocks = vi.hoisted(() => ({
     revalidatePath: vi.fn(),
     synchronizeWorkerDraftPayrolls: vi.fn(),
@@ -38,31 +40,10 @@ import {
     updateWorker,
 } from "@/app/dashboard/worker/actions";
 
-function buildWorkerFormData(
-    overrides: Partial<
-        Record<
-            | "name"
-            | "nric"
-            | "email"
-            | "phone"
-            | "status"
-            | "countryOfOrigin"
-            | "race"
-            | "employmentType"
-            | "employmentArrangement"
-            | "cpf"
-            | "monthlyPay"
-            | "hourlyRate"
-            | "restDayRate"
-            | "minimumWorkingHours"
-            | "paymentMethod"
-            | "payNowPhone"
-            | "bankAccountNumber",
-            string
-        >
-    > = {},
-): FormData {
-    const defaults: Record<string, string> = {
+function buildWorkerPayload(
+    overrides: Partial<WorkerUpsertValues> = {},
+): WorkerUpsertValues {
+    const defaults: WorkerUpsertValues = {
         name: "Alice",
         nric: "S1234567A",
         email: "alice@example.com",
@@ -72,22 +53,17 @@ function buildWorkerFormData(
         race: "Chinese",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
-        cpf: "320",
-        monthlyPay: "2200",
-        hourlyRate: "9",
-        restDayRate: "80",
-        minimumWorkingHours: "240",
+        cpf: 320,
+        monthlyPay: 2200,
+        hourlyRate: 9,
+        restDayRate: 80,
+        minimumWorkingHours: 240,
         paymentMethod: "Cash",
         payNowPhone: "",
         bankAccountNumber: "",
     };
 
-    const fd = new FormData();
-    const values = { ...defaults, ...overrides };
-    for (const [k, v] of Object.entries(values)) {
-        fd.set(k, v);
-    }
-    return fd;
+    return { ...defaults, ...overrides };
 }
 
 function queueInsertResolved(rows: unknown[]) {
@@ -150,7 +126,7 @@ describe("createWorker", () => {
         queueInsertResolved([{ id: "employment-1" }]);
         queueInsertResolved([{ id: "worker-1" }]);
 
-        const result = await createWorker(buildWorkerFormData());
+        const result = await createWorker(buildWorkerPayload());
 
         expect(result).toEqual({ success: true, id: "worker-1" });
         expect(mocks.db.insert).toHaveBeenCalledTimes(2);
@@ -161,16 +137,17 @@ describe("createWorker", () => {
     });
 
     it("returns validation error when name is empty", async () => {
-        const result = await createWorker(buildWorkerFormData({ name: "" }));
+        const result = await createWorker(buildWorkerPayload({ name: "" }));
 
         expect(result).toEqual({ success: false, error: "Name is required" });
         expect(mocks.db.insert).not.toHaveBeenCalled();
     });
 
     it("returns validation error when status is invalid", async () => {
-        const result = await createWorker(
-            buildWorkerFormData({ status: "Suspended" }),
-        );
+        const result = await createWorker({
+            ...buildWorkerPayload(),
+            status: "Suspended",
+        } as unknown);
 
         expect(result).toEqual({
             success: false,
@@ -181,7 +158,7 @@ describe("createWorker", () => {
 
     it("returns validation error when PayNow is selected but PayNow number is not digits-only", async () => {
         const result = await createWorker(
-            buildWorkerFormData({
+            buildWorkerPayload({
                 paymentMethod: "PayNow",
                 payNowPhone: "12.5",
             }),
@@ -202,7 +179,7 @@ describe("createWorker", () => {
             constraint: "worker_nric_unique",
         });
 
-        const result = await createWorker(buildWorkerFormData());
+        const result = await createWorker(buildWorkerPayload());
 
         expect(result).toEqual({
             success: false,
@@ -213,7 +190,7 @@ describe("createWorker", () => {
     it("returns generic failure on unexpected database errors", async () => {
         queueInsertRejected(new Error("database unavailable"));
 
-        const result = await createWorker(buildWorkerFormData());
+        const result = await createWorker(buildWorkerPayload());
 
         expect(result).toEqual({
             success: false,
@@ -241,7 +218,7 @@ describe("updateWorker", () => {
     });
 
     it("returns validation error when worker id is missing", async () => {
-        const result = await updateWorker("", buildWorkerFormData());
+        const result = await updateWorker("", buildWorkerPayload());
         expect(result).toEqual({
             success: false,
             error: "Worker ID is required",
@@ -252,7 +229,7 @@ describe("updateWorker", () => {
     it("returns validation error when name is empty", async () => {
         const result = await updateWorker(
             "worker-1",
-            buildWorkerFormData({ name: "" }),
+            buildWorkerPayload({ name: "" }),
         );
         expect(result).toEqual({ success: false, error: "Name is required" });
         expect(mocks.db.select).not.toHaveBeenCalled();
@@ -261,7 +238,10 @@ describe("updateWorker", () => {
     it("returns validation error when status is invalid", async () => {
         const result = await updateWorker(
             "worker-1",
-            buildWorkerFormData({ status: "Suspended" }),
+            {
+                ...buildWorkerPayload(),
+                status: "Suspended",
+            } as unknown,
         );
         expect(result).toEqual({
             success: false,
@@ -273,7 +253,7 @@ describe("updateWorker", () => {
     it("returns validation error when PayNow is selected but PayNow number is not digits-only", async () => {
         const result = await updateWorker(
             "worker-1",
-            buildWorkerFormData({
+            buildWorkerPayload({
                 paymentMethod: "PayNow",
                 payNowPhone: "12.5",
             }),
@@ -289,7 +269,7 @@ describe("updateWorker", () => {
     it("returns not found when worker does not exist", async () => {
         queueSelectWorker([]);
 
-        const result = await updateWorker("worker-1", buildWorkerFormData());
+        const result = await updateWorker("worker-1", buildWorkerPayload());
 
         expect(result).toEqual({
             success: false,
@@ -306,7 +286,7 @@ describe("updateWorker", () => {
             constraint: "worker_nric_unique",
         });
 
-        const result = await updateWorker("worker-1", buildWorkerFormData());
+        const result = await updateWorker("worker-1", buildWorkerPayload());
 
         expect(result).toEqual({
             success: false,
@@ -323,7 +303,7 @@ describe("updateWorker", () => {
             error: "Failed to synchronize draft payrolls",
         });
 
-        const result = await updateWorker("worker-1", buildWorkerFormData());
+        const result = await updateWorker("worker-1", buildWorkerPayload());
 
         expect(result).toEqual({
             success: false,
@@ -336,7 +316,7 @@ describe("updateWorker", () => {
         queueUpdateResolved();
         queueUpdateResolved();
 
-        const result = await updateWorker("worker-1", buildWorkerFormData());
+        const result = await updateWorker("worker-1", buildWorkerPayload());
 
         expect(result).toEqual({ success: true, id: "worker-1" });
         expect(mocks.synchronizeWorkerDraftPayrolls).toHaveBeenCalledWith({

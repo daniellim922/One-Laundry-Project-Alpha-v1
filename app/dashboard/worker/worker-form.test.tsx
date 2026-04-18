@@ -24,6 +24,7 @@ vi.mock("@/app/dashboard/worker/actions", () => ({
 }));
 
 import { WorkerForm } from "@/app/dashboard/worker/worker-form";
+import type { WorkerUpsertValues } from "@/db/schemas/worker-employment";
 import type { WorkerWithEmployment } from "@/db/tables/workerTable";
 
 function makeWorker(
@@ -461,10 +462,12 @@ describe("WorkerForm", () => {
             expect(mocks.createWorker).toHaveBeenCalledTimes(1);
         });
 
-        const [fd] = mocks.createWorker.mock.calls[0] as [FormData];
-        expect(fd.get("name")).toBe("Created Worker");
-        expect(fd.get("employmentType")).toBe("Part Time");
-        expect(fd.get("hourlyRate")).toBe("12");
+        const [payload] = mocks.createWorker.mock.calls[0] as [
+            WorkerUpsertValues,
+        ];
+        expect(payload.name).toBe("Created Worker");
+        expect(payload.employmentType).toBe("Part Time");
+        expect(payload.hourlyRate).toBe(12);
 
         expect(mocks.push).toHaveBeenCalledWith("/dashboard/worker/all");
         expect(mocks.refresh).toHaveBeenCalled();
@@ -502,13 +505,13 @@ describe("WorkerForm", () => {
             expect(mocks.updateWorker).toHaveBeenCalledTimes(1);
         });
 
-        const [workerId, fd] = mocks.updateWorker.mock.calls[0] as [
+        const [workerId, payload] = mocks.updateWorker.mock.calls[0] as [
             string,
-            FormData,
+            WorkerUpsertValues,
         ];
         expect(workerId).toBe("worker-1");
-        expect(fd.get("name")).toBe("Existing Worker");
-        expect(fd.get("status")).toBe("Active");
+        expect(payload.name).toBe("Existing Worker");
+        expect(payload.status).toBe("Active");
 
         expect(mocks.push).toHaveBeenCalledWith("/dashboard/worker/all");
         expect(mocks.refresh).toHaveBeenCalled();

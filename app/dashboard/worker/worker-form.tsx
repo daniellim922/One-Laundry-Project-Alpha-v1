@@ -4,7 +4,6 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import {
     Banknote,
     Briefcase,
@@ -52,284 +51,62 @@ function RequiredMark() {
         </span>
     );
 }
-import { cn } from "@/lib/utils";
+import {
+    workerUpsertSchema,
+    type WorkerUpsertValues,
+} from "@/db/schemas/worker-employment";
 import type { WorkerWithEmployment } from "@/db/tables/workerTable";
+import { cn } from "@/lib/utils";
 import {
     WORKER_EMPLOYMENT_ARRANGEMENTS,
     WORKER_EMPLOYMENT_TYPES,
     WORKER_PAYMENT_METHODS,
-    WORKER_STATUSES,
 } from "@/types/status";
 import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 import { createWorker, updateWorker } from "./actions";
 
 export type { WorkerWithEmployment };
 
-function exceedsTwoDecimalPlaces(raw: string): boolean {
-    const t = raw.trim();
-    if (!t.includes(".")) return false;
-    const [, frac = ""] = t.split(".");
-    return frac.length > 2;
-}
-
-function isWholeNumberString(raw: string): boolean {
-    const t = raw.trim();
-    if (!t) return true;
-    return /^\d+$/.test(t);
-}
-
-/** PayNow field spec: numeric string (digits only, no decimals); DB column remains text. */
-const PAYNOW_DIGITS_ONLY_MESSAGE =
-    "PayNow must contain digits only (no decimals or other characters)";
-
 function digitsOnlyString(raw: string | null | undefined): string {
     if (raw == null || raw === "") return "";
     return raw.replace(/\D/g, "");
 }
 
-const workerFormSchema = z
-    .object({
-        name: z.string().min(1, "Name is required"),
-        nric: z.string().optional(),
-        email: z.string().optional(),
-        phone: z.string().optional(),
-        status: z.enum(WORKER_STATUSES),
-        employmentType: z.enum(WORKER_EMPLOYMENT_TYPES),
-        employmentArrangement: z.enum(WORKER_EMPLOYMENT_ARRANGEMENTS),
-        countryOfOrigin: z.string().optional(),
-        race: z.string().optional(),
-        cpf: z.string().optional(),
-        monthlyPay: z.string().optional(),
-        hourlyRate: z.string().optional(),
-        restDayRate: z.string().optional(),
-        minimumWorkingHours: z.string().optional(),
-        paymentMethod: z.enum(WORKER_PAYMENT_METHODS).nullable().optional(),
-        payNowPhone: z.string().optional(),
-        bankAccountNumber: z.string().optional(),
-    })
-    .superRefine((values, ctx) => {
-        const isFullTime = values.employmentType === "Full Time";
-        const isPartTime = values.employmentType === "Part Time";
-        const isBankTransfer = values.paymentMethod === "Bank Transfer";
-        const isPayNow = values.paymentMethod === "PayNow";
+/** Map optional numeric DB values to RHF (undefined, never NaN). */
+function optionalNumber(n: number | null | undefined): number | undefined {
+    if (n == null || Number.isNaN(n)) return undefined;
+    return n;
+}
 
-        const emailRaw =
-            typeof values.email === "string" ? values.email.trim() : "";
-        if (emailRaw) {
-            const parsed = z
-                .string()
-                .email("Enter a valid email address")
-                .safeParse(emailRaw);
-            if (!parsed.success) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ["email"],
-                    message: "Enter a valid email address",
-                });
+function bindOptionalNumberField(field: {
+    value: unknown;
+    onChange: (v: number | undefined) => void;
+    onBlur: () => void;
+    name: string;
+    ref: React.Ref<HTMLInputElement>;
+}) {
+    const num =
+        typeof field.value === "number" && !Number.isNaN(field.value)
+            ? field.value
+            : undefined;
+    return {
+        name: field.name,
+        ref: field.ref,
+        onBlur: field.onBlur,
+        value: num === undefined ? "" : num,
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+            const raw = e.target.value;
+            if (raw === "") {
+                field.onChange(undefined);
+                return;
             }
-        }
+            const n = Number(raw);
+            field.onChange(Number.isNaN(n) ? undefined : n);
+        },
+    };
+}
 
-        const phoneRaw =
-            typeof values.phone === "string" ? values.phone.trim() : "";
-        if (phoneRaw && !/^\d+$/.test(phoneRaw)) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ["phone"],
-                message:
-                    "Phone must contain digits only (no decimals or other characters)",
-            });
-        }
-
-        if (values.employmentArrangement === "Local Worker") {
-            const cpfRaw =
-                typeof values.cpf === "string" ? values.cpf.trim() : "";
-            if (cpfRaw) {
-                if (exceedsTwoDecimalPlaces(cpfRaw)) {
-                    ctx.addIssue({
-                        code: z.ZodIssueCode.custom,
-                        path: ["cpf"],
-                        message:
-                            "CPF must use at most two decimal places and cannot be negative",
-                    });
-                } else {
-                    const n = Number(cpfRaw);
-                    if (!Number.isFinite(n) || n < 0) {
-                        ctx.addIssue({
-                            code: z.ZodIssueCode.custom,
-                            path: ["cpf"],
-                            message:
-                                "CPF must use at most two decimal places and cannot be negative",
-                        });
-                    }
-                }
-            }
-        }
-
-        if (isFullTime) {
-            const payFields: Array<{
-                key:
-                    | "monthlyPay"
-                    | "hourlyRate"
-                    | "restDayRate"
-                    | "minimumWorkingHours";
-                requiredMessage: string;
-                validationMessage: string;
-                allowZero?: boolean;
-                maxTwoDecimals?: boolean;
-                wholeNumber?: boolean;
-            }> = [
-                {
-                    key: "monthlyPay",
-                    requiredMessage:
-                        "Monthly pay is required for full time workers",
-                    validationMessage: "Monthly pay must be a positive number",
-                    maxTwoDecimals: true,
-                },
-                {
-                    key: "hourlyRate",
-                    requiredMessage:
-                        "Hourly rate is required for full time workers",
-                    validationMessage: "Hourly rate must be a positive number",
-                    maxTwoDecimals: true,
-                },
-                {
-                    key: "restDayRate",
-                    requiredMessage:
-                        "Rest day rate is required for full time workers",
-                    validationMessage: "Rest day rate must be a positive number",
-                    maxTwoDecimals: true,
-                },
-                {
-                    key: "minimumWorkingHours",
-                    requiredMessage:
-                        "Minimum working hours are required for full time workers",
-                    validationMessage:
-                        "Minimum working hours must be zero or a positive whole number",
-                    allowZero: true,
-                    wholeNumber: true,
-                },
-            ];
-
-            for (const field of payFields) {
-                const rawValue = values[field.key];
-                const value =
-                    typeof rawValue === "string" ? rawValue.trim() : "";
-
-                if (!value) {
-                    ctx.addIssue({
-                        code: z.ZodIssueCode.custom,
-                        path: [field.key],
-                        message: field.requiredMessage,
-                    });
-                    continue;
-                }
-
-                if (field.wholeNumber && !isWholeNumberString(value)) {
-                    ctx.addIssue({
-                        code: z.ZodIssueCode.custom,
-                        path: [field.key],
-                        message:
-                            "Minimum working hours must be a whole number with no decimals",
-                    });
-                    continue;
-                }
-
-                if (field.maxTwoDecimals && exceedsTwoDecimalPlaces(value)) {
-                    const maxDecLabel =
-                        field.key === "monthlyPay"
-                            ? "Monthly pay"
-                            : field.key === "hourlyRate"
-                              ? "Hourly rate"
-                              : "Rest day rate";
-                    ctx.addIssue({
-                        code: z.ZodIssueCode.custom,
-                        path: [field.key],
-                        message: `${maxDecLabel} must use at most two decimal places`,
-                    });
-                    continue;
-                }
-
-                const numericValue = Number(value);
-                const isValidNumber = field.allowZero
-                    ? numericValue >= 0
-                    : numericValue > 0;
-                if (!Number.isFinite(numericValue) || !isValidNumber) {
-                    ctx.addIssue({
-                        code: z.ZodIssueCode.custom,
-                        path: [field.key],
-                        message: field.validationMessage,
-                    });
-                }
-            }
-        }
-
-        if (isPartTime) {
-            const rawValue = values.hourlyRate;
-            const value = typeof rawValue === "string" ? rawValue.trim() : "";
-
-            if (!value) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ["hourlyRate"],
-                    message: "Hourly rate is required for part time workers",
-                });
-            } else if (exceedsTwoDecimalPlaces(value)) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ["hourlyRate"],
-                    message: "Hourly rate must use at most two decimal places",
-                });
-            } else {
-                const numericValue = Number(value);
-                if (!Number.isFinite(numericValue) || numericValue <= 0) {
-                    ctx.addIssue({
-                        code: z.ZodIssueCode.custom,
-                        path: ["hourlyRate"],
-                        message: "Hourly rate must be a positive number",
-                    });
-                }
-            }
-        }
-
-        if (isBankTransfer) {
-            const account =
-                typeof values.bankAccountNumber === "string"
-                    ? values.bankAccountNumber.trim()
-                    : "";
-
-            if (!account) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ["bankAccountNumber"],
-                    message:
-                        "Bank account number is required for bank transfer",
-                });
-            }
-        }
-
-        if (isPayNow) {
-            const rawPayNow = values.payNowPhone;
-            const payNow =
-                typeof rawPayNow === "string" ? rawPayNow.trim() : "";
-
-            if (!payNow) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ["payNowPhone"],
-                    message:
-                        "PayNow number is required when payment method is PayNow",
-                });
-            } else if (!/^\d+$/.test(payNow)) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ["payNowPhone"],
-                    message: PAYNOW_DIGITS_ONLY_MESSAGE,
-                });
-            }
-        }
-    });
-
-type WorkerFormValues = z.infer<typeof workerFormSchema>;
+type WorkerFormValues = WorkerUpsertValues;
 
 function getDefaultValues(
     worker?: WorkerWithEmployment | null,
@@ -346,11 +123,13 @@ function getDefaultValues(
             "Local Worker") as WorkerFormValues["employmentArrangement"],
         countryOfOrigin: worker?.countryOfOrigin ?? "",
         race: worker?.race ?? "",
-        cpf: worker?.cpf?.toString() ?? "",
-        monthlyPay: worker?.monthlyPay?.toString() ?? "",
-        hourlyRate: worker?.hourlyRate?.toString() ?? "",
-        restDayRate: worker?.restDayRate?.toString() ?? "",
-        minimumWorkingHours: worker?.minimumWorkingHours?.toString() ?? "",
+        cpf: optionalNumber(worker?.cpf ?? undefined),
+        monthlyPay: optionalNumber(worker?.monthlyPay ?? undefined),
+        hourlyRate: optionalNumber(worker?.hourlyRate ?? undefined),
+        restDayRate: optionalNumber(worker?.restDayRate ?? undefined),
+        minimumWorkingHours: optionalNumber(
+            worker?.minimumWorkingHours ?? undefined,
+        ),
         paymentMethod: (worker?.paymentMethod ??
             "Cash") as WorkerFormValues["paymentMethod"],
         payNowPhone: digitsOnlyString(worker?.payNowPhone),
@@ -372,7 +151,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
     const [error, setError] = React.useState<string | null>(null);
 
     const form = useForm<WorkerFormValues>({
-        resolver: zodResolver(workerFormSchema),
+        resolver: zodResolver(workerUpsertSchema),
         defaultValues: getDefaultValues(worker),
         mode: "onTouched",
     });
@@ -381,7 +160,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
     const isFormValid =
         watchedValues === undefined
             ? false
-            : workerFormSchema.safeParse(watchedValues).success;
+            : workerUpsertSchema.safeParse(watchedValues).success;
 
     const onSubmit = async (data: WorkerFormValues) => {
         if (disabled) return;
@@ -389,17 +168,11 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
         setError(null);
         setPending(true);
 
-        const formData = new FormData();
-        for (const [key, value] of Object.entries(data)) {
-            if (value === undefined || value === null) continue;
-            formData.set(key, String(value));
-        }
-
         let result;
         if (!worker) {
-            result = await createWorker(formData);
+            result = await createWorker(data);
         } else {
-            result = await updateWorker(worker.id, formData);
+            result = await updateWorker(worker.id, data);
         }
 
         setPending(false);
@@ -435,12 +208,18 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                             </div>
                             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                                 <span>
-                                    Created: {formatEnGbDmyNumericFromCalendar(worker.createdAt)}
+                                    Created:{" "}
+                                    {formatEnGbDmyNumericFromCalendar(
+                                        worker.createdAt,
+                                    )}
                                 </span>
                             </div>
                             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                                 <span>
-                                    Updated: {formatEnGbDmyNumericFromCalendar(worker.updatedAt)}
+                                    Updated:{" "}
+                                    {formatEnGbDmyNumericFromCalendar(
+                                        worker.updatedAt,
+                                    )}
                                 </span>
                             </div>
                         </CardDescription>
@@ -557,6 +336,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                         <InputGroup>
                                             <InputGroupInput
                                                 {...field}
+                                                value={field.value ?? ""}
                                                 id={`${formId}-nric`}
                                                 aria-invalid={
                                                     fieldState.invalid
@@ -591,6 +371,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                         <InputGroup>
                                             <InputGroupInput
                                                 {...field}
+                                                value={field.value ?? ""}
                                                 id={`${formId}-email`}
                                                 type="email"
                                                 aria-invalid={
@@ -623,6 +404,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                         <InputGroup>
                                             <InputGroupInput
                                                 {...field}
+                                                value={field.value ?? ""}
                                                 id={`${formId}-phone`}
                                                 aria-invalid={
                                                     fieldState.invalid
@@ -658,6 +440,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                         <InputGroup>
                                             <InputGroupInput
                                                 {...field}
+                                                value={field.value ?? ""}
                                                 id={`${formId}-countryOfOrigin`}
                                                 aria-invalid={
                                                     fieldState.invalid
@@ -689,6 +472,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                         <InputGroup>
                                             <InputGroupInput
                                                 {...field}
+                                                value={field.value ?? ""}
                                                 id={`${formId}-race`}
                                                 aria-invalid={
                                                     fieldState.invalid
@@ -864,7 +648,9 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             </FieldLabel>
                                             <InputGroup>
                                                 <InputGroupInput
-                                                    {...field}
+                                                    {...bindOptionalNumberField(
+                                                        field,
+                                                    )}
                                                     id={`${formId}-monthlyPay`}
                                                     type="number"
                                                     step="any"
@@ -902,7 +688,9 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupInput
-                                                {...field}
+                                                {...bindOptionalNumberField(
+                                                    field,
+                                                )}
                                                 id={`${formId}-hourlyRate`}
                                                 type="number"
                                                 step="any"
@@ -941,7 +729,9 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             </FieldLabel>
                                             <InputGroup>
                                                 <InputGroupInput
-                                                    {...field}
+                                                    {...bindOptionalNumberField(
+                                                        field,
+                                                    )}
                                                     id={`${formId}-restDayRate`}
                                                     type="number"
                                                     step="any"
@@ -980,7 +770,9 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             </FieldLabel>
                                             <InputGroup>
                                                 <InputGroupInput
-                                                    {...field}
+                                                    {...bindOptionalNumberField(
+                                                        field,
+                                                    )}
                                                     id={`${formId}-minimumWorkingHours`}
                                                     type="number"
                                                     step="any"
@@ -1018,9 +810,12 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             </FieldLabel>
                                             <InputGroup>
                                                 <InputGroupInput
-                                                    {...field}
+                                                    {...bindOptionalNumberField(
+                                                        field,
+                                                    )}
                                                     id={`${formId}-cpf`}
                                                     type="number"
+                                                    step="any"
                                                     min={0}
                                                     aria-invalid={
                                                         fieldState.invalid
@@ -1192,6 +987,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             <InputGroup>
                                                 <InputGroupInput
                                                     {...field}
+                                                    value={field.value ?? ""}
                                                     id={`${formId}-bankAccountNumber`}
                                                     aria-invalid={
                                                         fieldState.invalid

@@ -1,6 +1,8 @@
 import { pgEnum } from "drizzle-orm/pg-core";
 
-export const workerStatusEnum = pgEnum("worker_status", ["Active", "Inactive"]);
+import { WORKER_STATUSES } from "@/types/status";
+
+export const workerStatusEnum = pgEnum("worker_status", WORKER_STATUSES);
 
 export const advanceLoanStatusEnum = pgEnum("advance_loan_status", [
     "Advance Loan",

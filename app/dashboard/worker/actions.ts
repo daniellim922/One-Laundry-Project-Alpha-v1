@@ -4,15 +4,19 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 
 import { requireCurrentDashboardUser } from "@/app/dashboard/_shared/auth";
-import { db } from "@/lib/db";
 import {
-    workerTable,
-    type InsertWorker,
-} from "@/db/tables/workerTable";
+    formatWorkerUpsertZodError,
+    workerUpsertSchema,
+} from "@/db/schemas/worker-employment";
 import {
     employmentTable,
     type InsertEmployment,
 } from "@/db/tables/employmentTable";
+import {
+    workerTable,
+    type InsertWorker,
+} from "@/db/tables/workerTable";
+import { db } from "@/lib/db";
 import {
     synchronizeWorkerDraftPayrolls,
 } from "@/services/payroll/synchronize-worker-draft-payrolls";
@@ -21,7 +25,6 @@ import {
     type WorkerHoursBulkUpdateInput,
     type WorkerHoursBulkUpdateResult,
 } from "@/services/worker/mass-update-minimum-working-hours";
-import type { WorkerStatus } from "@/types/status";
 
 function isUniqueViolation(error: unknown): boolean {
     if (!error || typeof error !== "object") return false;
@@ -42,143 +45,102 @@ function isNricUniqueViolation(error: unknown): boolean {
     );
 }
 
-function toNumber(val: FormDataEntryValue | null): number | null {
-    if (val == null) return null;
-    const s = String(val).trim();
-    if (!s) return null;
-    const n = Number(s);
-    if (Number.isNaN(n)) return null;
-    return n;
-}
-
-function parsePayNowNumberForPersistence(
-    raw: FormDataEntryValue | null,
-    paymentMethod: InsertEmployment["paymentMethod"],
-):
-    | { ok: true; value: string | null }
-    | { ok: false; error: string } {
-    const s = (raw ?? "").toString().trim();
-    if (paymentMethod !== "PayNow") {
-        return { ok: true, value: null };
-    }
-    if (!s) {
-        return {
-            ok: false,
-            error: "PayNow number is required when payment method is PayNow",
-        };
-    }
-    if (!/^\d+$/.test(s)) {
-        return {
-            ok: false,
-            error:
-                "PayNow must contain digits only (no decimals or other characters)",
-        };
-    }
-    return { ok: true, value: s };
-}
-
-function parseWorkerStatus(input: unknown): WorkerStatus | null {
-    const s = input?.toString().trim();
-    if (s === "Active" || s === "Inactive") return s;
-    return null;
+function trimToNull(s: string | null | undefined): string | null {
+    if (s == null) return null;
+    const t = s.trim();
+    return t ? t : null;
 }
 
 type ActionResult =
     | { success: true; id: string }
     | { success: false; error: string };
 
-export async function createWorker(formData: FormData): Promise<ActionResult> {
+function parsedPayloadToRowValues(
+    data: ReturnType<typeof workerUpsertSchema.parse>,
+): {
+    worker: Omit<
+        InsertWorker,
+        "id" | "employmentId" | "createdAt" | "updatedAt"
+    >;
+    employment: Omit<
+        InsertEmployment,
+        "id" | "createdAt" | "updatedAt"
+    >;
+} {
+    const paymentMethod = data.paymentMethod ?? null;
+    const isPayNow = paymentMethod === "PayNow";
+
+    const employment: Omit<
+        InsertEmployment,
+        "id" | "createdAt" | "updatedAt"
+    > = {
+        employmentType: data.employmentType,
+        employmentArrangement: data.employmentArrangement,
+        cpf:
+            data.employmentArrangement === "Local Worker"
+                ? (data.cpf ?? null)
+                : null,
+        monthlyPay: data.monthlyPay ?? null,
+        minimumWorkingHours: data.minimumWorkingHours ?? null,
+        hourlyRate: data.hourlyRate ?? null,
+        restDayRate: data.restDayRate ?? null,
+        paymentMethod,
+        payNowPhone: isPayNow ? trimToNull(data.payNowPhone) : null,
+        bankAccountNumber: trimToNull(data.bankAccountNumber),
+    };
+
+    const worker: Omit<
+        InsertWorker,
+        "id" | "employmentId" | "createdAt" | "updatedAt"
+    > = {
+        name: data.name.trim(),
+        nric: trimToNull(data.nric),
+        email: trimToNull(data.email),
+        phone: trimToNull(data.phone),
+        status: data.status,
+        countryOfOrigin: trimToNull(data.countryOfOrigin),
+        race: trimToNull(data.race),
+    };
+
+    return { worker, employment };
+}
+
+export async function createWorker(input: unknown): Promise<ActionResult> {
     await requireCurrentDashboardUser();
 
-    const name = (formData.get("name") ?? "").toString().trim();
-    if (!name) {
-        return { success: false, error: "Name is required" };
+    const parsed = workerUpsertSchema.safeParse(input);
+    if (!parsed.success) {
+        return { success: false, error: formatWorkerUpsertZodError(parsed.error) };
     }
 
-    const nric = (formData.get("nric") ?? "").toString().trim() || null;
-    const email = (formData.get("email") ?? "").toString().trim() || null;
-    const phone = (formData.get("phone") ?? "").toString().trim() || null;
-    const status = parseWorkerStatus(formData.get("status"));
-    if (!status) {
-        return { success: false, error: "Invalid worker status" };
-    }
-    const countryOfOrigin =
-        (formData.get("countryOfOrigin") ?? "").toString().trim() || null;
-    const race = (formData.get("race") ?? "").toString().trim() || null;
-
-    const employmentType = (
-        formData.get("employmentType") ?? "Full Time"
-    ).toString() as InsertEmployment["employmentType"];
-    const employmentArrangement = (
-        formData.get("employmentArrangement") ?? "Local Worker"
-    ).toString() as InsertEmployment["employmentArrangement"];
-
-    const cpf =
-        employmentArrangement === "Local Worker"
-            ? toNumber(formData.get("cpf"))
-            : null;
-    const monthlyPay = toNumber(formData.get("monthlyPay"));
-    const hourlyRate = toNumber(formData.get("hourlyRate"));
-    const restDayRate = toNumber(formData.get("restDayRate"));
-    const minimumWorkingHours = toNumber(formData.get("minimumWorkingHours"));
-
-    const paymentMethodRaw = (formData.get("paymentMethod") ?? "")
-        .toString()
-        .trim();
-    const paymentMethod = (paymentMethodRaw ||
-        null) as InsertEmployment["paymentMethod"];
-    const payNowParsed = parsePayNowNumberForPersistence(
-        formData.get("payNowPhone"),
-        paymentMethod,
-    );
-    if (!payNowParsed.ok) {
-        return { success: false, error: payNowParsed.error };
-    }
-    const payNowPhone = payNowParsed.value;
-    const bankAccountNumber =
-        (formData.get("bankAccountNumber") ?? "").toString().trim() || null;
+    const { worker, employment } = parsedPayloadToRowValues(parsed.data);
 
     try {
-        const [employment] = await db
+        const [employmentRow] = await db
             .insert(employmentTable)
             .values({
-                employmentType,
-                employmentArrangement,
-                cpf,
-                monthlyPay,
-                minimumWorkingHours,
-                hourlyRate,
-                restDayRate,
-                paymentMethod,
-                payNowPhone,
-                bankAccountNumber,
+                ...employment,
                 createdAt: new Date(),
                 updatedAt: new Date(),
             })
             .returning({ id: employmentTable.id });
 
-        const employmentId = employment?.id;
+        const employmentId = employmentRow?.id;
         if (!employmentId) {
             return { success: false, error: "Failed to create employment" };
         }
 
-        const [worker] = await db
+        const [workerRow] = await db
             .insert(workerTable)
             .values({
-                name,
-                nric,
-                email,
-                phone,
-                status,
-                countryOfOrigin,
-                race,
+                ...worker,
                 employmentId,
                 createdAt: new Date(),
                 updatedAt: new Date(),
             } satisfies InsertWorker)
             .returning({ id: workerTable.id });
 
-        const workerId = worker?.id;
+        const workerId = workerRow?.id;
         if (!workerId) {
             return { success: false, error: "Failed to create worker" };
         }
@@ -198,7 +160,7 @@ export async function createWorker(formData: FormData): Promise<ActionResult> {
 
 export async function updateWorker(
     id: string,
-    formData: FormData,
+    input: unknown,
 ): Promise<ActionResult> {
     await requireCurrentDashboardUser();
 
@@ -206,53 +168,12 @@ export async function updateWorker(
         return { success: false, error: "Worker ID is required" };
     }
 
-    const name = (formData.get("name") ?? "").toString().trim();
-    if (!name) {
-        return { success: false, error: "Name is required" };
+    const parsed = workerUpsertSchema.safeParse(input);
+    if (!parsed.success) {
+        return { success: false, error: formatWorkerUpsertZodError(parsed.error) };
     }
 
-    const nric = (formData.get("nric") ?? "").toString().trim() || null;
-    const email = (formData.get("email") ?? "").toString().trim() || null;
-    const phone = (formData.get("phone") ?? "").toString().trim() || null;
-    const status = parseWorkerStatus(formData.get("status"));
-    if (!status) {
-        return { success: false, error: "Invalid worker status" };
-    }
-    const countryOfOrigin =
-        (formData.get("countryOfOrigin") ?? "").toString().trim() || null;
-    const race = (formData.get("race") ?? "").toString().trim() || null;
-
-    const employmentType = (
-        formData.get("employmentType") ?? "Full Time"
-    ).toString() as InsertEmployment["employmentType"];
-    const employmentArrangement = (
-        formData.get("employmentArrangement") ?? "Local Worker"
-    ).toString() as InsertEmployment["employmentArrangement"];
-
-    const cpf =
-        employmentArrangement === "Local Worker"
-            ? toNumber(formData.get("cpf"))
-            : null;
-    const monthlyPay = toNumber(formData.get("monthlyPay"));
-    const hourlyRate = toNumber(formData.get("hourlyRate"));
-    const restDayRate = toNumber(formData.get("restDayRate"));
-    const minimumWorkingHours = toNumber(formData.get("minimumWorkingHours"));
-
-    const paymentMethodRaw = (formData.get("paymentMethod") ?? "")
-        .toString()
-        .trim();
-    const paymentMethod = (paymentMethodRaw ||
-        null) as InsertEmployment["paymentMethod"];
-    const payNowParsed = parsePayNowNumberForPersistence(
-        formData.get("payNowPhone"),
-        paymentMethod,
-    );
-    if (!payNowParsed.ok) {
-        return { success: false, error: payNowParsed.error };
-    }
-    const payNowPhone = payNowParsed.value;
-    const bankAccountNumber =
-        (formData.get("bankAccountNumber") ?? "").toString().trim() || null;
+    const { worker, employment } = parsedPayloadToRowValues(parsed.data);
 
     try {
         const [existing] = await db
@@ -273,16 +194,7 @@ export async function updateWorker(
         await db
             .update(employmentTable)
             .set({
-                employmentType,
-                employmentArrangement,
-                cpf,
-                monthlyPay,
-                minimumWorkingHours,
-                hourlyRate,
-                restDayRate,
-                paymentMethod,
-                payNowPhone,
-                bankAccountNumber,
+                ...employment,
                 updatedAt: new Date(),
             })
             .where(eq(employmentTable.id, employmentId));
@@ -290,13 +202,7 @@ export async function updateWorker(
         await db
             .update(workerTable)
             .set({
-                name,
-                nric,
-                email,
-                phone,
-                status,
-                countryOfOrigin,
-                race,
+                ...worker,
                 updatedAt: new Date(),
             })
             .where(eq(workerTable.id, id));
