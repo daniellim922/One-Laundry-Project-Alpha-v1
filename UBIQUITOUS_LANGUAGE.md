@@ -84,7 +84,7 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 | Term | Definition | Aliases to avoid |
 | ---- | ---------- | ---------------- |
 | **Landing page** | The public `/` page that introduces the product and links into the internal app. | Home dashboard |
-| **Login boundary** | The public `/login` route that fronts the protected dashboard while Supabase auth is being rolled out. | Redirect shim, compatibility hop |
+| **Login boundary** | The public `/login` route that fronts the protected dashboard and starts the single-admin Supabase magic-link flow. | Redirect shim, compatibility hop |
 | **Admin allowlist** | The single configured admin email (`AUTH_ADMIN_EMAIL`) that defines who may hold application access in v1. | Multi-user auth, role matrix |
 | **Admin bootstrap** | The operator command that creates or repairs the single allowed Supabase auth user before sign-in is used. | Self-service sign-up, automatic runtime creation |
 
