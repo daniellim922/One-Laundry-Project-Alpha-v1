@@ -23,7 +23,27 @@ async function readPayrollApi<T>(path: string): Promise<T> {
         cache: "no-store",
     });
 
-    const body = (await response.json()) as ApiReadSuccess<T> | ApiReadFailure;
+    const raw = await response.text();
+    const trimmed = raw.trim();
+
+    if (!trimmed) {
+        throw new Error(
+            response.ok
+                ? "Empty response from server"
+                : `Request failed (${response.status})`,
+        );
+    }
+
+    let body: ApiReadSuccess<T> | ApiReadFailure;
+    try {
+        body = JSON.parse(trimmed) as ApiReadSuccess<T> | ApiReadFailure;
+    } catch {
+        throw new Error(
+            response.ok
+                ? "Invalid response from server"
+                : `Request failed (${response.status})`,
+        );
+    }
 
     if (!response.ok || !body.ok) {
         throw new Error(body.ok ? "Request failed" : body.error.message);

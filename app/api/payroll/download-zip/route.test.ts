@@ -1,13 +1,22 @@
+import { Buffer } from "node:buffer";
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 const mocks = vi.hoisted(() => ({
     requireCurrentApiAdminUser: vi.fn(),
+    db: {
+        select: vi.fn(),
+    },
 }));
 
 vi.mock("@/app/api/_shared/auth", () => ({
     requireCurrentApiAdminUser: (...args: unknown[]) =>
         mocks.requireCurrentApiAdminUser(...args),
+}));
+
+vi.mock("@/lib/db", () => ({
+    db: mocks.db,
 }));
 
 import { POST } from "@/app/api/payroll/download-zip/route";
@@ -17,6 +26,29 @@ describe("POST /api/payroll/download-zip", () => {
         vi.clearAllMocks();
         mocks.requireCurrentApiAdminUser.mockResolvedValue({
             email: "admin@example.com",
+        });
+        mocks.db.select.mockReturnValue({
+            from: vi.fn().mockReturnValue({
+                innerJoin: vi.fn().mockReturnValue({
+                    where: vi.fn().mockResolvedValue([
+                        {
+                            id: "payroll-1",
+                            periodStart: "2026-01-01",
+                            periodEnd: "2026-01-31",
+                            workerName: "Alice",
+                        },
+                    ]),
+                }),
+            }),
+        });
+        global.fetch = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+            const url = String(input);
+            if (url.includes("/pdf?mode=summary")) {
+                return new Response(new Uint8Array([0x25, 0x50, 0x44, 0x46]), {
+                    status: 200,
+                });
+            }
+            return new Response(null, { status: 404 });
         });
     });
 
@@ -56,5 +88,56 @@ describe("POST /api/payroll/download-zip", () => {
                 details: undefined,
             },
         });
+    });
+
+    it("streams NDJSON with meta, progress, zip frames, and done when progress=1", async () => {
+        const response = await POST(
+            new NextRequest(
+                "http://localhost/api/payroll/download-zip?progress=1",
+                {
+                    method: "POST",
+                    body: JSON.stringify({ payrollIds: ["payroll-1"] }),
+                },
+            ),
+        );
+
+        expect(response.status).toBe(200);
+        expect(response.headers.get("Content-Type")).toBe(
+            "application/x-ndjson",
+        );
+
+        const text = await response.text();
+        const lines = text
+            .trim()
+            .split("\n")
+            .filter((l) => l.length > 0);
+        expect(lines.length).toBeGreaterThanOrEqual(3);
+
+        const first = JSON.parse(lines[0]!) as { type: string; n?: number };
+        expect(first.type).toBe("meta");
+        expect(first.n).toBe(1);
+
+        const progressLines = lines
+            .map((l) => JSON.parse(l) as { type: string })
+            .filter((o) => o.type === "progress");
+        expect(progressLines.length).toBeGreaterThanOrEqual(1);
+
+        let zipBuf = Buffer.alloc(0);
+        for (const line of lines) {
+            const o = JSON.parse(line) as { type: string; data?: string };
+            if (o.type === "zip" && typeof o.data === "string") {
+                zipBuf = Buffer.concat([zipBuf, Buffer.from(o.data, "base64")]);
+            }
+        }
+        expect(zipBuf.length).toBeGreaterThan(0);
+        expect(zipBuf[0]).toBe(0x50);
+        expect(zipBuf[1]).toBe(0x4b);
+
+        const last = JSON.parse(lines[lines.length - 1]!) as {
+            type: string;
+            filename?: string;
+        };
+        expect(last.type).toBe("done");
+        expect(typeof last.filename).toBe("string");
     });
 });

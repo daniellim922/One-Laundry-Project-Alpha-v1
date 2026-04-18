@@ -12,6 +12,15 @@ import {
     columns as baseColumns,
     type PayrollWithWorker,
 } from "@/app/dashboard/payroll/columns";
+import {
+    computeZipEtaSec,
+    streamPayrollZipFromApi,
+} from "@/app/dashboard/payroll/download-payroll-zip-client";
+import {
+    PayrollBulkZipProgressDialog,
+    type PayrollBulkZipProgressState,
+    type PayrollZipProgressPhase,
+} from "@/app/dashboard/payroll/payroll-bulk-zip-progress-dialog";
 import { fetchPayrollDownloadSelection } from "@/app/dashboard/payroll/read-api";
 
 const selectableColumns: ColumnDef<PayrollWithWorker>[] = [
@@ -21,44 +30,50 @@ const selectableColumns: ColumnDef<PayrollWithWorker>[] = [
     ...baseColumns,
 ];
 
-function getDownloadFilenameFromContentDisposition(
-    header: string | null,
-): string | null {
-    if (!header) return null;
-
-    const star = header.match(/filename\*\s*=\s*([^;]+)/i);
-    if (star?.[1]) {
-        const raw = star[1].trim();
-        const unquoted = raw.replace(/^"(.*)"$/, "$1");
-        const parts = unquoted.split("''");
-        const encoded = parts.length === 2 ? parts[1] : unquoted;
-        try {
-            return decodeURIComponent(encoded);
-        } catch {
-            return encoded;
-        }
-    }
-
-    const plain = header.match(/filename\s*=\s*([^;]+)/i);
-    if (plain?.[1]) {
-        return plain[1].trim().replace(/^"(.*)"$/, "$1");
-    }
-
-    return null;
-}
-
 export function DownloadPayrollsPanel() {
-    const [downloading, setDownloading] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const [loading, setLoading] = React.useState(true);
     const [payrolls, setPayrolls] = React.useState<PayrollWithWorker[]>([]);
     const [rowSelection, setRowSelection] = React.useState<RowSelectionState>(
         {},
     );
+    const [zipDialogOpen, setZipDialogOpen] = React.useState(false);
+    const [zipPhase, setZipPhase] =
+        React.useState<PayrollZipProgressPhase>("generating");
+    const [zipError, setZipError] = React.useState<string | null>(null);
+    const [zipProgress, setZipProgress] =
+        React.useState<PayrollBulkZipProgressState | null>(null);
+    const [zipTick, setZipTick] = React.useState(0);
+    const zipStartedAtRef = React.useRef<number | null>(null);
+    const lastProgressAtRef = React.useRef<number | null>(null);
+    const durationsRef = React.useRef<number[]>([]);
 
     const selectedCount = Object.keys(rowSelection).filter(
         (k) => rowSelection[k],
     ).length;
+
+    const zipBusy = zipDialogOpen && zipError === null;
+
+    React.useEffect(() => {
+        if (!zipDialogOpen) return;
+        const id = window.setInterval(() => {
+            setZipTick((t) => t + 1);
+        }, 250);
+        return () => window.clearInterval(id);
+    }, [zipDialogOpen]);
+
+    const zipEtaSec = React.useMemo(() => {
+        if (!zipProgress) return undefined;
+        const elapsedSec = zipStartedAtRef.current
+            ? Math.floor((Date.now() - zipStartedAtRef.current) / 1000)
+            : 0;
+        return computeZipEtaSec({
+            n: zipProgress.n,
+            i: zipProgress.i,
+            elapsedSec,
+            recentDurationsSec: durationsRef.current,
+        });
+    }, [zipProgress, zipTick]);
 
     React.useEffect(() => {
         let cancelled = false;
@@ -85,6 +100,12 @@ export function DownloadPayrollsPanel() {
         };
     }, []);
 
+    function dismissZipDialog() {
+        setZipDialogOpen(false);
+        setZipError(null);
+        setZipProgress(null);
+    }
+
     async function handleDownload() {
         const selectedIds = Object.keys(rowSelection).filter(
             (k) => rowSelection[k],
@@ -92,40 +113,63 @@ export function DownloadPayrollsPanel() {
         if (selectedIds.length === 0) return;
 
         setError(null);
-        setDownloading(true);
+        setZipError(null);
+        setZipProgress(null);
+        zipStartedAtRef.current = Date.now();
+        lastProgressAtRef.current = null;
+        durationsRef.current = [];
+        setZipPhase("generating");
+        setZipDialogOpen(true);
 
-        try {
-            const res = await fetch("/api/payroll/download-zip", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ payrollIds: selectedIds }),
-            });
-            if (!res.ok) {
-                throw new Error(`ZIP download failed (${res.status})`);
-            }
-            const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download =
-                getDownloadFilenameFromContentDisposition(
-                    res.headers.get("content-disposition"),
-                ) ?? `payrolls-${new Date().toISOString().slice(0, 10)}.zip`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
-        } catch (e) {
-            console.error(e);
-            setError("Failed to download payroll PDFs");
-        } finally {
-            setDownloading(false);
+        const result = await streamPayrollZipFromApi(
+            selectedIds,
+            (evt) => {
+                if (evt.type === "meta") {
+                    setZipProgress({ i: 0, n: evt.n });
+                    lastProgressAtRef.current = Date.now();
+                    durationsRef.current = [];
+                }
+                if (evt.type === "progress") {
+                    const now = Date.now();
+                    if (lastProgressAtRef.current !== null) {
+                        const dt =
+                            (now - lastProgressAtRef.current) / 1000;
+                        if (dt >= 0) {
+                            durationsRef.current = [
+                                ...durationsRef.current.slice(-4),
+                                dt,
+                            ];
+                        }
+                    }
+                    lastProgressAtRef.current = now;
+                    setZipProgress({
+                        i: evt.i,
+                        n: evt.n,
+                        currentName: evt.workerName,
+                    });
+                }
+            },
+        );
+        if (!result.ok) {
+            setZipError(result.error);
+            return;
         }
+
+        setZipDialogOpen(false);
+        setZipProgress(null);
     }
 
     return (
         <Card>
             <CardContent className="space-y-4 pt-6">
+                <PayrollBulkZipProgressDialog
+                    open={zipDialogOpen}
+                    phase={zipPhase}
+                    error={zipError}
+                    onDismiss={dismissZipDialog}
+                    progress={zipProgress}
+                    etaSec={zipEtaSec}
+                />
                 <p className="text-muted-foreground text-sm">
                     Select the payrolls you want to download as a ZIP of PDF
                     summaries.
@@ -151,9 +195,11 @@ export function DownloadPayrollsPanel() {
                 <div className="flex flex-wrap justify-end gap-2">
                     <Button
                         type="button"
-                        disabled={downloading || loading || selectedCount === 0}
+                        disabled={
+                            zipDialogOpen || loading || selectedCount === 0
+                        }
                         onClick={handleDownload}>
-                        {downloading
+                        {zipBusy
                             ? "Preparing ZIP..."
                             : `Download selected (${selectedCount})`}
                     </Button>
