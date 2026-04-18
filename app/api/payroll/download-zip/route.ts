@@ -14,6 +14,13 @@ type Body = { payrollIds?: unknown };
 type PayrollPdfFailure = { payrollId: string; reason: string };
 type PayrollPdfEntry = { name: string; buffer: Buffer };
 
+type PayrollMetaRow = {
+    id: string;
+    periodStart: unknown;
+    periodEnd: unknown;
+    workerName: string;
+};
+
 function safeFilenamePart(s: string): string {
     return String(s).replace(/[/\\:*?"<>|]/g, "-").trim();
 }
@@ -85,6 +92,183 @@ export function createZipFilename(args: {
     );
 }
 
+function enqueueNdjsonLine(
+    controller: ReadableStreamDefaultController<Uint8Array>,
+    encoder: TextEncoder,
+    obj: object,
+) {
+    controller.enqueue(encoder.encode(JSON.stringify(obj) + "\n"));
+}
+
+async function collectPdfEntries(args: {
+    payrollIds: string[];
+    metaById: Map<string, PayrollMetaRow>;
+    cookie: string;
+    origin: string;
+    failures: PayrollPdfFailure[];
+    onProgress?: (i: number, n: number, workerName: string) => void;
+}): Promise<PayrollPdfEntry[]> {
+    const { payrollIds, metaById, cookie, origin, failures, onProgress } = args;
+    const n = payrollIds.length;
+    const pdfEntries: PayrollPdfEntry[] = [];
+    const seenNames = new Map<string, number>();
+
+    for (let idx = 0; idx < payrollIds.length; idx++) {
+        const id = payrollIds[idx]!;
+        const meta = metaById.get(id);
+        const workerNameForProgress = meta?.workerName ?? `payroll-${id}`;
+        try {
+            const url = `${origin}/api/payroll/${id}/pdf?mode=summary`;
+            const res = await fetch(url, {
+                headers: cookie ? { cookie } : undefined,
+                cache: "no-store",
+            });
+            if (!res.ok) {
+                const reason = `PDF failed (${res.status})`;
+                failures.push({ payrollId: id, reason });
+                console.warn(`[payroll/download-zip] Failed to fetch PDF`, {
+                    payrollId: id,
+                    status: res.status,
+                });
+            } else {
+                const buf = Buffer.from(await res.arrayBuffer());
+
+                const workerName = meta?.workerName ?? `payroll-${id}`;
+                const periodStart = isoToDdmmyyyy(isoDate(meta?.periodStart ?? ""));
+                const periodEnd = isoToDdmmyyyy(isoDate(meta?.periodEnd ?? ""));
+                const baseName = createPayrollPdfBaseName({
+                    workerName,
+                    periodStart,
+                    periodEnd,
+                });
+                const uniqueName = makeUniqueZipEntryName(baseName, seenNames);
+                if (uniqueName !== baseName) {
+                    console.warn(`[payroll/download-zip] Duplicate filename collision`, {
+                        payrollId: id,
+                        baseName,
+                        uniqueName,
+                    });
+                }
+
+                pdfEntries.push({
+                    name: uniqueName,
+                    buffer: buf,
+                });
+            }
+        } catch (error) {
+            const reason =
+                error instanceof Error ? error.message : "Unknown error";
+            failures.push({ payrollId: id, reason });
+            console.warn(`[payroll/download-zip] PDF processing error`, {
+                payrollId: id,
+                reason,
+            });
+        }
+        onProgress?.(idx + 1, n, workerNameForProgress);
+    }
+
+    return pdfEntries;
+}
+
+function createNdjsonZipResponseStream(args: {
+    payrollIds: string[];
+    metaById: Map<string, PayrollMetaRow>;
+    cookie: string;
+    origin: string;
+    periodStartForZipLabel: string;
+    periodEndForZipLabel: string;
+}): ReadableStream<Uint8Array> {
+    const {
+        payrollIds,
+        metaById,
+        cookie,
+        origin,
+        periodStartForZipLabel,
+        periodEndForZipLabel,
+    } = args;
+
+    return new ReadableStream<Uint8Array>({
+        async start(controller) {
+            const encoder = new TextEncoder();
+            const enqueueLine = (obj: object) =>
+                enqueueNdjsonLine(controller, encoder, obj);
+
+            try {
+                enqueueLine({ type: "meta", n: payrollIds.length });
+
+                const failures: PayrollPdfFailure[] = [];
+                const pdfEntries = await collectPdfEntries({
+                    payrollIds,
+                    metaById,
+                    cookie,
+                    origin,
+                    failures,
+                    onProgress: (i, n, workerName) => {
+                        enqueueLine({ type: "progress", i, n, workerName });
+                    },
+                });
+
+                const zipName = createZipFilename({
+                    periodStart: periodStartForZipLabel,
+                    periodEnd: periodEndForZipLabel,
+                    partial: failures.length > 0,
+                });
+
+                const zip = archiver("zip", { zlib: { level: 9 } });
+
+                zip.on("data", (chunk: Buffer) => {
+                    enqueueLine({
+                        type: "zip",
+                        data: chunk.toString("base64"),
+                    });
+                });
+
+                await new Promise<void>((resolve, reject) => {
+                    zip.on("end", () => resolve());
+                    zip.on("error", reject);
+                    zip.on("warning", reject);
+                    void (async () => {
+                        try {
+                            for (const entry of pdfEntries) {
+                                zip.append(Readable.from(entry.buffer), {
+                                    name: entry.name,
+                                });
+                            }
+                            if (failures.length > 0) {
+                                const report = formatDownloadErrorsReport(failures);
+                                zip.append(report, {
+                                    name: "_download-errors.txt",
+                                });
+                            }
+                            await zip.finalize();
+                        } catch (e) {
+                            reject(e);
+                        }
+                    })();
+                });
+
+                enqueueLine({
+                    type: "done",
+                    filename: zipName,
+                    failed: failures.length,
+                });
+                controller.close();
+            } catch (e) {
+                enqueueLine({
+                    type: "error",
+                    message:
+                        e instanceof Error ? e.message : "Unknown error",
+                });
+                try {
+                    controller.close();
+                } catch {
+                    /* already closed */
+                }
+            }
+        },
+    });
+}
+
 export async function POST(req: NextRequest) {
     let parsed: Body;
     try {
@@ -126,83 +310,63 @@ export async function POST(req: NextRequest) {
     const ends = payrollMeta.map((m) => isoDate(m.periodEnd));
 
     const periodStartForZip =
-        starts.length > 0 ? starts.slice().sort()[0]! : new Date().toISOString().slice(0, 10);
+        starts.length > 0
+            ? starts.slice().sort()[0]!
+            : new Date().toISOString().slice(0, 10);
     const periodEndForZip =
-        ends.length > 0 ? ends.slice().sort().at(-1)! : new Date().toISOString().slice(0, 10);
+        ends.length > 0
+            ? ends.slice().sort().at(-1)!
+            : new Date().toISOString().slice(0, 10);
 
     const periodStartForZipLabel = isoToDdmmyyyy(periodStartForZip);
     const periodEndForZipLabel = isoToDdmmyyyy(periodEndForZip);
 
     const cookie = req.headers.get("cookie") ?? "";
     const origin = req.nextUrl.origin;
+    const progressNdjson =
+        req.nextUrl.searchParams.get("progress") === "1";
+
+    if (progressNdjson) {
+        const stream = createNdjsonZipResponseStream({
+            payrollIds,
+            metaById,
+            cookie,
+            origin,
+            periodStartForZipLabel,
+            periodEndForZipLabel,
+        });
+
+        return new Response(stream, {
+            headers: {
+                "Content-Type": "application/x-ndjson",
+                "Cache-Control": "no-store",
+            },
+        });
+    }
 
     const failures: PayrollPdfFailure[] = [];
-    const pdfEntries: PayrollPdfEntry[] = [];
-    const seenNames = new Map<string, number>();
-
-    for (const id of payrollIds) {
-        try {
-            const url = `${origin}/api/payroll/${id}/pdf?mode=summary`;
-            const res = await fetch(url, {
-                headers: cookie ? { cookie } : undefined,
-                cache: "no-store",
-            });
-            if (!res.ok) {
-                const reason = `PDF failed (${res.status})`;
-                failures.push({ payrollId: id, reason });
-                console.warn(`[payroll/download-zip] Failed to fetch PDF`, {
-                    payrollId: id,
-                    status: res.status,
-                });
-                continue;
-            }
-            const buf = Buffer.from(await res.arrayBuffer());
-
-            const meta = metaById.get(id);
-            const workerName = meta?.workerName ?? `payroll-${id}`;
-            const periodStart = isoToDdmmyyyy(isoDate(meta?.periodStart ?? ""));
-            const periodEnd = isoToDdmmyyyy(isoDate(meta?.periodEnd ?? ""));
-            const baseName = createPayrollPdfBaseName({
-                workerName,
-                periodStart,
-                periodEnd,
-            });
-            const uniqueName = makeUniqueZipEntryName(baseName, seenNames);
-            if (uniqueName !== baseName) {
-                console.warn(`[payroll/download-zip] Duplicate filename collision`, {
-                    payrollId: id,
-                    baseName,
-                    uniqueName,
-                });
-            }
-
-            pdfEntries.push({
-                name: uniqueName,
-                buffer: buf,
-            });
-        } catch (error) {
-            const reason =
-                error instanceof Error ? error.message : "Unknown error";
-            failures.push({ payrollId: id, reason });
-            console.warn(`[payroll/download-zip] PDF processing error`, {
-                payrollId: id,
-                reason,
-            });
-        }
-    }
+    const pdfEntries = await collectPdfEntries({
+        payrollIds,
+        metaById,
+        cookie,
+        origin,
+        failures,
+    });
 
     const stream = new ReadableStream<Uint8Array>({
         start(controller) {
             const zip = archiver("zip", { zlib: { level: 9 } });
 
-            zip.on("data", (chunk: Buffer) => controller.enqueue(new Uint8Array(chunk)));
+            zip.on("data", (chunk: Buffer) =>
+                controller.enqueue(new Uint8Array(chunk)),
+            );
             zip.on("end", () => controller.close());
             zip.on("warning", (err: unknown) => {
                 controller.error(err);
             });
             zip.on("error", (err: unknown) => controller.error(err));
 
-            (async () => {
+            void (async () => {
                 try {
                     for (const entry of pdfEntries) {
                         zip.append(Readable.from(entry.buffer), {
