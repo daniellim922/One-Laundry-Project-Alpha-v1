@@ -1,15 +1,15 @@
 import { expect, test, type Page } from "@playwright/test";
 
 const NO_DRAFT_SKIP_REASON =
-    "No Draft payroll in the database; seed the database (npm run db:seed) or create a Draft payroll to exercise this flow.";
+    "No Draft payroll in the database; the built-in seed contains only Settled payrolls, so create a Draft payroll to exercise this flow.";
 
 /**
  * When at least one payroll has status `Draft`, these tests run the real assertions.
  * If none appears within the timeout (empty DB, all Settled, etc.), tests **skip** so
  * `npm run test:e2e` still exits successfully.
  *
- * Fresh seed (`npm run db:seed`) creates Draft payrolls for the first and 32nd workers
- * in db/seed/payrolls.ts.
+ * Fresh seed (`npm run db:seed`) creates only Settled payrolls through December 2025.
+ * Create a Draft payroll manually before using this spec to exercise settlement flows.
  */
 async function requireDraftPayrollRowOrSkip(page: Page) {
     const draftRows = page.getByRole("row").filter({ hasText: "Draft" });

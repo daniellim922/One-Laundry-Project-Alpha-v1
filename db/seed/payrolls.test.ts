@@ -18,12 +18,6 @@ import {
 } from "./minimum-hours";
 import { payrolls } from "./payrolls";
 import { seedPeriods } from "./periods";
-import {
-    getSeedAdvanceRequestStatus,
-    getSeedInstallmentStatus,
-    getSeedPayrollStatus,
-    getSeedTimesheetStatus,
-} from "./settlement-state";
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
 import {
@@ -355,45 +349,24 @@ describe("phase 3 quarterly advance cohort", () => {
 });
 
 describe("phase 4 historical settlement states", () => {
-    it("seeds all remaining payroll periods as Settled", () => {
-        for (const payroll of payrolls) {
-            const period = seedPeriods.find(
-                (candidate) => candidate.periodStart === payroll.periodStart,
-            );
-
-            expect(period).toBeDefined();
-            expect(payroll.status).toBe(getSeedPayrollStatus(period!));
-        }
+    it("seeds no Draft payrolls in the trimmed historical dataset", () => {
+        expect(payrolls.every((payroll) => payroll.status === "Settled")).toBe(true);
     });
 
     it("marks all remaining timesheets paid", () => {
-        for (const timesheet of timesheets) {
-            const period = seedPeriods.find((candidate) =>
-                timesheet.dateIn.startsWith(candidate.key),
-            );
-
-            expect(period).toBeDefined();
-            expect(timesheet.status).toBe(getSeedTimesheetStatus(period!));
-        }
+        expect(
+            timesheets.every((timesheet) => timesheet.status === "Timesheet Paid"),
+        ).toBe(true);
     });
 
-    it("marks settled-period advance installments paid and fully repaid requests paid", () => {
+    it("marks all seeded advance installments and requests paid", () => {
         for (const advance of advances) {
-            const expectedInstallmentStatuses = advance.repaymentTerms.map((term) => {
-                const period = seedPeriods.find((candidate) =>
-                    term.installmentDate.startsWith(candidate.key),
-                );
-
-                expect(period).toBeDefined();
-                return getSeedInstallmentStatus(period!);
-            });
-
-            expect(advance.repaymentTerms.map((term) => term.status)).toEqual(
-                expectedInstallmentStatuses,
-            );
-            expect(advance.status).toBe(
-                getSeedAdvanceRequestStatus(expectedInstallmentStatuses),
-            );
+            expect(
+                advance.repaymentTerms.every(
+                    (term) => term.status === "Installment Paid",
+                ),
+            ).toBe(true);
+            expect(advance.status).toBe("Advance Paid");
         }
     });
 });
