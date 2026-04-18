@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { AlertTriangle, ChevronDown, Loader2 } from "lucide-react";
 
 import {
     StepProgressPanel,
@@ -29,10 +29,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 
-import {
-    settlePayroll,
-    revertPayroll,
-} from "../command-api";
+import { settlePayroll, revertPayroll } from "../command-api";
 import type { RevertPreviewRow } from "@/services/payroll/get-revert-preview";
 import { cn } from "@/lib/utils";
 import {
@@ -190,6 +187,26 @@ export function PayrollStepProgress({
                         The following changes will be applied:
                     </DialogDescription>
                 </DialogHeader>
+                <div
+                    role="alert"
+                    className="shrink-0 flex gap-2 rounded-md border border-destructive/60 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    <AlertTriangle
+                        className="mt-0.5 size-4 shrink-0"
+                        aria-hidden
+                    />
+                    <p>
+                        <span className="font-semibold">Warning: </span>
+                        Reverting may break or desynchronize information that
+                        depends on this payroll being settled
+                        <br />
+                        (for example reports, exports, or linked timesheet or
+                        payment records).
+                        <br />
+                        <span className="font-bold">
+                            ONLY CONTINUE IF YOU UNDERSTAND THE IMPACT.
+                        </span>
+                    </p>
+                </div>
                 <div className="min-h-0 flex-1 overflow-y-auto">
                     {previewLoading ? (
                         <div className="flex items-center gap-2 py-4">
@@ -199,7 +216,9 @@ export function PayrollStepProgress({
                             </span>
                         </div>
                     ) : previewError ? (
-                        <p className="text-sm text-destructive">{previewError}</p>
+                        <p className="text-sm text-destructive">
+                            {previewError}
+                        </p>
                     ) : previewData ? (
                         <RevertPreviewTable rows={previewData} />
                     ) : null}
@@ -252,6 +271,20 @@ export function PayrollStepProgress({
                         Are you sure you want to settle this payroll?
                     </DialogDescription>
                 </DialogHeader>
+                <div
+                    role="alert"
+                    className="flex gap-2 rounded-md border border-destructive/60 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    <AlertTriangle
+                        className="mt-0.5 size-4 shrink-0"
+                        aria-hidden
+                    />
+                    <p>
+                        <span className="font-semibold">Warning: </span>
+                        Only settle after workers have been paid and at least
+                        <span className="font-bold"> TWO WEEKS </span> have
+                        passed since payment.
+                    </p>
+                </div>
                 {error ? (
                     <p className="text-sm text-destructive">{error}</p>
                 ) : null}
@@ -316,8 +349,12 @@ function RevertPreviewExpandedLines({ row }: { row: RevertPreviewRow }) {
                 <TableBody>
                     {row.timesheetLines.map((line) => (
                         <TableRow key={line.id}>
-                            <TableCell>{formatEnGbDmyNumericFromCalendar(line.dateIn)}</TableCell>
-                            <TableCell>{formatEnGbDmyNumericFromCalendar(line.dateOut)}</TableCell>
+                            <TableCell>
+                                {formatEnGbDmyNumericFromCalendar(line.dateIn)}
+                            </TableCell>
+                            <TableCell>
+                                {formatEnGbDmyNumericFromCalendar(line.dateOut)}
+                            </TableCell>
                             <TableCell>{localTimeHm(line.timeIn)}</TableCell>
                             <TableCell>{localTimeHm(line.timeOut)}</TableCell>
                             <TableCell>
@@ -344,7 +381,9 @@ function RevertPreviewExpandedLines({ row }: { row: RevertPreviewRow }) {
                         <TableRow key={line.id}>
                             <TableCell>
                                 {line.repaymentDate
-                                    ? formatEnGbDmyNumericFromCalendar(line.repaymentDate)
+                                    ? formatEnGbDmyNumericFromCalendar(
+                                          line.repaymentDate,
+                                      )
                                     : "—"}
                             </TableCell>
                             <TableCell>{`$${line.amount}`}</TableCell>
@@ -441,9 +480,7 @@ function RevertPreviewTable({ rows }: { rows: RevertPreviewRow[] }) {
                                         <Badge
                                             variant="secondary"
                                             className={cn(
-                                                statusToneMap[
-                                                    row.futureStatus
-                                                ],
+                                                statusToneMap[row.futureStatus],
                                             )}>
                                             {row.futureStatus}
                                         </Badge>
@@ -451,9 +488,7 @@ function RevertPreviewTable({ rows }: { rows: RevertPreviewRow[] }) {
                                 </TableRow>
                                 {expanded ? (
                                     <TableRow className="hover:bg-transparent">
-                                        <TableCell
-                                            colSpan={3}
-                                            className="p-0">
+                                        <TableCell colSpan={3} className="p-0">
                                             <div className="max-h-96 overflow-y-auto border-t bg-muted/40 px-4 py-3">
                                                 <RevertPreviewExpandedLines
                                                     row={row}

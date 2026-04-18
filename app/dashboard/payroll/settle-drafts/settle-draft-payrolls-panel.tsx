@@ -4,6 +4,7 @@ import * as React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { RowSelectionState } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
+import { AlertTriangle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -214,6 +215,20 @@ export function SettleDraftPayrollsPanel() {
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+                <div
+                    role="alert"
+                    className="flex gap-2 rounded-md border border-destructive/60 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    <AlertTriangle
+                        className="mt-0.5 size-4 shrink-0"
+                        aria-hidden
+                    />
+                    <p>
+                        <span className="font-semibold">Warning: </span>
+                        Only settle after workers have been paid and at least
+                        <span className="font-bold"> TWO WEEKS </span>
+                        have passed since payment.
+                    </p>
+                </div>
                 <DataTable
                     columns={selectableColumns}
                     data={drafts as PayrollWithWorker[]}
