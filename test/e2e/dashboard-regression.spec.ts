@@ -19,6 +19,9 @@ test.describe("Dashboard regression smoke", () => {
                 name: "Dashboard access now requires sign-in",
             }),
         ).toBeVisible();
+        await expect(
+            page.getByRole("button", { name: "Email magic link" }),
+        ).toBeVisible();
     });
 
     test("dashboard root redirects into the public login boundary", async ({
