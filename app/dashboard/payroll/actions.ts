@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireCurrentDashboardAdminUser } from "@/app/dashboard/_shared/auth";
+import { requireCurrentDashboardUser } from "@/app/dashboard/_shared/auth";
 import {
     synchronizeWorkerDraftPayrolls,
     synchronizeWorkerDraftPayrollsInTx,
@@ -20,7 +20,7 @@ function toDateString(val: string): string {
 }
 
 export async function createPayroll(formData: FormData) {
-    await requireCurrentDashboardAdminUser();
+    await requireCurrentDashboardUser();
 
     const result = await createPayrollRecord({
         workerId: (formData.get("workerId") as string) ?? "",
@@ -38,7 +38,7 @@ export async function createPayroll(formData: FormData) {
 }
 
 export async function createPayrolls(formData: FormData) {
-    await requireCurrentDashboardAdminUser();
+    await requireCurrentDashboardUser();
 
     const result = await createPayrollRecords({
         workerIds: formData.getAll("workerId") as string[],
@@ -58,7 +58,7 @@ export async function createPayrolls(formData: FormData) {
 }
 
 export async function updatePayroll(payrollId: string, formData: FormData) {
-    await requireCurrentDashboardAdminUser();
+    await requireCurrentDashboardUser();
 
     const result = await updatePayrollRecord({
         payrollId,

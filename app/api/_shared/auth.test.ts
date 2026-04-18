@@ -1,41 +1,29 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { requireApiAdminUser } from "@/app/api/_shared/auth";
+import { requireApiUser } from "@/app/api/_shared/auth";
 
-describe("requireApiAdminUser", () => {
-    const originalAdminEmail = process.env.AUTH_ADMIN_EMAIL;
-
-    afterEach(() => {
-        process.env.AUTH_ADMIN_EMAIL = originalAdminEmail;
-    });
-
+describe("requireApiUser", () => {
     it("returns 401 when no authenticated user is present", () => {
-        const response = requireApiAdminUser(null);
+        const response = requireApiUser(null);
 
         expect(response).toBeInstanceOf(Response);
         expect((response as Response).status).toBe(401);
     });
 
-    it("returns 401 when the authenticated user is not the configured admin", () => {
-        process.env.AUTH_ADMIN_EMAIL = "admin@example.com";
-
-        const response = requireApiAdminUser({
-            email: "worker@example.com",
-        });
+    it("returns 401 when the user has no email", () => {
+        const response = requireApiUser({ email: null });
 
         expect(response).toBeInstanceOf(Response);
         expect((response as Response).status).toBe(401);
     });
 
-    it("returns the normalized admin email for the configured admin user", () => {
-        process.env.AUTH_ADMIN_EMAIL = "Admin@Example.com";
-
+    it("returns the normalized email for an authenticated user", () => {
         expect(
-            requireApiAdminUser({
-                email: "admin@example.com",
+            requireApiUser({
+                email: "Operator@Example.com",
             }),
         ).toEqual({
-            email: "admin@example.com",
+            email: "operator@example.com",
         });
     });
 });

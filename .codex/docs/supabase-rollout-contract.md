@@ -15,8 +15,8 @@ This contract defines how One Laundry moves from the local Supabase-first workfl
 
 - `DATABASE_URL` is the single connection string for the Next.js app, `drizzle-kit push`, wipe, and seed (`lib/db.ts` and `drizzle.config.ts`).
 - Local Supabase may set it to `postgresql://postgres:postgres@127.0.0.1:54322/postgres`.
-- Runtime auth requires `AUTH_ADMIN_EMAIL`, `NEXT_PUBLIC_SUPABASE_URL`, and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-- Admin bootstrap additionally requires `SUPABASE_SERVICE_ROLE_KEY` so `npm run auth:bootstrap-admin` can create or repair the single allowed auth user before sign-in testing.
+- Runtime auth requires `NEXT_PUBLIC_SUPABASE_URL` and the Supabase publishable (anon) key for the browser and server clients.
+- Create sign-in users in Supabase Studio or via the Auth Admin API when self-service signup is disabled; `SUPABASE_SERVICE_ROLE_KEY` is for server-side tooling and Auth Admin API calls, not for end-user sign-in.
 
 ## Schema ownership
 
@@ -28,7 +28,7 @@ This contract defines how One Laundry moves from the local Supabase-first workfl
 ## Launch Prerequisites
 
 - Hosted Supabase project exists with a production `DATABASE_URL` prepared for the app and tooling.
-- Auth environment variables are prepared for the deployed app, and the release operator has access to run `npm run auth:bootstrap-admin` with the production values when needed.
+- Auth environment variables are prepared for the deployed app, and operators know how to create or invite dashboard users in the hosted Supabase project when signup is disabled.
 - `db/schema.ts` on the release branch is reviewed for intended DDL impact (including data loss) before push.
 - Local verification has passed on the current branch with `npm run test` and any feature checks required by the release.
 - Seed policy is explicit: deterministic seed data is for local and test environments only, not for production.
@@ -47,8 +47,8 @@ This contract defines how One Laundry moves from the local Supabase-first workfl
 
 - Open the landing page and `/login`, then confirm an unauthenticated request to `/dashboard` redirects back to `/login`.
 - Load workers, timesheets, payroll, advances, and expenses screens without database connection errors.
-- Request a magic link for `AUTH_ADMIN_EMAIL`, complete `/auth/callback`, and confirm the browser returns to the requested dashboard route.
-- Confirm one protected `/api/*` request returns `401` before sign-in and succeeds after the admin session is established.
+- Sign in at `/login` with a configured user email and password, then confirm the browser returns to the requested dashboard route when redirected from a protected URL.
+- Confirm one protected `/api/*` request returns `401` before sign-in and succeeds after an authenticated session is established.
 - Create or update one low-risk record in a non-production-like validation environment before repeating in production if write verification is required.
 - Generate one payroll PDF or advance PDF to confirm the app runtime can read the production dataset.
 - Confirm recent payroll rows, timesheet rows, and worker rows appear in the dashboard as expected after the release.

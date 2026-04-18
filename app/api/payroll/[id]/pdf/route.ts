@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { chromium } from "playwright";
 import { eq } from "drizzle-orm";
 
-import { requireCurrentApiAdminUser } from "@/app/api/_shared/auth";
+import { requireCurrentApiUser } from "@/app/api/_shared/auth";
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payrollTable";
 import { workerTable } from "@/db/tables/workerTable";
@@ -29,7 +29,7 @@ export async function GET(
     req: NextRequest,
     ctx: { params: Promise<{ id: string }> },
 ) {
-    const auth = await requireCurrentApiAdminUser();
+    const auth = await requireCurrentApiUser();
     if (auth instanceof Response) {
         return auth;
     }

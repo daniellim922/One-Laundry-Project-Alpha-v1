@@ -1,40 +1,72 @@
 import { createServerClient } from "@supabase/ssr";
-import { type NextRequest, NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
-import {
-    SUPABASE_ANON_KEY_ENV_NAME,
-    SUPABASE_URL_ENV_NAME,
-} from "@/lib/supabase/client";
+export async function updateSession(request: NextRequest) {
+    let supabaseResponse = NextResponse.next({
+        request,
+    });
 
-function getRequiredEnvVar(name: string, env: Record<string, string | undefined>) {
-    const value = env[name];
-
-    if (!value?.trim()) {
-        throw new Error(`${name} is not set in the environment variables`);
-    }
-
-    return value;
-}
-
-export function createSupabaseProxyClient(
-    request: NextRequest,
-    response: NextResponse,
-    env: Record<string, string | undefined> = process.env,
-) {
-    return createServerClient(
-        getRequiredEnvVar(SUPABASE_URL_ENV_NAME, env),
-        getRequiredEnvVar(SUPABASE_ANON_KEY_ENV_NAME, env),
+    // With Fluid compute, don't put this client in a global environment
+    // variable. Always create a new one on each request.
+    const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
         {
             cookies: {
                 getAll() {
                     return request.cookies.getAll();
                 },
-                setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value, options }) => {
-                        response.cookies.set(name, value, options);
+                setAll(cookiesToSet, headers) {
+                    cookiesToSet.forEach(({ name, value }) =>
+                        request.cookies.set(name, value),
+                    );
+                    supabaseResponse = NextResponse.next({
+                        request,
                     });
+                    cookiesToSet.forEach(({ name, value, options }) =>
+                        supabaseResponse.cookies.set(name, value, options),
+                    );
+                    Object.entries(headers).forEach(([key, value]) =>
+                        supabaseResponse.headers.set(key, value),
+                    );
                 },
             },
         },
     );
+
+    // Do not run code between createServerClient and
+    // supabase.auth.getClaims(). A simple mistake could make it very hard to debug
+    // issues with users being randomly logged out.
+
+    // IMPORTANT: If you remove getClaims() and you use server-side rendering
+    // with the Supabase client, your users may be randomly logged out.
+    const { data } = await supabase.auth.getClaims();
+
+    const user = data?.claims;
+
+    if (
+        !user &&
+        !request.nextUrl.pathname.startsWith("/login") &&
+        !request.nextUrl.pathname.startsWith("/auth")
+    ) {
+        // no user, potentially respond by redirecting the user to the login page
+        const url = request.nextUrl.clone();
+        url.pathname = "/login";
+        return NextResponse.redirect(url);
+    }
+
+    // IMPORTANT: You *must* return the supabaseResponse object as it is. If you're
+    // creating a new response object with NextResponse.next() make sure to:
+    // 1. Pass the request in it, like so:
+    //    const myNewResponse = NextResponse.next({ request })
+    // 2. Copy over the cookies, like so:
+    //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
+    // 3. Change the myNewResponse object to fit your needs, but avoid changing
+    //    the cookies!
+    // 4. Finally:
+    //    return myNewResponse
+    // If this is not done, you may be causing the browser and server to go out
+    // of sync and terminate the user's session prematurely!
+
+    return supabaseResponse;
 }

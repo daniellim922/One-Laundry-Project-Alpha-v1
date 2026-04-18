@@ -20,7 +20,7 @@ test.describe("Dashboard regression smoke", () => {
             }),
         ).toBeVisible();
         await expect(
-            page.getByRole("button", { name: "Email magic link" }),
+            page.getByRole("button", { name: "Sign in" }),
         ).toBeVisible();
     });
 

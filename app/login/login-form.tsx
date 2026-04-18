@@ -1,24 +1,29 @@
 "use client";
 
-import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useActionState, useTransition } from "react";
+import * as z from "zod";
 
-import {
-    initialLoginActionState,
-    requestMagicLinkAction,
-} from "@/app/login/actions";
+import { signInWithPasswordAction } from "@/app/login/actions";
+import { initialLoginActionState } from "@/app/login/login-action-state";
 import { Button } from "@/components/ui/button";
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
 
-function SubmitButton() {
-    const { pending } = useFormStatus();
+const loginFormSchema = z.object({
+    email: z.email("Enter a valid email address."),
+    password: z.string().min(1, "Password is required."),
+});
 
-    return (
-        <Button type="submit" className="w-full sm:w-auto" disabled={pending}>
-            {pending ? "Sending link..." : "Email magic link"}
-        </Button>
-    );
-}
+type LoginFormValues = z.infer<typeof loginFormSchema>;
 
 export function LoginForm({
     authError,
@@ -30,9 +35,28 @@ export function LoginForm({
     redirectTo: string;
 }) {
     const [state, formAction] = useActionState(
-        requestMagicLinkAction,
+        signInWithPasswordAction,
         initialLoginActionState,
     );
+    const [isPending, startTransition] = useTransition();
+
+    const form = useForm<LoginFormValues>({
+        resolver: zodResolver(loginFormSchema),
+        defaultValues: {
+            email: "",
+            password: "",
+        },
+    });
+
+    function onSubmit(values: LoginFormValues) {
+        startTransition(() => {
+            const formData = new FormData();
+            formData.set("email", values.email);
+            formData.set("password", values.password);
+            formData.set("redirectTo", redirectTo);
+            formAction(formData);
+        });
+    }
 
     const toneClassName =
         state.status === "error" || authError
@@ -40,43 +64,74 @@ export function LoginForm({
             : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
 
     return (
-        <form action={formAction} className="space-y-4 rounded-2xl border p-6">
-            <input type="hidden" name="redirectTo" value={redirectTo} />
-            <div className="space-y-2">
-                <label
-                    htmlFor="email"
-                    className="text-sm font-medium text-foreground">
-                    Admin email
-                </label>
-                <Input
-                    id="email"
+        <Form {...form}>
+            <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4 rounded-2xl border p-6">
+                <FormField
+                    control={form.control}
                     name="email"
-                    type="email"
-                    placeholder="admin@example.com"
-                    autoComplete="email"
-                    required
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                                <Input
+                                    type="email"
+                                    autoComplete="email"
+                                    placeholder="you@company.com"
+                                    disabled={isPending}
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
                 />
-            </div>
-            <SubmitButton />
-            {authError ? (
-                <p className={`rounded-md border px-3 py-2 text-sm ${toneClassName}`}>
-                    {authError === "callback"
-                        ? "The sign-in link could not be completed. Request a new one and try again."
-                        : authError === "forbidden"
-                          ? "That session is not allowed to access the dashboard."
-                          : authError}
-                </p>
-            ) : null}
-            {systemError ? (
-                <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                    {systemError}
-                </p>
-            ) : null}
-            {state.status !== "idle" && state.message ? (
-                <p className={`rounded-md border px-3 py-2 text-sm ${toneClassName}`}>
-                    {state.message}
-                </p>
-            ) : null}
-        </form>
+                <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                                <Input
+                                    type="password"
+                                    autoComplete="current-password"
+                                    placeholder="Password"
+                                    disabled={isPending}
+                                    {...field}
+                                />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <Button
+                    type="submit"
+                    className="w-full sm:w-auto"
+                    disabled={isPending}>
+                    {isPending ? "Signing in..." : "Sign in"}
+                </Button>
+                {authError ? (
+                    <p
+                        className={`rounded-md border px-3 py-2 text-sm ${toneClassName}`}>
+                        {authError === "callback"
+                            ? "The sign-in session could not be completed. Try again."
+                            : authError}
+                    </p>
+                ) : null}
+                {systemError ? (
+                    <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                        {systemError}
+                    </p>
+                ) : null}
+                {state.status === "error" && state.message ? (
+                    <p
+                        className={`rounded-md border px-3 py-2 text-sm ${toneClassName}`}>
+                        {state.message}
+                    </p>
+                ) : null}
+            </form>
+        </Form>
     );
 }

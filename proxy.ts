@@ -1,29 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
-
-import { isAdminUser } from "@/lib/auth/admin";
-import { buildLoginRedirectUrl } from "@/lib/auth/redirect";
-import { createSupabaseProxyClient } from "@/lib/supabase/proxy";
+import { type NextRequest } from "next/server";
+import { updateSession } from "@/lib/supabase/proxy";
 
 export async function proxy(request: NextRequest) {
-    try {
-        const response = NextResponse.next();
-        const supabase = createSupabaseProxyClient(request, response);
-        const {
-            data: { user },
-        } = await supabase.auth.getUser();
-
-        if (isAdminUser(user)) {
-            return response;
-        }
-    } catch {
-        // Fall through to the public login boundary when auth is unavailable.
-    }
-
-    const redirectTo = `${request.nextUrl.pathname}${request.nextUrl.search}`;
-
-    return NextResponse.redirect(buildLoginRedirectUrl(request.url, redirectTo));
+    return await updateSession(request);
 }
 
 export const config = {
-    matcher: ["/dashboard/:path*"],
+    matcher: [
+        /*
+         * Match all request paths except for the ones starting with:
+         * - _next/static (static files)
+         * - _next/image (image optimization files)
+         * - favicon.ico (favicon file)
+         * Feel free to modify this pattern to include more paths.
+         */
+        "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    ],
 };

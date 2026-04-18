@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-    createSupabaseServerClient: vi.fn(),
+    createClient: vi.fn(),
     listPayrollsForDownload: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
-    createSupabaseServerClient: (...args: unknown[]) =>
-        mocks.createSupabaseServerClient(...args),
+    createClient: (...args: unknown[]) =>
+        mocks.createClient(...args),
 }));
 
 vi.mock("@/services/payroll/list-payrolls-for-download", () => ({
@@ -20,19 +20,18 @@ import { GET } from "@/app/api/payroll/download-selection/route";
 describe("GET /api/payroll/download-selection", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.createSupabaseServerClient.mockResolvedValue({
+        mocks.createClient.mockResolvedValue({
             auth: {
                 getUser: vi.fn().mockResolvedValue({
                     data: {
                         user: {
-                            email: "admin@example.com",
+                            email: "operator@example.com",
                         },
                     },
                     error: null,
                 }),
             },
         });
-        process.env.AUTH_ADMIN_EMAIL = "admin@example.com";
     });
 
     it("returns download selection rows", async () => {
@@ -90,7 +89,7 @@ describe("GET /api/payroll/download-selection", () => {
     });
 
     it("returns 401 when there is no authenticated session", async () => {
-        mocks.createSupabaseServerClient.mockResolvedValue({
+        mocks.createClient.mockResolvedValue({
             auth: {
                 getUser: vi.fn().mockResolvedValue({
                     data: { user: null },
@@ -112,13 +111,13 @@ describe("GET /api/payroll/download-selection", () => {
         expect(mocks.listPayrollsForDownload).not.toHaveBeenCalled();
     });
 
-    it("returns 401 when the authenticated user is not the configured admin", async () => {
-        mocks.createSupabaseServerClient.mockResolvedValue({
+    it("returns 401 when the authenticated user has no email", async () => {
+        mocks.createClient.mockResolvedValue({
             auth: {
                 getUser: vi.fn().mockResolvedValue({
                     data: {
                         user: {
-                            email: "worker@example.com",
+                            email: null,
                         },
                     },
                     error: null,

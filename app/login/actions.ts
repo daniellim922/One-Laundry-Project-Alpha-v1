@@ -1,84 +1,62 @@
 "use server";
 
-import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
-import { requestMagicLinkSignIn } from "@/lib/auth/magic-link";
+import { signInWithPassword } from "@/lib/auth/login";
 import { sanitizeRedirectTo } from "@/lib/auth/redirect";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
-export type LoginActionState = {
-    status: "idle" | "success" | "error";
-    message?: string;
-    email?: string;
-};
+import type { LoginActionState } from "./login-action-state";
 
-export const initialLoginActionState: LoginActionState = {
-    status: "idle",
-};
+const GENERIC_SIGN_IN_ERROR = "Invalid email or password.";
 
-function getRequestOrigin(headerList: Headers) {
-    const origin = headerList.get("origin");
-
-    if (origin) {
-        return origin;
-    }
-
-    const forwardedHost = headerList.get("x-forwarded-host");
-    const host = forwardedHost ?? headerList.get("host");
-
-    if (!host) {
-        throw new Error("Unable to determine request origin for auth callback");
-    }
-
-    const protocol =
-        headerList.get("x-forwarded-proto") ??
-        (host.startsWith("localhost") || host.startsWith("127.0.0.1")
-            ? "http"
-            : "https");
-
-    return `${protocol}://${host}`;
-}
-
-export async function requestMagicLinkAction(
+export async function signInWithPasswordAction(
     _previousState: LoginActionState,
     formData: FormData,
 ): Promise<LoginActionState> {
     const email = String(formData.get("email") ?? "");
+    const password = String(formData.get("password") ?? "");
     const redirectTo = sanitizeRedirectTo(
         String(formData.get("redirectTo") ?? ""),
     );
 
+    if (!email.trim()) {
+        return {
+            status: "error",
+            message: "Email is required.",
+        };
+    }
+
+    if (!password.trim()) {
+        return {
+            status: "error",
+            message: "Password is required.",
+        };
+    }
+
     try {
-        const supabase = await createSupabaseServerClient();
-        const headerList = await headers();
-        const result = await requestMagicLinkSignIn({
+        const supabase = await createClient();
+        const result = await signInWithPassword({
             client: supabase,
             email,
-            origin: getRequestOrigin(headerList),
-            redirectTo,
+            password,
         });
 
         if ("error" in result) {
             return {
                 status: "error",
-                message: result.error,
+                message: GENERIC_SIGN_IN_ERROR,
             };
         }
-
-        return {
-            status: "success",
-            email: result.email,
-            message: `Magic link sent to ${result.email}. Check your inbox to continue.`,
-        };
     } catch (error) {
         const message =
-            error instanceof Error
-                ? error.message
-                : "Unable to send the sign-in link.";
+            error instanceof Error ? error.message : "Unable to sign in.";
 
         return {
             status: "error",
             message,
         };
     }
+
+    redirect(redirectTo);
 }

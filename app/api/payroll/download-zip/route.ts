@@ -3,7 +3,7 @@ import archiver from "archiver";
 import { Readable } from "node:stream";
 import { eq, inArray } from "drizzle-orm";
 
-import { requireCurrentApiAdminUser } from "@/app/api/_shared/auth";
+import { requireCurrentApiUser } from "@/app/api/_shared/auth";
 import { apiError } from "@/app/api/_shared/responses";
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payrollTable";
@@ -271,7 +271,7 @@ function createNdjsonZipResponseStream(args: {
 }
 
 export async function POST(req: NextRequest) {
-    const auth = await requireCurrentApiAdminUser();
+    const auth = await requireCurrentApiUser();
     if (auth instanceof Response) {
         return auth;
     }

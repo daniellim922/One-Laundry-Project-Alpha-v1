@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import type { SelectPayroll } from "@/db/tables/payroll/payrollTable";
+import type { SelectPayroll } from "@/db/tables/payrollTable";
 import Link from "next/link";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {

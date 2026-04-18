@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
     revalidatePath: vi.fn(),
     synchronizeWorkerDraftPayrolls: vi.fn(),
-    createSupabaseServerClient: vi.fn(),
+    createClient: vi.fn(),
     db: {
         select: vi.fn(),
         update: vi.fn(),
@@ -15,8 +15,8 @@ vi.mock("next/cache", () => ({
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
-    createSupabaseServerClient: (...args: unknown[]) =>
-        mocks.createSupabaseServerClient(...args),
+    createClient: (...args: unknown[]) =>
+        mocks.createClient(...args),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -43,19 +43,18 @@ function mockSelectResolved(rows: unknown[]) {
 describe("updateTimesheetEntry", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.createSupabaseServerClient.mockResolvedValue({
+        mocks.createClient.mockResolvedValue({
             auth: {
                 getUser: vi.fn().mockResolvedValue({
                     data: {
                         user: {
-                            email: "admin@example.com",
+                            email: "operator@example.com",
                         },
                     },
                     error: null,
                 }),
             },
         });
-        process.env.AUTH_ADMIN_EMAIL = "admin@example.com";
         mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({ success: true });
     });
 

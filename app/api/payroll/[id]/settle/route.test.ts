@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-    requireCurrentApiAdminUser: vi.fn(),
+    requireCurrentApiUser: vi.fn(),
     revalidateTransportPaths: vi.fn(),
     settlePayroll: vi.fn(),
 }));
 
 vi.mock("@/app/api/_shared/auth", () => ({
-    requireCurrentApiAdminUser: (...args: unknown[]) =>
-        mocks.requireCurrentApiAdminUser(...args),
+    requireCurrentApiUser: (...args: unknown[]) =>
+        mocks.requireCurrentApiUser(...args),
 }));
 
 vi.mock("@/app/api/_shared/revalidate", () => ({
@@ -25,8 +25,8 @@ import { POST } from "@/app/api/payroll/[id]/settle/route";
 describe("POST /api/payroll/[id]/settle", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.requireCurrentApiAdminUser.mockResolvedValue({
-            email: "admin@example.com",
+        mocks.requireCurrentApiUser.mockResolvedValue({
+            email: "operator@example.com",
         });
     });
 

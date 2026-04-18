@@ -52,7 +52,7 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 | **Total pay**                        | Gross pay for the period after **Hours-not-met deduction**, before CPF and **Advance** recovery.                                                                                                                                                                                                                                                                                   | Gross (ambiguous)                                                                                           |
 | **Net pay**                          | **Total pay** minus **CPF** and the sum of outstanding **Installment** amounts in **Installment Loan** status for the period.                                                                                                                                                                                                                                                                      | Take-home (informal)                                                                                        |
 | **Synchronize worker drafts**        | Recompute all **Draft** **Payrolls** for a **Worker** from current **Employment**, **Timesheet entries**, **Payroll voucher** inputs, and **Advances**.                                                                                                                                                                                                                            | Sync, refresh                                                                                               |
-| **Reopen** (payroll)                 | Privileged action: **Settled** → **Draft** for the **whole** **Payroll** run (one worker, one run). Affected **Timesheet** entries return to **Timesheet Unpaid**. **Advance** recovery applied in that **Settled** run is **reverted** so installments return to **Installment Loan** until the run is **Settled** again. Same **Roles** that may **Settle** may **Reopen** (symmetric payroll-admin trust). | Partial reopen of one run; using **Reopen** when payout is already final in the real world without a policy |
+| **Reopen** (payroll)                 | Privileged action: **Settled** → **Draft** for the **whole** **Payroll** run (one worker, one run). Affected **Timesheet** entries return to **Timesheet Unpaid**. **Advance** recovery applied in that **Settled** run is **reverted** so installments return to **Installment Loan** until the run is **Settled** again. Same **Roles** that may **Settle** may **Reopen** (symmetric trust for payroll operators). | Partial reopen of one run; using **Reopen** when payout is already final in the real world without a policy |
 
 
 ## Salary advances
@@ -84,9 +84,8 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 | Term | Definition | Aliases to avoid |
 | ---- | ---------- | ---------------- |
 | **Landing page** | The public `/` page that introduces the product and links into the internal app. | Home dashboard |
-| **Login boundary** | The public `/login` route that fronts the protected dashboard and starts the single-admin Supabase magic-link flow. | Redirect shim, compatibility hop |
-| **Admin allowlist** | The single configured admin email (`AUTH_ADMIN_EMAIL`) that defines who may hold application access in v1. | Multi-user auth, role matrix |
-| **Admin bootstrap** | The operator command that creates or repairs the single allowed Supabase auth user before sign-in is used. | Self-service sign-up, automatic runtime creation |
+| **Login boundary** | The public `/login` route that fronts the protected dashboard and collects email and password for Supabase `signInWithPassword`. | Redirect shim, compatibility hop |
+| **Authenticated operator** | A person who has signed in with a valid Supabase Auth session (email and password); the app does not model separate roles in v1—all signed-in users share the same operational capabilities. | Multi-tenant customer, public internet user |
 
 
 ## Relationships

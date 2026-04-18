@@ -204,6 +204,15 @@ async function seed() {
 
     await seedPayrolls(insertedWorkers);
     console.log("New payroll entries created!");
+}
+
+async function main() {
+    await seed();
     process.exit(0);
 }
-seed();
+
+void main().catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(message);
+    process.exit(1);
+});

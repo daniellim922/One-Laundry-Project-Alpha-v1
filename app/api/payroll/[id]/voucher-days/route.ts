@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { requireCurrentApiAdminUser } from "@/app/api/_shared/auth";
+import { requireCurrentApiUser } from "@/app/api/_shared/auth";
 import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
 import { apiError, apiSuccess } from "@/app/api/_shared/responses";
 import { updateVoucherDays } from "@/services/payroll/update-voucher-days";
@@ -15,7 +15,7 @@ export async function PATCH(
     request: Request,
     context: { params: Promise<{ id: string }> },
 ) {
-    const auth = await requireCurrentApiAdminUser();
+    const auth = await requireCurrentApiUser();
     if (auth instanceof Response) {
         return auth;
     }

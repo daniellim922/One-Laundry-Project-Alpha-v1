@@ -2,9 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/app/login/login-form";
-import { isAdminUser } from "@/lib/auth/admin";
 import { sanitizeRedirectTo } from "@/lib/auth/redirect";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function LoginPage({
     searchParams,
@@ -24,12 +23,12 @@ export default async function LoginPage({
     let systemError: string | undefined;
 
     try {
-        const supabase = await createSupabaseServerClient();
+        const supabase = await createClient();
         const {
             data: { user },
         } = await supabase.auth.getUser();
 
-        if (isAdminUser(user)) {
+        if (user?.email?.trim()) {
             redirect(redirectTo);
         }
     } catch (error) {
@@ -43,15 +42,14 @@ export default async function LoginPage({
         <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center gap-6 px-6 py-16">
             <div className="space-y-3">
                 <p className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">
-                    Admin Access
+                    Sign in
                 </p>
                 <h1 className="text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-                    Dashboard access now requires sign-in
+                    Dashboard access requires sign-in
                 </h1>
                 <p className="max-w-2xl text-base text-muted-foreground sm:text-lg">
-                    Request a Supabase magic link with the configured admin
-                    email. After sign-in you will return to the protected page
-                    you originally requested.
+                    Sign in with your email and password. After sign-in you will
+                    return to the protected page you originally requested.
                 </p>
             </div>
             <LoginForm

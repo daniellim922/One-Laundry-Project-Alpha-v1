@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireCurrentDashboardAdminUser } from "@/app/dashboard/_shared/auth";
+import { requireCurrentDashboardUser } from "@/app/dashboard/_shared/auth";
 import {
     createAdvanceRequestRecord,
     type SaveAdvanceRequestInput,
@@ -15,7 +15,7 @@ export type CreateAdvanceRequestInput = SaveAdvanceRequestInput;
 export async function createAdvanceRequest(
     input: CreateAdvanceRequestInput,
 ): Promise<ActionResult> {
-    await requireCurrentDashboardAdminUser();
+    await requireCurrentDashboardUser();
 
     const result = await createAdvanceRequestRecord(input);
     if (!result.success) {

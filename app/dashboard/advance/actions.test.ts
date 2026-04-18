@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
     revalidatePath: vi.fn(),
     redirect: vi.fn(),
-    createSupabaseServerClient: vi.fn(),
+    createClient: vi.fn(),
     createAdvanceRequestRecord: vi.fn(),
     updateAdvanceRequestRecord: vi.fn(),
 }));
@@ -17,8 +17,8 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
-    createSupabaseServerClient: (...args: unknown[]) =>
-        mocks.createSupabaseServerClient(...args),
+    createClient: (...args: unknown[]) =>
+        mocks.createClient(...args),
 }));
 
 vi.mock("@/services/advance/save-advance-request", () => ({
@@ -47,19 +47,18 @@ describe("advance actions", () => {
                 digest: `NEXT_REDIRECT;replace;${url};307;`,
             });
         });
-        mocks.createSupabaseServerClient.mockResolvedValue({
+        mocks.createClient.mockResolvedValue({
             auth: {
                 getUser: vi.fn().mockResolvedValue({
                     data: {
                         user: {
-                            email: "admin@example.com",
+                            email: "operator@example.com",
                         },
                     },
                     error: null,
                 }),
             },
         });
-        process.env.AUTH_ADMIN_EMAIL = "admin@example.com";
     });
 
     it("createAdvanceRequest delegates to the service and revalidates related pages", async () => {
@@ -121,7 +120,7 @@ describe("advance actions", () => {
     });
 
     it("redirects to /login before mutating when there is no authenticated session", async () => {
-        mocks.createSupabaseServerClient.mockResolvedValue({
+        mocks.createClient.mockResolvedValue({
             auth: {
                 getUser: vi.fn().mockResolvedValue({
                     data: {

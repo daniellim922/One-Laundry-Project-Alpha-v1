@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-    createSupabaseServerClient: vi.fn(),
+    createClient: vi.fn(),
     revalidateTransportPaths: vi.fn(),
     massUpdateWorkerMinimumWorkingHours: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
-    createSupabaseServerClient: (...args: unknown[]) =>
-        mocks.createSupabaseServerClient(...args),
+    createClient: (...args: unknown[]) =>
+        mocks.createClient(...args),
 }));
 
 vi.mock("@/app/api/_shared/revalidate", () => ({
@@ -26,19 +26,18 @@ import { PATCH } from "@/app/api/workers/minimum-working-hours/route";
 describe("PATCH /api/workers/minimum-working-hours", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.createSupabaseServerClient.mockResolvedValue({
+        mocks.createClient.mockResolvedValue({
             auth: {
                 getUser: vi.fn().mockResolvedValue({
                     data: {
                         user: {
-                            email: "admin@example.com",
+                            email: "operator@example.com",
                         },
                     },
                     error: null,
                 }),
             },
         });
-        process.env.AUTH_ADMIN_EMAIL = "admin@example.com";
     });
 
     it("returns structured success and revalidates worker + payroll pages", async () => {
@@ -92,7 +91,7 @@ describe("PATCH /api/workers/minimum-working-hours", () => {
     });
 
     it("returns 401 when there is no authenticated session", async () => {
-        mocks.createSupabaseServerClient.mockResolvedValue({
+        mocks.createClient.mockResolvedValue({
             auth: {
                 getUser: vi.fn().mockResolvedValue({
                     data: { user: null },
@@ -129,13 +128,13 @@ describe("PATCH /api/workers/minimum-working-hours", () => {
         expect(mocks.massUpdateWorkerMinimumWorkingHours).not.toHaveBeenCalled();
     });
 
-    it("returns 401 when the authenticated user is not the configured admin", async () => {
-        mocks.createSupabaseServerClient.mockResolvedValue({
+    it("returns 401 when the authenticated user has no email", async () => {
+        mocks.createClient.mockResolvedValue({
             auth: {
                 getUser: vi.fn().mockResolvedValue({
                     data: {
                         user: {
-                            email: "worker@example.com",
+                            email: null,
                         },
                     },
                     error: null,

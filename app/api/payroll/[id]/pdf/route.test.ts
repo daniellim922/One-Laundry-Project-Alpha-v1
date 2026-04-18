@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => {
     };
 
     return {
-        requireCurrentApiAdminUser: vi.fn(),
+        requireCurrentApiUser: vi.fn(),
         eq: vi.fn(),
         db: {
             select: vi.fn(),
@@ -36,8 +36,8 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("@/app/api/_shared/auth", () => ({
-    requireCurrentApiAdminUser: (...args: unknown[]) =>
-        mocks.requireCurrentApiAdminUser(...args),
+    requireCurrentApiUser: (...args: unknown[]) =>
+        mocks.requireCurrentApiUser(...args),
 }));
 
 vi.mock("playwright", () => ({
@@ -51,8 +51,8 @@ import { GET } from "@/app/api/payroll/[id]/pdf/route";
 describe("GET /api/payroll/[id]/pdf", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.requireCurrentApiAdminUser.mockResolvedValue({
-            email: "admin@example.com",
+        mocks.requireCurrentApiUser.mockResolvedValue({
+            email: "operator@example.com",
         });
 
         mocks.page.pdf.mockResolvedValue(Buffer.from("payroll-pdf"));

@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 
-import {
-    requireAdminUser,
-    type AuthenticatedUserLike,
-} from "@/lib/auth/admin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
-type DashboardAdminUser = {
+type AuthenticatedUserLike = {
+    email?: string | null;
+};
+
+export type DashboardSessionUser = {
     email: string;
 };
 
@@ -21,14 +21,18 @@ type DashboardAuthClientLike = {
     };
 };
 
+function normalizeEmail(email: string) {
+    return email.trim().toLowerCase();
+}
+
 function redirectToLogin(): never {
     redirect("/login");
 }
 
-export async function requireCurrentDashboardAdminUser(
+export async function requireCurrentDashboardUser(
     client?: DashboardAuthClientLike,
-): Promise<DashboardAdminUser> {
-    const supabase = client ?? (await createSupabaseServerClient());
+): Promise<DashboardSessionUser> {
+    const supabase = client ?? (await createClient());
     const {
         data: { user },
         error,
@@ -38,11 +42,11 @@ export async function requireCurrentDashboardAdminUser(
         redirectToLogin();
     }
 
-    try {
-        return {
-            email: requireAdminUser(user).email,
-        };
-    } catch {
+    if (!user?.email?.trim()) {
         redirectToLogin();
     }
+
+    return {
+        email: normalizeEmail(user.email),
+    };
 }

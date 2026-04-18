@@ -1,12 +1,12 @@
-import {
-    requireAdminUser,
-    type AuthenticatedUserLike,
-} from "@/lib/auth/admin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 
 import { apiError } from "./responses";
 
-type ApiAdminUser = {
+export type AuthenticatedUserLike = {
+    email?: string | null;
+};
+
+export type ApiSessionUser = {
     email: string;
 };
 
@@ -21,6 +21,10 @@ type ApiAuthClientLike = {
     };
 };
 
+function normalizeEmail(email: string) {
+    return email.trim().toLowerCase();
+}
+
 function unauthorizedResponse() {
     return apiError({
         status: 401,
@@ -29,26 +33,22 @@ function unauthorizedResponse() {
     });
 }
 
-export function requireApiAdminUser(
+export function requireApiUser(
     user: AuthenticatedUserLike | null | undefined,
-): ApiAdminUser | Response {
-    if (!user?.email) {
+): ApiSessionUser | Response {
+    if (!user?.email?.trim()) {
         return unauthorizedResponse();
     }
 
-    try {
-        return {
-            email: requireAdminUser(user).email,
-        };
-    } catch {
-        return unauthorizedResponse();
-    }
+    return {
+        email: normalizeEmail(user.email),
+    };
 }
 
-export async function requireCurrentApiAdminUser(
+export async function requireCurrentApiUser(
     client?: ApiAuthClientLike,
-): Promise<ApiAdminUser | Response> {
-    const supabase = client ?? (await createSupabaseServerClient());
+): Promise<ApiSessionUser | Response> {
+    const supabase = client ?? (await createClient());
     const {
         data: { user },
         error,
@@ -58,5 +58,5 @@ export async function requireCurrentApiAdminUser(
         return unauthorizedResponse();
     }
 
-    return requireApiAdminUser(user);
+    return requireApiUser(user);
 }

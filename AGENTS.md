@@ -21,9 +21,9 @@ npm run test:e2e:ui             # Playwright UI runner
 npm run sb:start                # start the local Supabase stack
 npm run sb:status               # print local Supabase service endpoints
 npm run sb:stop                 # stop the local Supabase stack
-npm run db:reset                # wipe + push schema + seed (DATABASE_URL)
+npm run db:reset                # wipe + push schema + seed (DATABASE_URL + Supabase env for local stack)
 npm run db:migrate              # drizzle-kit push (db/schema.ts) (DATABASE_URL)
-npm run db:seed                 # seed the database (DATABASE_URL)
+npm run db:seed                 # seed the database (Postgres only; create Auth users in Supabase Studio)
 npm run db:wipe                 # wipe database (DATABASE_URL)
 ```
 
@@ -43,9 +43,9 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 ## Architecture
 
 - **Server components by default.** Add `"use client"` only for interactive pieces (forms, tables, dropdowns).
-- **Auth entry flow.** `/` remains the marketing landing page, `/login` is the public magic-link sign-in boundary, `/auth/callback` completes the Supabase auth exchange, and `proxy.ts` redirects unauthenticated `/dashboard/**` requests into `/login`.
+- **Auth entry flow.** `/` remains the marketing landing page, `/login` is the public email-and-password sign-in boundary, and `proxy.ts` refreshes the Supabase session and redirects unauthenticated requests into `/login` (except `/login` and `/auth/**`).
 - **Server actions** live in `actions.ts` files co-located with each feature route under `app/dashboard/<feature>/`. They start with `"use server"`, validate from `FormData`, return `{ success, id? } | { error }`, and call `revalidatePath` after mutations. Keep them for semantic form submissions only; non-form payroll reads, commands, and exports belong under `app/api/`.
-- **API routes** live under `app/api/` for non-form HTTP workflows such as exports and client-triggered mutations. Prefer the shared transport spine in `app/api/_shared/` for admin-session checks, JSON responses, and route-level revalidation so handlers stay thin. Protected handlers should call `requireCurrentApiAdminUser()` and return `401` JSON for unauthenticated or non-admin callers rather than issuing login redirects. Examples: worker mass minimum-hours updates run through `PATCH /api/workers/minimum-working-hours`; timesheet deletion and AttendRecord imports run through `DELETE /api/timesheets/[id]` and `POST /api/timesheets/import`; payroll lazy reads such as revert previews, settlement candidates, and download selections run through `GET /api/payroll/[id]/revert-preview`, `GET /api/payroll/settlement-candidates`, and `GET /api/payroll/download-selection`; payroll and advance exports run through `GET /api/payroll/[id]/pdf`, `POST /api/payroll/download-zip`, and `GET /api/advance/[id]/pdf`.
+- **API routes** live under `app/api/` for non-form HTTP workflows such as exports and client-triggered mutations. Prefer the shared transport spine in `app/api/_shared/` for authenticated-session checks, JSON responses, and route-level revalidation so handlers stay thin. Protected handlers should call `requireCurrentApiUser()` and return `401` JSON for unauthenticated callers rather than issuing login redirects. Examples: worker mass minimum-hours updates run through `PATCH /api/workers/minimum-working-hours`; timesheet deletion and AttendRecord imports run through `DELETE /api/timesheets/[id]` and `POST /api/timesheets/import`; payroll lazy reads such as revert previews, settlement candidates, and download selections run through `GET /api/payroll/[id]/revert-preview`, `GET /api/payroll/settlement-candidates`, and `GET /api/payroll/download-selection`; payroll and advance exports run through `GET /api/payroll/[id]/pdf`, `POST /api/payroll/download-zip`, and `GET /api/advance/[id]/pdf`.
 - **Service boundary** keeps business rules out of transport code. Shared use-case modules live under `services/<feature>/`; server actions and route handlers should adapt inputs, call services, and handle revalidation.
 - **Input validation** belongs at the boundary. Prefer Zod for API JSON bodies, query/search params, and complex form contracts; avoid adding new ad hoc parsing branches when a schema can express the contract.
 - **Forms** use react-hook-form + `zodResolver` for complex cases, or plain `useState` + `FormData` for simple ones. All form pages use `FormPageLayout` (back button, title, subtitle, optional actions slot).
@@ -53,8 +53,8 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 - **Async UX** must expose loading state. Interactive client components show pending/disabled UI for submits and fetches; async route sections should use Suspense or a route-level loading fallback where the wait is user-visible.
 - **Database tables** use `pgTable("snake_case", { ... })` with UUID PKs. Enums are `text(..., { enum: [...] as const })` aligned with `types/status.ts`. Types are exported via `$inferSelect` / `$inferInsert`.
 - **Database connection.** `lib/db.ts` uses `DATABASE_URL` for the app, Drizzle Kit (`npm run db:migrate`), wipe, and seed. Supabase CLI manages the local platform lifecycle only; it does not replace Drizzle as schema authority.
-- **Auth contract.** The single-admin allowlist comes from `AUTH_ADMIN_EMAIL`. Use `npm run auth:bootstrap-admin` with `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to create or repair that admin auth user before testing protected flows.
-- **Auth session handling.** Cookie-backed Supabase SSR clients live under `lib/supabase/` for browser, server, and proxy contexts. Use `supabase.auth.getUser()` for server-side authorization checks, and keep dashboard logout in the protected shell so admins can explicitly end their session.
+- **Auth contract.** Any Supabase Auth user who completes `signInWithPassword` with email and password may use the dashboard and API routes; there is no app-level email allowlist. Create users in Supabase Studio (or Auth Admin API) when self-service signup is disabled. Runtime needs `NEXT_PUBLIC_SUPABASE_URL` and the publishable/anon key; `SUPABASE_SERVICE_ROLE_KEY` is for tooling and server-side admin APIs only, not for normal browser sign-in.
+- **Auth session handling.** Cookie-backed Supabase SSR clients live under `lib/supabase/` for browser, server, and proxy contexts. Use `supabase.auth.getUser()` for server-side authorization checks, and keep dashboard logout in the protected shell so users can explicitly end their session.
 - **Codex workspace automation** lives under `.codex/` for repo rules, hooks, prompts, custom agents, and architecture docs.
 
 ## Seed Dataset

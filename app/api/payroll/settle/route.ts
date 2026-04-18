@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { requireCurrentApiAdminUser } from "@/app/api/_shared/auth";
+import { requireCurrentApiUser } from "@/app/api/_shared/auth";
 import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
 import { apiError, apiSuccess } from "@/app/api/_shared/responses";
 import { settleDraftPayrolls } from "@/services/payroll/settle-draft-payrolls";
@@ -10,7 +10,7 @@ const requestSchema = z.object({
 });
 
 export async function POST(request: Request) {
-    const auth = await requireCurrentApiAdminUser();
+    const auth = await requireCurrentApiUser();
     if (auth instanceof Response) {
         return auth;
     }

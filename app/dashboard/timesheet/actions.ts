@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requireCurrentDashboardAdminUser } from "@/app/dashboard/_shared/auth";
+import { requireCurrentDashboardUser } from "@/app/dashboard/_shared/auth";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { workerTable } from "@/db/tables/workerTable";
 import { db } from "@/lib/db";
@@ -46,7 +46,7 @@ function formDate(formData: FormData, key: string): string {
 }
 
 export async function createTimesheetEntry(formData: FormData) {
-    await requireCurrentDashboardAdminUser();
+    await requireCurrentDashboardUser();
 
     const workerId = formData.get("workerId") as string;
     const dateRaw = formData.get("date");
@@ -74,7 +74,7 @@ export async function createTimesheetEntry(formData: FormData) {
 }
 
 export async function updateTimesheetEntry(id: string, formData: FormData) {
-    await requireCurrentDashboardAdminUser();
+    await requireCurrentDashboardUser();
 
     const workerId = formData.get("workerId") as string;
     const dateIn = formDate(formData, "dateIn");
@@ -101,7 +101,7 @@ export async function updateTimesheetEntry(id: string, formData: FormData) {
 }
 
 export async function deleteTimesheetEntry(id: string) {
-    await requireCurrentDashboardAdminUser();
+    await requireCurrentDashboardUser();
 
     const result = await deleteTimesheetEntryRecord({ id });
     if (!result.success) {
@@ -118,7 +118,7 @@ export async function deleteTimesheetEntry(id: string) {
 type ImportRow = Record<string, unknown>;
 
 export async function importTimesheetEntries(rows: ImportRow[]) {
-    await requireCurrentDashboardAdminUser();
+    await requireCurrentDashboardUser();
 
     const workerNames = await db
         .select({ id: workerTable.id, name: workerTable.name })
@@ -202,7 +202,7 @@ export async function importTimesheetEntries(rows: ImportRow[]) {
 }
 
 export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
-    await requireCurrentDashboardAdminUser();
+    await requireCurrentDashboardUser();
 
     const result = await importAttendRecordTimesheetRecord(data);
 
