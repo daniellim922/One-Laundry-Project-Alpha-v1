@@ -35,7 +35,7 @@ enabled = false
 [studio]
 enabled = true
 api_url = "env(LOCAL_SUPABASE_STUDIO_URL)"
-port = "env(LOCAL_SUPABASE_STUDIO_URL)"
+port = "env(LOCAL_SUPABASE_STUDIO_PORT)"
 openai_api_key = "env(OPENAI_API_KEY)"
 
 [inbucket]
