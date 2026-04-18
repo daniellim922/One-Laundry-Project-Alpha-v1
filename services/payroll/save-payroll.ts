@@ -485,20 +485,16 @@ export async function updatePayrollRecord(input: {
         );
 
     const totalHoursWorked = entries.reduce((sum, e) => sum + Number(e.hours), 0);
-    const [currentVoucher] = await db
-        .select({
-            publicHolidays: payrollVoucherTable.publicHolidays,
-        })
-        .from(payrollVoucherTable)
-        .where(eq(payrollVoucherTable.id, existing.payrollVoucherId))
-        .limit(1);
-
     const restDays = computeRestDaysForPayrollPeriod({
         periodStart,
         periodEnd,
         presentDateInKeys: entries.map((e) => e.dateIn),
     });
-    const publicHolidays = currentVoucher?.publicHolidays ?? 0;
+    const publicHolidays = await countPayrollPublicHolidays({
+        periodStart,
+        periodEnd,
+        workedDateIns: entries.map((entry) => entry.dateIn),
+    });
     const payCalc = calculatePay({
         employmentType: row.employment.employmentType,
         totalHoursWorked,
@@ -564,6 +560,7 @@ export async function updatePayrollRecord(input: {
                     restDayRate: row.employment.restDayRate,
                     restDays,
                     restDayPay: payCalc.restDayPay,
+                    publicHolidays,
                     publicHolidayPay: payCalc.publicHolidayPay,
                     cpf: row.employment.cpf,
                     advance: advanceTotal,

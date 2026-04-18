@@ -256,4 +256,97 @@ describe("payroll overlap action handling", () => {
         });
         expect(mocks.db.transaction).not.toHaveBeenCalled();
     });
+
+    it("recomputes public holidays and totals when editing a draft payroll", async () => {
+        mockSelectWithLimitResolved([
+            {
+                id: "payroll-editing",
+                workerId: "worker-1",
+                payrollVoucherId: "voucher-1",
+                status: "Draft",
+            },
+        ]);
+        mockSelectWithJoinLimitResolved([
+            {
+                worker: { id: "worker-1" },
+                employment: {
+                    employmentType: "Full Time",
+                    employmentArrangement: "Local Worker",
+                    minimumWorkingHours: 8,
+                    monthlyPay: 1000,
+                    hourlyRate: 10,
+                    restDayRate: 25,
+                    cpf: 50,
+                    paymentMethod: "Cash",
+                    payNowPhone: null,
+                    bankAccountNumber: null,
+                },
+            },
+        ]);
+        mocks.findPayrollPeriodConflicts.mockResolvedValueOnce([]);
+        mocks.db.select
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockResolvedValue([
+                        {
+                            dateIn: "2025-12-31",
+                            dateOut: "2025-12-31",
+                            hours: "8",
+                        },
+                        {
+                            dateIn: "2026-01-01",
+                            dateOut: "2026-01-01",
+                            hours: "8",
+                        },
+                    ]),
+                }),
+            })
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockResolvedValue([
+                        { date: "2025-12-31" },
+                        { date: "2026-01-01" },
+                        { date: "2026-01-02" },
+                    ]),
+                }),
+            });
+        mocks.getAdvancesForPayrollPeriod.mockResolvedValueOnce([]);
+
+        const payrollUpdateWhere = vi.fn().mockResolvedValue(undefined);
+        const payrollUpdateSet = vi.fn().mockReturnValue({
+            where: payrollUpdateWhere,
+        });
+        const voucherUpdateWhere = vi.fn().mockResolvedValue(undefined);
+        const voucherUpdateSet = vi.fn().mockReturnValue({
+            where: voucherUpdateWhere,
+        });
+        const txUpdate = vi
+            .fn()
+            .mockReturnValueOnce({ set: payrollUpdateSet })
+            .mockReturnValueOnce({ set: voucherUpdateSet });
+        mocks.db.transaction.mockImplementationOnce(
+            async (callback: (tx: unknown) => Promise<void>) =>
+                callback({
+                    update: txUpdate,
+                }),
+        );
+
+        const result = await updatePayrollRecord({
+            payrollId: "payroll-editing",
+            periodStart: "2025-12-31",
+            periodEnd: "2026-01-02",
+            payrollDate: "2026-01-05",
+        });
+
+        expect(result).toEqual({ success: true });
+        expect(voucherUpdateSet).toHaveBeenCalledWith(
+            expect.objectContaining({
+                restDays: 3,
+                publicHolidays: 2,
+                publicHolidayPay: 50,
+                totalPay: 1205,
+                netPay: 1155,
+            }),
+        );
+    });
 });
