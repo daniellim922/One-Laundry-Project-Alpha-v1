@@ -124,7 +124,7 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
     }
 
     return (
-        <Card className="mx-auto max-w-4xl">
+        <Card className="w-full">
             <CardHeader>
                 <CardTitle>New payroll</CardTitle>
                 <p className="text-muted-foreground text-sm">
