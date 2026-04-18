@@ -1,25 +1,14 @@
-import { auth } from "@/lib/auth";
 import {
-    checkPermission,
-    type PermissionAction,
-} from "@/utils/permissions/permissions";
+    requireAdminUser,
+    type AuthenticatedUserLike,
+} from "@/lib/auth/admin";
+
 import { apiError } from "./responses";
 
-type RequestLike = {
-    headers: Headers;
-};
-
-export async function getApiSession(request: RequestLike) {
-    return auth.api.getSession({ headers: request.headers });
-}
-
-export async function requireApiPermission(
-    request: RequestLike,
-    featureName: string,
-    action: PermissionAction,
+export function requireApiAdminUser(
+    user: AuthenticatedUserLike | null | undefined,
 ) {
-    const session = await getApiSession(request);
-    if (!session) {
+    if (!user?.email) {
         return apiError({
             status: 401,
             code: "UNAUTHORIZED",
@@ -27,17 +16,15 @@ export async function requireApiPermission(
         });
     }
 
-    const allowed = await checkPermission(session.user.id, featureName, action);
-    if (!allowed) {
+    try {
+        return {
+            email: requireAdminUser(user).email,
+        };
+    } catch {
         return apiError({
             status: 403,
             code: "FORBIDDEN",
             message: "Forbidden",
         });
     }
-
-    return {
-        session,
-        userId: session.user.id,
-    };
 }

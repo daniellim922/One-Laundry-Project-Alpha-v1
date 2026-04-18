@@ -8,11 +8,24 @@ The default local database platform is Supabase local.
 4. Build the app-ready local database state with `npm run db:reset`.
 5. Run schema/admin workflows individually with `npm run db:migrate` (applies `db/schema.ts` via `drizzle-kit push`), `npm run db:seed`, or `npm run db:wipe`.
 6. Open Supabase Studio in a browser at `http://127.0.0.1:54323` (default port from `supabase/config.toml` `[studio]`).
-7. Run the app with `npm run dev`.
+7. Set `AUTH_ADMIN_EMAIL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` in `.env`.
+8. Bootstrap or repair the single admin auth user with `npm run auth:bootstrap-admin`.
+9. Run the app with `npm run dev`.
 
 `npm run db:reset` wipes, pushes schema, and seeds the database so the deterministic historical payroll dataset is ready for app use and test flows. Start the stack with `npm run sb:start` first.
 
 The app, `drizzle-kit push`, wipe, and seed all use **`DATABASE_URL`**.
+
+The auth bootstrap and runtime admin allowlist use:
+
+```bash
+AUTH_ADMIN_EMAIL=<single-admin-email>
+NEXT_PUBLIC_SUPABASE_URL=<supabase-project-url>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<supabase-anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<supabase-service-role-key>
+```
+
+`npm run auth:bootstrap-admin` creates the configured admin auth user when it does not exist yet and repairs its confirmed-email/admin-role metadata when it already exists.
 
 For local Supabase that is typically:
 
