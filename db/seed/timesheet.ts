@@ -1,5 +1,5 @@
 /**
- * Timesheet seed entries for April 2025 through March 2026.
+ * Timesheet seed entries for April through December 2025.
  * workerIndex references the workers array in workers.ts (0-based).
  * Resolved to workerId when seeding.
  */

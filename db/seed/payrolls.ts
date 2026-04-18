@@ -1,5 +1,5 @@
 /**
- * Payroll + voucher seed entries for April 2025 through March 2026.
+ * Payroll + voucher seed entries for April through December 2025.
  * Computes month-scoped values from the generated timesheets.
  */
 

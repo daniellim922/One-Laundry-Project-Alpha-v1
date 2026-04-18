@@ -56,7 +56,7 @@ function generateSeedPeriods(): SeedPeriod[] {
     let month = 4;
     let monthIndex = 0;
 
-    while (year < 2026 || (year === 2026 && month <= 3)) {
+    while (year === 2025 && month <= 12) {
         const { year: payrollYear, month: payrollMonth } = nextMonth(year, month);
         const lastDay = lastDayOfMonth(year, month);
         const payrollDateDay = Math.min(5, lastDayOfMonth(payrollYear, payrollMonth));

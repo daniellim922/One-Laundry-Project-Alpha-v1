@@ -26,7 +26,7 @@ const FOREIGN_FULL_TIME_OVERTIME_STEPS = [
 export const FOREIGN_FULL_TIME_MISS_MONTHS = new Map<string, number>([
     ["1:2025-06", 4],
     ["6:2025-11", 5],
-    ["12:2026-02", 6],
+    ["12:2025-12", 6],
 ]);
 
 type SeedWorkerShape = {
