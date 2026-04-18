@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+    requireCurrentApiAdminUser: vi.fn(),
     revalidateTransportPaths: vi.fn(),
     importAttendRecordTimesheet: vi.fn(),
+}));
+
+vi.mock("@/app/api/_shared/auth", () => ({
+    requireCurrentApiAdminUser: (...args: unknown[]) =>
+        mocks.requireCurrentApiAdminUser(...args),
 }));
 
 vi.mock("@/app/api/_shared/revalidate", () => ({
@@ -20,6 +26,9 @@ import { POST } from "@/app/api/timesheets/import/route";
 describe("POST /api/timesheets/import", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.requireCurrentApiAdminUser.mockResolvedValue({
+            email: "admin@example.com",
+        });
     });
 
     it("returns structured success and revalidates timesheet + payroll pages", async () => {

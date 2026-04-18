@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { requireCurrentDashboardAdminUser } from "@/app/dashboard/_shared/auth";
 import {
     type SaveAdvanceRequestInput,
     updateAdvanceRequestRecord,
@@ -15,6 +16,8 @@ export async function updateAdvanceRequest(
     advanceRequestId: string,
     input: UpdateAdvanceRequestInput,
 ): Promise<ActionResult> {
+    await requireCurrentDashboardAdminUser();
+
     const result = await updateAdvanceRequestRecord(advanceRequestId, input);
     if (!result.success) {
         return result;

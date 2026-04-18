@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+    requireCurrentApiAdminUser: vi.fn(),
     getPayrollRevertPreview: vi.fn(),
+}));
+
+vi.mock("@/app/api/_shared/auth", () => ({
+    requireCurrentApiAdminUser: (...args: unknown[]) =>
+        mocks.requireCurrentApiAdminUser(...args),
 }));
 
 vi.mock("@/services/payroll/get-revert-preview", () => ({
@@ -14,6 +20,9 @@ import { GET } from "@/app/api/payroll/[id]/revert-preview/route";
 describe("GET /api/payroll/[id]/revert-preview", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.requireCurrentApiAdminUser.mockResolvedValue({
+            email: "admin@example.com",
+        });
     });
 
     it("returns structured preview data on success", async () => {

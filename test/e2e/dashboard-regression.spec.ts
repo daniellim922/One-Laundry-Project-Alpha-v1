@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Dashboard regression smoke", () => {
-    test("landing page and redirect login route still lead into the dashboard", async ({
+    test("landing page and login route remain publicly reachable", async ({
         page,
     }) => {
         await page.goto("/");
@@ -13,37 +13,56 @@ test.describe("Dashboard regression smoke", () => {
         await expect(page.getByRole("link", { name: /log in/i })).toBeVisible();
 
         await page.goto("/login");
-        await expect(page).toHaveURL(/\/dashboard$/);
+        await expect(page).toHaveURL(/\/login$/);
+        await expect(
+            page.getByRole("heading", {
+                name: "Dashboard access now requires sign-in",
+            }),
+        ).toBeVisible();
+        await expect(
+            page.getByRole("button", { name: "Email magic link" }),
+        ).toBeVisible();
     });
 
-    test("dashboard is directly accessible without visiting login first", async ({
+    test("dashboard root redirects into the public login boundary", async ({
         page,
     }) => {
         await page.goto("/dashboard");
-        await expect(page).toHaveURL(/\/dashboard$/);
+
+        const redirectedUrl = new URL(page.url());
+        expect(redirectedUrl.pathname).toBe("/login");
+        expect(redirectedUrl.searchParams.get("redirectTo")).toBe("/dashboard");
     });
 
-    test("core modules are reachable", async ({ page }) => {
+    test("nested dashboard routes are no longer reachable without auth", async ({
+        page,
+    }) => {
         await page.goto("/dashboard/payroll");
-        await expect(page).toHaveURL(/\/dashboard\/payroll$/);
 
-        await page.goto("/dashboard/advance");
-        await expect(page).toHaveURL(/\/dashboard\/advance$/);
-
-        await page.goto("/dashboard/timesheet");
-        await expect(page).toHaveURL(/\/dashboard\/timesheet$/);
+        let redirectedUrl = new URL(page.url());
+        expect(redirectedUrl.pathname).toBe("/login");
+        expect(redirectedUrl.searchParams.get("redirectTo")).toBe(
+            "/dashboard/payroll",
+        );
 
         await page.goto("/dashboard/worker/all");
-        await expect(page).toHaveURL(/\/dashboard\/worker\/all$/);
 
-        await page.goto("/dashboard/expenses");
-        await expect(page).toHaveURL(/\/dashboard\/expenses$/);
+        redirectedUrl = new URL(page.url());
+        expect(redirectedUrl.pathname).toBe("/login");
+        expect(redirectedUrl.searchParams.get("redirectTo")).toBe(
+            "/dashboard/worker/all",
+        );
     });
 
-    test("iam routes are no longer accessible", async ({ page }) => {
-        const response = await page.goto("/dashboard/iam");
+    test("protected routes redirect before missing dashboard pages can render", async ({
+        page,
+    }) => {
+        await page.goto("/dashboard/iam");
 
-        expect(response?.status()).toBe(404);
-        await expect(page.getByText("This page could not be found.")).toBeVisible();
+        const redirectedUrl = new URL(page.url());
+        expect(redirectedUrl.pathname).toBe("/login");
+        expect(redirectedUrl.searchParams.get("redirectTo")).toBe(
+            "/dashboard/iam",
+        );
     });
 });

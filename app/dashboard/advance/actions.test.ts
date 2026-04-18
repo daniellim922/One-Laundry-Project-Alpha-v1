@@ -2,12 +2,23 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
     revalidatePath: vi.fn(),
+    redirect: vi.fn(),
+    createSupabaseServerClient: vi.fn(),
     createAdvanceRequestRecord: vi.fn(),
     updateAdvanceRequestRecord: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({
     revalidatePath: (...args: unknown[]) => mocks.revalidatePath(...args),
+}));
+
+vi.mock("next/navigation", () => ({
+    redirect: (...args: unknown[]) => mocks.redirect(...args),
+}));
+
+vi.mock("@/lib/supabase/server", () => ({
+    createSupabaseServerClient: (...args: unknown[]) =>
+        mocks.createSupabaseServerClient(...args),
 }));
 
 vi.mock("@/services/advance/save-advance-request", () => ({
@@ -31,6 +42,24 @@ const baseInput = {
 describe("advance actions", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.redirect.mockImplementation((url: string) => {
+            throw Object.assign(new Error("NEXT_REDIRECT"), {
+                digest: `NEXT_REDIRECT;replace;${url};307;`,
+            });
+        });
+        mocks.createSupabaseServerClient.mockResolvedValue({
+            auth: {
+                getUser: vi.fn().mockResolvedValue({
+                    data: {
+                        user: {
+                            email: "admin@example.com",
+                        },
+                    },
+                    error: null,
+                }),
+            },
+        });
+        process.env.AUTH_ADMIN_EMAIL = "admin@example.com";
     });
 
     it("createAdvanceRequest delegates to the service and revalidates related pages", async () => {
@@ -88,6 +117,26 @@ describe("advance actions", () => {
             error: "Failed to synchronize Draft payrolls",
         });
 
+        expect(mocks.revalidatePath).not.toHaveBeenCalled();
+    });
+
+    it("redirects to /login before mutating when there is no authenticated session", async () => {
+        mocks.createSupabaseServerClient.mockResolvedValue({
+            auth: {
+                getUser: vi.fn().mockResolvedValue({
+                    data: {
+                        user: null,
+                    },
+                    error: null,
+                }),
+            },
+        });
+
+        await expect(createAdvanceRequest(baseInput)).rejects.toMatchObject({
+            digest: "NEXT_REDIRECT;replace;/login;307;",
+        });
+
+        expect(mocks.createAdvanceRequestRecord).not.toHaveBeenCalled();
         expect(mocks.revalidatePath).not.toHaveBeenCalled();
     });
 });

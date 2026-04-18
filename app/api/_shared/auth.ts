@@ -1,43 +1,62 @@
-import { auth } from "@/lib/auth";
 import {
-    checkPermission,
-    type PermissionAction,
-} from "@/utils/permissions/permissions";
+    requireAdminUser,
+    type AuthenticatedUserLike,
+} from "@/lib/auth/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
 import { apiError } from "./responses";
 
-type RequestLike = {
-    headers: Headers;
+type ApiAdminUser = {
+    email: string;
 };
 
-export async function getApiSession(request: RequestLike) {
-    return auth.api.getSession({ headers: request.headers });
+type ApiAuthClientLike = {
+    auth: {
+        getUser: () => Promise<{
+            data: {
+                user: AuthenticatedUserLike | null;
+            };
+            error: unknown;
+        }>;
+    };
+};
+
+function unauthorizedResponse() {
+    return apiError({
+        status: 401,
+        code: "UNAUTHORIZED",
+        message: "Authentication required",
+    });
 }
 
-export async function requireApiPermission(
-    request: RequestLike,
-    featureName: string,
-    action: PermissionAction,
-) {
-    const session = await getApiSession(request);
-    if (!session) {
-        return apiError({
-            status: 401,
-            code: "UNAUTHORIZED",
-            message: "Authentication required",
-        });
+export function requireApiAdminUser(
+    user: AuthenticatedUserLike | null | undefined,
+): ApiAdminUser | Response {
+    if (!user?.email) {
+        return unauthorizedResponse();
     }
 
-    const allowed = await checkPermission(session.user.id, featureName, action);
-    if (!allowed) {
-        return apiError({
-            status: 403,
-            code: "FORBIDDEN",
-            message: "Forbidden",
-        });
+    try {
+        return {
+            email: requireAdminUser(user).email,
+        };
+    } catch {
+        return unauthorizedResponse();
+    }
+}
+
+export async function requireCurrentApiAdminUser(
+    client?: ApiAuthClientLike,
+): Promise<ApiAdminUser | Response> {
+    const supabase = client ?? (await createSupabaseServerClient());
+    const {
+        data: { user },
+        error,
+    } = await supabase.auth.getUser();
+
+    if (error) {
+        return unauthorizedResponse();
     }
 
-    return {
-        session,
-        userId: session.user.id,
-    };
+    return requireApiAdminUser(user);
 }

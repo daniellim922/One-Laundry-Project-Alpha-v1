@@ -43,9 +43,9 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 ## Architecture
 
 - **Server components by default.** Add `"use client"` only for interactive pieces (forms, tables, dropdowns).
-- **Entry flow is open access.** `/` remains the marketing landing page, `/login` is a compatibility redirect into `/dashboard`, and `/dashboard` is directly accessible without session state.
+- **Auth entry flow.** `/` remains the marketing landing page, `/login` is the public magic-link sign-in boundary, `/auth/callback` completes the Supabase auth exchange, and `proxy.ts` redirects unauthenticated `/dashboard/**` requests into `/login`.
 - **Server actions** live in `actions.ts` files co-located with each feature route under `app/dashboard/<feature>/`. They start with `"use server"`, validate from `FormData`, return `{ success, id? } | { error }`, and call `revalidatePath` after mutations. Keep them for semantic form submissions only; non-form payroll reads, commands, and exports belong under `app/api/`.
-- **API routes** live under `app/api/` for non-form HTTP workflows such as exports and client-triggered mutations. Prefer the shared transport spine in `app/api/_shared/` for open-access request handling, JSON responses, and route-level revalidation so handlers stay thin. Examples: worker mass minimum-hours updates run through `PATCH /api/workers/minimum-working-hours`; timesheet deletion and AttendRecord imports run through `DELETE /api/timesheets/[id]` and `POST /api/timesheets/import`; payroll lazy reads such as revert previews, settlement candidates, and download selections run through `GET /api/payroll/[id]/revert-preview`, `GET /api/payroll/settlement-candidates`, and `GET /api/payroll/download-selection`; payroll and advance exports run through `GET /api/payroll/[id]/pdf`, `POST /api/payroll/download-zip`, and `GET /api/advance/[id]/pdf`.
+- **API routes** live under `app/api/` for non-form HTTP workflows such as exports and client-triggered mutations. Prefer the shared transport spine in `app/api/_shared/` for admin-session checks, JSON responses, and route-level revalidation so handlers stay thin. Protected handlers should call `requireCurrentApiAdminUser()` and return `401` JSON for unauthenticated or non-admin callers rather than issuing login redirects. Examples: worker mass minimum-hours updates run through `PATCH /api/workers/minimum-working-hours`; timesheet deletion and AttendRecord imports run through `DELETE /api/timesheets/[id]` and `POST /api/timesheets/import`; payroll lazy reads such as revert previews, settlement candidates, and download selections run through `GET /api/payroll/[id]/revert-preview`, `GET /api/payroll/settlement-candidates`, and `GET /api/payroll/download-selection`; payroll and advance exports run through `GET /api/payroll/[id]/pdf`, `POST /api/payroll/download-zip`, and `GET /api/advance/[id]/pdf`.
 - **Service boundary** keeps business rules out of transport code. Shared use-case modules live under `services/<feature>/`; server actions and route handlers should adapt inputs, call services, and handle revalidation.
 - **Input validation** belongs at the boundary. Prefer Zod for API JSON bodies, query/search params, and complex form contracts; avoid adding new ad hoc parsing branches when a schema can express the contract.
 - **Forms** use react-hook-form + `zodResolver` for complex cases, or plain `useState` + `FormData` for simple ones. All form pages use `FormPageLayout` (back button, title, subtitle, optional actions slot).
@@ -53,6 +53,8 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 - **Async UX** must expose loading state. Interactive client components show pending/disabled UI for submits and fetches; async route sections should use Suspense or a route-level loading fallback where the wait is user-visible.
 - **Database tables** use `pgTable("snake_case", { ... })` with UUID PKs. Enums are `text(..., { enum: [...] as const })` aligned with `types/status.ts`. Types are exported via `$inferSelect` / `$inferInsert`.
 - **Database connection.** `lib/db.ts` uses `DATABASE_URL` for the app, Drizzle Kit (`npm run db:migrate`), wipe, and seed. Supabase CLI manages the local platform lifecycle only; it does not replace Drizzle as schema authority.
+- **Auth contract.** The single-admin allowlist comes from `AUTH_ADMIN_EMAIL`. Use `npm run auth:bootstrap-admin` with `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` to create or repair that admin auth user before testing protected flows.
+- **Auth session handling.** Cookie-backed Supabase SSR clients live under `lib/supabase/` for browser, server, and proxy contexts. Use `supabase.auth.getUser()` for server-side authorization checks, and keep dashboard logout in the protected shell so admins can explicitly end their session.
 - **Codex workspace automation** lives under `.codex/` for repo rules, hooks, prompts, custom agents, and architecture docs.
 
 ## Seed Dataset
@@ -92,7 +94,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 ## Testing
 
 - **Vitest** — node environment, tests co-located with source as `*.test.ts` / `*.test.tsx` under `app/`, `components/`, `utils/`, `lib/`, `db/`, `services/`, `scripts/`.
-- **E2E** — Playwright (Chromium), files in `test/e2e/` as `*.spec.ts`. Coverage includes the open landing page, the `/login` compatibility redirect, direct `/dashboard` access, and core feature regressions.
+- **E2E** — Playwright (Chromium), files in `test/e2e/` as `*.spec.ts`. Coverage includes the open landing page, the public `/login` boundary, unauthenticated `/dashboard` redirects, and core feature regressions.
 - **Fixtures** live in `test/fixtures/`, output in `test/results/`.
 - **Codex post-change verification** is wired through `.codex/hooks.json`; when product code changes, the stop hook runs `npm run test:unit` (fast Vitest only; run `npm run test` for the full suite).
 

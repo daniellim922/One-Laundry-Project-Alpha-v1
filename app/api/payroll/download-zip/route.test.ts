@@ -3,21 +3,30 @@ import { Buffer } from "node:buffer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-import { POST } from "@/app/api/payroll/download-zip/route";
-
 const mocks = vi.hoisted(() => ({
+    requireCurrentApiAdminUser: vi.fn(),
     db: {
         select: vi.fn(),
     },
+}));
+
+vi.mock("@/app/api/_shared/auth", () => ({
+    requireCurrentApiAdminUser: (...args: unknown[]) =>
+        mocks.requireCurrentApiAdminUser(...args),
 }));
 
 vi.mock("@/lib/db", () => ({
     db: mocks.db,
 }));
 
+import { POST } from "@/app/api/payroll/download-zip/route";
+
 describe("POST /api/payroll/download-zip", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.requireCurrentApiAdminUser.mockResolvedValue({
+            email: "admin@example.com",
+        });
         mocks.db.select.mockReturnValue({
             from: vi.fn().mockReturnValue({
                 innerJoin: vi.fn().mockReturnValue({

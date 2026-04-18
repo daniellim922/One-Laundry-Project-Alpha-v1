@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+    createSupabaseServerClient: vi.fn(),
     listPayrollsForDownload: vi.fn(),
+}));
+
+vi.mock("@/lib/supabase/server", () => ({
+    createSupabaseServerClient: (...args: unknown[]) =>
+        mocks.createSupabaseServerClient(...args),
 }));
 
 vi.mock("@/services/payroll/list-payrolls-for-download", () => ({
@@ -14,6 +20,19 @@ import { GET } from "@/app/api/payroll/download-selection/route";
 describe("GET /api/payroll/download-selection", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.createSupabaseServerClient.mockResolvedValue({
+            auth: {
+                getUser: vi.fn().mockResolvedValue({
+                    data: {
+                        user: {
+                            email: "admin@example.com",
+                        },
+                    },
+                    error: null,
+                }),
+            },
+        });
+        process.env.AUTH_ADMIN_EMAIL = "admin@example.com";
     });
 
     it("returns download selection rows", async () => {
@@ -68,5 +87,55 @@ describe("GET /api/payroll/download-selection", () => {
             ok: true,
             data: [],
         });
+    });
+
+    it("returns 401 when there is no authenticated session", async () => {
+        mocks.createSupabaseServerClient.mockResolvedValue({
+            auth: {
+                getUser: vi.fn().mockResolvedValue({
+                    data: { user: null },
+                    error: null,
+                }),
+            },
+        });
+
+        const response = await GET();
+
+        expect(response.status).toBe(401);
+        await expect(response.json()).resolves.toEqual({
+            ok: false,
+            error: {
+                code: "UNAUTHORIZED",
+                message: "Authentication required",
+            },
+        });
+        expect(mocks.listPayrollsForDownload).not.toHaveBeenCalled();
+    });
+
+    it("returns 401 when the authenticated user is not the configured admin", async () => {
+        mocks.createSupabaseServerClient.mockResolvedValue({
+            auth: {
+                getUser: vi.fn().mockResolvedValue({
+                    data: {
+                        user: {
+                            email: "worker@example.com",
+                        },
+                    },
+                    error: null,
+                }),
+            },
+        });
+
+        const response = await GET();
+
+        expect(response.status).toBe(401);
+        await expect(response.json()).resolves.toEqual({
+            ok: false,
+            error: {
+                code: "UNAUTHORIZED",
+                message: "Authentication required",
+            },
+        });
+        expect(mocks.listPayrollsForDownload).not.toHaveBeenCalled();
     });
 });

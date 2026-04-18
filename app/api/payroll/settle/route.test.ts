@@ -1,8 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+    requireCurrentApiAdminUser: vi.fn(),
     revalidateTransportPaths: vi.fn(),
     settleDraftPayrolls: vi.fn(),
+}));
+
+vi.mock("@/app/api/_shared/auth", () => ({
+    requireCurrentApiAdminUser: (...args: unknown[]) =>
+        mocks.requireCurrentApiAdminUser(...args),
 }));
 
 vi.mock("@/app/api/_shared/revalidate", () => ({
@@ -20,6 +26,9 @@ import { POST } from "@/app/api/payroll/settle/route";
 describe("POST /api/payroll/settle", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.requireCurrentApiAdminUser.mockResolvedValue({
+            email: "admin@example.com",
+        });
     });
 
     it("returns structured success and revalidates all affected pages", async () => {

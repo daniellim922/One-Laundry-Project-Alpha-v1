@@ -1,7 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+    requireCurrentApiAdminUser: vi.fn(),
     listDraftPayrollsForSettlement: vi.fn(),
+}));
+
+vi.mock("@/app/api/_shared/auth", () => ({
+    requireCurrentApiAdminUser: (...args: unknown[]) =>
+        mocks.requireCurrentApiAdminUser(...args),
 }));
 
 vi.mock("@/services/payroll/list-draft-payrolls-for-settlement", () => ({
@@ -14,6 +20,9 @@ import { GET } from "@/app/api/payroll/settlement-candidates/route";
 describe("GET /api/payroll/settlement-candidates", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.requireCurrentApiAdminUser.mockResolvedValue({
+            email: "admin@example.com",
+        });
     });
 
     it("returns settlement candidates", async () => {
