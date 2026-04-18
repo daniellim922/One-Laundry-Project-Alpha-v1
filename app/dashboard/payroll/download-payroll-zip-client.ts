@@ -27,10 +27,11 @@ export function computeZipEtaSec(args: {
     return eta;
 }
 
-function base64ToUint8Array(b64: string): Uint8Array {
+function base64ToUint8Array(b64: string): Uint8Array<ArrayBuffer> {
     const binary = atob(b64);
     const len = binary.length;
-    const bytes = new Uint8Array(len);
+    const buffer = new ArrayBuffer(len);
+    const bytes = new Uint8Array(buffer);
     for (let i = 0; i < len; i++) {
         bytes[i] = binary.charCodeAt(i);
     }
