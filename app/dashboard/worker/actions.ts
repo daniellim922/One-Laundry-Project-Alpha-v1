@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 
+import { requireCurrentDashboardAdminUser } from "@/app/dashboard/_shared/auth";
 import { db } from "@/lib/db";
 import {
     workerTable,
@@ -61,6 +62,8 @@ type ActionResult =
     | { success: false; error: string };
 
 export async function createWorker(formData: FormData): Promise<ActionResult> {
+    await requireCurrentDashboardAdminUser();
+
     const name = (formData.get("name") ?? "").toString().trim();
     if (!name) {
         return { success: false, error: "Name is required" };
@@ -165,6 +168,8 @@ export async function updateWorker(
     id: string,
     formData: FormData,
 ): Promise<ActionResult> {
+    await requireCurrentDashboardAdminUser();
+
     if (!id) {
         return { success: false, error: "Worker ID is required" };
     }
@@ -283,6 +288,8 @@ export async function updateWorker(
 export async function massUpdateWorkerMinimumWorkingHours(
     input: WorkerHoursBulkUpdateInput,
 ): Promise<WorkerHoursBulkUpdateResult> {
+    await requireCurrentDashboardAdminUser();
+
     const result = await massUpdateWorkerMinimumWorkingHoursService(input);
 
     if (result.updatedCount > 0) {

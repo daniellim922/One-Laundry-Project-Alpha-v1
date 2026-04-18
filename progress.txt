@@ -2,3 +2,4 @@
 2026-04-18: Started #69 by adding the single-admin email contract, a Supabase auth bootstrap/repair command, and focused auth bootstrap tests.
 2026-04-18: Completed #70 by turning /login into an allowlisted magic-link entry point, adding the Supabase auth callback and dashboard logout flow, and upgrading proxy coverage to admit only authenticated admin sessions.
 2026-04-18: Completed #71 by validating Supabase API sessions server-side across the internal /api surface, returning 401 JSON for missing or non-admin callers, and adding focused read/write route guard tests.
+2026-04-18: Completed #72 by adding a shared dashboard server-action admin guard, redirecting unauthorized mutations to /login, and covering representative advance and payroll actions with focused auth tests.

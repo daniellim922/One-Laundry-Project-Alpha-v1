@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { requireCurrentDashboardAdminUser } from "@/app/dashboard/_shared/auth";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { workerTable } from "@/db/tables/workerTable";
 import { db } from "@/lib/db";
@@ -45,6 +46,8 @@ function formDate(formData: FormData, key: string): string {
 }
 
 export async function createTimesheetEntry(formData: FormData) {
+    await requireCurrentDashboardAdminUser();
+
     const workerId = formData.get("workerId") as string;
     const dateRaw = formData.get("date");
     const date = dateRaw != null ? toDateString(dateRaw as string) : "";
@@ -71,6 +74,8 @@ export async function createTimesheetEntry(formData: FormData) {
 }
 
 export async function updateTimesheetEntry(id: string, formData: FormData) {
+    await requireCurrentDashboardAdminUser();
+
     const workerId = formData.get("workerId") as string;
     const dateIn = formDate(formData, "dateIn");
     const dateOut = formDate(formData, "dateOut");
@@ -96,6 +101,8 @@ export async function updateTimesheetEntry(id: string, formData: FormData) {
 }
 
 export async function deleteTimesheetEntry(id: string) {
+    await requireCurrentDashboardAdminUser();
+
     const result = await deleteTimesheetEntryRecord({ id });
     if (!result.success) {
         return { error: result.error };
@@ -111,6 +118,8 @@ export async function deleteTimesheetEntry(id: string) {
 type ImportRow = Record<string, unknown>;
 
 export async function importTimesheetEntries(rows: ImportRow[]) {
+    await requireCurrentDashboardAdminUser();
+
     const workerNames = await db
         .select({ id: workerTable.id, name: workerTable.name })
         .from(workerTable);
@@ -193,6 +202,8 @@ export async function importTimesheetEntries(rows: ImportRow[]) {
 }
 
 export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
+    await requireCurrentDashboardAdminUser();
+
     const result = await importAttendRecordTimesheetRecord(data);
 
     revalidatePath("/dashboard/timesheet");
