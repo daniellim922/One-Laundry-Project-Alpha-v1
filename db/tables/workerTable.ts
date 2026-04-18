@@ -32,8 +32,12 @@ export type WorkerWithEmployment = SelectWorker &
         SelectEmployment,
         | "employmentType"
         | "employmentArrangement"
+        | "cpf"
         | "monthlyPay"
         | "minimumWorkingHours"
         | "hourlyRate"
+        | "restDayRate"
         | "paymentMethod"
+        | "payNowPhone"
+        | "bankAccountNumber"
     >;

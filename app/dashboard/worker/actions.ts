@@ -51,6 +51,32 @@ function toNumber(val: FormDataEntryValue | null): number | null {
     return n;
 }
 
+function parsePayNowNumberForPersistence(
+    raw: FormDataEntryValue | null,
+    paymentMethod: InsertEmployment["paymentMethod"],
+):
+    | { ok: true; value: string | null }
+    | { ok: false; error: string } {
+    const s = (raw ?? "").toString().trim();
+    if (paymentMethod !== "PayNow") {
+        return { ok: true, value: null };
+    }
+    if (!s) {
+        return {
+            ok: false,
+            error: "PayNow number is required when payment method is PayNow",
+        };
+    }
+    if (!/^\d+$/.test(s)) {
+        return {
+            ok: false,
+            error:
+                "PayNow must contain digits only (no decimals or other characters)",
+        };
+    }
+    return { ok: true, value: s };
+}
+
 function parseWorkerStatus(input: unknown): WorkerStatus | null {
     const s = input?.toString().trim();
     if (s === "Active" || s === "Inactive") return s;
@@ -101,8 +127,14 @@ export async function createWorker(formData: FormData): Promise<ActionResult> {
         .trim();
     const paymentMethod = (paymentMethodRaw ||
         null) as InsertEmployment["paymentMethod"];
-    const payNowPhone =
-        (formData.get("payNowPhone") ?? "").toString().trim() || null;
+    const payNowParsed = parsePayNowNumberForPersistence(
+        formData.get("payNowPhone"),
+        paymentMethod,
+    );
+    if (!payNowParsed.ok) {
+        return { success: false, error: payNowParsed.error };
+    }
+    const payNowPhone = payNowParsed.value;
     const bankAccountNumber =
         (formData.get("bankAccountNumber") ?? "").toString().trim() || null;
 
@@ -211,8 +243,14 @@ export async function updateWorker(
         .trim();
     const paymentMethod = (paymentMethodRaw ||
         null) as InsertEmployment["paymentMethod"];
-    const payNowPhone =
-        (formData.get("payNowPhone") ?? "").toString().trim() || null;
+    const payNowParsed = parsePayNowNumberForPersistence(
+        formData.get("payNowPhone"),
+        paymentMethod,
+    );
+    if (!payNowParsed.ok) {
+        return { success: false, error: payNowParsed.error };
+    }
+    const payNowPhone = payNowParsed.value;
     const bankAccountNumber =
         (formData.get("bankAccountNumber") ?? "").toString().trim() || null;
 

@@ -11,7 +11,7 @@ export const workers = [
         hourlyRate: 8,
         restDayRate: 88.76,
         paymentMethod: "PayNow",
-        payNowPhone: "65 8608 6736",
+        payNowPhone: "6586086736",
     },
     {
         name: "Nguyen Thi Thao",
@@ -25,7 +25,7 @@ export const workers = [
         hourlyRate: 7,
         restDayRate: 63.91,
         paymentMethod: "PayNow",
-        payNowPhone: "65 8173 6958",
+        payNowPhone: "6581736958",
     },
     {
         name: "Nyan Htoo",

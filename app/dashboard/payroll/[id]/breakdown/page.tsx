@@ -171,7 +171,7 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                     employment.payNowPhone && (
                                         <div className="space-y-1">
                                             <p className="text-sm text-muted-foreground">
-                                                PayNow Phone
+                                                PayNow
                                             </p>
                                             <p className="text-sm font-medium">
                                                 {employment.payNowPhone}
@@ -238,7 +238,7 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                     <div className="space-y-1">
                                         <p className="text-sm text-muted-foreground">
                                             {voucher.paymentMethod === "PayNow"
-                                                ? "PayNow Phone"
+                                                ? "PayNow"
                                                 : voucher.paymentMethod ===
                                                     "Bank Transfer"
                                                   ? "Bank Account"

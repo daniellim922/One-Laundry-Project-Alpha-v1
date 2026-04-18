@@ -6,10 +6,23 @@ export type TimesheetPaymentStatus = "Timesheet Unpaid" | "Timesheet Paid";
 
 export type PayrollStatus = "Draft" | "Settled";
 
-export type WorkerStatus = "Active" | "Inactive";
+export const WORKER_STATUSES = ["Active", "Inactive"] as const;
+export type WorkerStatus = (typeof WORKER_STATUSES)[number];
 
-export type WorkerEmploymentType = "Full Time" | "Part Time";
+/** Single source of truth for Drizzle columns, Zod, and UI labels */
+export const WORKER_EMPLOYMENT_TYPES = ["Full Time", "Part Time"] as const;
+export type WorkerEmploymentType = (typeof WORKER_EMPLOYMENT_TYPES)[number];
 
-export type WorkerEmploymentArrangement = "Foreign Worker" | "Local Worker";
+export const WORKER_EMPLOYMENT_ARRANGEMENTS = [
+    "Foreign Worker",
+    "Local Worker",
+] as const;
+export type WorkerEmploymentArrangement =
+    (typeof WORKER_EMPLOYMENT_ARRANGEMENTS)[number];
 
-export type WorkerPaymentMethod = "PayNow" | "Bank Transfer" | "Cash";
+export const WORKER_PAYMENT_METHODS = [
+    "PayNow",
+    "Bank Transfer",
+    "Cash",
+] as const;
+export type WorkerPaymentMethod = (typeof WORKER_PAYMENT_METHODS)[number];

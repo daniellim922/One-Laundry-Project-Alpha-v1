@@ -1,10 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import {
-    workerTable,
-    type WorkerWithEmployment,
-} from "@/db/tables/workerTable";
+import { workerTable } from "@/db/tables/workerTable";
 import { employmentTable } from "@/db/tables/employmentTable";
 import { WorkerAllTableSection } from "./worker-all-table-section";
 
@@ -24,6 +21,7 @@ export async function WorkerAllTableLoader() {
             updatedAt: workerTable.updatedAt,
             employmentType: employmentTable.employmentType,
             employmentArrangement: employmentTable.employmentArrangement,
+            cpf: employmentTable.cpf,
             monthlyPay: employmentTable.monthlyPay,
             minimumWorkingHours: employmentTable.minimumWorkingHours,
             hourlyRate: employmentTable.hourlyRate,
@@ -37,7 +35,7 @@ export async function WorkerAllTableLoader() {
             employmentTable,
             eq(workerTable.employmentId, employmentTable.id),
         )
-        .orderBy(desc(workerTable.updatedAt))) as WorkerWithEmployment[];
+        .orderBy(desc(workerTable.updatedAt)));
 
     return <WorkerAllTableSection workers={workers} />;
 }

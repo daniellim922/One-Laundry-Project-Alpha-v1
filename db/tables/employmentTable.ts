@@ -1,12 +1,18 @@
 import { pgTable, uuid, text, timestamp, real } from "drizzle-orm/pg-core";
 
+import {
+    WORKER_EMPLOYMENT_ARRANGEMENTS,
+    WORKER_EMPLOYMENT_TYPES,
+    WORKER_PAYMENT_METHODS,
+} from "@/types/status";
+
 export const employmentTable = pgTable("employment", {
     id: uuid().primaryKey().defaultRandom(),
     employmentType: text("employment_type", {
-        enum: ["Full Time", "Part Time"] as const,
+        enum: WORKER_EMPLOYMENT_TYPES,
     }).notNull(),
     employmentArrangement: text("employment_arrangement", {
-        enum: ["Foreign Worker", "Local Worker"] as const,
+        enum: WORKER_EMPLOYMENT_ARRANGEMENTS,
     }).notNull(),
     cpf: real("cpf"),
     monthlyPay: real("monthly_pay"),
@@ -14,7 +20,7 @@ export const employmentTable = pgTable("employment", {
     hourlyRate: real("hourly_rate"),
     restDayRate: real("rest_day_rate"),
     paymentMethod: text("payment_method", {
-        enum: ["PayNow", "Bank Transfer", "Cash"] as const,
+        enum: WORKER_PAYMENT_METHODS,
     }),
     payNowPhone: text("paynow_phone"),
     bankAccountNumber: text("bank_account_number"),

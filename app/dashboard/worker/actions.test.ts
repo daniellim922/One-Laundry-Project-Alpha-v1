@@ -179,6 +179,22 @@ describe("createWorker", () => {
         expect(mocks.db.insert).not.toHaveBeenCalled();
     });
 
+    it("returns validation error when PayNow is selected but PayNow number is not digits-only", async () => {
+        const result = await createWorker(
+            buildWorkerFormData({
+                paymentMethod: "PayNow",
+                payNowPhone: "12.5",
+            }),
+        );
+
+        expect(result).toEqual({
+            success: false,
+            error:
+                "PayNow must contain digits only (no decimals or other characters)",
+        });
+        expect(mocks.db.insert).not.toHaveBeenCalled();
+    });
+
     it("returns duplicate NRIC error when worker nric unique constraint fails", async () => {
         queueInsertResolved([{ id: "employment-1" }]);
         queueInsertRejected({
@@ -250,6 +266,22 @@ describe("updateWorker", () => {
         expect(result).toEqual({
             success: false,
             error: "Invalid worker status",
+        });
+        expect(mocks.db.select).not.toHaveBeenCalled();
+    });
+
+    it("returns validation error when PayNow is selected but PayNow number is not digits-only", async () => {
+        const result = await updateWorker(
+            "worker-1",
+            buildWorkerFormData({
+                paymentMethod: "PayNow",
+                payNowPhone: "12.5",
+            }),
+        );
+        expect(result).toEqual({
+            success: false,
+            error:
+                "PayNow must contain digits only (no decimals or other characters)",
         });
         expect(mocks.db.select).not.toHaveBeenCalled();
     });

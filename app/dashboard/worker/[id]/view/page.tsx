@@ -9,10 +9,7 @@ import { db } from "@/lib/db";
 import { Pencil } from "lucide-react";
 import { workerTable } from "@/db/tables/workerTable";
 import { employmentTable } from "@/db/tables/employmentTable";
-import {
-    WorkerForm,
-    type WorkerWithEmployment,
-} from "../../worker-form";
+import { WorkerForm } from "../../worker-form";
 
 interface PageProps {
     params: Promise<{
@@ -23,7 +20,7 @@ interface PageProps {
 export default async function ViewWorkerPage({ params }: PageProps) {
     const { id } = await params;
 
-    const [worker] = (await db
+    const [worker] = await db
         .select({
             id: workerTable.id,
             name: workerTable.name,
@@ -33,6 +30,7 @@ export default async function ViewWorkerPage({ params }: PageProps) {
             status: workerTable.status,
             countryOfOrigin: workerTable.countryOfOrigin,
             race: workerTable.race,
+            employmentId: workerTable.employmentId,
             employmentType: employmentTable.employmentType,
             employmentArrangement: employmentTable.employmentArrangement,
             cpf: employmentTable.cpf,
@@ -52,7 +50,7 @@ export default async function ViewWorkerPage({ params }: PageProps) {
             eq(workerTable.employmentId, employmentTable.id),
         )
         .where(eq(workerTable.id, id))
-        .limit(1)) as WorkerWithEmployment[];
+        .limit(1);
 
     if (!worker) {
         notFound();

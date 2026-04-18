@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
@@ -44,9 +44,48 @@ import {
     FieldGroup,
     FieldLabel,
 } from "@/components/ui/field";
+
+function RequiredMark() {
+    return (
+        <span className="text-destructive ml-0.5" aria-hidden="true">
+            *
+        </span>
+    );
+}
 import { cn } from "@/lib/utils";
+import type { WorkerWithEmployment } from "@/db/tables/workerTable";
+import {
+    WORKER_EMPLOYMENT_ARRANGEMENTS,
+    WORKER_EMPLOYMENT_TYPES,
+    WORKER_PAYMENT_METHODS,
+    WORKER_STATUSES,
+} from "@/types/status";
 import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 import { createWorker, updateWorker } from "./actions";
+
+export type { WorkerWithEmployment };
+
+function exceedsTwoDecimalPlaces(raw: string): boolean {
+    const t = raw.trim();
+    if (!t.includes(".")) return false;
+    const [, frac = ""] = t.split(".");
+    return frac.length > 2;
+}
+
+function isWholeNumberString(raw: string): boolean {
+    const t = raw.trim();
+    if (!t) return true;
+    return /^\d+$/.test(t);
+}
+
+/** PayNow field spec: numeric string (digits only, no decimals); DB column remains text. */
+const PAYNOW_DIGITS_ONLY_MESSAGE =
+    "PayNow must contain digits only (no decimals or other characters)";
+
+function digitsOnlyString(raw: string | null | undefined): string {
+    if (raw == null || raw === "") return "";
+    return raw.replace(/\D/g, "");
+}
 
 const workerFormSchema = z
     .object({
@@ -54,9 +93,9 @@ const workerFormSchema = z
         nric: z.string().optional(),
         email: z.string().optional(),
         phone: z.string().optional(),
-        status: z.enum(["Active", "Inactive"]),
-        employmentType: z.enum(["Full Time", "Part Time"]),
-        employmentArrangement: z.enum(["Foreign Worker", "Local Worker"]),
+        status: z.enum(WORKER_STATUSES),
+        employmentType: z.enum(WORKER_EMPLOYMENT_TYPES),
+        employmentArrangement: z.enum(WORKER_EMPLOYMENT_ARRANGEMENTS),
         countryOfOrigin: z.string().optional(),
         race: z.string().optional(),
         cpf: z.string().optional(),
@@ -64,10 +103,7 @@ const workerFormSchema = z
         hourlyRate: z.string().optional(),
         restDayRate: z.string().optional(),
         minimumWorkingHours: z.string().optional(),
-        paymentMethod: z
-            .enum(["PayNow", "Bank Transfer", "Cash"])
-            .nullable()
-            .optional(),
+        paymentMethod: z.enum(WORKER_PAYMENT_METHODS).nullable().optional(),
         payNowPhone: z.string().optional(),
         bankAccountNumber: z.string().optional(),
     })
@@ -76,6 +112,58 @@ const workerFormSchema = z
         const isPartTime = values.employmentType === "Part Time";
         const isBankTransfer = values.paymentMethod === "Bank Transfer";
         const isPayNow = values.paymentMethod === "PayNow";
+
+        const emailRaw =
+            typeof values.email === "string" ? values.email.trim() : "";
+        if (emailRaw) {
+            const parsed = z
+                .string()
+                .email("Enter a valid email address")
+                .safeParse(emailRaw);
+            if (!parsed.success) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["email"],
+                    message: "Enter a valid email address",
+                });
+            }
+        }
+
+        const phoneRaw =
+            typeof values.phone === "string" ? values.phone.trim() : "";
+        if (phoneRaw && !/^\d+$/.test(phoneRaw)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["phone"],
+                message:
+                    "Phone must contain digits only (no decimals or other characters)",
+            });
+        }
+
+        if (values.employmentArrangement === "Local Worker") {
+            const cpfRaw =
+                typeof values.cpf === "string" ? values.cpf.trim() : "";
+            if (cpfRaw) {
+                if (exceedsTwoDecimalPlaces(cpfRaw)) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: ["cpf"],
+                        message:
+                            "CPF must use at most two decimal places and cannot be negative",
+                    });
+                } else {
+                    const n = Number(cpfRaw);
+                    if (!Number.isFinite(n) || n < 0) {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            path: ["cpf"],
+                            message:
+                                "CPF must use at most two decimal places and cannot be negative",
+                        });
+                    }
+                }
+            }
+        }
 
         if (isFullTime) {
             const payFields: Array<{
@@ -87,32 +175,38 @@ const workerFormSchema = z
                 requiredMessage: string;
                 validationMessage: string;
                 allowZero?: boolean;
+                maxTwoDecimals?: boolean;
+                wholeNumber?: boolean;
             }> = [
                 {
                     key: "monthlyPay",
                     requiredMessage:
                         "Monthly pay is required for full time workers",
                     validationMessage: "Monthly pay must be a positive number",
+                    maxTwoDecimals: true,
                 },
                 {
                     key: "hourlyRate",
                     requiredMessage:
                         "Hourly rate is required for full time workers",
                     validationMessage: "Hourly rate must be a positive number",
+                    maxTwoDecimals: true,
                 },
                 {
                     key: "restDayRate",
                     requiredMessage:
                         "Rest day rate is required for full time workers",
                     validationMessage: "Rest day rate must be a positive number",
+                    maxTwoDecimals: true,
                 },
                 {
                     key: "minimumWorkingHours",
                     requiredMessage:
                         "Minimum working hours are required for full time workers",
                     validationMessage:
-                        "Minimum working hours must be zero or a positive number",
+                        "Minimum working hours must be zero or a positive whole number",
                     allowZero: true,
+                    wholeNumber: true,
                 },
             ];
 
@@ -126,6 +220,31 @@ const workerFormSchema = z
                         code: z.ZodIssueCode.custom,
                         path: [field.key],
                         message: field.requiredMessage,
+                    });
+                    continue;
+                }
+
+                if (field.wholeNumber && !isWholeNumberString(value)) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: [field.key],
+                        message:
+                            "Minimum working hours must be a whole number with no decimals",
+                    });
+                    continue;
+                }
+
+                if (field.maxTwoDecimals && exceedsTwoDecimalPlaces(value)) {
+                    const maxDecLabel =
+                        field.key === "monthlyPay"
+                            ? "Monthly pay"
+                            : field.key === "hourlyRate"
+                              ? "Hourly rate"
+                              : "Rest day rate";
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        path: [field.key],
+                        message: `${maxDecLabel} must use at most two decimal places`,
                     });
                     continue;
                 }
@@ -153,6 +272,12 @@ const workerFormSchema = z
                     code: z.ZodIssueCode.custom,
                     path: ["hourlyRate"],
                     message: "Hourly rate is required for part time workers",
+                });
+            } else if (exceedsTwoDecimalPlaces(value)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["hourlyRate"],
+                    message: "Hourly rate must use at most two decimal places",
                 });
             } else {
                 const numericValue = Number(value);
@@ -183,43 +308,28 @@ const workerFormSchema = z
         }
 
         if (isPayNow) {
-            const rawPhone = values.payNowPhone;
-            const phone = typeof rawPhone === "string" ? rawPhone.trim() : "";
+            const rawPayNow = values.payNowPhone;
+            const payNow =
+                typeof rawPayNow === "string" ? rawPayNow.trim() : "";
 
-            if (!phone) {
+            if (!payNow) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     path: ["payNowPhone"],
-                    message: "PayNow phone is required when PayNow is selected",
+                    message:
+                        "PayNow number is required when payment method is PayNow",
+                });
+            } else if (!/^\d+$/.test(payNow)) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ["payNowPhone"],
+                    message: PAYNOW_DIGITS_ONLY_MESSAGE,
                 });
             }
         }
     });
 
 type WorkerFormValues = z.infer<typeof workerFormSchema>;
-
-export type WorkerWithEmployment = {
-    id: string;
-    name: string;
-    nric: string | null;
-    email: string | null;
-    phone: string | null;
-    status: "Active" | "Inactive";
-    countryOfOrigin: string | null;
-    race: string | null;
-    employmentType: string;
-    employmentArrangement: string;
-    cpf: number | null;
-    monthlyPay: number | null;
-    hourlyRate: number | null;
-    restDayRate: number | null;
-    minimumWorkingHours?: number | null;
-    paymentMethod: string | null;
-    payNowPhone: string | null;
-    bankAccountNumber: string | null;
-    createdAt: Date | string;
-    updatedAt: Date | string;
-};
 
 function getDefaultValues(
     worker?: WorkerWithEmployment | null,
@@ -243,7 +353,7 @@ function getDefaultValues(
         minimumWorkingHours: worker?.minimumWorkingHours?.toString() ?? "",
         paymentMethod: (worker?.paymentMethod ??
             "Cash") as WorkerFormValues["paymentMethod"],
-        payNowPhone: worker?.payNowPhone ?? "",
+        payNowPhone: digitsOnlyString(worker?.payNowPhone),
         bankAccountNumber: worker?.bankAccountNumber ?? "",
     };
 }
@@ -264,7 +374,14 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
     const form = useForm<WorkerFormValues>({
         resolver: zodResolver(workerFormSchema),
         defaultValues: getDefaultValues(worker),
+        mode: "onTouched",
     });
+
+    const watchedValues = useWatch({ control: form.control });
+    const isFormValid =
+        watchedValues === undefined
+            ? false
+            : workerFormSchema.safeParse(watchedValues).success;
 
     const onSubmit = async (data: WorkerFormValues) => {
         if (disabled) return;
@@ -301,6 +418,8 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
     const employmentType = form.watch("employmentType");
     const employmentArrangement = form.watch("employmentArrangement");
     const paymentMethod = form.watch("paymentMethod");
+
+    const isFullTime = employmentType === "Full Time";
 
     return (
         <Card>
@@ -401,6 +520,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                         className="space-y-2">
                                         <FieldLabel htmlFor={`${formId}-name`}>
                                             Name
+                                            <RequiredMark />
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupInput
@@ -409,6 +529,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                 aria-invalid={
                                                     fieldState.invalid
                                                 }
+                                                aria-required
                                                 disabled={disabled}
                                             />
                                             <InputGroupAddon>
@@ -728,7 +849,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-5">
-                            {employmentType === "Full Time" && (
+                            {isFullTime && (
                                 <Controller
                                     name="monthlyPay"
                                     control={form.control}
@@ -739,6 +860,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             <FieldLabel
                                                 htmlFor={`${formId}-monthlyPay`}>
                                                 Monthly Pay
+                                                <RequiredMark />
                                             </FieldLabel>
                                             <InputGroup>
                                                 <InputGroupInput
@@ -750,6 +872,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                     aria-invalid={
                                                         fieldState.invalid
                                                     }
+                                                    aria-required
                                                     disabled={disabled}
                                                 />
                                                 <InputGroupAddon>
@@ -775,6 +898,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                         <FieldLabel
                                             htmlFor={`${formId}-hourlyRate`}>
                                             Hourly Rate
+                                            <RequiredMark />
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupInput
@@ -786,6 +910,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                 aria-invalid={
                                                     fieldState.invalid
                                                 }
+                                                aria-required
                                                 disabled={disabled}
                                             />
                                             <InputGroupAddon>
@@ -801,7 +926,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                 )}
                             />
 
-                            {employmentType === "Full Time" && (
+                            {isFullTime && (
                                 <Controller
                                     name="restDayRate"
                                     control={form.control}
@@ -812,6 +937,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             <FieldLabel
                                                 htmlFor={`${formId}-restDayRate`}>
                                                 Rest Day Rate
+                                                <RequiredMark />
                                             </FieldLabel>
                                             <InputGroup>
                                                 <InputGroupInput
@@ -823,6 +949,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                     aria-invalid={
                                                         fieldState.invalid
                                                     }
+                                                    aria-required
                                                     disabled={disabled}
                                                 />
                                                 <InputGroupAddon>
@@ -838,7 +965,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                     )}
                                 />
                             )}
-                            {employmentType === "Full Time" && (
+                            {isFullTime && (
                                 <Controller
                                     name="minimumWorkingHours"
                                     control={form.control}
@@ -849,6 +976,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             <FieldLabel
                                                 htmlFor={`${formId}-minimumWorkingHours`}>
                                                 Minimum Working Hours
+                                                <RequiredMark />
                                             </FieldLabel>
                                             <InputGroup>
                                                 <InputGroupInput
@@ -860,6 +988,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                     aria-invalid={
                                                         fieldState.invalid
                                                     }
+                                                    aria-required
                                                     disabled={disabled}
                                                 />
                                                 <InputGroupAddon>
@@ -942,13 +1071,17 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                         form.getValues(
                                                             "payNowPhone",
                                                         );
+                                                    const phoneDigits =
+                                                        digitsOnlyString(
+                                                            currentPhone,
+                                                        );
                                                     if (
                                                         !currentPayNowPhone &&
-                                                        currentPhone
+                                                        phoneDigits
                                                     ) {
                                                         form.setValue(
                                                             "payNowPhone",
-                                                            currentPhone,
+                                                            phoneDigits,
                                                             {
                                                                 shouldDirty: true,
                                                             },
@@ -1005,16 +1138,30 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             className="space-y-2">
                                             <FieldLabel
                                                 htmlFor={`${formId}-payNowPhone`}>
-                                                PayNow Phone
+                                                PayNow
+                                                <RequiredMark />
                                             </FieldLabel>
                                             <InputGroup>
                                                 <InputGroupInput
                                                     {...field}
                                                     id={`${formId}-payNowPhone`}
+                                                    inputMode="numeric"
+                                                    pattern="[0-9]*"
+                                                    autoComplete="tel"
                                                     aria-invalid={
                                                         fieldState.invalid
                                                     }
+                                                    aria-required
                                                     disabled={disabled}
+                                                    onChange={(e) => {
+                                                        field.onChange(
+                                                            e.target.value.replace(
+                                                                /\D/g,
+                                                                "",
+                                                            ),
+                                                        );
+                                                    }}
+                                                    value={field.value ?? ""}
                                                 />
                                                 <InputGroupAddon>
                                                     <Phone className="size-4 text-muted-foreground" />
@@ -1040,6 +1187,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             <FieldLabel
                                                 htmlFor={`${formId}-bankAccountNumber`}>
                                                 Bank Account Number
+                                                <RequiredMark />
                                             </FieldLabel>
                                             <InputGroup>
                                                 <InputGroupInput
@@ -1048,6 +1196,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                     aria-invalid={
                                                         fieldState.invalid
                                                     }
+                                                    aria-required
                                                     disabled={disabled}
                                                 />
                                                 <InputGroupAddon>
@@ -1074,7 +1223,9 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                 </p>
                             )}
                             <div className="flex justify-end gap-2">
-                                <Button type="submit" disabled={pending}>
+                                <Button
+                                    type="submit"
+                                    disabled={pending || !isFormValid}>
                                     {pending
                                         ? isCreate
                                             ? "Adding..."
