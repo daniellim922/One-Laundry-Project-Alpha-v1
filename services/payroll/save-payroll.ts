@@ -13,10 +13,7 @@ import {
     type PayrollPeriodConflict,
     validatePayrollPeriodRange,
 } from "@/utils/payroll/payroll-period-conflicts";
-import {
-    countMissingTimesheetDateIns,
-    restDaysFromMissingDateCount,
-} from "@/utils/payroll/missing-timesheet-dates";
+import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type CreatePayrollExecutor = Pick<DbTransaction, "select" | "insert">;
@@ -151,12 +148,11 @@ async function createPayrollForWorkerInExecutor(
         (sum, entry) => sum + Number(entry.hours),
         0,
     );
-    const missingCount = countMissingTimesheetDateIns({
+    const restDays = computeRestDaysForPayrollPeriod({
         periodStart,
         periodEnd,
         presentDateInKeys: entries.map((e) => e.dateIn),
     });
-    const restDays = restDaysFromMissingDateCount(missingCount);
     const publicHolidays = 0;
     const payCalc = calculatePay({
         employmentType: employment.employmentType,
@@ -489,12 +485,11 @@ export async function updatePayrollRecord(input: {
         .where(eq(payrollVoucherTable.id, existing.payrollVoucherId))
         .limit(1);
 
-    const missingCount = countMissingTimesheetDateIns({
+    const restDays = computeRestDaysForPayrollPeriod({
         periodStart,
         periodEnd,
         presentDateInKeys: entries.map((e) => e.dateIn),
     });
-    const restDays = restDaysFromMissingDateCount(missingCount);
     const publicHolidays = currentVoucher?.publicHolidays ?? 0;
     const payCalc = calculatePay({
         employmentType: row.employment.employmentType,

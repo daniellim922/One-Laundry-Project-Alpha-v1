@@ -20,10 +20,7 @@ import { payrolls } from "./payrolls";
 import { seedPeriods } from "./periods";
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
-import {
-    countMissingTimesheetDateIns,
-    restDaysFromMissingDateCount,
-} from "@/utils/payroll/missing-timesheet-dates";
+import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
 
 describe("seedPeriods", () => {
     it("covers April through December 2025 without gaps", () => {
@@ -110,14 +107,12 @@ describe("payroll seed backbone", () => {
                 )
                 .map((entry) => entry.dateIn);
 
-            const missingCount = countMissingTimesheetDateIns({
-                periodStart: payroll.periodStart,
-                periodEnd: payroll.periodEnd,
-                presentDateInKeys,
-            });
-
             expect(payroll.voucher.restDays).toBe(
-                restDaysFromMissingDateCount(missingCount),
+                computeRestDaysForPayrollPeriod({
+                    periodStart: payroll.periodStart,
+                    periodEnd: payroll.periodEnd,
+                    presentDateInKeys,
+                }),
             );
         }
     });

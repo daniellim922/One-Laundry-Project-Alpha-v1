@@ -32,6 +32,7 @@ import { PayrollHeader } from "../payroll-header";
 import { PayrollStepProgress } from "../payroll-step-progress";
 import { VoucherEditableNumber } from "../voucher-editable-number";
 import { Badge } from "@/components/ui/badge";
+import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -51,6 +52,15 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
         missingDateIns,
         advances,
     } = await getPayrollDetailData(id);
+
+    const attendanceRestDays = computeRestDaysForPayrollPeriod({
+        periodStart: payroll.periodStart,
+        periodEnd: payroll.periodEnd,
+        presentDateInKeys: entries.map((e) => e.dateIn),
+    });
+    const voucherRestDaysForCompare = voucher.restDays ?? 0;
+    const restDaysDifferFromAttendance =
+        voucherRestDaysForCompare !== attendanceRestDays;
 
     return (
         <div className="space-y-6">
@@ -411,15 +421,26 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                             </CardHeader>
                             <CardContent className="px-4 pt-1">
                                 <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                                    <VoucherEditableNumber
-                                        payrollId={payroll.id}
-                                        voucherId={voucher.id}
-                                        label="Rest Days"
-                                        field="restDays"
-                                        restDays={voucher.restDays}
-                                        publicHolidays={voucher.publicHolidays}
-                                        readOnly={payroll.status !== "Draft"}
-                                    />
+                                    <div className="space-y-1">
+                                        <VoucherEditableNumber
+                                            payrollId={payroll.id}
+                                            voucherId={voucher.id}
+                                            label="Rest Days"
+                                            field="restDays"
+                                            restDays={voucher.restDays}
+                                            publicHolidays={voucher.publicHolidays}
+                                            readOnly={payroll.status !== "Draft"}
+                                        />
+                                        <p className="text-xs text-muted-foreground">
+                                            From attendance: {attendanceRestDays}
+                                            {restDaysDifferFromAttendance ? (
+                                                <span className="block mt-1 text-muted-foreground/90">
+                                                    Voucher differs from this figure
+                                                    (manual adjustment).
+                                                </span>
+                                            ) : null}
+                                        </p>
+                                    </div>
                                     <div className="space-y-1">
                                         <p className="text-sm text-muted-foreground">
                                             Rest Day Pay

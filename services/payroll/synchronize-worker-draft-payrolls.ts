@@ -9,10 +9,7 @@ import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { workerTable } from "@/db/tables/workerTable";
 import { calculatePay } from "@/utils/payroll/payroll-utils";
-import {
-    countMissingTimesheetDateIns,
-    restDaysFromMissingDateCount,
-} from "@/utils/payroll/missing-timesheet-dates";
+import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type PayrollSyncExecutor = Pick<typeof db, "select" | "update">;
@@ -116,12 +113,11 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
                 .where(eq(payrollVoucherTable.id, payroll.payrollVoucherId))
                 .limit(1);
 
-            const missingCount = countMissingTimesheetDateIns({
+            const restDays = computeRestDaysForPayrollPeriod({
                 periodStart: payroll.periodStart,
                 periodEnd: payroll.periodEnd,
                 presentDateInKeys: entryRows.map((e) => e.dateIn),
             });
-            const restDays = restDaysFromMissingDateCount(missingCount);
 
             const payCalc = calculatePay({
                 employmentType: employment.employmentType,

@@ -12,10 +12,7 @@ import { seedPeriods } from "./periods";
 import { getSeedPayrollStatus } from "./settlement-state";
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
-import {
-    countMissingTimesheetDateIns,
-    restDaysFromMissingDateCount,
-} from "@/utils/payroll/missing-timesheet-dates";
+import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
 
 function roundMoney(n: number): number {
     return Math.round(n * 100) / 100;
@@ -113,16 +110,14 @@ function generatePayrolls(): PayrollEntry[] {
             const restDayRate =
                 "restDayRate" in worker ? worker.restDayRate ?? null : null;
             const isPartTime = worker.employmentType === "Part Time";
-            const restDays = restDaysFromMissingDateCount(
-                countMissingTimesheetDateIns({
-                    periodStart: period.periodStart,
-                    periodEnd: period.periodEnd,
-                    presentDateInKeys:
-                        presentDateInKeysByWorkerPeriod.get(
-                            `${workerIndex}:${period.key}`,
-                        ) ?? [],
-                }),
-            );
+            const restDays = computeRestDaysForPayrollPeriod({
+                periodStart: period.periodStart,
+                periodEnd: period.periodEnd,
+                presentDateInKeys:
+                    presentDateInKeysByWorkerPeriod.get(
+                        `${workerIndex}:${period.key}`,
+                    ) ?? [],
+            });
 
             let totalPay = 0;
             let overtimePay = 0;
