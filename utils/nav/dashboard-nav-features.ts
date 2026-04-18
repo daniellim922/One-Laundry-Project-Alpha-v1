@@ -48,19 +48,6 @@ export const DASHBOARD_NAV_FEATURES: DashboardNavFeature[] = [
         iconName: "Worker",
     },
     {
-        name: "Advance",
-        url: "/dashboard/advance",
-        description: [
-            "This should display an overview summary of salary advance requests using charts from Shadcn UI",
-            "It should highlight pending and recent advances and link to create or review requests",
-        ],
-        subFeatures: [
-            { name: "All advances", url: "/dashboard/advance/all" },
-            { name: "New advance", url: "/dashboard/advance/new" },
-        ],
-        iconName: "Advance",
-    },
-    {
         name: "Timesheet",
         url: "/dashboard/timesheet",
         description: [
@@ -73,6 +60,19 @@ export const DASHBOARD_NAV_FEATURES: DashboardNavFeature[] = [
             { name: "Import timesheets", url: "/dashboard/timesheet/import" },
         ],
         iconName: "Timesheet",
+    },
+    {
+        name: "Advance",
+        url: "/dashboard/advance",
+        description: [
+            "This should display an overview summary of salary advance requests using charts from Shadcn UI",
+            "It should highlight pending and recent advances and link to create or review requests",
+        ],
+        subFeatures: [
+            { name: "All advances", url: "/dashboard/advance/all" },
+            { name: "New advance", url: "/dashboard/advance/new" },
+        ],
+        iconName: "Advance",
     },
     {
         name: "Payroll",
