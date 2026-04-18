@@ -56,13 +56,13 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 
 ## Seed Dataset
 
-- `npm run db:seed` loads a deterministic 12-month historical dataset spanning `2025-04` through `2026-03` from `db/seed/`.
+- `npm run db:seed` loads a deterministic 9-month historical dataset spanning `2025-04` through `2025-12` from `db/seed/`.
 - `npm run db:reset` is the default bootstrap for a seeded app-ready database: wipe, push schema, then seed.
 - `db:*` runs Drizzle push, wipe, and seed via `DATABASE_URL` only.
 - Every active worker receives seeded monthly timesheets and payroll rows across that full window so payroll, advance, and reporting screens have browseable history.
 - Foreign full-time workers keep a live employment minimum of `260`, while payroll vouchers snapshot the month-specific minimum-hours target of `250` or `260`.
 - Exactly 5 foreign full-time workers form the quarterly advance cohort; they request a fixed-amount advance once per quarter and repay it over 3 monthly installments in the same quarter.
-- Settlement history is intentional: all `2025` payroll periods seed as `Settled`, and `2026-01` through `2026-03` seed as `Draft`, with timesheet and advance statuses aligned to those payroll states.
+- Settlement history is intentional: all seeded payroll periods land in `2025`, so the built-in dataset contains only `Settled` payrolls with aligned paid timesheet and advance records. Create Draft payrolls manually when you need draft-state workflows.
 
 ## Key file locations
 

@@ -18,17 +18,15 @@ import {
 } from "./minimum-hours";
 import { payrolls } from "./payrolls";
 import { seedPeriods } from "./periods";
-import {
-    getSeedAdvanceRequestStatus,
-    getSeedInstallmentStatus,
-    getSeedPayrollStatus,
-    getSeedTimesheetStatus,
-} from "./settlement-state";
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
+import {
+    countMissingTimesheetDateIns,
+    restDaysFromMissingDateCount,
+} from "@/utils/payroll/missing-timesheet-dates";
 
 describe("seedPeriods", () => {
-    it("covers April 2025 through March 2026 without gaps", () => {
+    it("covers April through December 2025 without gaps", () => {
         expect(seedPeriods.map((period) => period.key)).toEqual([
             "2025-04",
             "2025-05",
@@ -39,10 +37,13 @@ describe("seedPeriods", () => {
             "2025-10",
             "2025-11",
             "2025-12",
-            "2026-01",
-            "2026-02",
-            "2026-03",
         ]);
+    });
+
+    it("excludes January through March 2026 from the shared seed window", () => {
+        expect(seedPeriods.some((period) => period.key.startsWith("2026-"))).toBe(
+            false,
+        );
     });
 });
 
@@ -57,6 +58,15 @@ describe("timesheet seed backbone", () => {
                 expect(monthCoverage.has(`${workerIndex}:${period.key}`)).toBe(true);
             }
         }
+    });
+
+    it("produces no Jan-Mar 2026 timesheet rows", () => {
+        expect(
+            timesheets.some((entry) => {
+                const monthKey = entry.dateIn.slice(0, 7);
+                return monthKey >= "2026-01" && monthKey <= "2026-03";
+            }),
+        ).toBe(false);
     });
 });
 
@@ -78,6 +88,38 @@ describe("payroll seed backbone", () => {
         expect(payrolls.at(-1)?.voucher.voucherNumber).toBe(
             (seedPeriods.length - 1) * 1000 + workers.length,
         );
+    });
+
+    it("produces no Jan-Mar 2026 payroll rows", () => {
+        expect(
+            payrolls.some((payroll) => {
+                const monthKey = payroll.periodStart.slice(0, 7);
+                return monthKey >= "2026-01" && monthKey <= "2026-03";
+            }),
+        ).toBe(false);
+    });
+
+    it("derives voucher restDays from seeded attendance coverage using the live missing-date rule", () => {
+        for (const payroll of payrolls) {
+            const presentDateInKeys = timesheets
+                .filter(
+                    (entry) =>
+                        entry.workerIndex === payroll.workerIndex &&
+                        entry.dateIn >= payroll.periodStart &&
+                        entry.dateIn <= payroll.periodEnd,
+                )
+                .map((entry) => entry.dateIn);
+
+            const missingCount = countMissingTimesheetDateIns({
+                periodStart: payroll.periodStart,
+                periodEnd: payroll.periodEnd,
+                presentDateInKeys,
+            });
+
+            expect(payroll.voucher.restDays).toBe(
+                restDaysFromMissingDateCount(missingCount),
+            );
+        }
     });
 });
 
@@ -256,10 +298,12 @@ describe("phase 3 quarterly advance cohort", () => {
     });
 
     it("is deterministic and feeds the correct payroll advance deductions", () => {
-        const expectedRequests = [0, 3, 6, 9].flatMap((periodIndex) =>
+        const expectedRequests = seedPeriods
+            .filter((_, periodIndex) => periodIndex % 3 === 0)
+            .flatMap((period) =>
             quarterlyAdvanceCohortWorkerIndexes.map((workerIndex) => ({
                 workerIndex,
-                requestDate: `${seedPeriods[periodIndex]!.key}-05`,
+                requestDate: `${period.key}-05`,
             })),
         );
 
@@ -287,48 +331,42 @@ describe("phase 3 quarterly advance cohort", () => {
             }
         }
     });
+
+    it("produces no Jan-Mar 2026 advances or installments", () => {
+        expect(
+            advances.some(
+                (advance) =>
+                    (advance.dateRequested >= "2026-01-01" &&
+                        advance.dateRequested <= "2026-03-31") ||
+                    advance.repaymentTerms.some(
+                        (term) =>
+                            term.installmentDate >= "2026-01-01" &&
+                            term.installmentDate <= "2026-03-31",
+                    ),
+            ),
+        ).toBe(false);
+    });
 });
 
 describe("phase 4 historical settlement states", () => {
-    it("seeds all 2025 payrolls as Settled and 2026 Q1 payrolls as Draft", () => {
-        for (const payroll of payrolls) {
-            const period = seedPeriods.find(
-                (candidate) => candidate.periodStart === payroll.periodStart,
-            );
-
-            expect(period).toBeDefined();
-            expect(payroll.status).toBe(getSeedPayrollStatus(period!));
-        }
+    it("seeds no Draft payrolls in the trimmed historical dataset", () => {
+        expect(payrolls.every((payroll) => payroll.status === "Settled")).toBe(true);
     });
 
-    it("marks 2025 timesheets paid and keeps 2026 Q1 timesheets unpaid", () => {
-        for (const timesheet of timesheets) {
-            const period = seedPeriods.find((candidate) =>
-                timesheet.dateIn.startsWith(candidate.key),
-            );
-
-            expect(period).toBeDefined();
-            expect(timesheet.status).toBe(getSeedTimesheetStatus(period!));
-        }
+    it("marks all remaining timesheets paid", () => {
+        expect(
+            timesheets.every((timesheet) => timesheet.status === "Timesheet Paid"),
+        ).toBe(true);
     });
 
-    it("marks settled-period advance installments paid and fully repaid requests paid", () => {
+    it("marks all seeded advance installments and requests paid", () => {
         for (const advance of advances) {
-            const expectedInstallmentStatuses = advance.repaymentTerms.map((term) => {
-                const period = seedPeriods.find((candidate) =>
-                    term.installmentDate.startsWith(candidate.key),
-                );
-
-                expect(period).toBeDefined();
-                return getSeedInstallmentStatus(period!);
-            });
-
-            expect(advance.repaymentTerms.map((term) => term.status)).toEqual(
-                expectedInstallmentStatuses,
-            );
-            expect(advance.status).toBe(
-                getSeedAdvanceRequestStatus(expectedInstallmentStatuses),
-            );
+            expect(
+                advance.repaymentTerms.every(
+                    (term) => term.status === "Installment Paid",
+                ),
+            ).toBe(true);
+            expect(advance.status).toBe("Advance Paid");
         }
     });
 });

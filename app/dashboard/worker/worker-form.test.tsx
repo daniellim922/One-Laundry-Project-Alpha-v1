@@ -379,7 +379,7 @@ describe("WorkerForm", () => {
         expect(
             (screen.getByRole("textbox", { name: /PayNow/ }) as HTMLInputElement)
                 .value,
-        ).toBe("+65 9000-1111");
+        ).toBe("+65 9000 1111");
 
         await user.click(screen.getByLabelText(/Payment Method/i));
         listbox = await screen.findByRole("listbox");

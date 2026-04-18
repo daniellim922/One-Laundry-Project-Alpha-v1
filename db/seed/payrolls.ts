@@ -1,5 +1,5 @@
 /**
- * Payroll + voucher seed entries for April 2025 through March 2026.
+ * Payroll + voucher seed entries for April through December 2025.
  * Computes month-scoped values from the generated timesheets.
  */
 
@@ -12,6 +12,10 @@ import { seedPeriods } from "./periods";
 import { getSeedPayrollStatus } from "./settlement-state";
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
+import {
+    countMissingTimesheetDateIns,
+    restDaysFromMissingDateCount,
+} from "@/utils/payroll/missing-timesheet-dates";
 
 function roundMoney(n: number): number {
     return Math.round(n * 100) / 100;
@@ -54,11 +58,15 @@ export type PayrollEntry = {
 
 function generatePayrolls(): PayrollEntry[] {
     const hoursMap = new Map<string, number>();
+    const presentDateInKeysByWorkerPeriod = new Map<string, string[]>();
 
     for (const t of timesheets) {
         const monthKey = t.dateIn.slice(0, 7);
         const key = `${t.workerIndex}:${monthKey}`;
         hoursMap.set(key, (hoursMap.get(key) ?? 0) + t.hours);
+        const dateInKeys = presentDateInKeysByWorkerPeriod.get(key) ?? [];
+        dateInKeys.push(t.dateIn);
+        presentDateInKeysByWorkerPeriod.set(key, dateInKeys);
     }
 
     const payrolls: PayrollEntry[] = [];
@@ -105,6 +113,16 @@ function generatePayrolls(): PayrollEntry[] {
             const restDayRate =
                 "restDayRate" in worker ? worker.restDayRate ?? null : null;
             const isPartTime = worker.employmentType === "Part Time";
+            const restDays = restDaysFromMissingDateCount(
+                countMissingTimesheetDateIns({
+                    periodStart: period.periodStart,
+                    periodEnd: period.periodEnd,
+                    presentDateInKeys:
+                        presentDateInKeysByWorkerPeriod.get(
+                            `${workerIndex}:${period.key}`,
+                        ) ?? [],
+                }),
+            );
 
             let totalPay = 0;
             let overtimePay = 0;
@@ -118,7 +136,7 @@ function generatePayrolls(): PayrollEntry[] {
                     publicHolidayPay;
             } else {
                 overtimePay = roundMoney((hourlyRate ?? 0) * overtimeHours);
-                restDayPay = roundMoney((restDayRate ?? 0) * period.restDays);
+                restDayPay = roundMoney((restDayRate ?? 0) * restDays);
                 totalPay = roundMoney(
                     (monthlyPay ?? 0) +
                         overtimePay +
@@ -157,7 +175,7 @@ function generatePayrolls(): PayrollEntry[] {
                     overtimeHours,
                     hourlyRate,
                     overtimePay,
-                    restDays: period.restDays,
+                    restDays,
                     restDayRate,
                     restDayPay,
                     publicHolidays,

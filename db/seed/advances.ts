@@ -1,5 +1,5 @@
 /**
- * Deterministic quarterly advance cohort for April 2025 through March 2026.
+ * Deterministic quarterly advance cohort for April through December 2025.
  * workerName is resolved to workerId when seeding.
  */
 
