@@ -76,6 +76,12 @@ erDiagram
         text status
     }
 
+    PUBLIC_HOLIDAY {
+        uuid id PK
+        date holiday_date
+        text name
+    }
+
     EXPENSE {
         uuid id PK
         text description
@@ -95,6 +101,7 @@ erDiagram
 ## Notes
 
 - `expenses` is currently standalone and does not link to `worker` or `payroll`.
+- `public_holiday` is shared payroll master data keyed by calendar date; operators manage it one calendar year at a time from the Payroll area.
 - The live Drizzle schema contains only payroll-domain and expense tables; there are no auth or IAM tables in the repo schema surface.
 - App logic treats `payroll` and `payroll_voucher` as one voucher per payroll run, but the current schema stores the foreign key on `payroll` without a unique constraint on `payroll_voucher_id`.
 

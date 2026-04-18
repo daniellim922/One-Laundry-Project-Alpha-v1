@@ -109,6 +109,7 @@ flowchart TD
 - All document/export routes declare `runtime = "nodejs"`.
 - JSON command routes prefer the shared transport helpers in `app/api/_shared/` for authenticated-session enforcement, response shaping, and revalidation handling.
 - Bulk worker minimum-hours updates stay action-free on the client side: the dashboard dialog calls the route, while worker create and edit forms remain server-action submissions.
+- Payroll public-holiday calendar management currently stays on the server-action side of the transport split under `app/dashboard/payroll/public-holidays`; there is no dedicated `app/api` route for the year-save workflow yet.
 - Payroll revert preview, bulk settlement candidate loading, payroll download selection, payroll settle/revert commands, voucher-day edits, and export flows now run through `app/api`; only payroll create and update remain server-action form submissions.
 - Timesheet delete and AttendRecord import now call `app/api` from client components, while timesheet create and edit remain server-action submissions.
 - Dashboard form submissions still perform their own `requireCurrentDashboardUser()` check, so route protection does not rely on `proxy.ts` alone.

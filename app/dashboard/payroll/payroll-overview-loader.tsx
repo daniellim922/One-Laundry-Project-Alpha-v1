@@ -12,7 +12,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { SimpleDonutChart } from "@/components/dashboard/simple-donut-chart";
-import { ArrowRight, Download, Plus, Wallet } from "lucide-react";
+import { ArrowRight, CalendarDays, Download, Plus, Wallet } from "lucide-react";
 
 export async function PayrollOverviewLoader() {
     const [[{ total }], [{ draftCount }]] = await Promise.all([
@@ -66,6 +66,12 @@ export async function PayrollOverviewLoader() {
                     <Link href="/dashboard/payroll/new">
                         <Plus className="mr-2 h-4 w-4" />
                         New payroll
+                    </Link>
+                </Button>
+                <Button variant="outline" asChild>
+                    <Link href="/dashboard/payroll/public-holidays">
+                        <CalendarDays className="mr-2 h-4 w-4" />
+                        Public holidays
                     </Link>
                 </Button>
             </div>
