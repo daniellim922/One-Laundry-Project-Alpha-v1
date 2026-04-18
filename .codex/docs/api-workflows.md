@@ -10,7 +10,7 @@ This document maps the live `app/api/` surface with Supabase email-and-password 
 | `/api/payroll/[id]/revert-preview` | `GET` | Authenticated session required | Lazy-load the revert impact preview for the payroll detail dialog |
 | `/api/payroll/[id]/revert` | `POST` | Authenticated session required | Reopen a Settled payroll and unwind timesheet + advance recovery |
 | `/api/payroll/[id]/settle` | `POST` | Authenticated session required | Settle a single Draft payroll run |
-| `/api/payroll/[id]/voucher-days` | `PATCH` | Authenticated session required | Update rest-day and public-holiday counts on a payroll voucher |
+| `/api/payroll/[id]/voucher-days` | `PATCH` | Authenticated session required | Update voucher day-count fields; current payroll detail UI uses it for `restDays`, while newly created Draft payroll `publicHolidays` are computed from the shared holiday calendar |
 | `/api/payroll/[id]/pdf` | `GET` | Authenticated session required | Generate payroll summary or voucher PDF |
 | `/api/payroll/download-selection` | `GET` | Authenticated session required | Lazy-load payroll rows for the download-selection dialog |
 | `/api/payroll/download-zip` | `POST` | Authenticated session required | Bundle multiple payroll PDFs into a ZIP |

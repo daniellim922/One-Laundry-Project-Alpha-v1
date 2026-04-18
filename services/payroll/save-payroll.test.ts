@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
     revalidatePath: vi.fn(),
     findPayrollPeriodConflicts: vi.fn(),
+    getAdvancesForPayrollPeriod: vi.fn(),
     db: {
         select: vi.fn(),
         transaction: vi.fn(),
@@ -15,6 +16,11 @@ vi.mock("next/cache", () => ({
 
 vi.mock("@/lib/db", () => ({
     db: mocks.db,
+}));
+
+vi.mock("@/utils/advance/queries", () => ({
+    getAdvancesForPayrollPeriod: (...args: unknown[]) =>
+        mocks.getAdvancesForPayrollPeriod(...args),
 }));
 
 vi.mock("@/utils/payroll/payroll-period-conflicts", async () => {
@@ -30,6 +36,7 @@ vi.mock("@/utils/payroll/payroll-period-conflicts", async () => {
 });
 
 import {
+    createPayrollRecord,
     createPayrollRecords,
     updatePayrollRecord,
 } from "@/services/payroll/save-payroll";
@@ -113,6 +120,95 @@ describe("payroll overlap action handling", () => {
         });
         expect(mocks.db.transaction).not.toHaveBeenCalled();
         expect(mocks.revalidatePath).not.toHaveBeenCalled();
+    });
+
+    it("creates a draft payroll with computed cross-year public holidays", async () => {
+        const txSelect = vi
+            .fn()
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockResolvedValue([
+                        {
+                            dateIn: "2025-12-31",
+                            dateOut: "2025-12-31",
+                            hours: "8",
+                        },
+                        {
+                            dateIn: "2026-01-01",
+                            dateOut: "2026-01-01",
+                            hours: "8",
+                        },
+                    ]),
+                }),
+            })
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockResolvedValue([
+                        { date: "2025-12-31" },
+                        { date: "2026-01-01" },
+                        { date: "2026-01-02" },
+                    ]),
+                }),
+            });
+        const insertedVoucherValues: Array<Record<string, unknown>> = [];
+        const txInsert = vi
+            .fn()
+            .mockReturnValueOnce({
+                values: vi.fn().mockImplementation((values) => {
+                    insertedVoucherValues.push(values);
+                    return {
+                        returning: vi
+                            .fn()
+                            .mockResolvedValue([{ id: "voucher-created" }]),
+                    };
+                }),
+            })
+            .mockReturnValueOnce({
+                values: vi.fn().mockResolvedValue(undefined),
+            });
+
+        mockSelectWithJoinLimitResolved([
+            {
+                worker: { id: "worker-1" },
+                employment: {
+                    employmentType: "Full Time",
+                    employmentArrangement: "Local Worker",
+                    minimumWorkingHours: 16,
+                    monthlyPay: 2000,
+                    hourlyRate: 10,
+                    restDayRate: 25,
+                    cpf: 0,
+                    paymentMethod: "Cash",
+                    payNowPhone: null,
+                    bankAccountNumber: null,
+                },
+            },
+        ]);
+        mocks.findPayrollPeriodConflicts.mockResolvedValueOnce([]);
+        mocks.getAdvancesForPayrollPeriod.mockResolvedValueOnce([]);
+        mocks.db.transaction.mockImplementationOnce(
+            async (callback: (tx: unknown) => Promise<void>) =>
+                callback({
+                    select: txSelect,
+                    insert: txInsert,
+                }),
+        );
+
+        const result = await createPayrollRecord({
+            workerId: "worker-1",
+            periodStart: "2025-12-31",
+            periodEnd: "2026-01-02",
+            payrollDate: "2026-01-05",
+        });
+
+        expect(result).toEqual({ success: true });
+        expect(insertedVoucherValues).toHaveLength(1);
+        expect(insertedVoucherValues[0]).toEqual(
+            expect.objectContaining({
+                publicHolidays: 2,
+                publicHolidayPay: 50,
+            }),
+        );
     });
 
     it("returns structured overlap conflict on payroll edit", async () => {

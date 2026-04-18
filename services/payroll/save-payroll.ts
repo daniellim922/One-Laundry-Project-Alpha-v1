@@ -14,6 +14,7 @@ import {
     validatePayrollPeriodRange,
 } from "@/utils/payroll/payroll-period-conflicts";
 import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
+import { countPayrollPublicHolidays } from "@/services/payroll/public-holiday-payroll";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type CreatePayrollExecutor = Pick<DbTransaction, "select" | "insert">;
@@ -153,7 +154,14 @@ async function createPayrollForWorkerInExecutor(
         periodEnd,
         presentDateInKeys: entries.map((e) => e.dateIn),
     });
-    const publicHolidays = 0;
+    const publicHolidays = await countPayrollPublicHolidays(
+        {
+            periodStart,
+            periodEnd,
+            workedDateIns: entries.map((entry) => entry.dateIn),
+        },
+        executor,
+    );
     const payCalc = calculatePay({
         employmentType: employment.employmentType,
         totalHoursWorked,
