@@ -55,6 +55,21 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
         }),
     },
     {
+        accessorKey: "payrollDate",
+        header: createSortableHeader("Payroll Date"),
+        cell: ({ row }) => formatDate(row.original.payrollDate),
+    },
+    {
+        accessorKey: "periodStart",
+        header: createSortableHeader("Period Start"),
+        cell: ({ row }) => formatDate(row.original.periodStart),
+    },
+    {
+        accessorKey: "periodEnd",
+        header: createSortableHeader("Period End"),
+        cell: ({ row }) => formatDate(row.original.periodEnd),
+    },
+    {
         accessorKey: "employmentType",
         header: createSortableHeader("Employment Type"),
         meta: { globalSearch: true },
@@ -74,21 +89,6 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
             toneClassNameFor: (r) =>
                 employmentArrangementBadgeTone[r.employmentArrangement],
         }),
-    },
-    {
-        accessorKey: "periodStart",
-        header: createSortableHeader("Period Start"),
-        cell: ({ row }) => formatDate(row.original.periodStart),
-    },
-    {
-        accessorKey: "periodEnd",
-        header: createSortableHeader("Period End"),
-        cell: ({ row }) => formatDate(row.original.periodEnd),
-    },
-    {
-        accessorKey: "payrollDate",
-        header: createSortableHeader("Payroll Date"),
-        cell: ({ row }) => formatDate(row.original.payrollDate),
     },
     createActionsColumn<PayrollWithWorker>({
         cell: (payroll) => (

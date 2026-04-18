@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payrollTable";
@@ -28,7 +28,13 @@ export async function PayrollAllTableLoader() {
             employmentTable,
             eq(workerTable.employmentId, employmentTable.id),
         )
-        .orderBy(asc(payrollTable.status), asc(workerTable.name));
+        .orderBy(
+            asc(payrollTable.status),
+            desc(payrollTable.payrollDate),
+            asc(employmentTable.employmentType),
+            asc(employmentTable.employmentArrangement),
+            asc(workerTable.name),
+        );
 
     const data: PayrollWithWorker[] = rows.map((r) => ({
         ...r.payroll,
