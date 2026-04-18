@@ -1,3 +1,4 @@
+import { requireCurrentApiAdminUser } from "@/app/api/_shared/auth";
 import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
 import { apiError, apiSuccess } from "@/app/api/_shared/responses";
 import { revertPayroll } from "@/services/payroll/revert-payroll";
@@ -6,6 +7,11 @@ export async function POST(
     _request: Request,
     context: { params: Promise<{ id: string }> },
 ) {
+    const auth = await requireCurrentApiAdminUser();
+    if (auth instanceof Response) {
+        return auth;
+    }
+
     const { id } = await context.params;
     const result = await revertPayroll({ payrollId: id });
 

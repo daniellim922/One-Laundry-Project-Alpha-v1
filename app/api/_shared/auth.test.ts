@@ -16,7 +16,7 @@ describe("requireApiAdminUser", () => {
         expect((response as Response).status).toBe(401);
     });
 
-    it("returns 403 when the authenticated user is not the configured admin", () => {
+    it("returns 401 when the authenticated user is not the configured admin", () => {
         process.env.AUTH_ADMIN_EMAIL = "admin@example.com";
 
         const response = requireApiAdminUser({
@@ -24,7 +24,7 @@ describe("requireApiAdminUser", () => {
         });
 
         expect(response).toBeInstanceOf(Response);
-        expect((response as Response).status).toBe(403);
+        expect((response as Response).status).toBe(401);
     });
 
     it("returns the normalized admin email for the configured admin user", () => {

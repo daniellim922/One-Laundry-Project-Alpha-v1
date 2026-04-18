@@ -1,3 +1,4 @@
+import { requireCurrentApiAdminUser } from "@/app/api/_shared/auth";
 import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
 import { apiError, apiSuccess } from "@/app/api/_shared/responses";
 import { deleteTimesheetEntry } from "@/services/timesheet/delete-timesheet-entry";
@@ -6,6 +7,11 @@ export async function DELETE(
     _request: Request,
     ctx: { params: Promise<{ id: string }> },
 ) {
+    const auth = await requireCurrentApiAdminUser();
+    if (auth instanceof Response) {
+        return auth;
+    }
+
     const { id } = await ctx.params;
     const result = await deleteTimesheetEntry({ id });
 
