@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import {
     Banknote,
     Calendar,
@@ -17,6 +16,10 @@ import {
 
 import { createAdvanceRequest } from "@/app/dashboard/advance/new/actions";
 import { updateAdvanceRequest } from "@/app/dashboard/advance/[id]/edit/actions";
+import {
+    advanceRequestFormSchema,
+    type AdvanceRequestFormValues,
+} from "@/db/schemas/advance-request";
 import type { AdvanceRequestDetail } from "@/utils/advance/queries";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,130 +58,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 
-const formSchema = z
-    .object({
-        workerId: z.string().min(1, "Select an employee"),
-        requestDate: z
-            .string()
-            .min(1, "Date of request is required")
-            .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date"),
-        amount: z
-            .string()
-            .min(1, "Amount is required")
-            .refine((v) => Number.isInteger(Number(v)) && Number(v) > 0, {
-                message: "Amount must be a positive integer",
-            }),
-        purpose: z.string().optional(),
-        installmentAmounts: z.array(
-            z.object({
-                amount: z.string().optional(),
-                repaymentDate: z
-                    .string()
-                    .transform((v) => v.trim())
-                    .refine(
-                        (v) => !v || /^\d{4}-\d{2}-\d{2}$/.test(v),
-                        "Invalid date",
-                    ),
-                status: z.enum(["Installment Loan", "Installment Paid"]).optional(),
-            }),
-        ),
-    })
-    .superRefine((values, ctx) => {
-        const today = dateToLocalIsoYmd();
-        let hasValidInstallment = false;
-        const amountRequested = Number(values.amount);
-        const validInstallmentAmounts: number[] = [];
-
-        values.installmentAmounts.forEach((row, i) => {
-            const repaymentDate = row.repaymentDate?.trim() ?? "";
-            const amountRaw = row.amount?.trim() ?? "";
-            const hasRepaymentDate = repaymentDate.length > 0;
-            const hasAmount = amountRaw.length > 0;
-            const amountValue = Number(amountRaw);
-            const hasValidAmount =
-                Number.isInteger(amountValue) && amountValue > 0;
-
-            if (hasAmount && !hasRepaymentDate) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ["installmentAmounts", i, "repaymentDate"],
-                    message:
-                        "Expected repayment date is required when amount is set",
-                });
-            }
-
-            if (hasRepaymentDate && repaymentDate < values.requestDate) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ["installmentAmounts", i, "repaymentDate"],
-                    message:
-                        "Expected repayment date must be on or after date of request",
-                });
-            }
-
-            if (
-                hasRepaymentDate &&
-                row.status !== "Installment Paid" &&
-                /^\d{4}-\d{2}-\d{2}$/.test(repaymentDate) &&
-                repaymentDate < today
-            ) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ["installmentAmounts", i, "repaymentDate"],
-                    message: "Expected repayment date cannot be before today",
-                });
-            }
-
-            if (hasRepaymentDate && /^\d{4}-\d{2}-\d{2}$/.test(repaymentDate)) {
-                if (!hasValidAmount) {
-                    ctx.addIssue({
-                        code: z.ZodIssueCode.custom,
-                        path: ["installmentAmounts", i, "amount"],
-                        message:
-                            "Amount is required when repayment date is set",
-                    });
-                } else {
-                    hasValidInstallment = true;
-                    validInstallmentAmounts.push(amountValue);
-
-                    if (
-                        Number.isInteger(amountRequested) &&
-                        amountRequested > 0 &&
-                        amountValue > amountRequested
-                    ) {
-                        ctx.addIssue({
-                            code: z.ZodIssueCode.custom,
-                            path: ["installmentAmounts", i, "amount"],
-                            message: `Installment amount cannot exceed amount requested ($${amountRequested})`,
-                        });
-                    }
-                }
-            }
-        });
-
-        if (!hasValidInstallment) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ["installmentAmounts"],
-                message:
-                    "At least one installment with amount and repayment date is required",
-            });
-        } else if (Number.isInteger(amountRequested) && amountRequested > 0) {
-            const totalInstallments = validInstallmentAmounts.reduce(
-                (sum, a) => sum + a,
-                0,
-            );
-            if (totalInstallments !== amountRequested) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ["installmentAmounts"],
-                    message: `Total of installments ($${totalInstallments}) must equal amount requested ($${amountRequested})`,
-                });
-            }
-        }
-    });
-
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = AdvanceRequestFormValues;
 
 const textareaClass = cn(
     "placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex min-h-[100px] w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none md:text-sm",
@@ -193,16 +73,22 @@ function detailToDefaultValues(detail: AdvanceRequestDetail): FormValues {
     return {
         workerId: request.workerId,
         requestDate: request.requestDate,
-        amount: String(request.amountRequested),
+        amount: request.amountRequested,
         purpose: purpose ?? "",
         installmentAmounts:
             advances.length > 0
                 ? advances.map((a) => ({
-                      amount: String(a.amount),
+                      amount: a.amount,
                       repaymentDate: a.repaymentDate ?? "",
                       status: a.status,
                   }))
-                : [{ amount: "", repaymentDate: "", status: "Installment Loan" }],
+                : [
+                      {
+                          amount: undefined,
+                          repaymentDate: "",
+                          status: "Installment Loan",
+                      },
+                  ],
     };
 }
 
@@ -366,17 +252,21 @@ function AdvanceRequestFormEditable({
     const showInstallmentStatusColumn = isEditMode;
 
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(advanceRequestFormSchema),
         mode: "onChange",
         defaultValues: initialData
             ? detailToDefaultValues(initialData)
             : {
                   workerId: initialWorkerId ?? "",
                   requestDate: dateToLocalIsoYmd(),
-                  amount: "",
+                  amount: undefined as unknown as number,
                   purpose: "",
                   installmentAmounts: [
-                      { amount: "", repaymentDate: "", status: "Installment Loan" },
+                      {
+                          amount: undefined,
+                          repaymentDate: "",
+                          status: "Installment Loan",
+                      },
                   ],
               },
     });
@@ -536,7 +426,6 @@ function AdvanceRequestFormEditable({
                                     </FieldLabel>
                                     <InputGroup>
                                         <InputGroupInput
-                                            {...field}
                                             id={`${formId}-amount`}
                                             type="number"
                                             step={1}
@@ -544,6 +433,26 @@ function AdvanceRequestFormEditable({
                                             inputMode="numeric"
                                             disabled={pending}
                                             aria-invalid={fieldState.invalid}
+                                            name={field.name}
+                                            ref={field.ref}
+                                            onBlur={field.onBlur}
+                                            value={
+                                                field.value == null ||
+                                                Number.isNaN(field.value)
+                                                    ? ""
+                                                    : field.value
+                                            }
+                                            onChange={(e) => {
+                                                const raw = e.target.value;
+                                                field.onChange(
+                                                    raw === ""
+                                                        ? undefined
+                                                        : Number.parseInt(
+                                                              raw,
+                                                              10,
+                                                          ),
+                                                );
+                                            }}
                                         />
                                         <InputGroupAddon>
                                             <Banknote className="size-4 text-muted-foreground" />
@@ -595,7 +504,7 @@ function AdvanceRequestFormEditable({
                                     className="border-white bg-white text-black hover:bg-white/90 dark:border-white dark:bg-transparent dark:text-white dark:hover:bg-white/10"
                                     onClick={() =>
                                         insert(fields.length, {
-                                            amount: "",
+                                            amount: undefined,
                                             repaymentDate: "",
                                             status: "Installment Loan",
                                         })
@@ -677,7 +586,6 @@ function AdvanceRequestFormEditable({
                                                             }
                                                             className="min-w-0 gap-1.5">
                                                             <Input
-                                                                {...field}
                                                                 id={`${formId}-inst-${index}`}
                                                                 type="number"
                                                                 min={0}
@@ -691,6 +599,32 @@ function AdvanceRequestFormEditable({
                                                                 aria-invalid={
                                                                     fieldState.invalid
                                                                 }
+                                                                name={field.name}
+                                                                ref={field.ref}
+                                                                onBlur={field.onBlur}
+                                                                value={
+                                                                    field.value ==
+                                                                        null ||
+                                                                    Number.isNaN(
+                                                                        field.value,
+                                                                    )
+                                                                        ? ""
+                                                                        : field.value
+                                                                }
+                                                                onChange={(e) => {
+                                                                    const raw =
+                                                                        e.target
+                                                                            .value;
+                                                                    field.onChange(
+                                                                        raw ===
+                                                                            ""
+                                                                            ? undefined
+                                                                            : Number.parseInt(
+                                                                                  raw,
+                                                                                  10,
+                                                                              ),
+                                                                    );
+                                                                }}
                                                             />
                                                             {fieldState.invalid && (
                                                                 <FieldError
@@ -716,7 +650,7 @@ function AdvanceRequestFormEditable({
                                                             className="min-w-0 gap-1.5">
                                                             <DatePickerInput
                                                                 id={`${formId}-repayment-${index}`}
-                                                                value={field.value}
+                                                                value={field.value ?? ""}
                                                                 onValueChange={
                                                                     field.onChange
                                                                 }
@@ -792,27 +726,33 @@ function AdvanceRequestFormEditable({
                             const watchedAmount = form.watch("amount");
                             const watchedInstallments =
                                 form.watch("installmentAmounts") ?? [];
-                            const amountRequested = Number(watchedAmount);
+                            const amountRequested =
+                                typeof watchedAmount === "number" &&
+                                Number.isInteger(watchedAmount) &&
+                                watchedAmount > 0
+                                    ? watchedAmount
+                                    : null;
                             const totalInstallments =
                                 watchedInstallments.reduce(
                                     (sum, row) =>
                                         sum +
-                                        (Number.isInteger(Number(row.amount)) &&
-                                        Number(row.amount) > 0
-                                            ? Number(row.amount)
+                                        (typeof row.amount === "number" &&
+                                        Number.isInteger(row.amount) &&
+                                        row.amount > 0
+                                            ? row.amount
                                             : 0),
                                     0,
                                 );
                             const hasValidInstallments =
                                 watchedInstallments.some(
                                     (row) =>
-                                        Number.isInteger(Number(row.amount)) &&
-                                        Number(row.amount) > 0,
+                                        typeof row.amount === "number" &&
+                                        Number.isInteger(row.amount) &&
+                                        row.amount > 0,
                                 );
                             if (
                                 !(
-                                    Number.isInteger(amountRequested) &&
-                                    amountRequested > 0 &&
+                                    amountRequested != null &&
                                     hasValidInstallments
                                 )
                             ) {

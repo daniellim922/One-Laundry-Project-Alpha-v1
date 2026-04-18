@@ -1,18 +1,8 @@
-import { z } from "zod";
-
 import { requireCurrentApiUser } from "@/app/api/_shared/auth";
 import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
 import { apiError, apiSuccess } from "@/app/api/_shared/responses";
+import { workerMinimumHoursBatchRequestSchema } from "@/db/schemas/api";
 import { massUpdateWorkerMinimumWorkingHours } from "@/services/worker/mass-update-minimum-working-hours";
-
-const requestSchema = z.object({
-    updates: z.array(
-        z.object({
-            workerId: z.string(),
-            minimumWorkingHours: z.number(),
-        }),
-    ),
-});
 
 export async function PATCH(request: Request) {
     const auth = await requireCurrentApiUser();
@@ -31,7 +21,7 @@ export async function PATCH(request: Request) {
         });
     }
 
-    const parsedBody = requestSchema.safeParse(body);
+    const parsedBody = workerMinimumHoursBatchRequestSchema.safeParse(body);
     if (!parsedBody.success) {
         return apiError({
             status: 400,

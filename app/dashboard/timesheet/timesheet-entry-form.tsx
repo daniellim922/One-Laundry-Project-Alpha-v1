@@ -4,9 +4,12 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 
 import { createTimesheetEntry, updateTimesheetEntry } from "./actions";
+import {
+    timesheetEntryFormSchema,
+    type TimesheetEntryFormValues,
+} from "@/db/schemas/timesheet-entry";
 import { SelectSearch } from "@/components/ui/SelectSearch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,9 +17,8 @@ import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field
 import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
 import type { TimesheetPaymentStatus } from "@/types/status";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
-import { isIsoDateStrict } from "@/utils/time/calendar-date";
 import { TimesheetTimeField } from "./timesheet-time-field";
-import { isHmTimeStrict, normalizeHmTime } from "./timesheet-time-utils";
+import { normalizeHmTime } from "./timesheet-time-utils";
 
 type Worker = { id: string; name: string };
 
@@ -30,45 +32,7 @@ type TimesheetEntry = {
     status?: TimesheetPaymentStatus;
 };
 
-const formSchema = z
-    .object({
-        workerId: z.string().min(1, "Worker is required"),
-        dateIn: z
-            .string()
-            .min(1, "Date in is required")
-            .refine((value) => isIsoDateStrict(value), {
-                message: "Date in is invalid",
-            }),
-        dateOut: z
-            .string()
-            .min(1, "Date out is required")
-            .refine((value) => isIsoDateStrict(value), {
-                message: "Date out is invalid",
-            }),
-        timeIn: z
-            .string()
-            .min(1, "Time in is required")
-            .refine((value) => isHmTimeStrict(value), {
-                message: "Time in must be in HH:MM format",
-            }),
-        timeOut: z
-            .string()
-            .min(1, "Time out is required")
-            .refine((value) => isHmTimeStrict(value), {
-                message: "Time out must be in HH:MM format",
-            }),
-    })
-    .superRefine((values, ctx) => {
-        if (values.dateIn && values.dateOut && values.dateOut < values.dateIn) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ["dateOut"],
-                message: "Date out must be on or after date in",
-            });
-        }
-    });
-
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = TimesheetEntryFormValues;
 
 export function TimesheetEntryForm({
     workers,
@@ -93,7 +57,7 @@ export function TimesheetEntryForm({
     );
 
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(timesheetEntryFormSchema),
         defaultValues: {
             workerId: entry?.workerId ?? "",
             dateIn: defaultDateIn,

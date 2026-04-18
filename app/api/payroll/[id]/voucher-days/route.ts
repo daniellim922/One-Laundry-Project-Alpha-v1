@@ -1,15 +1,8 @@
-import { z } from "zod";
-
 import { requireCurrentApiUser } from "@/app/api/_shared/auth";
 import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
 import { apiError, apiSuccess } from "@/app/api/_shared/responses";
+import { payrollVoucherDaysUpdateRequestSchema } from "@/db/schemas/api";
 import { updateVoucherDays } from "@/services/payroll/update-voucher-days";
-
-const requestSchema = z.object({
-    voucherId: z.string(),
-    restDays: z.number(),
-    publicHolidays: z.number(),
-});
 
 export async function PATCH(
     request: Request,
@@ -31,7 +24,7 @@ export async function PATCH(
         });
     }
 
-    const parsedBody = requestSchema.safeParse(body);
+    const parsedBody = payrollVoucherDaysUpdateRequestSchema.safeParse(body);
     if (!parsedBody.success) {
         return apiError({
             status: 400,

@@ -1,3 +1,4 @@
+import { timesheetEntryFormSchema } from "@/db/schemas/timesheet-entry";
 import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/workerTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
@@ -74,6 +75,19 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
                 typeof date.hours === "number" && date.hours >= 0
                     ? date.hours
                     : calculateHoursFromDateTimes(dateIn, timeIn, dateOut, timeOut);
+
+            const rowParsed = timesheetEntryFormSchema.safeParse({
+                workerId,
+                dateIn,
+                dateOut,
+                timeIn,
+                timeOut,
+            });
+            if (!rowParsed.success) {
+                const msg = rowParsed.error.issues.map((i) => i.message).join("; ");
+                errors.push(`Invalid row for ${worker.name} (${date.dateIn}): ${msg}`);
+                continue;
+            }
 
             toInsert.push({
                 workerId,

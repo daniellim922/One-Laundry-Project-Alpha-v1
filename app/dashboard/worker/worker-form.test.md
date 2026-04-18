@@ -23,11 +23,11 @@ Validation: Is an Email
 Default: Null
 
 Field: Phone
-Type: Number
+Type: String
 Required: False
 Visible: True
 Editable: True
-Validation: Only can input numbers but do not allow decimals
+Validation: Optional free-text string (no format restriction)
 Default: Null
 
 Field: Country of Origin
@@ -123,12 +123,12 @@ Validation: Must not be empty
 Default: Null
 
 Field: PayNow
-Type: Number
+Type: String
 Required: Depending on state
 Visible: Depending on state
 Editable: True
-Validation: Must not be empty
-Default: Phone number if available otherwise null
+Validation: Must not be empty when payment method is PayNow
+Default: Trimmed Phone value when switching to PayNow if PayNow is empty, otherwise null
 
 ---
 
@@ -157,4 +157,4 @@ Payment Method: Bank Transfer
 Test conditions: Bank Account number field has to appear and the user must fill it in order to submit.
 
 Payment Method: PayNow
-Test conditions: PayNow field has to appear; the main Phone value (digits only) is the default PayNow number when switching to PayNow, otherwise blank; the user must enter a non-empty numeric PayNow value to submit.
+Test conditions: PayNow field has to appear; the trimmed Phone value is copied to PayNow when switching to PayNow if PayNow is empty, otherwise blank; the user must enter a non-empty PayNow string to submit.

@@ -23,6 +23,9 @@ vi.mock("@/services/payroll/settle-draft-payrolls", () => ({
 
 import { POST } from "@/app/api/payroll/settle/route";
 
+const PAYROLL_A = "10000000-0000-4000-8000-000000000001";
+const PAYROLL_B = "10000000-0000-4000-8000-000000000002";
+
 describe("POST /api/payroll/settle", () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -35,7 +38,7 @@ describe("POST /api/payroll/settle", () => {
         mocks.settleDraftPayrolls.mockResolvedValue({
             success: true,
             settled: 2,
-            settledPayrollIds: ["payroll-1", "payroll-2"],
+            settledPayrollIds: [PAYROLL_A, PAYROLL_B],
         });
 
         const response = await POST(
@@ -45,7 +48,7 @@ describe("POST /api/payroll/settle", () => {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    payrollIds: ["payroll-2", "payroll-1"],
+                    payrollIds: [PAYROLL_B, PAYROLL_A],
                 }),
             }),
         );
@@ -56,17 +59,17 @@ describe("POST /api/payroll/settle", () => {
             data: {
                 success: true,
                 settled: 2,
-                settledPayrollIds: ["payroll-1", "payroll-2"],
+                settledPayrollIds: [PAYROLL_A, PAYROLL_B],
             },
         });
         expect(mocks.settleDraftPayrolls).toHaveBeenCalledWith({
-            payrollIds: ["payroll-2", "payroll-1"],
+            payrollIds: [PAYROLL_B, PAYROLL_A],
         });
         expect(mocks.revalidateTransportPaths).toHaveBeenCalledWith([
-            "/dashboard/payroll/payroll-1/breakdown",
-            "/dashboard/payroll/payroll-1/summary",
-            "/dashboard/payroll/payroll-2/breakdown",
-            "/dashboard/payroll/payroll-2/summary",
+            `/dashboard/payroll/${PAYROLL_A}/breakdown`,
+            `/dashboard/payroll/${PAYROLL_A}/summary`,
+            `/dashboard/payroll/${PAYROLL_B}/breakdown`,
+            `/dashboard/payroll/${PAYROLL_B}/summary`,
             "/dashboard/payroll",
             "/dashboard/payroll/all",
             "/dashboard/advance",

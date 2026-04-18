@@ -36,8 +36,6 @@ describe("WorkerOverviewLoader", () => {
         expect(html).toContain("3 Active, 2 Inactive");
         expect(html).toContain("View all workers");
         expect(html).toContain("New worker");
-        expect(html).toContain("Mass edit working hours");
-        expect(html).toContain('href="/dashboard/worker/mass-edit"');
         expect(html).toContain("Status breakdown");
     });
 });

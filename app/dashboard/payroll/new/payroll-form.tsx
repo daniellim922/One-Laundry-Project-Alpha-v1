@@ -5,9 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 
 import { createPayrolls } from "../actions";
+import {
+    payrollPeriodFormSchema,
+    type PayrollPeriodFormValues,
+} from "@/db/schemas/payroll-period";
 import type { PayrollPeriodConflict } from "@/utils/payroll/payroll-period-conflicts";
 import { DataTable } from "@/components/data-table/data-table";
 import { Button } from "@/components/ui/button";
@@ -31,32 +34,7 @@ import { columns, type WorkerForPayrollSelection as Worker } from "./columns";
 import { parseIsoToDateStrict } from "@/utils/time/calendar-date";
 import { formatEnGbDmyNumeric } from "@/utils/time/intl-en-gb";
 
-const formSchema = z
-    .object({
-        periodStart: z
-            .string()
-            .min(1, "Period start is required")
-            .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date"),
-        periodEnd: z
-            .string()
-            .min(1, "Period end is required")
-            .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date"),
-        payrollDate: z
-            .string()
-            .min(1, "Payroll date is required")
-            .regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date"),
-    })
-    .superRefine((values, ctx) => {
-        if (values.periodEnd < values.periodStart) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ["periodEnd"],
-                message: "Period end must be on or after period start",
-            });
-        }
-    });
-
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = PayrollPeriodFormValues;
 
 function toDisplayDate(date: string): string {
     const parsed = parseIsoToDateStrict(date);
@@ -87,7 +65,7 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
     const selectedCount = selectedWorkerIds.length;
 
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(payrollPeriodFormSchema),
         defaultValues: {
             periodStart: "",
             periodEnd: "",

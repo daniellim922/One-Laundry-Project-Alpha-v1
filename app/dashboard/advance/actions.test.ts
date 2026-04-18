@@ -34,9 +34,9 @@ import { updateAdvanceRequest } from "@/app/dashboard/advance/[id]/edit/actions"
 const baseInput = {
     workerId: "worker-1",
     requestDate: "2026-04-20",
-    amount: "700",
+    amount: 700,
     purpose: "Emergency cash flow",
-    installmentAmounts: [{ amount: "700", repaymentDate: "2026-04-25" }],
+    installmentAmounts: [{ amount: 700, repaymentDate: "2026-04-25" }],
 };
 
 describe("advance actions", () => {
@@ -89,7 +89,7 @@ describe("advance actions", () => {
                 ...baseInput,
                 installmentAmounts: [
                     {
-                        amount: "700",
+                        amount: 700,
                         repaymentDate: "2026-04-25",
                         status: "Installment Loan" as const,
                     },

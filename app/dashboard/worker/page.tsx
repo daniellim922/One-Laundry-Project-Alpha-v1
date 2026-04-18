@@ -15,7 +15,7 @@ export default function WorkerOverviewPage() {
             </div>
 
             <Suspense
-                fallback={<DashboardHubOverviewSkeleton buttonSlots={3} />}>
+                fallback={<DashboardHubOverviewSkeleton buttonSlots={2} />}>
                 <WorkerOverviewLoader />
             </Suspense>
         </div>

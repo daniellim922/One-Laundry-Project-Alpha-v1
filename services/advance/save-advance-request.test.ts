@@ -58,15 +58,15 @@ describe("services/advance/save-advance-request", () => {
             createAdvanceRequestRecord({
                 workerId: "worker-1",
                 requestDate: "2026-04-20",
-                amount: "700",
+                amount: 700,
                 purpose: "Emergency cash flow",
                 employeeSignature: "employee-signature",
                 employeeSignatureDate: "2026-04-20",
                 managerSignature: "manager-signature",
                 managerSignatureDate: "2026-04-20",
                 installmentAmounts: [
-                    { amount: "300", repaymentDate: "2026-04-25" },
-                    { amount: "400", repaymentDate: "2026-04-30" },
+                    { amount: 300, repaymentDate: "2026-04-25" },
+                    { amount: 400, repaymentDate: "2026-04-30" },
                 ],
             }),
         ).resolves.toEqual({ success: true, id: "advance-request-1" });
@@ -124,7 +124,7 @@ describe("services/advance/save-advance-request", () => {
             updateAdvanceRequestRecord("advance-request-1", {
                 workerId: "worker-new",
                 requestDate: "2026-04-20",
-                amount: "700",
+                amount: 700,
                 purpose: "Updated purpose",
                 employeeSignature: "employee-signature",
                 employeeSignatureDate: "2026-04-20",
@@ -132,12 +132,12 @@ describe("services/advance/save-advance-request", () => {
                 managerSignatureDate: "2026-04-20",
                 installmentAmounts: [
                     {
-                        amount: "300",
+                        amount: 300,
                         repaymentDate: "2026-04-25",
                         status: "Installment Paid",
                     },
                     {
-                        amount: "400",
+                        amount: 400,
                         repaymentDate: "2026-04-30",
                         status: "Installment Loan",
                     },

@@ -21,10 +21,10 @@ type InstallmentStatus = "Installment Loan" | "Installment Paid";
 export type SaveAdvanceRequestInput = {
     workerId: string;
     requestDate: string;
-    amount: string;
+    amount: number;
     purpose?: string;
     installmentAmounts: Array<{
-        amount?: string;
+        amount?: number;
         repaymentDate?: string;
         status?: InstallmentStatus;
     }>;
@@ -39,17 +39,6 @@ type ParsedInstallment = {
     amount: number;
     status: InstallmentStatus;
 };
-
-function parsePositiveInt(val: string | null | undefined): number | null {
-    if (val == null) return null;
-    const s = String(val).trim();
-    if (!s) return null;
-    const n = Number(s);
-    if (!Number.isFinite(n)) return null;
-    const int = Math.trunc(n);
-    if (int <= 0) return null;
-    return int;
-}
 
 function parseDateString(val: string | null | undefined): string | null {
     if (val == null) return null;
@@ -86,7 +75,12 @@ function validateAdvanceInput(
         return { success: false, error: "Worker ID is required" };
     }
 
-    const amountRequested = parsePositiveInt(input.amount);
+    const amountRequested =
+        typeof input.amount === "number" &&
+        Number.isInteger(input.amount) &&
+        input.amount > 0
+            ? input.amount
+            : null;
     if (amountRequested == null) {
         return { success: false, error: "Amount must be a positive integer" };
     }
@@ -100,9 +94,13 @@ function validateAdvanceInput(
 
     for (const row of input.installmentAmounts) {
         const rawRepaymentDate = row.repaymentDate?.trim() ?? "";
-        const rawAmount = row.amount?.trim() ?? "";
+        const rowAmount = row.amount;
         const hasRepaymentDate = rawRepaymentDate.length > 0;
-        const hasAmount = rawAmount.length > 0;
+        const hasAmount =
+            rowAmount != null &&
+            Number.isFinite(rowAmount) &&
+            Number.isInteger(rowAmount) &&
+            rowAmount > 0;
 
         if (!hasRepaymentDate && !hasAmount) continue;
 
@@ -128,13 +126,7 @@ function validateAdvanceInput(
             };
         }
 
-        const amount = parsePositiveInt(rawAmount);
-        if (amount == null) {
-            return {
-                success: false,
-                error: "Installment amount must be a positive integer",
-            };
-        }
+        const amount = rowAmount as number;
 
         const status = options.allowPaidInstallments
             ? parseInstallmentStatus(row.status)

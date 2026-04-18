@@ -11,10 +11,6 @@ import {
     WORKER_STATUSES,
 } from "@/types/status";
 
-/** PayNow field spec: numeric string (digits only); DB column remains text. */
-export const PAYNOW_DIGITS_ONLY_MESSAGE =
-    "PayNow must contain digits only (no decimals or other characters)";
-
 function atMostTwoDecimalPlaces(n: number): boolean {
     if (!Number.isFinite(n)) return false;
     const scaled = n * 100;
@@ -59,7 +55,7 @@ const employmentFields = createInsertSchema(employmentTable, {
 });
 
 export const workerUpsertSchema = workerFields
-    .merge(employmentFields)
+    .extend(employmentFields.shape)
     .superRefine((values, ctx) => {
         const isFullTime = values.employmentType === "Full Time";
         const isPartTime = values.employmentType === "Part Time";
@@ -70,27 +66,15 @@ export const workerUpsertSchema = workerFields
             typeof values.email === "string" ? values.email.trim() : "";
         if (emailRaw) {
             const parsed = z
-                .string()
-                .email("Enter a valid email address")
+                .email({ error: "Enter a valid email address" })
                 .safeParse(emailRaw);
             if (!parsed.success) {
                 ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
+                    code: "custom",
                     path: ["email"],
                     message: "Enter a valid email address",
                 });
             }
-        }
-
-        const phoneRaw =
-            typeof values.phone === "string" ? values.phone.trim() : "";
-        if (phoneRaw && !/^\d+$/.test(phoneRaw)) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ["phone"],
-                message:
-                    "Phone must contain digits only (no decimals or other characters)",
-            });
         }
 
         if (values.employmentArrangement === "Local Worker") {
@@ -98,7 +82,7 @@ export const workerUpsertSchema = workerFields
             if (cpfVal != null && Number.isFinite(cpfVal)) {
                 if (cpfVal < 0 || !atMostTwoDecimalPlaces(cpfVal)) {
                     ctx.addIssue({
-                        code: z.ZodIssueCode.custom,
+                        code: "custom",
                         path: ["cpf"],
                         message:
                             "CPF must use at most two decimal places and cannot be negative",
@@ -157,7 +141,7 @@ export const workerUpsertSchema = workerFields
                 const v = values[field.key];
                 if (v == null || Number.isNaN(v)) {
                     ctx.addIssue({
-                        code: z.ZodIssueCode.custom,
+                        code: "custom",
                         path: [field.key],
                         message: field.requiredMessage,
                     });
@@ -166,7 +150,7 @@ export const workerUpsertSchema = workerFields
 
                 if (field.wholeNumber && !isWholeNumber(v)) {
                     ctx.addIssue({
-                        code: z.ZodIssueCode.custom,
+                        code: "custom",
                         path: [field.key],
                         message:
                             "Minimum working hours must be a whole number with no decimals",
@@ -182,7 +166,7 @@ export const workerUpsertSchema = workerFields
                               ? "Hourly rate"
                               : "Rest day rate";
                     ctx.addIssue({
-                        code: z.ZodIssueCode.custom,
+                        code: "custom",
                         path: [field.key],
                         message: `${maxDecLabel} must use at most two decimal places`,
                     });
@@ -192,7 +176,7 @@ export const workerUpsertSchema = workerFields
                 const isValidNumber = field.allowZero ? v >= 0 : v > 0;
                 if (!isValidNumber) {
                     ctx.addIssue({
-                        code: z.ZodIssueCode.custom,
+                        code: "custom",
                         path: [field.key],
                         message: field.validationMessage,
                     });
@@ -204,19 +188,19 @@ export const workerUpsertSchema = workerFields
             const v = values.hourlyRate;
             if (v == null || Number.isNaN(v)) {
                 ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
+                    code: "custom",
                     path: ["hourlyRate"],
                     message: "Hourly rate is required for part time workers",
                 });
             } else if (!atMostTwoDecimalPlaces(v)) {
                 ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
+                    code: "custom",
                     path: ["hourlyRate"],
                     message: "Hourly rate must use at most two decimal places",
                 });
             } else if (v <= 0) {
                 ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
+                    code: "custom",
                     path: ["hourlyRate"],
                     message: "Hourly rate must be a positive number",
                 });
@@ -231,7 +215,7 @@ export const workerUpsertSchema = workerFields
 
             if (!account) {
                 ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
+                    code: "custom",
                     path: ["bankAccountNumber"],
                     message:
                         "Bank account number is required for bank transfer",
@@ -246,16 +230,10 @@ export const workerUpsertSchema = workerFields
 
             if (!payNow) {
                 ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
+                    code: "custom",
                     path: ["payNowPhone"],
                     message:
                         "PayNow number is required when payment method is PayNow",
-                });
-            } else if (!/^\d+$/.test(payNow)) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ["payNowPhone"],
-                    message: PAYNOW_DIGITS_ONLY_MESSAGE,
                 });
             }
         }

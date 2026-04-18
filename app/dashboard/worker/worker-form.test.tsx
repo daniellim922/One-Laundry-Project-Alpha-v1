@@ -183,18 +183,18 @@ describe("WorkerForm", () => {
         ).toBeTruthy();
     });
 
-    it("shows phone validation when value contains non-digits or decimals", async () => {
+    it("allows phone values with non-digit characters (no digits-only error)", async () => {
         const user = userEvent.setup();
         render(<WorkerForm />);
 
-        await user.type(screen.getByLabelText(/^Phone/), "12.5");
+        await user.type(screen.getByLabelText(/^Phone/), "+65 8123 4567");
         await user.tab();
 
         expect(
-            await screen.findByText(
+            screen.queryByText(
                 "Phone must contain digits only (no decimals or other characters)",
             ),
-        ).toBeTruthy();
+        ).toBeNull();
     });
 
     it("rejects monthly pay with more than two decimal places (full time)", async () => {
@@ -367,11 +367,11 @@ describe("WorkerForm", () => {
         expect(screen.getByLabelText(/^Bank Account Number/)).toBeTruthy();
     });
 
-    it("prefills PayNow from Phone (digits only) when switching to PayNow, otherwise leaves it blank", async () => {
+    it("prefills PayNow from Phone (full trimmed string) when switching to PayNow, otherwise leaves it blank", async () => {
         const user = userEvent.setup();
         render(<WorkerForm />);
 
-        await user.type(screen.getByLabelText(/^Phone/), "90001111");
+        await user.type(screen.getByLabelText(/^Phone/), "+65 9000 1111");
         await user.click(screen.getByLabelText(/Payment Method/i));
         let listbox = await screen.findByRole("listbox");
         await user.click(within(listbox).getByText("PayNow"));
@@ -379,7 +379,7 @@ describe("WorkerForm", () => {
         expect(
             (screen.getByRole("textbox", { name: /PayNow/ }) as HTMLInputElement)
                 .value,
-        ).toBe("90001111");
+        ).toBe("+65 9000-1111");
 
         await user.click(screen.getByLabelText(/Payment Method/i));
         listbox = await screen.findByRole("listbox");

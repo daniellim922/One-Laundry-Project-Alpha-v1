@@ -67,11 +67,6 @@ import { createWorker, updateWorker } from "./actions";
 
 export type { WorkerWithEmployment };
 
-function digitsOnlyString(raw: string | null | undefined): string {
-    if (raw == null || raw === "") return "";
-    return raw.replace(/\D/g, "");
-}
-
 /** Map optional numeric DB values to RHF (undefined, never NaN). */
 function optionalNumber(n: number | null | undefined): number | undefined {
     if (n == null || Number.isNaN(n)) return undefined;
@@ -132,7 +127,7 @@ function getDefaultValues(
         ),
         paymentMethod: (worker?.paymentMethod ??
             "Cash") as WorkerFormValues["paymentMethod"],
-        payNowPhone: digitsOnlyString(worker?.payNowPhone),
+        payNowPhone: worker?.payNowPhone ?? "",
         bankAccountNumber: worker?.bankAccountNumber ?? "",
     };
 }
@@ -866,17 +861,17 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                         form.getValues(
                                                             "payNowPhone",
                                                         );
-                                                    const phoneDigits =
-                                                        digitsOnlyString(
-                                                            currentPhone,
-                                                        );
+                                                    const phoneTrimmed =
+                                                        String(
+                                                            currentPhone ?? "",
+                                                        ).trim();
                                                     if (
                                                         !currentPayNowPhone &&
-                                                        phoneDigits
+                                                        phoneTrimmed
                                                     ) {
                                                         form.setValue(
                                                             "payNowPhone",
-                                                            phoneDigits,
+                                                            phoneTrimmed,
                                                             {
                                                                 shouldDirty: true,
                                                             },

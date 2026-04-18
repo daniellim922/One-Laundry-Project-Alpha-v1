@@ -12,7 +12,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { SimpleDonutChart } from "@/components/dashboard/simple-donut-chart";
-import { ArrowRight, ListChecks, Plus, Users } from "lucide-react";
+import { ArrowRight, Plus, Users } from "lucide-react";
 
 export async function WorkerOverviewLoader() {
     const [[{ total }], [{ active }]] = await Promise.all([
@@ -55,12 +55,6 @@ export async function WorkerOverviewLoader() {
                     <Link href="/dashboard/worker/new">
                         <Plus className="mr-2 h-4 w-4" />
                         New worker
-                    </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                    <Link href="/dashboard/worker/mass-edit">
-                        <ListChecks className="mr-2 h-4 w-4" />
-                        Mass edit working hours
                     </Link>
                 </Button>
             </div>

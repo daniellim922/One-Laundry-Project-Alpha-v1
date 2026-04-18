@@ -75,22 +75,17 @@ function parseTimeForHours(timeStr: string): { h: number; m: number } | null {
     return { h, m };
 }
 
-/**
- * Calculate decimal hours worked from full date+time.
- * Handles cross-day and multi-day shifts.
- * Returns 0 when invalid.
- */
-export function calculateHoursFromDateTimes(
+function clockIntervalDurationMs(
     dateIn: string,
     timeIn: string,
     dateOut: string,
     timeOut: string,
-): number {
+): number | null {
     const dIn = parseDateForHours(dateIn);
     const dOut = parseDateForHours(dateOut);
     const tIn = parseTimeForHours(timeIn);
     const tOut = parseTimeForHours(timeOut);
-    if (!dIn || !dOut || !tIn || !tOut) return 0;
+    if (!dIn || !dOut || !tIn || !tOut) return null;
     const start = new Date(
         dIn.getFullYear(),
         dIn.getMonth(),
@@ -105,8 +100,33 @@ export function calculateHoursFromDateTimes(
         tOut.h,
         tOut.m,
     );
-    const diffMs = end.getTime() - start.getTime();
-    if (diffMs < 0) return 0;
+    return end.getTime() - start.getTime();
+}
+
+/** True when clock-out is strictly after clock-in (matches {@link calculateHoursFromDateTimes} positive duration). */
+export function isClockOutAfterClockIn(
+    dateIn: string,
+    timeIn: string,
+    dateOut: string,
+    timeOut: string,
+): boolean {
+    const diffMs = clockIntervalDurationMs(dateIn, timeIn, dateOut, timeOut);
+    return diffMs != null && diffMs > 0;
+}
+
+/**
+ * Calculate decimal hours worked from full date+time.
+ * Handles cross-day and multi-day shifts.
+ * Returns 0 when invalid.
+ */
+export function calculateHoursFromDateTimes(
+    dateIn: string,
+    timeIn: string,
+    dateOut: string,
+    timeOut: string,
+): number {
+    const diffMs = clockIntervalDurationMs(dateIn, timeIn, dateOut, timeOut);
+    if (diffMs == null || diffMs < 0) return 0;
     const totalMinutes = diffMs / (60 * 1000);
     return Math.round(totalMinutes / 60 * 100) / 100;
 }

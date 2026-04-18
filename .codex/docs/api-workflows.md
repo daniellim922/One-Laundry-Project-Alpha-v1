@@ -26,6 +26,11 @@ This document maps the live `app/api/` surface with Supabase email-and-password 
 - Unauthenticated API callers receive `401` JSON shaped as `{ ok: false, error: { code: "UNAUTHORIZED", message: "Authentication required" } }`.
 - Protected dashboard page requests redirect into `/login`; protected API routes do not issue HTML redirects.
 
+## Request validation (Drizzle-aligned Zod)
+
+- `POST /api/payroll/settle`, `PATCH /api/payroll/[id]/voucher-days`, and `PATCH /api/workers/minimum-working-hours` validate JSON bodies with [`db/schemas/api.ts`](../../db/schemas/api.ts) (`drizzle-zod` `createSelectSchema`, with explicit `z.number()` overrides where nullable columns must be required in the HTTP contract).
+- `POST /api/timesheets/import` keeps a hand-written envelope schema for the external AttendRecord shape; after normalizing each row, the service also validates worker/date/time fields with [`db/schemas/timesheet-entry.ts`](../../db/schemas/timesheet-entry.ts).
+
 ## Advance PDF Export
 
 ```mermaid

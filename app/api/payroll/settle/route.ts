@@ -1,13 +1,8 @@
-import { z } from "zod";
-
 import { requireCurrentApiUser } from "@/app/api/_shared/auth";
 import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
 import { apiError, apiSuccess } from "@/app/api/_shared/responses";
+import { payrollSettleRequestSchema } from "@/db/schemas/api";
 import { settleDraftPayrolls } from "@/services/payroll/settle-draft-payrolls";
-
-const requestSchema = z.object({
-    payrollIds: z.array(z.string()),
-});
 
 export async function POST(request: Request) {
     const auth = await requireCurrentApiUser();
@@ -26,7 +21,7 @@ export async function POST(request: Request) {
         });
     }
 
-    const parsedBody = requestSchema.safeParse(body);
+    const parsedBody = payrollSettleRequestSchema.safeParse(body);
     if (!parsedBody.success) {
         return apiError({
             status: 400,

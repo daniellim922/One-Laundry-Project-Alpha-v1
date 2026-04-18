@@ -23,6 +23,8 @@ vi.mock("@/services/worker/mass-update-minimum-working-hours", () => ({
 
 import { PATCH } from "@/app/api/workers/minimum-working-hours/route";
 
+const WORKER_1 = "20000000-0000-4000-8000-000000000001";
+
 describe("PATCH /api/workers/minimum-working-hours", () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -55,7 +57,7 @@ describe("PATCH /api/workers/minimum-working-hours", () => {
                 body: JSON.stringify({
                     updates: [
                         {
-                            workerId: "worker-1",
+                            workerId: WORKER_1,
                             minimumWorkingHours: 260,
                         },
                     ],
@@ -72,7 +74,7 @@ describe("PATCH /api/workers/minimum-working-hours", () => {
             },
         });
         expect(mocks.massUpdateWorkerMinimumWorkingHours).toHaveBeenCalledWith({
-            updates: [{ workerId: "worker-1", minimumWorkingHours: 260 }],
+            updates: [{ workerId: WORKER_1, minimumWorkingHours: 260 }],
         });
         expect(mocks.revalidateTransportPaths).toHaveBeenCalledWith([
             "/dashboard/worker",
@@ -109,7 +111,7 @@ describe("PATCH /api/workers/minimum-working-hours", () => {
                 body: JSON.stringify({
                     updates: [
                         {
-                            workerId: "worker-1",
+                            workerId: WORKER_1,
                             minimumWorkingHours: 260,
                         },
                     ],
@@ -151,7 +153,7 @@ describe("PATCH /api/workers/minimum-working-hours", () => {
                 body: JSON.stringify({
                     updates: [
                         {
-                            workerId: "worker-1",
+                            workerId: WORKER_1,
                             minimumWorkingHours: 260,
                         },
                     ],

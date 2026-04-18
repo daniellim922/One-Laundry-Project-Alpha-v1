@@ -22,6 +22,9 @@ vi.mock("@/services/payroll/update-voucher-days", () => ({
 
 import { PATCH } from "@/app/api/payroll/[id]/voucher-days/route";
 
+const PAYROLL_1 = "30000000-0000-4000-8000-000000000001";
+const VOUCHER_1 = "30000000-0000-4000-8000-000000000002";
+
 describe("PATCH /api/payroll/[id]/voucher-days", () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -33,24 +36,27 @@ describe("PATCH /api/payroll/[id]/voucher-days", () => {
     it("returns structured success and revalidates payroll pages", async () => {
         mocks.updateVoucherDays.mockResolvedValue({
             success: true,
-            payrollId: "payroll-1",
-            voucherId: "voucher-1",
+            payrollId: PAYROLL_1,
+            voucherId: VOUCHER_1,
         });
 
         const response = await PATCH(
-            new Request("http://localhost/api/payroll/payroll-1/voucher-days", {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
+            new Request(
+                `http://localhost/api/payroll/${PAYROLL_1}/voucher-days`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        voucherId: VOUCHER_1,
+                        restDays: 4,
+                        publicHolidays: 1,
+                    }),
                 },
-                body: JSON.stringify({
-                    voucherId: "voucher-1",
-                    restDays: 4,
-                    publicHolidays: 1,
-                }),
-            }),
+            ),
             {
-                params: Promise.resolve({ id: "payroll-1" }),
+                params: Promise.resolve({ id: PAYROLL_1 }),
             },
         );
 
@@ -59,19 +65,19 @@ describe("PATCH /api/payroll/[id]/voucher-days", () => {
             ok: true,
             data: {
                 success: true,
-                payrollId: "payroll-1",
-                voucherId: "voucher-1",
+                payrollId: PAYROLL_1,
+                voucherId: VOUCHER_1,
             },
         });
         expect(mocks.updateVoucherDays).toHaveBeenCalledWith({
-            payrollId: "payroll-1",
-            voucherId: "voucher-1",
+            payrollId: PAYROLL_1,
+            voucherId: VOUCHER_1,
             restDays: 4,
             publicHolidays: 1,
         });
         expect(mocks.revalidateTransportPaths).toHaveBeenCalledWith([
-            "/dashboard/payroll/payroll-1/breakdown",
-            "/dashboard/payroll/payroll-1/summary",
+            `/dashboard/payroll/${PAYROLL_1}/breakdown`,
+            `/dashboard/payroll/${PAYROLL_1}/summary`,
             "/dashboard/payroll",
             "/dashboard/payroll/all",
         ]);
@@ -85,19 +91,22 @@ describe("PATCH /api/payroll/[id]/voucher-days", () => {
         });
 
         const response = await PATCH(
-            new Request("http://localhost/api/payroll/payroll-1/voucher-days", {
-                method: "PATCH",
-                headers: {
-                    "Content-Type": "application/json",
+            new Request(
+                `http://localhost/api/payroll/${PAYROLL_1}/voucher-days`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        voucherId: VOUCHER_1,
+                        restDays: 4,
+                        publicHolidays: 1,
+                    }),
                 },
-                body: JSON.stringify({
-                    voucherId: "voucher-1",
-                    restDays: 4,
-                    publicHolidays: 1,
-                }),
-            }),
+            ),
             {
-                params: Promise.resolve({ id: "payroll-1" }),
+                params: Promise.resolve({ id: PAYROLL_1 }),
             },
         );
 

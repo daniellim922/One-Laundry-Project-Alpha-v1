@@ -156,20 +156,19 @@ describe("createWorker", () => {
         expect(mocks.db.insert).not.toHaveBeenCalled();
     });
 
-    it("returns validation error when PayNow is selected but PayNow number is not digits-only", async () => {
+    it("accepts PayNow with non-digit characters in payNowPhone", async () => {
+        queueInsertResolved([{ id: "employment-1" }]);
+        queueInsertResolved([{ id: "worker-1" }]);
+
         const result = await createWorker(
             buildWorkerPayload({
                 paymentMethod: "PayNow",
-                payNowPhone: "12.5",
+                payNowPhone: "+65 9123 4567",
             }),
         );
 
-        expect(result).toEqual({
-            success: false,
-            error:
-                "PayNow must contain digits only (no decimals or other characters)",
-        });
-        expect(mocks.db.insert).not.toHaveBeenCalled();
+        expect(result).toEqual({ success: true, id: "worker-1" });
+        expect(mocks.db.insert).toHaveBeenCalledTimes(2);
     });
 
     it("returns duplicate NRIC error when worker nric unique constraint fails", async () => {
@@ -250,20 +249,22 @@ describe("updateWorker", () => {
         expect(mocks.db.select).not.toHaveBeenCalled();
     });
 
-    it("returns validation error when PayNow is selected but PayNow number is not digits-only", async () => {
+    it("updates worker when PayNow contains non-digit characters", async () => {
+        queueSelectWorker([{ id: "worker-1", employmentId: "employment-1" }]);
+        queueUpdateResolved();
+        queueUpdateResolved();
+
         const result = await updateWorker(
             "worker-1",
             buildWorkerPayload({
                 paymentMethod: "PayNow",
-                payNowPhone: "12.5",
+                payNowPhone: "+65 9123 4567",
             }),
         );
-        expect(result).toEqual({
-            success: false,
-            error:
-                "PayNow must contain digits only (no decimals or other characters)",
-        });
-        expect(mocks.db.select).not.toHaveBeenCalled();
+
+        expect(result).toEqual({ success: true, id: "worker-1" });
+        expect(mocks.db.select).toHaveBeenCalled();
+        expect(mocks.db.update).toHaveBeenCalled();
     });
 
     it("returns not found when worker does not exist", async () => {
