@@ -26,6 +26,10 @@ import {
 } from "./settlement-state";
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
+import {
+    countMissingTimesheetDateIns,
+    restDaysFromMissingDateCount,
+} from "@/utils/payroll/missing-timesheet-dates";
 
 describe("seedPeriods", () => {
     it("covers April through December 2025 without gaps", () => {
@@ -99,6 +103,29 @@ describe("payroll seed backbone", () => {
                 return monthKey >= "2026-01" && monthKey <= "2026-03";
             }),
         ).toBe(false);
+    });
+
+    it("derives voucher restDays from seeded attendance coverage using the live missing-date rule", () => {
+        for (const payroll of payrolls) {
+            const presentDateInKeys = timesheets
+                .filter(
+                    (entry) =>
+                        entry.workerIndex === payroll.workerIndex &&
+                        entry.dateIn >= payroll.periodStart &&
+                        entry.dateIn <= payroll.periodEnd,
+                )
+                .map((entry) => entry.dateIn);
+
+            const missingCount = countMissingTimesheetDateIns({
+                periodStart: payroll.periodStart,
+                periodEnd: payroll.periodEnd,
+                presentDateInKeys,
+            });
+
+            expect(payroll.voucher.restDays).toBe(
+                restDaysFromMissingDateCount(missingCount),
+            );
+        }
     });
 });
 

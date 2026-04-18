@@ -6,7 +6,6 @@ export type SeedPeriod = {
     periodStart: string;
     periodEnd: string;
     payrollDate: string;
-    restDays: number;
 };
 
 function pad(value: number): string {
@@ -27,19 +26,6 @@ function formatDate(date: Date): string {
 
 function lastDayOfMonth(year: number, month: number): number {
     return createUtcDate(year, month + 1, 0).getUTCDate();
-}
-
-function countSundays(year: number, month: number): number {
-    const lastDay = lastDayOfMonth(year, month);
-    let sundays = 0;
-
-    for (let day = 1; day <= lastDay; day += 1) {
-        if (createUtcDate(year, month, day).getUTCDay() === 0) {
-            sundays += 1;
-        }
-    }
-
-    return sundays;
 }
 
 function nextMonth(year: number, month: number): { year: number; month: number } {
@@ -69,7 +55,6 @@ function generateSeedPeriods(): SeedPeriod[] {
             periodStart: `${year}-${pad(month)}-01`,
             periodEnd: `${year}-${pad(month)}-${pad(lastDay)}`,
             payrollDate: `${payrollYear}-${pad(payrollMonth)}-${pad(payrollDateDay)}`,
-            restDays: countSundays(year, month),
         });
 
         ({ year, month } = nextMonth(year, month));
