@@ -7,6 +7,9 @@ import {
     type PublicHolidayYearInput,
 } from "@/db/schemas/public-holiday";
 import { publicHolidayTable } from "@/db/tables/publicHolidayTable";
+import {
+    refreshAffectedDraftPayrollsForPublicHolidayYearInTx,
+} from "@/services/payroll/refresh-affected-draft-payrolls-for-public-holiday-year";
 
 type PublicHolidayListInput = {
     year: number;
@@ -49,7 +52,10 @@ export async function listPublicHolidaysForYear(
 export async function savePublicHolidaysForYear(
     input: PublicHolidayYearInput,
     executor: PublicHolidayPersistenceExecutor = db,
-): Promise<{ success: true; saved: number } | { error: string }> {
+): Promise<
+    | { success: true; saved: number; affectedPayrollIds: string[] }
+    | { error: string }
+> {
     const parsed = publicHolidayYearInputSchema.safeParse(input);
 
     if (!parsed.success) {
@@ -63,31 +69,49 @@ export async function savePublicHolidaysForYear(
         holidays,
     } = parsed.data;
     const { start, end } = yearRange(year);
+    let affectedPayrollIds: string[] = [];
 
-    await executor.transaction(async (tx) => {
-        await tx
-            .delete(publicHolidayTable)
-            .where(
-                and(
-                    gte(publicHolidayTable.date, start),
-                    lte(publicHolidayTable.date, end),
-                ),
-            );
+    try {
+        await executor.transaction(async (tx) => {
+            await tx
+                .delete(publicHolidayTable)
+                .where(
+                    and(
+                        gte(publicHolidayTable.date, start),
+                        lte(publicHolidayTable.date, end),
+                    ),
+                );
 
-        if (holidays.length === 0) {
-            return;
-        }
+            if (holidays.length > 0) {
+                await tx.insert(publicHolidayTable).values(
+                    holidays.map((holiday) => ({
+                        date: holiday.date,
+                        name: holiday.name,
+                    })),
+                );
+            }
 
-        await tx.insert(publicHolidayTable).values(
-            holidays.map((holiday) => ({
-                date: holiday.date,
-                name: holiday.name,
-            })),
-        );
-    });
+            const refresh =
+                await refreshAffectedDraftPayrollsForPublicHolidayYearInTx(tx, {
+                    year,
+                });
+            if ("error" in refresh) {
+                throw new Error(refresh.error);
+            }
+            affectedPayrollIds = refresh.affectedPayrollIds;
+        });
+    } catch (error) {
+        return {
+            error:
+                error instanceof Error
+                    ? error.message
+                    : "Failed to save public holidays",
+        };
+    }
 
     return {
         success: true,
         saved: holidays.length,
+        affectedPayrollIds,
     };
 }

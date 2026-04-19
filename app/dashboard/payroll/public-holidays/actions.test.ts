@@ -48,6 +48,7 @@ describe("public holiday year action", () => {
         mocks.savePublicHolidaysForYear.mockResolvedValue({
             success: true,
             saved: 2,
+            affectedPayrollIds: ["payroll-1"],
         });
 
         await expect(
@@ -61,6 +62,7 @@ describe("public holiday year action", () => {
         ).resolves.toEqual({
             success: true,
             saved: 2,
+            affectedPayrollIds: ["payroll-1"],
         });
 
         expect(mocks.savePublicHolidaysForYear).toHaveBeenCalledWith({
@@ -74,6 +76,13 @@ describe("public holiday year action", () => {
             "/dashboard/payroll/public-holidays",
         );
         expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/payroll");
+        expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/payroll/all");
+        expect(mocks.revalidatePath).toHaveBeenCalledWith(
+            "/dashboard/payroll/payroll-1/breakdown",
+        );
+        expect(mocks.revalidatePath).toHaveBeenCalledWith(
+            "/dashboard/payroll/payroll-1/summary",
+        );
     });
 
     it("redirects to /login before saving when the authenticated user has no email", async () => {

@@ -18,5 +18,10 @@ export async function savePublicHolidayYear(input: PublicHolidayYearInput) {
 
     revalidatePath("/dashboard/payroll/public-holidays");
     revalidatePath("/dashboard/payroll");
+    revalidatePath("/dashboard/payroll/all");
+    for (const payrollId of result.affectedPayrollIds) {
+        revalidatePath(`/dashboard/payroll/${payrollId}/breakdown`);
+        revalidatePath(`/dashboard/payroll/${payrollId}/summary`);
+    }
     return result;
 }

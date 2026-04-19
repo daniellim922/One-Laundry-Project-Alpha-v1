@@ -94,8 +94,9 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 - A **Worker** has exactly one **Employment**.
 - A **Timesheet entry** belongs to exactly one **Worker**.
 - A **Payroll** belongs to exactly one **Worker** and references exactly one **Payroll voucher**.
-- **Draft** **Payrolls** for a **Worker** are recomputed from **Timesheet entries** whose dates fall in the **Pay period**, from the **Employment** terms, from **Payroll voucher** counts (currently **Rest days** and soon computed **Public holidays**), and from **Installments** in **Installment Loan** status.
+- **Draft** **Payrolls** for a **Worker** are recomputed from **Timesheet entries** whose dates fall in the **Pay period**, from the **Employment** terms, from **Payroll voucher** counts (currently **Rest days** and computed **Public holidays**), and from **Installments** in **Installment Loan** status.
 - The **Public holiday calendar** is shared payroll master data: a named holiday date belongs to one calendar year operationally, but the source of truth is the date itself.
+- Saving a **Public holiday calendar** year refreshes every overlapping **Draft Payroll** so its **Payroll voucher** snapshot and totals stay aligned with the shared calendar; **Settled Payrolls** remain unchanged.
 - An **Advance request** belongs to one **Worker**; one or more **Installments** belong to one **Advance request**.
 - **Advance request** status becomes **Advance Paid** when every linked **Installment** is **Installment Paid**.
 - **Settle** marks the run **Settled** and sets covered **Timesheet** entries to **Timesheet Paid**; **Reopen** reverses that for the run and reverts **Advance** recovery as above.

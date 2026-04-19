@@ -5,10 +5,16 @@ const mocks = vi.hoisted(() => ({
         select: vi.fn(),
         transaction: vi.fn(),
     },
+    refreshAffectedDraftPayrollsForPublicHolidayYearInTx: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
     db: mocks.db,
+}));
+
+vi.mock("@/services/payroll/refresh-affected-draft-payrolls-for-public-holiday-year", () => ({
+    refreshAffectedDraftPayrollsForPublicHolidayYearInTx: (...args: unknown[]) =>
+        mocks.refreshAffectedDraftPayrollsForPublicHolidayYearInTx(...args),
 }));
 
 import {
@@ -60,6 +66,12 @@ describe("public holiday calendar service", () => {
         const deleteFn = vi.fn().mockReturnValue({ where: deleteWhere });
         const insertValues = vi.fn().mockResolvedValue(undefined);
         const insertFn = vi.fn().mockReturnValue({ values: insertValues });
+        mocks.refreshAffectedDraftPayrollsForPublicHolidayYearInTx.mockResolvedValueOnce(
+            {
+                success: true,
+                affectedPayrollIds: [],
+            },
+        );
 
         mocks.db.transaction.mockImplementationOnce(
             async (callback: (tx: unknown) => Promise<void>) =>
@@ -80,6 +92,7 @@ describe("public holiday calendar service", () => {
         ).resolves.toEqual({
             success: true,
             saved: 2,
+            affectedPayrollIds: [],
         });
 
         expect(mocks.db.transaction).toHaveBeenCalledTimes(1);
@@ -88,6 +101,49 @@ describe("public holiday calendar service", () => {
             { date: "2026-01-01", name: "New Year's Day" },
             { date: "2026-05-01", name: "Labour Day" },
         ]);
+        expect(
+            mocks.refreshAffectedDraftPayrollsForPublicHolidayYearInTx,
+        ).toHaveBeenCalledWith(
+            expect.objectContaining({
+                delete: deleteFn,
+                insert: insertFn,
+            }),
+            { year: 2026 },
+        );
+    });
+
+    it("returns affected Draft payroll ids after saving and recomputing the shared calendar", async () => {
+        const deleteFn = vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue(undefined),
+        });
+        const insertFn = vi.fn().mockReturnValue({
+            values: vi.fn().mockResolvedValue(undefined),
+        });
+        mocks.refreshAffectedDraftPayrollsForPublicHolidayYearInTx.mockResolvedValueOnce(
+            {
+                success: true,
+                affectedPayrollIds: ["payroll-draft-1", "payroll-draft-2"],
+            },
+        );
+
+        mocks.db.transaction.mockImplementationOnce(
+            async (callback: (tx: unknown) => Promise<void>) =>
+                callback({
+                    delete: deleteFn,
+                    insert: insertFn,
+                }),
+        );
+
+        await expect(
+            savePublicHolidaysForYear({
+                year: 2026,
+                holidays: [{ date: "2026-01-01", name: "New Year's Day" }],
+            }),
+        ).resolves.toEqual({
+            success: true,
+            saved: 1,
+            affectedPayrollIds: ["payroll-draft-1", "payroll-draft-2"],
+        });
     });
 
     it("rejects malformed dates, blank names, and duplicate holiday dates", async () => {
