@@ -258,7 +258,7 @@ function validateWorkerUserflowHandoff(
 
     if (!Array.isArray(parsed.workers) || parsed.workers.length === 0) {
         throw new Error(
-            `Worker userflow handoff at ${handoffPath} does not contain any created workers.`,
+            `Worker userflow handoff at ${handoffPath} does not contain any created workers. Run test/userflow/workers/01-worker-new-userflow.spec.ts first.`,
         );
     }
 

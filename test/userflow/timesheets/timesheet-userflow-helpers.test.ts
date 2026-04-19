@@ -56,6 +56,32 @@ describe("timesheet-userflow-helpers", () => {
         }
     });
 
+    it("fails clearly when the worker handoff is empty", async () => {
+        const tempDir = await mkdtemp(
+            path.join(os.tmpdir(), "timesheet-userflow-empty-"),
+        );
+        const handoffPath = path.join(tempDir, "worker-userflow-handoff.json");
+
+        try {
+            await writeFile(
+                handoffPath,
+                JSON.stringify({
+                    runId: "run-1",
+                    workers: [],
+                }),
+                "utf8",
+            );
+
+            await expect(
+                readWorkerUserflowHandoffForTimesheets(handoffPath),
+            ).rejects.toThrow(
+                `Worker userflow handoff at ${handoffPath} does not contain any created workers. Run test/userflow/workers/01-worker-new-userflow.spec.ts first.`,
+            );
+        } finally {
+            await rm(tempDir, { recursive: true, force: true });
+        }
+    });
+
     it("builds a deterministic March 2026 dataset keyed by semantic worker permutation", () => {
         const reversedHandoff: WorkerUserflowHandoff = {
             runId: "run-123",
