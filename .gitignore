@@ -41,6 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 test/results/
+test/results-userflow/
 
 # Drizzle: schema is applied with drizzle-kit push; do not commit generated SQL/meta
 /drizzle/
