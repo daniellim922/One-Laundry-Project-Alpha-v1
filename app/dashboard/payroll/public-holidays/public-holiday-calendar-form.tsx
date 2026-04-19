@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Trash2 } from "lucide-react";
 
 import { savePublicHolidayYear } from "@/app/dashboard/payroll/public-holidays/actions";
 import {
@@ -301,11 +302,12 @@ export function PublicHolidayCalendarForm({
                                             <TableCell className="text-right align-top">
                                                 <Button
                                                     type="button"
-                                                    variant="ghost"
+                                                    variant="destructive"
+                                                    size="icon"
                                                     onClick={() => remove(index)}
                                                     disabled={pending}
                                                     aria-label={`Remove holiday ${index + 1}`}>
-                                                    Remove
+                                                    <Trash2 className="size-4" />
                                                 </Button>
                                             </TableCell>
                                         </TableRow>
