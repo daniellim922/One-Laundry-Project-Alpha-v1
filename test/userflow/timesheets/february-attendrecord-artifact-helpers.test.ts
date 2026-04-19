@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
+import * as XLSX from "xlsx";
 
 import {
     FEBRUARY_2026_MONTH,
@@ -73,6 +74,8 @@ describe("february-attendrecord-artifact-helpers", () => {
                 (entry) => entry.dateIn === "2026-02-04",
             ),
         ).toBe(false);
+
+        expectMissingDateCoverage(artifact);
     });
 
     it("writes a real .xls workbook and JSON handoff that round-trip through the AttendRecord parser", async () => {
@@ -136,6 +139,75 @@ describe("february-attendrecord-artifact-helpers", () => {
             await rm(tempDir, { recursive: true, force: true });
         }
     });
+
+    it("preserves the raw AttendRecord RecordTable sheet structure and blank missing-date cells", async () => {
+        const tempDir = await mkdtemp(
+            path.join(os.tmpdir(), "february-attendrecord-workbook-"),
+        );
+        const workbookPath = path.join(tempDir, "generated-attendrecord.xls");
+        const handoffPath = path.join(tempDir, "attendrecord-handoff.json");
+        const artifact = withWorkbookPath(
+            buildFebruary2026AttendRecordArtifact(buildWorkerHandoff()),
+            workbookPath,
+        );
+
+        try {
+            await writeFebruary2026AttendRecordArtifacts(artifact, handoffPath);
+
+            const workbook = XLSX.readFile(workbookPath);
+            const recordTableSheet = workbook.Sheets.RecordTable;
+
+            expect(recordTableSheet).toBeDefined();
+
+            const rows = XLSX.utils.sheet_to_json(recordTableSheet!, {
+                header: 1,
+                blankrows: true,
+                raw: false,
+                defval: "",
+            }) as string[][];
+
+            expect(rows[0]?.[0]).toBe("Attendance date:01/02/2026 ~28/02/2026");
+            expect(rows[1]?.[0]).toBe("Tabling date:28/02/2026 23:59:59");
+
+            for (const [index, worker] of artifact.workers.entries()) {
+                const rowOffset = 2 + index * 4;
+                const workerRow = rows[rowOffset];
+                const headerRow = rows[rowOffset + 1];
+                const valuesRow = rows[rowOffset + 2];
+                const spacerRow = rows[rowOffset + 3];
+
+                expect(workerRow?.slice(0, 5)).toEqual([
+                    "UserID:",
+                    "",
+                    worker.aliasUserId,
+                    "Name:",
+                    worker.workerAlias,
+                ]);
+                expect(headerRow).toEqual([
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    ...Array.from({ length: 28 }, (_, dayIndex) =>
+                        String(dayIndex + 1),
+                    ),
+                ]);
+                expect(
+                    spacerRow === undefined ||
+                        spacerRow.every((cell) => cell === ""),
+                ).toBe(true);
+
+                for (const missingDate of worker.missingDates) {
+                    const dayIndex = Number.parseInt(missingDate.slice(-2), 10) - 1;
+
+                    expect(valuesRow?.[5 + dayIndex]).toBe("");
+                }
+            }
+        } finally {
+            await rm(tempDir, { recursive: true, force: true });
+        }
+    });
 });
 
 function buildWorkerHandoff() {
@@ -179,4 +251,29 @@ function toIsoDate(displayDate: string): string {
     const [day, month, year] = displayDate.split("/");
 
     return `${year}-${month}-${day}`;
+}
+
+function expectMissingDateCoverage(
+    artifact: FebruaryAttendRecordArtifactHandoff,
+): void {
+    expect(
+        artifact.workers.find(
+            (worker) => worker.permutationKey === "full-time-foreign-paynow",
+        )?.missingDates,
+    ).toHaveLength(2);
+    expect(
+        artifact.workers.find(
+            (worker) => worker.permutationKey === "part-time-foreign-cash",
+        )?.missingDates,
+    ).toHaveLength(3);
+    expect(
+        artifact.workers.find(
+            (worker) => worker.permutationKey === "full-time-local-bank-transfer",
+        )?.missingDates,
+    ).toHaveLength(4);
+    expect(
+        artifact.workers.find(
+            (worker) => worker.permutationKey === "part-time-local-paynow",
+        )?.missingDates,
+    ).toHaveLength(1);
 }
