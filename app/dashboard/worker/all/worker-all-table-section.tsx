@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ListChecks, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 
 import { DataTable } from "@/components/data-table/data-table";
 import { Button } from "@/components/ui/button";
@@ -24,12 +24,6 @@ export function WorkerAllTableSection({
                         <Link href="/dashboard/worker/new">
                             <Plus className="mr-2 h-4 w-4" />
                             New worker
-                        </Link>
-                    </Button>
-                    <Button variant="outline" asChild>
-                        <Link href="/dashboard/worker/mass-edit">
-                            <ListChecks className="mr-2 h-4 w-4" />
-                            Mass edit working hours
                         </Link>
                     </Button>
                 </div>
