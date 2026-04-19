@@ -1,6 +1,10 @@
 import { expect, type Page } from "@playwright/test";
 
-import type { MarchTimesheetEntryPayload } from "./timesheet-userflow-helpers";
+import type {
+    MarchTimesheetEntryPayload,
+    TimesheetUserflowHandoff,
+} from "./timesheet-userflow-helpers";
+import { buildTimesheetRowSignature } from "./timesheet-userflow-helpers";
 
 export async function fillTimesheetCreateForm(
     page: Page,
@@ -40,6 +44,61 @@ export async function createTimesheetEntryThroughForm(
     await expect(
         page.getByRole("heading", { name: "All timesheets" }),
     ).toBeVisible();
+}
+
+export async function verifyTimesheetDatasetInAllTimesheetsUi(
+    page: Page,
+    dataset: TimesheetUserflowHandoff,
+): Promise<void> {
+    await page.goto("/dashboard/timesheet/all");
+    await expect(
+        page.getByRole("heading", { name: "All timesheets" }),
+    ).toBeVisible();
+
+    for (const worker of dataset.workers) {
+        const searchInput = page.getByPlaceholder("Search...");
+
+        await searchInput.fill(worker.workerName);
+        await expect(
+            page.getByRole("cell", { name: worker.workerName }).first(),
+        ).toBeVisible();
+
+        const actualSignatures = await collectVisibleRowSignaturesAcrossPages(page);
+        const expectedSignatures = worker.entries.map((entry) =>
+            buildTimesheetRowSignature(entry),
+        );
+
+        expect(actualSignatures).toEqual(expectedSignatures);
+    }
+}
+
+async function collectVisibleRowSignaturesAcrossPages(
+    page: Page,
+): Promise<string[]> {
+    const signatures: string[] = [];
+    const nextButton = page.getByRole("button", { name: "Next" });
+
+    for (;;) {
+        signatures.push(...(await readVisibleRowSignatures(page)));
+
+        if (await nextButton.isDisabled()) {
+            return signatures;
+        }
+
+        await nextButton.click();
+    }
+}
+
+async function readVisibleRowSignatures(page: Page): Promise<string[]> {
+    return page.locator("tbody tr").evaluateAll((rows) =>
+        rows.map((row) => {
+            const cells = Array.from(row.querySelectorAll("td")).map((cell) =>
+                cell.textContent?.trim() ?? "",
+            );
+
+            return cells.slice(0, 6).join(" | ");
+        }),
+    );
 }
 
 function toDisplayDate(isoDate: string): string {

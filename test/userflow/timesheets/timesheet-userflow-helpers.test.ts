@@ -5,10 +5,9 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-    MARCH_2026_HOUR_BAND,
     MARCH_2026_MONTH,
     buildMarch2026TimesheetDataset,
-    getMarch2026MissingDates,
+    buildTimesheetRowSignature,
     readWorkerUserflowHandoffForTimesheets,
     writeTimesheetUserflowHandoff,
     type TimesheetUserflowHandoff,
@@ -82,7 +81,7 @@ describe("timesheet-userflow-helpers", () => {
         }
     });
 
-    it("builds a deterministic March 2026 dataset keyed by semantic worker permutation", () => {
+    it("builds a deterministic March 2026 smoke dataset keyed by semantic worker permutation", () => {
         const reversedHandoff: WorkerUserflowHandoff = {
             runId: "run-123",
             workers: [...buildWorkerHandoff().workers].reverse(),
@@ -94,45 +93,41 @@ describe("timesheet-userflow-helpers", () => {
         expect(dataset.workers.map((worker) => worker.permutationKey)).toEqual(
             WORKER_USERFLOW_PERMUTATIONS.map((permutation) => permutation.key),
         );
-        expect(
-            dataset.workers.find(
-                (worker) => worker.permutationKey === "full-time-foreign-paynow",
-            )?.missingDates,
-        ).toEqual(["2026-03-10", "2026-03-24"]);
-        expect(
-            dataset.workers.map((worker) => worker.missingDates.length),
-        ).toEqual([4, 2, 3, 1]);
+        expect(dataset.workers.map((worker) => worker.workerName)).toEqual([
+            "Worker 1 Edited",
+            "Worker 2 Edited",
+            "Worker 3 Edited",
+            "Worker 4 Edited",
+        ]);
     });
 
-    it("generates March-only same-day entries and keeps every worker inside the hour band", () => {
+    it("generates one same-day March smoke entry per worker permutation", () => {
         const dataset = buildMarch2026TimesheetDataset(buildWorkerHandoff());
 
+        expect(dataset.workers).toHaveLength(WORKER_USERFLOW_PERMUTATIONS.length);
+
         for (const worker of dataset.workers) {
-            expect(worker.missingDates).toEqual(
-                getMarch2026MissingDates(worker.permutationKey),
-            );
-            expect(worker.totalHours).toBeGreaterThanOrEqual(
-                MARCH_2026_HOUR_BAND.min,
-            );
-            expect(worker.totalHours).toBeLessThanOrEqual(
-                MARCH_2026_HOUR_BAND.max,
-            );
+            expect(worker.entries).toHaveLength(1);
 
-            const workedDates = worker.entries.map((entry) => entry.dateIn);
-            expect(workedDates).not.toEqual(
-                expect.arrayContaining(worker.missingDates),
-            );
-
-            for (const entry of worker.entries) {
-                expect(entry.dateIn).toMatch(/^2026-03-\d{2}$/);
-                expect(entry.dateOut).toBe(entry.dateIn);
-                expect(entry.timeIn < entry.timeOut).toBe(true);
-                expect(entry.totalHours).toBeGreaterThan(0);
-            }
+            const [entry] = worker.entries;
+            expect(entry.workerId).toBe(worker.workerId);
+            expect(entry.workerName).toBe(worker.workerName);
+            expect(entry.permutationKey).toBe(worker.permutationKey);
+            expect(entry.dateIn).toMatch(/^2026-03-\d{2}$/);
+            expect(entry.dateOut).toBe(entry.dateIn);
+            expect(entry.timeIn < entry.timeOut).toBe(true);
+            expect(entry.totalHours).toBeGreaterThan(0);
         }
 
-        expect(dataset.workers.map((worker) => worker.totalHours)).toEqual([
-            255, 261, 255, 255,
+        expect(
+            dataset.workers.flatMap((worker) =>
+                worker.entries.map((entry) => buildTimesheetRowSignature(entry)),
+            ),
+        ).toEqual([
+            "Worker 1 Edited | 02/03/2026 | 02/03/2026 | 08:00 | 18:00 | 10.00",
+            "Worker 2 Edited | 09/03/2026 | 09/03/2026 | 09:00 | 18:00 | 9.00",
+            "Worker 3 Edited | 16/03/2026 | 16/03/2026 | 08:30 | 16:30 | 8.00",
+            "Worker 4 Edited | 23/03/2026 | 23/03/2026 | 10:00 | 18:30 | 8.50",
         ]);
     });
 
@@ -166,7 +161,7 @@ function buildWorkerHandoff(): WorkerUserflowHandoff {
             permutationKey: permutation.key,
             workerId: `worker-${index + 1}`,
             initialValues: {
-                name: `Worker ${index + 1}`,
+                name: `Worker ${index + 1} Edited`,
                 nric: `T000000${index}A`,
                 email: `worker-${index + 1}@example.com`,
                 phone: `8000000${index}`,

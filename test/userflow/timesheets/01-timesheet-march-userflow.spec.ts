@@ -6,17 +6,21 @@ import {
     WORKER_USERFLOW_PERMUTATIONS,
 } from "../workers/worker-userflow-helpers";
 import {
-    assertMarchWorkerTotalHourBand,
     buildMarch2026TimesheetDataset,
-    calculateMarchWorkerTotalHours,
     readWorkerUserflowHandoffForTimesheets,
+    writeTimesheetUserflowHandoff,
 } from "./timesheet-userflow-helpers";
-import { createTimesheetEntryThroughForm } from "./timesheet-userflow-playwright-helpers";
+import {
+    createTimesheetEntryThroughForm,
+    verifyTimesheetDatasetInAllTimesheetsUi,
+} from "./timesheet-userflow-playwright-helpers";
 
 test.describe("Timesheet userflow", () => {
-    test("creates the deterministic March 2026 dataset from the persisted worker handoff", async ({
+    test("creates the deterministic March 2026 smoke handoff from the persisted worker handoff", async ({
         page,
     }) => {
+        test.setTimeout(5 * 60_000);
+
         const workerHandoff = await readWorkerUserflowHandoffForTimesheets();
 
         expect(workerHandoff.workers).toHaveLength(
@@ -27,7 +31,10 @@ test.describe("Timesheet userflow", () => {
         );
 
         const dataset = buildMarch2026TimesheetDataset(workerHandoff);
-        const createdEntriesByWorker = new Map<string, typeof dataset.workers[number]["entries"]>();
+        const createdEntriesByWorker = new Map<
+            string,
+            (typeof dataset.workers)[number]["entries"]
+        >();
 
         await signInToUserflowSession(page, "/dashboard/timesheet/new");
         await assertOpenDashboardAccess(page);
@@ -40,17 +47,15 @@ test.describe("Timesheet userflow", () => {
                 createdEntries.push(entry);
             }
 
-            const totalHours = calculateMarchWorkerTotalHours(createdEntries);
-
-            expect(totalHours).toBe(worker.totalHours);
-            assertMarchWorkerTotalHourBand(worker.permutationKey, totalHours);
-
             createdEntriesByWorker.set(worker.workerId, createdEntries);
         }
 
         expect(createdEntriesByWorker.size).toBe(WORKER_USERFLOW_PERMUTATIONS.length);
-        expect(
-            Array.from(createdEntriesByWorker.values()).flat().length,
-        ).toBe(dataset.workers.reduce((sum, worker) => sum + worker.entries.length, 0));
+        expect(Array.from(createdEntriesByWorker.values()).flat()).toEqual(
+            dataset.workers.flatMap((worker) => worker.entries),
+        );
+
+        await verifyTimesheetDatasetInAllTimesheetsUi(page, dataset);
+        await writeTimesheetUserflowHandoff(dataset);
     });
 });
