@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
+import { navigateFromOpenRowMenuView } from "./e2e-dropdown-helpers";
+
 const NO_DRAFT_SKIP_REASON =
     "No Draft payroll in the database; the built-in seed contains only Settled payrolls, so create a Draft payroll to exercise this flow.";
 
@@ -40,7 +42,7 @@ test.describe("Payroll settle flow", () => {
         const draftRow = await requireDraftPayrollRowOrSkip(page);
 
         await draftRow.getByRole("button", { name: "Open row actions" }).click();
-        await page.getByRole("menuitem", { name: "View" }).click();
+        await navigateFromOpenRowMenuView(page);
 
         await expect(page).toHaveURL(/\/dashboard\/payroll\/[0-9a-f-]+\/breakdown$/i);
 

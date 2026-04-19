@@ -5,18 +5,20 @@ test.describe("Dashboard regression smoke", () => {
         page,
     }) => {
         await page.goto("/");
+        const rootRedirect = new URL(page.url());
+        expect(rootRedirect.pathname).toBe("/login");
+        expect(rootRedirect.searchParams.get("redirectTo")).toBe("/");
         await expect(
             page.getByRole("heading", {
-                name: "Deploy to the cloud with confidence",
+                name: "Dashboard access requires sign-in",
             }),
         ).toBeVisible();
-        await expect(page.getByRole("link", { name: /log in/i })).toBeVisible();
 
         await page.goto("/login");
         await expect(page).toHaveURL(/\/login$/);
         await expect(
             page.getByRole("heading", {
-                name: "Dashboard access now requires sign-in",
+                name: "Dashboard access requires sign-in",
             }),
         ).toBeVisible();
         await expect(

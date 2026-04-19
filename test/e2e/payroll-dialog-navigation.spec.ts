@@ -1,4 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+
+import { navigateFromOpenRowMenuView } from "./e2e-dropdown-helpers";
 const NO_PAYROLL_ROW_SKIP_REASON =
     "No payroll rows available to exercise row actions. Seed payrolls and re-run e2e.";
 
@@ -15,10 +17,7 @@ async function requireRowActionOrSkip(scope: Locator) {
 }
 
 async function clickRowActionView(page: Page) {
-    const openMenu = page.locator(
-        '[data-slot="dropdown-menu-content"][data-state="open"]',
-    );
-    await openMenu.getByRole("menuitem", { name: "View" }).click();
+    await navigateFromOpenRowMenuView(page);
 }
 
 async function assertPageStillInteractive(page: Page) {

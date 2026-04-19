@@ -46,6 +46,29 @@ export async function createTimesheetEntryThroughForm(
     ).toBeVisible();
 }
 
+export async function cleanupExistingTimesheetDataset(
+    page: Page,
+    dataset: TimesheetUserflowHandoff,
+): Promise<void> {
+    for (const worker of dataset.workers) {
+        await page.goto("/dashboard/timesheet/all");
+        await expect(
+            page.getByRole("heading", { name: "All timesheets" }),
+        ).toBeVisible();
+
+        const searchInput = getTimesheetSearchInput(page);
+
+        await searchInput.fill(worker.workerName);
+
+        for (const entry of worker.entries) {
+            await deleteAllMatchingTimesheetRows(
+                page,
+                buildTimesheetRowSignature(entry),
+            );
+        }
+    }
+}
+
 export async function verifyTimesheetDatasetInAllTimesheetsUi(
     page: Page,
     dataset: TimesheetUserflowHandoff,
@@ -56,11 +79,13 @@ export async function verifyTimesheetDatasetInAllTimesheetsUi(
     ).toBeVisible();
 
     for (const worker of dataset.workers) {
-        const searchInput = page.getByPlaceholder("Search...");
+        const searchInput = getTimesheetSearchInput(page);
 
         await searchInput.fill(worker.workerName);
         await expect(
-            page.getByRole("cell", { name: worker.workerName }).first(),
+            getTimesheetTable(page)
+                .getByRole("cell", { name: worker.workerName })
+                .first(),
         ).toBeVisible();
 
         const actualSignatures = await collectVisibleRowSignaturesAcrossPages(page);
@@ -76,12 +101,13 @@ async function collectVisibleRowSignaturesAcrossPages(
     page: Page,
 ): Promise<string[]> {
     const signatures: string[] = [];
-    const nextButton = page.getByRole("button", { name: "Next" });
 
     for (;;) {
         signatures.push(...(await readVisibleRowSignatures(page)));
 
-        if (await nextButton.isDisabled()) {
+        const nextButton = getNextPaginationButton(page);
+
+        if ((await nextButton.count()) === 0 || (await nextButton.isDisabled())) {
             return signatures;
         }
 
@@ -90,7 +116,7 @@ async function collectVisibleRowSignaturesAcrossPages(
 }
 
 async function readVisibleRowSignatures(page: Page): Promise<string[]> {
-    return page.locator("tbody tr").evaluateAll((rows) =>
+    return getTimesheetTable(page).locator("tbody tr").evaluateAll((rows) =>
         rows.map((row) => {
             const cells = Array.from(row.querySelectorAll("td")).map((cell) =>
                 cell.textContent?.trim() ?? "",
@@ -99,6 +125,77 @@ async function readVisibleRowSignatures(page: Page): Promise<string[]> {
             return cells.slice(0, 6).join(" | ");
         }),
     );
+}
+
+async function deleteAllMatchingTimesheetRows(
+    page: Page,
+    expectedSignature: string,
+): Promise<void> {
+    for (;;) {
+        const matchingRow = await findMatchingRow(page, expectedSignature);
+
+        if (!matchingRow) {
+            return;
+        }
+
+        await matchingRow.getByRole("button", { name: "Open row actions" }).click();
+        await page.getByRole("menuitem", { name: "Delete" }).click();
+        await page
+            .getByRole("dialog")
+            .getByRole("button", { name: "Delete", exact: true })
+            .click();
+
+        await expect(page.getByRole("dialog")).not.toBeVisible();
+        await expect(matchingRow).not.toBeVisible();
+    }
+}
+
+async function findMatchingRow(
+    page: Page,
+    expectedSignature: string,
+) {
+    for (;;) {
+        const rows = getTimesheetTable(page).locator("tbody tr");
+        const rowCount = await rows.count();
+
+        for (let index = 0; index < rowCount; index += 1) {
+            const row = rows.nth(index);
+            const signature = await readRowSignature(row);
+
+            if (signature === expectedSignature) {
+                return row;
+            }
+        }
+
+        const nextButton = getNextPaginationButton(page);
+
+        if ((await nextButton.count()) === 0 || (await nextButton.isDisabled())) {
+            return null;
+        }
+
+        await nextButton.click();
+    }
+}
+
+async function readRowSignature(row: ReturnType<Page["locator"]>): Promise<string> {
+    const cells = await row.locator("td").allTextContents();
+
+    return cells.slice(0, 6).map((cell) => cell.trim()).join(" | ");
+}
+
+function getTimesheetSearchInput(page: Page) {
+    return page.getByRole("main").getByPlaceholder("Search...");
+}
+
+function getTimesheetTable(page: Page) {
+    return page.getByRole("main").getByRole("table");
+}
+
+function getNextPaginationButton(page: Page) {
+    return page.getByRole("main").getByRole("button", {
+        name: "Next",
+        exact: true,
+    });
 }
 
 function toDisplayDate(isoDate: string): string {

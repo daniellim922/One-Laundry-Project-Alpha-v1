@@ -16,9 +16,11 @@ test.describe("Worker mass edit minimum hours", () => {
             page.getByRole("heading", { name: "Mass edit working hours" }),
         ).toBeVisible();
         await expect(
-            page.getByText(
-                "Only Active Full Time Foreign Workers are shown.",
-            ),
+            page
+                .getByTestId("mass-edit-working-hours-panel")
+                .getByText(
+                    "Only Active Full Time Foreign Workers are shown.",
+                ),
         ).toBeVisible();
 
         const panel = page.getByTestId("mass-edit-working-hours-panel");

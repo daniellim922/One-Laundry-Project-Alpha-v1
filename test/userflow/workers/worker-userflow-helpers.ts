@@ -56,10 +56,14 @@ export type WorkerUserflowHandoff = {
     workers: WorkerUserflowHandoffRecord[];
 };
 
-export const USERFLOW_HANDOFF_PATH = path.join(
+export const USERFLOW_PERSISTED_ARTIFACTS_DIR = path.join(
     process.cwd(),
     "test",
-    "results-userflow",
+    "artifacts-userflow",
+);
+
+export const USERFLOW_HANDOFF_PATH = path.join(
+    USERFLOW_PERSISTED_ARTIFACTS_DIR,
     "worker-userflow-handoff.json",
 );
 
@@ -230,7 +234,7 @@ export async function signInToUserflowSession(
 ): Promise<void> {
     if (!USERFLOW_LOGIN_EMAIL || !USERFLOW_LOGIN_PASSWORD) {
         throw new Error(
-            "Missing USERFLOW_LOGIN_EMAIL or USERFLOW_LOGIN_PASSWORD. Add them to .env before running npm run test:userflow.",
+            "Missing USERFLOW_LOGIN_EMAIL or USERFLOW_LOGIN_PASSWORD. Add them to .env before running npm run test:userflow or npm run test:e2e.",
         );
     }
 

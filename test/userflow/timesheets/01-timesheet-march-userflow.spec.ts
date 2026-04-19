@@ -11,6 +11,7 @@ import {
     writeTimesheetUserflowHandoff,
 } from "./timesheet-userflow-helpers";
 import {
+    cleanupExistingTimesheetDataset,
     createTimesheetEntryThroughForm,
     verifyTimesheetDatasetInAllTimesheetsUi,
 } from "./timesheet-userflow-playwright-helpers";
@@ -38,6 +39,7 @@ test.describe("Timesheet userflow", () => {
 
         await signInToUserflowSession(page, "/dashboard/timesheet/new");
         await assertOpenDashboardAccess(page);
+        await cleanupExistingTimesheetDataset(page, dataset);
 
         for (const worker of dataset.workers) {
             const createdEntries: typeof worker.entries = [];

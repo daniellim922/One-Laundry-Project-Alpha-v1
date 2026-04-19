@@ -8,6 +8,8 @@ import {
     openWorkerEditFromAllWorkersTable,
     readWorkerUserflowHandoff,
     signInToUserflowSession,
+    writeWorkerUserflowHandoff,
+    type WorkerUserflowHandoff,
     WORKER_USERFLOW_PERMUTATIONS,
 } from "./worker-userflow-helpers";
 
@@ -16,6 +18,7 @@ test.describe("Worker userflow", () => {
         page,
     }) => {
         const handoff = await readWorkerUserflowHandoff();
+        const updatedWorkers: WorkerUserflowHandoff["workers"] = [];
 
         if (handoff.workers.length === 0) {
             throw new Error(
@@ -56,6 +59,15 @@ test.describe("Worker userflow", () => {
             );
 
             expect(workerId).toBe(targetWorker.workerId);
+
+            updatedWorkers.push({
+                ...targetWorker,
+                initialValues: updatedWorker,
+            });
+            await writeWorkerUserflowHandoff({
+                runId: handoff.runId,
+                workers: updatedWorkers,
+            });
 
             await page.goto("/dashboard/worker/all");
             await assertOpenDashboardAccess(page);

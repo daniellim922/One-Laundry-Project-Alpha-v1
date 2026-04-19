@@ -42,6 +42,8 @@ next-env.d.ts
 
 test/results/
 test/results-userflow/
+test/artifacts-userflow/
+test/e2e/.auth/
 
 # Drizzle: schema is applied with drizzle-kit push; do not commit generated SQL/meta
 /drizzle/

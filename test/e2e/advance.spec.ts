@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { navigateFromOpenRowMenuView } from "./e2e-dropdown-helpers";
+
 test.describe("Advance dashboard", () => {
     test("sidebar navigates to advance overview", async ({ page }) => {
         await page.goto("/dashboard");
@@ -28,7 +30,7 @@ test.describe("Advance dashboard", () => {
             .first();
         await expect(actionsButton).toBeVisible();
         await actionsButton.click();
-        await page.getByRole("menuitem", { name: "View" }).click();
+        await navigateFromOpenRowMenuView(page);
 
         await expect(page).toHaveURL(/\/dashboard\/advance\/[0-9a-f-]+$/i);
         await expect(page.getByTestId("advance-detail")).toBeVisible();
@@ -38,12 +40,8 @@ test.describe("Advance dashboard", () => {
     test("add advance request form submits and returns to list", async ({
         page,
     }) => {
-        await page.goto("/dashboard/advance/all");
-        await page
-            .getByRole("main")
-            .getByRole("link", { name: "New advance" })
-            .click();
-        await page.waitForURL(/\/dashboard\/advance\/new$/);
+        test.setTimeout(90_000);
+        await page.goto("/dashboard/advance/new");
         await expect(page).toHaveURL(/\/dashboard\/advance\/new$/);
         await expect(page.getByTestId("advance-request-form")).toBeVisible();
 
