@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 export type WorkerEmploymentType = "Full Time" | "Part Time";
@@ -149,7 +149,95 @@ export function buildCreateWorkerSeedData(
     };
 }
 
+export function buildEditWorkerSeedData(
+    worker: WorkerUserflowSeedData,
+): WorkerUserflowSeedData {
+    return {
+        ...worker,
+        name: `${worker.name} Edited`,
+        nric: worker.nric.replace(/.$/, "B"),
+        email: worker.email.replace("@", "+edited@"),
+        phone: bumpDigits(worker.phone, 1111),
+        hourlyRate: bumpMoney(worker.hourlyRate, 0.75),
+        monthlyPay:
+            worker.monthlyPay !== null
+                ? bumpMoney(worker.monthlyPay, 125)
+                : null,
+        restDayRate:
+            worker.restDayRate !== null
+                ? bumpMoney(worker.restDayRate, 1.25)
+                : null,
+        minimumWorkingHours:
+            worker.minimumWorkingHours !== null
+                ? String(Number(worker.minimumWorkingHours) + 5)
+                : null,
+        cpf: worker.cpf !== null ? bumpMoney(worker.cpf, 11.2) : null,
+        countryOfOrigin:
+            worker.countryOfOrigin !== null
+                ? `${worker.countryOfOrigin} Updated`
+                : null,
+        bankAccountNumber:
+            worker.bankAccountNumber !== null
+                ? bumpDigits(worker.bankAccountNumber, 7)
+                : null,
+        payNowPhone:
+            worker.payNowPhone !== null
+                ? bumpDigits(worker.payNowPhone, 2222)
+                : null,
+    };
+}
+
 export async function fillWorkerCreateForm(
+    page: Page,
+    worker: WorkerUserflowSeedData,
+): Promise<void> {
+    await page.getByRole("button", { name: worker.employmentType }).click();
+    await page
+        .getByRole("button", { name: worker.employmentArrangement })
+        .click();
+
+    await fillWorkerScalarFields(page, worker);
+    await fillPaymentMethodFields(page, worker);
+}
+
+export async function fillWorkerEditForm(
+    page: Page,
+    worker: WorkerUserflowSeedData,
+): Promise<void> {
+    await fillWorkerScalarFields(page, worker);
+    await fillPaymentMethodFields(page, worker);
+}
+
+export async function openWorkerEditFromAllWorkersTable(
+    page: Page,
+    workerName: string,
+): Promise<void> {
+    const main = page.getByRole("main");
+
+    await main.getByPlaceholder("Search...").fill(workerName);
+    await expect(main.getByRole("cell", { name: workerName })).toBeVisible();
+    await main.getByRole("button", { name: "Open row actions" }).first().click();
+    await page.getByRole("menuitem", { name: "Edit" }).click();
+    await expect(page).toHaveURL(/\/dashboard\/worker\/([0-9a-f-]+)\/edit$/i);
+}
+
+export async function readWorkerUserflowHandoff(): Promise<WorkerUserflowHandoff> {
+    try {
+        const raw = await readFile(USERFLOW_HANDOFF_PATH, "utf8");
+
+        return JSON.parse(raw) as WorkerUserflowHandoff;
+    } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+            throw new Error(
+                `Worker userflow handoff file is missing at ${USERFLOW_HANDOFF_PATH}. Run test/userflow/01-worker-new-userflow.spec.ts first.`,
+            );
+        }
+
+        throw error;
+    }
+}
+
+async function fillWorkerScalarFields(
     page: Page,
     worker: WorkerUserflowSeedData,
 ): Promise<void> {
@@ -157,10 +245,6 @@ export async function fillWorkerCreateForm(
     await page.getByLabel("NRIC").fill(worker.nric);
     await page.getByLabel("Email").fill(worker.email);
     await page.getByLabel("Phone").fill(worker.phone);
-    await page.getByRole("button", { name: worker.employmentType }).click();
-    await page
-        .getByRole("button", { name: worker.employmentArrangement })
-        .click();
 
     if (worker.monthlyPay !== null) {
         await page.getByLabel("Monthly Pay").fill(worker.monthlyPay);
@@ -193,8 +277,6 @@ export async function fillWorkerCreateForm(
     if (worker.countryOfOrigin !== null) {
         await page.getByLabel("Country of Origin").fill(worker.countryOfOrigin);
     }
-
-    await fillPaymentMethodFields(page, worker);
 }
 
 export async function assertWorkerSearchableAndCaptureWorkerId(
@@ -278,4 +360,12 @@ async function selectPaymentMethod(
 
 function formatMoney(value: number): string {
     return value.toFixed(2);
+}
+
+function bumpDigits(value: string, amount: number): string {
+    return String(Number(value) + amount);
+}
+
+function bumpMoney(value: string, amount: number): string {
+    return formatMoney(Number(value) + amount);
 }
