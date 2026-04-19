@@ -4,7 +4,9 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
     test: {
         environment: "node",
-        include: ["{app,components,utils,lib,db,services,scripts}/**/*.test.{ts,tsx}"],
+        include: [
+            "{app,components,utils,lib,db,services,scripts,test/userflow}/**/*.test.{ts,tsx}",
+        ],
         exclude: ["node_modules", ".next", "test/e2e"],
         // `lib/db` throws if unset; unit tests import modules that transitively load `db`.
         // Tests do not require a live Postgres instance unless they execute queries.
