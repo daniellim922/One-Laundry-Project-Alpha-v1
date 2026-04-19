@@ -10,7 +10,7 @@ This document maps the live `app/api/` surface with Supabase email-and-password 
 | `/api/payroll/[id]/revert-preview` | `GET` | Authenticated session required | Lazy-load the revert impact preview for the payroll detail dialog |
 | `/api/payroll/[id]/revert` | `POST` | Authenticated session required | Reopen a Settled payroll and unwind timesheet + advance recovery |
 | `/api/payroll/[id]/settle` | `POST` | Authenticated session required | Settle a single Draft payroll run |
-| `/api/payroll/[id]/voucher-days` | `PATCH` | Authenticated session required | Update rest-day and public-holiday counts on a payroll voucher |
+| `/api/payroll/[id]/voucher-days` | `PATCH` | Authenticated session required | Update voucher day-count fields; current payroll detail UI uses it for `restDays`, while newly created Draft payroll `publicHolidays` are computed from the shared holiday calendar |
 | `/api/payroll/[id]/pdf` | `GET` | Authenticated session required | Generate payroll summary or voucher PDF |
 | `/api/payroll/download-selection` | `GET` | Authenticated session required | Lazy-load payroll rows for the download-selection dialog |
 | `/api/payroll/download-zip` | `POST` | Authenticated session required | Bundle multiple payroll PDFs into a ZIP |
@@ -109,6 +109,8 @@ flowchart TD
 - All document/export routes declare `runtime = "nodejs"`.
 - JSON command routes prefer the shared transport helpers in `app/api/_shared/` for authenticated-session enforcement, response shaping, and revalidation handling.
 - Bulk worker minimum-hours updates stay action-free on the client side: the dashboard dialog calls the route, while worker create and edit forms remain server-action submissions.
+- Payroll public-holiday calendar management currently stays on the server-action side of the transport split under `app/dashboard/payroll/public-holidays`; there is no dedicated `app/api` route for the year-save workflow yet.
+- Saving a public-holiday year recomputes overlapping Draft payroll vouchers through `services/payroll/refresh-affected-draft-payrolls-for-public-holiday-year.ts` and revalidates the payroll list plus affected breakdown/summary pages; Settled payrolls are excluded.
 - Payroll revert preview, bulk settlement candidate loading, payroll download selection, payroll settle/revert commands, voucher-day edits, and export flows now run through `app/api`; only payroll create and update remain server-action form submissions.
 - Timesheet delete and AttendRecord import now call `app/api` from client components, while timesheet create and edit remain server-action submissions.
 - Dashboard form submissions still perform their own `requireCurrentDashboardUser()` check, so route protection does not rely on `proxy.ts` alone.

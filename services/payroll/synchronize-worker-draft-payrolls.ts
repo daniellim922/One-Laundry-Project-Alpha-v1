@@ -10,6 +10,7 @@ import { timesheetTable } from "@/db/tables/timesheetTable";
 import { workerTable } from "@/db/tables/workerTable";
 import { calculatePay } from "@/utils/payroll/payroll-utils";
 import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
+import { countPayrollPublicHolidays } from "@/services/payroll/public-holiday-payroll";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type PayrollSyncExecutor = Pick<typeof db, "select" | "update">;
@@ -105,19 +106,19 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
                 0,
             );
 
-            const [currentVoucher] = await executor
-                .select({
-                    publicHolidays: payrollVoucherTable.publicHolidays,
-                })
-                .from(payrollVoucherTable)
-                .where(eq(payrollVoucherTable.id, payroll.payrollVoucherId))
-                .limit(1);
-
             const restDays = computeRestDaysForPayrollPeriod({
                 periodStart: payroll.periodStart,
                 periodEnd: payroll.periodEnd,
                 presentDateInKeys: entryRows.map((e) => e.dateIn),
             });
+            const publicHolidays = await countPayrollPublicHolidays(
+                {
+                    periodStart: payroll.periodStart,
+                    periodEnd: payroll.periodEnd,
+                    workedDateIns: entryRows.map((entry) => entry.dateIn),
+                },
+                executor,
+            );
 
             const payCalc = calculatePay({
                 employmentType: employment.employmentType,
@@ -127,7 +128,7 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
                 hourlyRate: employment.hourlyRate,
                 restDayRate: employment.restDayRate,
                 restDays,
-                publicHolidays: currentVoucher?.publicHolidays ?? 0,
+                publicHolidays,
             });
 
             const hoursNotMet =
@@ -188,6 +189,7 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
                     restDayRate: employment.restDayRate,
                     restDays,
                     restDayPay: payCalc.restDayPay,
+                    publicHolidays,
                     publicHolidayPay: payCalc.publicHolidayPay,
                     cpf: employment.cpf,
                     advance: advanceTotal,

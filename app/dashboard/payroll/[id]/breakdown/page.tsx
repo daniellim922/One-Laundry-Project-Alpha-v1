@@ -451,15 +451,22 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                                 : "–"}
                                         </p>
                                     </div>
-                                    <VoucherEditableNumber
-                                        payrollId={payroll.id}
-                                        voucherId={voucher.id}
-                                        label="Public Holidays"
-                                        field="publicHolidays"
-                                        restDays={voucher.restDays}
-                                        publicHolidays={voucher.publicHolidays}
-                                        readOnly={payroll.status !== "Draft"}
-                                    />
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-sm text-muted-foreground">
+                                                Public Holidays
+                                            </p>
+                                            <Badge variant="secondary">
+                                                Computed
+                                            </Badge>
+                                        </div>
+                                        <p className="text-sm font-medium">
+                                            {voucher.publicHolidays ?? 0}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            From the shared public holiday calendar
+                                        </p>
+                                    </div>
                                     <div className="space-y-1">
                                         <p className="text-sm text-muted-foreground">
                                             Public Holiday Pay

@@ -84,6 +84,10 @@ export const DASHBOARD_NAV_FEATURES: DashboardNavFeature[] = [
         subFeatures: [
             { name: "All payrolls", url: "/dashboard/payroll/all" },
             { name: "New payroll", url: "/dashboard/payroll/new" },
+            {
+                name: "Public holidays",
+                url: "/dashboard/payroll/public-holidays",
+            },
             { name: "Settle drafts", url: "/dashboard/payroll/settle-drafts" },
             {
                 name: "Download payrolls",
