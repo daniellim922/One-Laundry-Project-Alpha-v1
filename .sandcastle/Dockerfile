@@ -19,11 +19,13 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
 # This keeps UID 1000 so that --userns=keep-id (Podman) and
 # --user 1000:1000 (Docker) map to the correct home directory owner.
 RUN usermod -d /home/agent -m -l agent node
-
-# Install Codex CLI (run as root before USER agent)
-RUN npm install -g @openai/codex
-
 USER agent
+
+# Install Claude Code CLI
+RUN curl -fsSL https://claude.ai/install.sh | bash
+
+# Add Claude to PATH
+ENV PATH="/home/agent/.local/bin:$PATH"
 
 WORKDIR /home/agent
 

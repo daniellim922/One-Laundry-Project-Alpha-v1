@@ -2,11 +2,11 @@
 
 Fix issue {{TASK_ID}}: {{ISSUE_TITLE}}
 
-Pull in the issue using `gh issue view {{TASK_ID}}`. If it has a parent PRD, pull that in too.
+Pull in the issue using `{{VIEW_TASK_COMMAND}}`. If it has a parent PRD, pull that in too.
 
 Only work on the issue specified.
 
-Work on branch {{BRANCH}}. Make commits, run tests, and close the issue when done.
+Work on branch {{BRANCH}}. Make commits, run tests, and close the issue when done using `{{CLOSE_TASK_COMMAND}}`.
 
 # CONTEXT
 
@@ -51,7 +51,7 @@ Keep it concise.
 
 # THE ISSUE
 
-If the task is not complete, leave a comment on the GitHub issue with what was done.
+If the task is not complete, leave a comment on the issue with what was done.
 
 Do not close the issue - this will be done later.
 
