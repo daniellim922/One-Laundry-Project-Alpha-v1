@@ -255,7 +255,7 @@ export async function readWorkerUserflowHandoff(): Promise<WorkerUserflowHandoff
     } catch (error) {
         if ((error as NodeJS.ErrnoException).code === "ENOENT") {
             throw new Error(
-                `Worker userflow handoff file is missing at ${USERFLOW_HANDOFF_PATH}. Run test/userflow/01-worker-new-userflow.spec.ts first.`,
+                `Worker userflow handoff file is missing at ${USERFLOW_HANDOFF_PATH}. Run test/userflow/workers/01-worker-new-userflow.spec.ts first.`,
             );
         }
 

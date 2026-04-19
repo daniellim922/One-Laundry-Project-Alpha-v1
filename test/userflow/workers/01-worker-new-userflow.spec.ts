@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { assertOpenDashboardAccess } from "../e2e/worker-test-helpers";
+import { assertOpenDashboardAccess } from "../../e2e/worker-test-helpers";
 import {
     assertWorkerSearchableAndCaptureWorkerId,
     buildCreateWorkerSeedData,
