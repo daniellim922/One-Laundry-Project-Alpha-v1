@@ -23,6 +23,7 @@ export default defineConfig({
     reporter: "list",
     use: {
         baseURL,
+        video: "on",
         trace: "on-first-retry",
     },
     projects: [
