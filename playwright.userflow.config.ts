@@ -30,10 +30,37 @@ export default defineConfig({
     },
     projects: [
         {
-            name: "chromium",
+            name: "worker-new",
             use: {
                 ...devices["Desktop Chrome"],
             },
+            testMatch: ["workers/01-*.spec.ts"],
+        },
+        {
+            name: "worker-edit",
+            use: {
+                ...devices["Desktop Chrome"],
+            },
+            testMatch: ["workers/**/*.spec.ts"],
+            testIgnore: ["workers/01-*.spec.ts"],
+            dependencies: ["worker-new"],
+        },
+        {
+            name: "timesheet-march",
+            use: {
+                ...devices["Desktop Chrome"],
+            },
+            testMatch: ["timesheets/01-*.spec.ts"],
+            dependencies: ["worker-edit"],
+        },
+        {
+            name: "timesheet-followups",
+            use: {
+                ...devices["Desktop Chrome"],
+            },
+            testMatch: ["timesheets/**/*.spec.ts"],
+            testIgnore: ["timesheets/01-*.spec.ts"],
+            dependencies: ["timesheet-march"],
         },
     ],
 });

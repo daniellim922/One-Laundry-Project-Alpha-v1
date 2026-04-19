@@ -80,12 +80,7 @@ export async function assertFebruaryImportPreviewBeforeRemapping(
     );
 
     for (const worker of artifact.workers) {
-        await expect(
-            page.getByRole("combobox", {
-                name: worker.workerAlias,
-                exact: true,
-            }),
-        ).toBeVisible();
+        await expect(getPreviewWorkerCombobox(page, worker.workerAlias)).toBeVisible();
     }
 }
 
@@ -94,23 +89,19 @@ export async function remapFebruaryImportPreviewWorkers(
     artifact: FebruaryAttendRecordArtifactHandoff,
 ): Promise<void> {
     for (const worker of artifact.workers) {
-        await page
-            .getByRole("combobox", {
-                name: worker.workerAlias,
-                exact: true,
-            })
-            .click();
-        await page.getByPlaceholder(/Search workers/i).fill(worker.workerName);
-        await page
-            .getByRole("option", { name: worker.workerName, exact: true })
-            .click();
+        const combobox = getPreviewWorkerCombobox(page, worker.workerAlias);
 
-        await expect(
-            page.getByRole("combobox", {
-                name: worker.workerName,
-                exact: true,
-            }),
-        ).toBeVisible();
+        await closeVisibleWorkerSearchPopovers(page);
+        await combobox.click();
+
+        const searchInput = getVisibleWorkerSearchInput(page);
+
+        await expect(searchInput).toBeVisible();
+        await searchInput.fill(worker.workerName);
+        await getVisibleWorkerOption(page, worker.workerName).click();
+
+        await expect(getPreviewWorkerRow(page, worker.workerName)).toBeVisible();
+        await closeVisibleWorkerSearchPopovers(page);
     }
 }
 
@@ -218,4 +209,39 @@ function buildExpectedSignatureCounts(
 
         return counts;
     }, {});
+}
+
+function getPreviewWorkerCombobox(page: Page, workerLabel: string) {
+    return getPreviewWorkerRow(page, workerLabel).getByRole("combobox");
+}
+
+function getPreviewWorkerRow(page: Page, workerLabel: string) {
+    return getTimesheetTable(page)
+        .locator("tbody tr")
+        .filter({
+            has: page.getByText(workerLabel, { exact: true }),
+        })
+        .first();
+}
+
+function getVisibleWorkerSearchInput(page: Page) {
+    return page.locator('input[placeholder^="Search workers"]:visible').last();
+}
+
+function getVisibleWorkerOption(page: Page, workerName: string) {
+    return page
+        .locator('[role="option"]:visible')
+        .filter({ hasText: workerName })
+        .last();
+}
+
+async function closeVisibleWorkerSearchPopovers(page: Page): Promise<void> {
+    const visibleSearchInputs = page.locator(
+        'input[placeholder^="Search workers"]:visible',
+    );
+    const openCount = await visibleSearchInputs.count();
+
+    for (let index = 0; index < openCount; index += 1) {
+        await page.keyboard.press("Escape");
+    }
 }
