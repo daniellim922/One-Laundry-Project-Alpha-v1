@@ -6,6 +6,7 @@ import {
     buildCreateWorkerSeedData,
     createUserflowRunId,
     fillWorkerCreateForm,
+    signInToUserflowSession,
     type WorkerUserflowHandoff,
     WORKER_USERFLOW_PERMUTATIONS,
     writeWorkerUserflowHandoff,
@@ -17,6 +18,8 @@ test.describe("Worker userflow", () => {
     }) => {
         const runId = createUserflowRunId();
         const createdWorkers: WorkerUserflowHandoff["workers"] = [];
+
+        await signInToUserflowSession(page, "/dashboard/worker/new");
 
         for (const [index, permutation] of WORKER_USERFLOW_PERMUTATIONS.entries()) {
             const worker = buildCreateWorkerSeedData(permutation, runId, index);

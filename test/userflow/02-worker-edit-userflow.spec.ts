@@ -7,6 +7,7 @@ import {
     fillWorkerEditForm,
     openWorkerEditFromAllWorkersTable,
     readWorkerUserflowHandoff,
+    signInToUserflowSession,
     WORKER_USERFLOW_PERMUTATIONS,
 } from "./worker-userflow-helpers";
 
@@ -27,6 +28,7 @@ test.describe("Worker userflow", () => {
             WORKER_USERFLOW_PERMUTATIONS.map((permutation) => permutation.key),
         );
 
+        await signInToUserflowSession(page, "/dashboard/worker/all");
         await page.goto("/dashboard/worker/all");
         await assertOpenDashboardAccess(page);
 

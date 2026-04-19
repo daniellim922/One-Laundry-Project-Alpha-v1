@@ -63,6 +63,9 @@ export const USERFLOW_HANDOFF_PATH = path.join(
     "worker-userflow-handoff.json",
 );
 
+const USERFLOW_LOGIN_EMAIL = process.env.USERFLOW_LOGIN_EMAIL?.trim();
+const USERFLOW_LOGIN_PASSWORD = process.env.USERFLOW_LOGIN_PASSWORD ?? "";
+
 export const WORKER_USERFLOW_PERMUTATIONS: readonly WorkerUserflowPermutation[] =
     [
         {
@@ -221,6 +224,29 @@ export async function openWorkerEditFromAllWorkersTable(
     await expect(page).toHaveURL(/\/dashboard\/worker\/([0-9a-f-]+)\/edit$/i);
 }
 
+export async function signInToUserflowSession(
+    page: Page,
+    redirectTo = "/dashboard",
+): Promise<void> {
+    if (!USERFLOW_LOGIN_EMAIL || !USERFLOW_LOGIN_PASSWORD) {
+        throw new Error(
+            "Missing USERFLOW_LOGIN_EMAIL or USERFLOW_LOGIN_PASSWORD. Add them to .env before running npm run test:userflow.",
+        );
+    }
+
+    await page.goto(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+
+    if (new URL(page.url()).pathname === "/login") {
+        await page.getByLabel("Email").fill(USERFLOW_LOGIN_EMAIL);
+        await page.getByLabel("Password").fill(USERFLOW_LOGIN_PASSWORD);
+        await page.getByRole("button", { name: "Sign in" }).click();
+    }
+
+    await expect(page).not.toHaveURL(/\/login(?:\?|$)/);
+    await expect(page).toHaveURL(buildRedirectExpectation(redirectTo));
+    await expect(page.getByRole("main")).toBeVisible();
+}
+
 export async function readWorkerUserflowHandoff(): Promise<WorkerUserflowHandoff> {
     try {
         const raw = await readFile(USERFLOW_HANDOFF_PATH, "utf8");
@@ -235,6 +261,14 @@ export async function readWorkerUserflowHandoff(): Promise<WorkerUserflowHandoff
 
         throw error;
     }
+}
+
+function buildRedirectExpectation(redirectTo: string): RegExp {
+    return new RegExp(`${escapeForRegex(redirectTo)}(?:\\?.*)?$`);
+}
+
+function escapeForRegex(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 async function fillWorkerScalarFields(
