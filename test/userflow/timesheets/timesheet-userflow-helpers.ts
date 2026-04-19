@@ -43,6 +43,11 @@ export type MarchTimesheetWorkerDataset = {
     entries: MarchTimesheetEntryPayload[];
 };
 
+type TimesheetRowSignatureInput = Pick<
+    MarchTimesheetEntryPayload,
+    "workerName" | "dateIn" | "dateOut" | "timeIn" | "timeOut" | "totalHours"
+>;
+
 export type TimesheetUserflowHandoff = {
     runId: string;
     month: typeof MARCH_2026_MONTH;
@@ -130,7 +135,7 @@ export function buildMarch2026WorkerDataset(
 }
 
 export function buildTimesheetRowSignature(
-    entry: MarchTimesheetEntryPayload,
+    entry: TimesheetRowSignatureInput,
 ): string {
     return [
         entry.workerName,
