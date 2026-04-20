@@ -97,7 +97,7 @@ export async function verifyTimesheetDatasetInAllTimesheetsUi(
     }
 }
 
-async function collectVisibleRowSignaturesAcrossPages(
+export async function collectVisibleRowSignaturesAcrossPages(
     page: Page,
 ): Promise<string[]> {
     const signatures: string[] = [];
@@ -183,11 +183,11 @@ async function readRowSignature(row: ReturnType<Page["locator"]>): Promise<strin
     return cells.slice(0, 6).map((cell) => cell.trim()).join(" | ");
 }
 
-function getTimesheetSearchInput(page: Page) {
+export function getTimesheetSearchInput(page: Page) {
     return page.getByRole("main").getByPlaceholder("Search...");
 }
 
-function getTimesheetTable(page: Page) {
+export function getTimesheetTable(page: Page) {
     return page.getByRole("main").getByRole("table");
 }
 
