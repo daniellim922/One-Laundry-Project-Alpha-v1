@@ -8,6 +8,7 @@
         "build": "next build",
         "start": "next start",
         "lint": "eslint",
+        "typecheck": "tsc --noEmit",
         "db:wipe": "npx tsx db/wipe-db.ts",
         "db:migrate": "npx drizzle-kit push",
         "db:seed": "npx tsx db/seed/seed.ts",
