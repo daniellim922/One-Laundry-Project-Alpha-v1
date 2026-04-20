@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { registerUserflowResultFolderRenaming } from "../register-userflow-result-folder";
 import { assertOpenDashboardAccess } from "../../e2e/worker-test-helpers";
 import {
     signInToUserflowSession,
@@ -14,6 +15,8 @@ import {
     createAdvanceRequestThroughForm,
     verifyAdvanceRequestInAllAdvancesUi,
 } from "./advance-userflow-playwright-helpers";
+
+registerUserflowResultFolderRenaming(test);
 
 test.describe("Advance userflow", () => {
     test("creates the deterministic advance scenario matrix from the persisted worker handoff", async ({

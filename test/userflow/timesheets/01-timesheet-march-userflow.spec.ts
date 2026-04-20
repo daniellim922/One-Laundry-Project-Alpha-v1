@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { registerUserflowResultFolderRenaming } from "../register-userflow-result-folder";
 import { assertOpenDashboardAccess } from "../../e2e/worker-test-helpers";
 import {
     signInToUserflowSession,
@@ -15,6 +16,8 @@ import {
     createTimesheetEntryThroughForm,
     verifyTimesheetDatasetInAllTimesheetsUi,
 } from "./timesheet-userflow-playwright-helpers";
+
+registerUserflowResultFolderRenaming(test);
 
 test.describe("Timesheet userflow", () => {
     test("creates the deterministic March 2026 smoke handoff from the persisted worker handoff", async ({
