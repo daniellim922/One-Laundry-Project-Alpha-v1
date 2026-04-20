@@ -16,11 +16,22 @@ import { defineConfig, devices } from "@playwright/test";
  *
  * Example:
  *   USERFLOW_BASE_URL=https://your-app.vercel.app npm run test:userflow
+ *
+ * Timeouts: userflows hit a real deploy + DB (cold starts, slow first paint). Override if needed:
+ *   USERFLOW_TEST_TIMEOUT_MS — per-test ceiling (default 300000)
+ *   USERFLOW_EXPECT_TIMEOUT_MS — default assertion wait (default 90000)
  */
 const baseURL =
     process.env.USERFLOW_BASE_URL ??
     process.env.PLAYWRIGHT_TEST_BASE_URL ??
     "http://127.0.0.1:3000";
+
+const userflowTestTimeoutMs = Number(
+    process.env.USERFLOW_TEST_TIMEOUT_MS ?? 300_000,
+);
+const userflowExpectTimeoutMs = Number(
+    process.env.USERFLOW_EXPECT_TIMEOUT_MS ?? 90_000,
+);
 
 const userflowChrome = {
     ...devices["Desktop Chrome"],
@@ -29,6 +40,11 @@ const userflowChrome = {
 export default defineConfig({
     testDir: "test/userflow",
     outputDir: "test/results-userflow",
+    /** Cold deploy/DB: allow long flows without racing the default 30s test cap. */
+    timeout: userflowTestTimeoutMs,
+    expect: {
+        timeout: userflowExpectTimeoutMs,
+    },
     fullyParallel: false,
     forbidOnly: !!process.env.CI,
     retries: process.env.CI ? 2 : 0,

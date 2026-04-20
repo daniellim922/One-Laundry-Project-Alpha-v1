@@ -37,9 +37,7 @@ test.describe("Worker userflow", () => {
             await fillWorkerCreateForm(page, worker);
             await page.getByRole("button", { name: "Add New Worker" }).click();
 
-            await expect(page).toHaveURL(/\/dashboard\/worker\/all$/, {
-                timeout: 15_000,
-            });
+            await expect(page).toHaveURL(/\/dashboard\/worker\/all$/);
 
             const workerId = await assertWorkerSearchableAndCaptureWorkerId(
                 page,

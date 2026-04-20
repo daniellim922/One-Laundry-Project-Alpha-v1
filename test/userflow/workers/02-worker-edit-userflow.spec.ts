@@ -52,9 +52,7 @@ test.describe("Worker userflow", () => {
             await fillWorkerEditForm(page, updatedWorker);
             await page.getByRole("button", { name: "Save changes" }).click();
 
-            await expect(page).toHaveURL(/\/dashboard\/worker\/all$/, {
-                timeout: 15_000,
-            });
+            await expect(page).toHaveURL(/\/dashboard\/worker\/all$/);
 
             const workerId = await assertWorkerSearchableAndCaptureWorkerId(
                 page,

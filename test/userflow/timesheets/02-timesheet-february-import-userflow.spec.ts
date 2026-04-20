@@ -17,8 +17,6 @@ test.describe("Timesheet userflow", () => {
     test("imports the deterministic February 2026 AttendRecord workbook after the March smoke path", async ({
         page,
     }) => {
-        test.setTimeout(5 * 60_000);
-
         const artifact =
             await createFebruary2026AttendRecordArtifactsFromLatestWorkerHandoff();
 

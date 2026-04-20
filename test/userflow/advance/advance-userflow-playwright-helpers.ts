@@ -39,9 +39,7 @@ export async function createAdvanceRequestThroughForm(
 
     await page.getByTestId("advance-request-submit").click();
 
-    await expect(page).toHaveURL(/\/dashboard\/advance\/all(?:\?.*)?$/, {
-        timeout: 15_000,
-    });
+    await expect(page).toHaveURL(/\/dashboard\/advance\/all(?:\?.*)?$/);
     await expect(
         page.getByRole("heading", { name: "All advances" }),
     ).toBeVisible();

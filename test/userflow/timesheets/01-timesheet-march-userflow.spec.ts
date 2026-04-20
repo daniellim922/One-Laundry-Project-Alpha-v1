@@ -23,8 +23,6 @@ test.describe("Timesheet userflow", () => {
     test("creates the deterministic March 2026 smoke handoff from the persisted worker handoff", async ({
         page,
     }) => {
-        test.setTimeout(5 * 60_000);
-
         const workerHandoff = await readWorkerUserflowHandoffForTimesheets();
 
         expect(workerHandoff.workers).toHaveLength(

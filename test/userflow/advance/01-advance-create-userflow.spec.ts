@@ -22,8 +22,6 @@ test.describe("Advance userflow", () => {
     test("creates the deterministic advance scenario matrix from the persisted worker handoff", async ({
         page,
     }) => {
-        test.setTimeout(5 * 60_000);
-
         const workerHandoff = await readWorkerUserflowHandoffForAdvances();
         const dataset = buildAdvanceUserflowHandoff(workerHandoff);
 

@@ -38,9 +38,7 @@ export async function createTimesheetEntryThroughForm(
     await fillTimesheetCreateForm(page, entry);
     await page.getByRole("button", { name: "Add" }).click();
 
-    await expect(page).toHaveURL(/\/dashboard\/timesheet\/all$/, {
-        timeout: 15_000,
-    });
+    await expect(page).toHaveURL(/\/dashboard\/timesheet\/all$/);
     await expect(
         page.getByRole("heading", { name: "All timesheets" }),
     ).toBeVisible();
