@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { registerUserflowResultFolderRenaming } from "../register-userflow-result-folder";
 import { assertOpenDashboardAccess } from "../../e2e/worker-test-helpers";
 import {
     assertWorkerSearchableAndCaptureWorkerId,
@@ -11,6 +12,8 @@ import {
     WORKER_USERFLOW_PERMUTATIONS,
     writeWorkerUserflowHandoff,
 } from "./worker-userflow-helpers";
+
+registerUserflowResultFolderRenaming(test);
 
 test.describe("Worker userflow", () => {
     test("creates the worker permutation matrix and persists edit handoff", async ({
