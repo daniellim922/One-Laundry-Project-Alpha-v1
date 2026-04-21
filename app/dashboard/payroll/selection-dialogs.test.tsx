@@ -196,6 +196,7 @@ describe("Payroll selection panels", () => {
                 screen.queryByRole("dialog", { name: "Preparing download" }),
             ).toBeNull();
         });
+        expect(mocks.push).toHaveBeenCalledWith("/dashboard/payroll/all");
     });
 
     it("shows settling then generating in the dialog when settling drafts", async () => {
@@ -242,6 +243,7 @@ describe("Payroll selection panels", () => {
                 screen.queryByRole("dialog", { name: "Preparing download" }),
             ).toBeNull();
         });
+        expect(mocks.push).toHaveBeenCalledWith("/dashboard/payroll/all");
     });
 
     it("shows determinate ZIP progress after stream progress events", async () => {
@@ -286,6 +288,9 @@ describe("Payroll selection panels", () => {
             expect(
                 screen.getByText("1 of 2 files finished processing"),
             ).toBeTruthy();
+        });
+        await waitFor(() => {
+            expect(mocks.push).toHaveBeenCalledWith("/dashboard/payroll/all");
         });
     });
 });

@@ -3,6 +3,7 @@
 import * as React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { RowSelectionState } from "@tanstack/react-table";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,6 +32,7 @@ const selectableColumns: ColumnDef<PayrollWithWorker>[] = [
 ];
 
 export function DownloadPayrollsPanel() {
+    const router = useRouter();
     const [error, setError] = React.useState<string | null>(null);
     const [loading, setLoading] = React.useState(true);
     const [payrolls, setPayrolls] = React.useState<PayrollWithWorker[]>([]);
@@ -157,6 +159,7 @@ export function DownloadPayrollsPanel() {
 
         setZipDialogOpen(false);
         setZipProgress(null);
+        router.push("/dashboard/payroll/all");
     }
 
     return (

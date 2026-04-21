@@ -33,7 +33,7 @@ export function DataTableSkeleton({
                 </div>
             ) : null}
 
-            <div className="rounded-md border">
+            <div className="rounded-md border bg-card text-card-foreground">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -48,9 +48,7 @@ export function DataTableSkeleton({
                         <TableRow>
                             {Array.from({ length: safeColumnCount }).map(
                                 (_, idx) => (
-                                    <TableHead
-                                        key={idx}
-                                        className="px-2 py-1">
+                                    <TableHead key={idx} className="px-2 py-1">
                                         <Skeleton className="h-8 w-full" />
                                     </TableHead>
                                 ),

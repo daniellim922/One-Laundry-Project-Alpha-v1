@@ -271,9 +271,7 @@ export function DataTable<TData, TValue>({
         }
 
         const allowedIds = new Set(
-            tableRef.current
-                .getFilteredRowModel()
-                .rows.map((row) => row.id),
+            tableRef.current.getFilteredRowModel().rows.map((row) => row.id),
         );
 
         onRowSelectionChange((prev) => {
@@ -352,7 +350,7 @@ export function DataTable<TData, TValue>({
                 </div>
             ) : null}
 
-            <div className="min-w-0 rounded-md border">
+            <div className="min-w-0 rounded-md border bg-card text-card-foreground">
                 <Table>
                     <TableHeader>
                         {table.getHeaderGroups().map((headerGroup) => (

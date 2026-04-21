@@ -191,7 +191,7 @@ export function SettleDraftPayrollsPanel() {
         setZipDialogOpen(false);
         setZipProgress(null);
         resetUi();
-        router.refresh();
+        router.push("/dashboard/payroll/all");
     }
 
     return (
