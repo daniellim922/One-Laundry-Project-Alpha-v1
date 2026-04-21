@@ -4,6 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useActionState, useTransition } from "react";
 import * as z from "zod";
 
+import Link from "next/link";
+
 import { signInWithPasswordAction } from "@/app/login/actions";
 import { initialLoginActionState } from "@/app/login/login-action-state";
 import { Button } from "@/components/ui/button";
@@ -47,6 +49,10 @@ export function LoginForm({
             password: "",
         },
     });
+
+    const resetPasswordParams = new URLSearchParams();
+    resetPasswordParams.set("redirectTo", redirectTo);
+    const resetPasswordHref = `/login/reset-password?${resetPasswordParams.toString()}`;
 
     function onSubmit(values: LoginFormValues) {
         startTransition(() => {
@@ -106,6 +112,15 @@ export function LoginForm({
                         </FormItem>
                     )}
                 />
+                <div className="flex justify-end">
+                    <Button
+                        type="button"
+                        variant="link"
+                        className="h-auto p-0 text-sm font-normal"
+                        asChild>
+                        <Link href={resetPasswordHref}>Forgot password?</Link>
+                    </Button>
+                </div>
                 <Button
                     type="submit"
                     className="w-full sm:w-auto"
