@@ -72,7 +72,7 @@ export function LoginForm({
                     control={form.control}
                     name="email"
                     render={({ field }) => (
-                        <FormItem>
+                        <FormItem itemId="login-email">
                             <FormLabel>Email</FormLabel>
                             <FormControl>
                                 <Input
@@ -91,7 +91,7 @@ export function LoginForm({
                     control={form.control}
                     name="password"
                     render={({ field }) => (
-                        <FormItem>
+                        <FormItem itemId="login-password">
                             <FormLabel>Password</FormLabel>
                             <FormControl>
                                 <Input

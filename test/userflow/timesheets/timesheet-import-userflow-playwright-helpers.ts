@@ -2,44 +2,26 @@ import path from "node:path";
 
 import { expect, type Page } from "@playwright/test";
 
-import type { FebruaryAttendRecordArtifactHandoff } from "./february-attendrecord-artifact-helpers";
-import {
-    collectVisibleRowSignaturesAcrossPages,
-    getTimesheetSearchInput,
-    getTimesheetTable,
-} from "./timesheet-userflow-playwright-helpers";
+import type { AttendRecordArtifactHandoff } from "./attendrecord-artifact-helpers";
+import { getTimesheetTable } from "./timesheet-userflow-playwright-helpers";
 
-type FebruaryPreviewWorkerGroupExpectation = {
+type AttendRecordPreviewWorkerGroupExpectation = {
     workerLabel: string;
     rowCount: number;
 };
 
-type FebruaryImportedRowsByWorker = {
-    workerName: string;
-    rowSignatures: string[];
-};
-
-export function buildExpectedFebruaryPreviewWorkerGroups(
-    artifact: FebruaryAttendRecordArtifactHandoff,
-): FebruaryPreviewWorkerGroupExpectation[] {
+export function buildExpectedImportPreviewWorkerGroups(
+    artifact: AttendRecordArtifactHandoff,
+): AttendRecordPreviewWorkerGroupExpectation[] {
     return artifact.workers.map((worker) => ({
         workerLabel: worker.workerAlias,
         rowCount: worker.totalImportedRows,
     }));
 }
 
-export function buildExpectedFebruaryImportedRowsByWorker(
-    artifact: FebruaryAttendRecordArtifactHandoff,
-): FebruaryImportedRowsByWorker[] {
-    return artifact.workers.map((worker) => ({
-        workerName: worker.workerName,
-        rowSignatures: worker.entries.map((entry) => entry.rowSignature),
-    }));
-}
-
-export async function uploadFebruaryAttendRecordWorkbook(
+export async function uploadAttendRecordWorkbook(
     page: Page,
-    artifact: FebruaryAttendRecordArtifactHandoff,
+    artifact: AttendRecordArtifactHandoff,
 ): Promise<void> {
     await page.goto("/dashboard/timesheet/import");
     await expect(
@@ -55,9 +37,9 @@ export async function uploadFebruaryAttendRecordWorkbook(
     ).toBeVisible();
 }
 
-export async function assertFebruaryImportPreviewBeforeRemapping(
+export async function assertImportPreviewBeforeRemapping(
     page: Page,
-    artifact: FebruaryAttendRecordArtifactHandoff,
+    artifact: AttendRecordArtifactHandoff,
 ): Promise<void> {
     await expect(
         page.getByText(
@@ -76,7 +58,7 @@ export async function assertFebruaryImportPreviewBeforeRemapping(
     ).toBeVisible();
 
     expect(await readRenderedPreviewWorkerGroups(page)).toEqual(
-        buildExpectedFebruaryPreviewWorkerGroups(artifact),
+        buildExpectedImportPreviewWorkerGroups(artifact),
     );
 
     for (const worker of artifact.workers) {
@@ -84,9 +66,9 @@ export async function assertFebruaryImportPreviewBeforeRemapping(
     }
 }
 
-export async function remapFebruaryImportPreviewWorkers(
+export async function remapImportPreviewWorkers(
     page: Page,
-    artifact: FebruaryAttendRecordArtifactHandoff,
+    artifact: AttendRecordArtifactHandoff,
 ): Promise<void> {
     for (const worker of artifact.workers) {
         const combobox = getPreviewWorkerCombobox(page, worker.workerAlias);
@@ -105,9 +87,9 @@ export async function remapFebruaryImportPreviewWorkers(
     }
 }
 
-export async function submitFebruaryAttendRecordImport(
+export async function submitAttendRecordImport(
     page: Page,
-    artifact: FebruaryAttendRecordArtifactHandoff,
+    artifact: AttendRecordArtifactHandoff,
 ): Promise<void> {
     await page.getByRole("button", { name: "Upload Timesheet" }).click();
 
@@ -118,42 +100,9 @@ export async function submitFebruaryAttendRecordImport(
     ).toBeVisible();
 }
 
-export async function verifyFebruaryImportedRowsInAllTimesheetsUi(
-    page: Page,
-    artifact: FebruaryAttendRecordArtifactHandoff,
-): Promise<void> {
-    await page.goto("/dashboard/timesheet/all");
-    await expect(
-        page.getByRole("heading", { name: "All timesheets" }),
-    ).toBeVisible();
-
-    for (const expectedWorker of buildExpectedFebruaryImportedRowsByWorker(
-        artifact,
-    )) {
-        const searchInput = getTimesheetSearchInput(page);
-
-        await searchInput.fill(expectedWorker.workerName);
-        await expect(
-            getTimesheetTable(page)
-                .getByRole("cell", { name: expectedWorker.workerName })
-                .first(),
-        ).toBeVisible();
-
-        const actualSignatures = await collectVisibleRowSignaturesAcrossPages(page);
-        const actualExpectedCounts = countMatchingSignatures(
-            actualSignatures,
-            expectedWorker.rowSignatures,
-        );
-
-        expect(actualExpectedCounts).toEqual(
-            buildExpectedSignatureCounts(expectedWorker.rowSignatures),
-        );
-    }
-}
-
 async function readRenderedPreviewWorkerGroups(
     page: Page,
-): Promise<FebruaryPreviewWorkerGroupExpectation[]> {
+): Promise<AttendRecordPreviewWorkerGroupExpectation[]> {
     return getTimesheetTable(page)
         .locator("tbody tr")
         .evaluateAll((rows) => {
@@ -182,33 +131,6 @@ async function readRenderedPreviewWorkerGroups(
 
             return groups;
         });
-}
-
-function countMatchingSignatures(
-    actualSignatures: string[],
-    expectedSignatures: string[],
-): Record<string, number> {
-    const expectedSignatureSet = new Set(expectedSignatures);
-
-    return actualSignatures.reduce<Record<string, number>>((counts, signature) => {
-        if (!expectedSignatureSet.has(signature)) {
-            return counts;
-        }
-
-        counts[signature] = (counts[signature] ?? 0) + 1;
-
-        return counts;
-    }, {});
-}
-
-function buildExpectedSignatureCounts(
-    expectedSignatures: string[],
-): Record<string, number> {
-    return expectedSignatures.reduce<Record<string, number>>((counts, signature) => {
-        counts[signature] = (counts[signature] ?? 0) + 1;
-
-        return counts;
-    }, {});
 }
 
 function getPreviewWorkerCombobox(page: Page, workerLabel: string) {

@@ -112,14 +112,14 @@ export function parseAttendRecord(rows: Rows): AttendRecordOutput {
             continue;
         }
 
-        const dayColStart = headerRow.findIndex((c) => c === "1" || c === 1);
-        const dayColEnd =
-            headerRow.lastIndexOf("28") >= 0 || headerRow.lastIndexOf(28) >= 0
-                ? Math.max(
-                      headerRow.lastIndexOf("28"),
-                      headerRow.lastIndexOf(28),
-                  )
-                : dayColStart + 27;
+        const dayHeaderIndexes = headerRow.flatMap((cell, index) => {
+            const dayNum =
+                typeof cell === "number" ? cell : parseInt(String(cell), 10);
+
+            return Number.isNaN(dayNum) || dayNum < 1 || dayNum > 31 ? [] : [index];
+        });
+        const dayColStart = dayHeaderIndexes[0] ?? -1;
+        const dayColEnd = dayHeaderIndexes.at(-1) ?? dayColStart;
         i++;
 
         while (i < rows.length) {

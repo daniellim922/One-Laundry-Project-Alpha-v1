@@ -1,11 +1,5 @@
-import Nav from "@/components/home/nav";
-import Hero from "@/components/home/hero";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-    return (
-        <>
-            <Nav />
-            <Hero />
-        </>
-    );
+    redirect("/login");
 }

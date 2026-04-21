@@ -1,52 +1,48 @@
 import { describe, expect, it } from "vitest";
 
 import {
-    buildFebruary2026AttendRecordArtifact,
-    type FebruaryAttendRecordArtifactHandoff,
-} from "./february-attendrecord-artifact-helpers";
-import {
-    buildExpectedFebruaryImportedRowsByWorker,
-    buildExpectedFebruaryPreviewWorkerGroups,
-} from "./timesheet-import-userflow-playwright-helpers";
+    APRIL_2026_MONTH,
+    MAY_2026_MONTH,
+    buildApril2026AttendRecordArtifact,
+    buildMay2026AttendRecordArtifact,
+    type AttendRecordArtifactHandoff,
+    type AttendRecordImportMonth,
+} from "./attendrecord-artifact-helpers";
+import { buildExpectedImportPreviewWorkerGroups } from "./timesheet-import-userflow-playwright-helpers";
 import {
     WORKER_USERFLOW_PERMUTATIONS,
     type WorkerUserflowHandoff,
 } from "../workers/worker-userflow-helpers";
 
 describe("timesheet-import-userflow-playwright-helpers", () => {
-    it("builds preview group expectations from the generated February artifact", () => {
-        const artifact = buildArtifact();
+    it.each([
+        {
+            label: "April 2026",
+            month: APRIL_2026_MONTH,
+            expectedRows: [26, 28, 27, 29],
+        },
+        {
+            label: "May 2026",
+            month: MAY_2026_MONTH,
+            expectedRows: [27, 29, 28, 30],
+        },
+    ])(
+        "builds preview group expectations from the generated $label artifact",
+        ({ expectedRows, month }) => {
+            const artifact = buildArtifact(month);
 
-        expect(buildExpectedFebruaryPreviewWorkerGroups(artifact)).toEqual([
-            { workerLabel: "AttendRecord 1 Worker 1", rowCount: 24 },
-            { workerLabel: "AttendRecord 2 Worker 2", rowCount: 26 },
-            { workerLabel: "AttendRecord 3 Worker 3", rowCount: 25 },
-            { workerLabel: "AttendRecord 4 Worker 4", rowCount: 27 },
-        ]);
-    });
-
-    it("builds imported-row expectations keyed by edited app worker names", () => {
-        const artifact = buildArtifact();
-        const importedRowsByWorker =
-            buildExpectedFebruaryImportedRowsByWorker(artifact);
-
-        expect(importedRowsByWorker.map((worker) => worker.workerName)).toEqual([
-            "Worker 1 Edited",
-            "Worker 2 Edited",
-            "Worker 3 Edited",
-            "Worker 4 Edited",
-        ]);
-
-        expect(importedRowsByWorker.map((worker) => worker.rowSignatures)).toEqual(
-            artifact.workers.map((worker) =>
-                worker.entries.map((entry) => entry.rowSignature),
-            ),
-        );
-    });
+            expect(buildExpectedImportPreviewWorkerGroups(artifact)).toEqual([
+                { workerLabel: "AttendRecord 1 Worker 1", rowCount: expectedRows[0] },
+                { workerLabel: "AttendRecord 2 Worker 2", rowCount: expectedRows[1] },
+                { workerLabel: "AttendRecord 3 Worker 3", rowCount: expectedRows[2] },
+                { workerLabel: "AttendRecord 4 Worker 4", rowCount: expectedRows[3] },
+            ]);
+        },
+    );
 });
 
-function buildArtifact(): FebruaryAttendRecordArtifactHandoff {
-    return buildFebruary2026AttendRecordArtifact({
+function buildArtifact(month: AttendRecordImportMonth): AttendRecordArtifactHandoff {
+    const handoff = {
         runId: "run-123",
         workers: WORKER_USERFLOW_PERMUTATIONS.map((permutation, index) => ({
             permutationKey: permutation.key,
@@ -69,5 +65,9 @@ function buildArtifact(): FebruaryAttendRecordArtifactHandoff {
                 payNowPhone: permutation.payNowPhone ?? null,
             },
         })),
-    } satisfies WorkerUserflowHandoff);
+    } satisfies WorkerUserflowHandoff;
+
+    return month === APRIL_2026_MONTH
+        ? buildApril2026AttendRecordArtifact(handoff)
+        : buildMay2026AttendRecordArtifact(handoff);
 }

@@ -7,7 +7,7 @@ import {
     WORKER_USERFLOW_PERMUTATIONS,
 } from "../workers/worker-userflow-helpers";
 import {
-    buildMarch2026TimesheetDataset,
+    buildJune2026TimesheetDataset,
     readWorkerUserflowHandoffForTimesheets,
     writeTimesheetUserflowHandoff,
 } from "./timesheet-userflow-helpers";
@@ -20,7 +20,7 @@ import {
 registerUserflowResultFolderRenaming(test);
 
 test.describe("Timesheet userflow", () => {
-    test("creates the deterministic March 2026 smoke handoff from the persisted worker handoff", async ({
+    test("creates the deterministic June 2026 manual-entry smoke handoff from the persisted worker handoff", async ({
         page,
     }) => {
         const workerHandoff = await readWorkerUserflowHandoffForTimesheets();
@@ -32,7 +32,7 @@ test.describe("Timesheet userflow", () => {
             WORKER_USERFLOW_PERMUTATIONS.map((permutation) => permutation.key),
         );
 
-        const dataset = buildMarch2026TimesheetDataset(workerHandoff);
+        const dataset = buildJune2026TimesheetDataset(workerHandoff);
         const createdEntriesByWorker = new Map<
             string,
             (typeof dataset.workers)[number]["entries"]

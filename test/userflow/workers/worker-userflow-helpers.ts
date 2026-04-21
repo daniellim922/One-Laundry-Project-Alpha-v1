@@ -13,6 +13,7 @@ export type WorkerUserflowPermutation = {
         | "full-time-foreign-paynow"
         | "part-time-foreign-cash"
         | "part-time-local-paynow";
+    alias: "FTLW" | "FTFW" | "PTFW" | "PTLW";
     employmentType: WorkerEmploymentType;
     employmentArrangement: WorkerArrangement;
     paymentMethod: WorkerPaymentMethod;
@@ -74,6 +75,7 @@ export const WORKER_USERFLOW_PERMUTATIONS: readonly WorkerUserflowPermutation[] 
     [
         {
             key: "full-time-local-bank-transfer",
+            alias: "FTLW",
             employmentType: "Full Time",
             employmentArrangement: "Local Worker",
             paymentMethod: "Bank Transfer",
@@ -87,6 +89,7 @@ export const WORKER_USERFLOW_PERMUTATIONS: readonly WorkerUserflowPermutation[] 
         },
         {
             key: "full-time-foreign-paynow",
+            alias: "FTFW",
             employmentType: "Full Time",
             employmentArrangement: "Foreign Worker",
             paymentMethod: "PayNow",
@@ -100,6 +103,7 @@ export const WORKER_USERFLOW_PERMUTATIONS: readonly WorkerUserflowPermutation[] 
         },
         {
             key: "part-time-foreign-cash",
+            alias: "PTFW",
             employmentType: "Part Time",
             employmentArrangement: "Foreign Worker",
             paymentMethod: "Cash",
@@ -109,6 +113,7 @@ export const WORKER_USERFLOW_PERMUTATIONS: readonly WorkerUserflowPermutation[] 
         },
         {
             key: "part-time-local-paynow",
+            alias: "PTLW",
             employmentType: "Part Time",
             employmentArrangement: "Local Worker",
             paymentMethod: "PayNow",
@@ -131,14 +136,10 @@ export function buildCreateWorkerSeedData(
     runId: string,
     index: number,
 ): WorkerUserflowSeedData {
-    const nameSuffix = permutation.key
-        .split("-")
-        .map((part) => part[0]?.toUpperCase())
-        .join("");
     const nricSeed = `${runId.replace(/\D/g, "").slice(-6)}${index}`;
 
     return {
-        name: `Userflow ${nameSuffix} ${runId}`,
+        name: `Userflow ${permutation.alias} ${runId}`,
         nric: `T${nricSeed}A`,
         email: `userflow-${permutation.key}-${runId}@example.com`,
         phone: permutation.phone,

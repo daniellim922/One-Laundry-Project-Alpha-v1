@@ -5,8 +5,8 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
-    MARCH_2026_MONTH,
-    buildMarch2026TimesheetDataset,
+    JUNE_2026_MONTH,
+    buildJune2026TimesheetDataset,
     buildTimesheetRowSignature,
     readWorkerUserflowHandoffForTimesheets,
     writeTimesheetUserflowHandoff,
@@ -81,15 +81,15 @@ describe("timesheet-userflow-helpers", () => {
         }
     });
 
-    it("builds a deterministic March 2026 smoke dataset keyed by semantic worker permutation", () => {
+    it("builds a deterministic June 2026 smoke dataset keyed by semantic worker permutation", () => {
         const reversedHandoff: WorkerUserflowHandoff = {
             runId: "run-123",
             workers: [...buildWorkerHandoff().workers].reverse(),
         };
 
-        const dataset = buildMarch2026TimesheetDataset(reversedHandoff);
+        const dataset = buildJune2026TimesheetDataset(reversedHandoff);
 
-        expect(dataset.month).toBe(MARCH_2026_MONTH);
+        expect(dataset.month).toBe(JUNE_2026_MONTH);
         expect(dataset.workers.map((worker) => worker.permutationKey)).toEqual(
             WORKER_USERFLOW_PERMUTATIONS.map((permutation) => permutation.key),
         );
@@ -101,8 +101,8 @@ describe("timesheet-userflow-helpers", () => {
         ]);
     });
 
-    it("generates one same-day March smoke entry per worker permutation", () => {
-        const dataset = buildMarch2026TimesheetDataset(buildWorkerHandoff());
+    it("generates one same-day June smoke entry per worker permutation", () => {
+        const dataset = buildJune2026TimesheetDataset(buildWorkerHandoff());
 
         expect(dataset.workers).toHaveLength(WORKER_USERFLOW_PERMUTATIONS.length);
 
@@ -113,7 +113,7 @@ describe("timesheet-userflow-helpers", () => {
             expect(entry.workerId).toBe(worker.workerId);
             expect(entry.workerName).toBe(worker.workerName);
             expect(entry.permutationKey).toBe(worker.permutationKey);
-            expect(entry.dateIn).toMatch(/^2026-03-\d{2}$/);
+            expect(entry.dateIn).toMatch(/^2026-06-\d{2}$/);
             expect(entry.dateOut).toBe(entry.dateIn);
             expect(entry.timeIn < entry.timeOut).toBe(true);
             expect(entry.totalHours).toBeGreaterThan(0);
@@ -124,10 +124,10 @@ describe("timesheet-userflow-helpers", () => {
                 worker.entries.map((entry) => buildTimesheetRowSignature(entry)),
             ),
         ).toEqual([
-            "Worker 1 Edited | 02/03/2026 | 02/03/2026 | 08:00 | 18:00 | 10.00",
-            "Worker 2 Edited | 09/03/2026 | 09/03/2026 | 09:00 | 18:00 | 9.00",
-            "Worker 3 Edited | 16/03/2026 | 16/03/2026 | 08:30 | 16:30 | 8.00",
-            "Worker 4 Edited | 23/03/2026 | 23/03/2026 | 10:00 | 18:30 | 8.50",
+            "Worker 1 Edited | 02/06/2026 | 02/06/2026 | 08:00 | 18:00 | 10.00",
+            "Worker 2 Edited | 09/06/2026 | 09/06/2026 | 09:00 | 18:00 | 9.00",
+            "Worker 3 Edited | 16/06/2026 | 16/06/2026 | 08:30 | 16:30 | 8.00",
+            "Worker 4 Edited | 23/06/2026 | 23/06/2026 | 10:00 | 18:30 | 8.50",
         ]);
     });
 
@@ -136,7 +136,7 @@ describe("timesheet-userflow-helpers", () => {
             path.join(os.tmpdir(), "timesheet-userflow-write-"),
         );
         const handoffPath = path.join(tempDir, "timesheet-userflow-handoff.json");
-        const handoff: TimesheetUserflowHandoff = buildMarch2026TimesheetDataset(
+        const handoff: TimesheetUserflowHandoff = buildJune2026TimesheetDataset(
             buildWorkerHandoff(),
         );
 

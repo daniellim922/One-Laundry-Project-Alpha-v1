@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 
 import { LoginForm } from "@/app/login/login-form";
 import { sanitizeRedirectTo } from "@/lib/auth/redirect";
@@ -32,6 +31,7 @@ export default async function LoginPage({
             redirect(redirectTo);
         }
     } catch (error) {
+        unstable_rethrow(error);
         systemError =
             error instanceof Error
                 ? error.message
@@ -57,13 +57,6 @@ export default async function LoginPage({
                 systemError={systemError}
                 redirectTo={redirectTo}
             />
-            <div className="flex flex-wrap gap-3">
-                <Link
-                    href="/"
-                    className="inline-flex items-center rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:bg-foreground/90">
-                    Return to landing page
-                </Link>
-            </div>
         </main>
     );
 }

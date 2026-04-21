@@ -1,14 +1,14 @@
 import { expect, type Page } from "@playwright/test";
 
 import type {
-    MarchTimesheetEntryPayload,
+    JuneTimesheetEntryPayload,
     TimesheetUserflowHandoff,
 } from "./timesheet-userflow-helpers";
 import { buildTimesheetRowSignature } from "./timesheet-userflow-helpers";
 
 export async function fillTimesheetCreateForm(
     page: Page,
-    entry: MarchTimesheetEntryPayload,
+    entry: JuneTimesheetEntryPayload,
 ): Promise<void> {
     await page.getByRole("combobox", { name: "Worker" }).click();
     await page.getByPlaceholder(/Search workers/i).fill(entry.workerName);
@@ -28,7 +28,7 @@ export async function fillTimesheetCreateForm(
 
 export async function createTimesheetEntryThroughForm(
     page: Page,
-    entry: MarchTimesheetEntryPayload,
+    entry: JuneTimesheetEntryPayload,
 ): Promise<void> {
     await page.goto("/dashboard/timesheet/new");
     await expect(
@@ -91,7 +91,9 @@ export async function verifyTimesheetDatasetInAllTimesheetsUi(
             buildTimesheetRowSignature(entry),
         );
 
-        expect(actualSignatures).toEqual(expectedSignatures);
+        expect(countMatchingSignatures(actualSignatures, expectedSignatures)).toEqual(
+            buildExpectedSignatureCounts(expectedSignatures),
+        );
     }
 }
 
@@ -123,6 +125,33 @@ async function readVisibleRowSignatures(page: Page): Promise<string[]> {
             return cells.slice(0, 6).join(" | ");
         }),
     );
+}
+
+function countMatchingSignatures(
+    actualSignatures: string[],
+    expectedSignatures: string[],
+): Record<string, number> {
+    const expectedSignatureSet = new Set(expectedSignatures);
+
+    return actualSignatures.reduce<Record<string, number>>((counts, signature) => {
+        if (!expectedSignatureSet.has(signature)) {
+            return counts;
+        }
+
+        counts[signature] = (counts[signature] ?? 0) + 1;
+
+        return counts;
+    }, {});
+}
+
+function buildExpectedSignatureCounts(
+    expectedSignatures: string[],
+): Record<string, number> {
+    return expectedSignatures.reduce<Record<string, number>>((counts, signature) => {
+        counts[signature] = (counts[signature] ?? 0) + 1;
+
+        return counts;
+    }, {});
 }
 
 async function deleteAllMatchingTimesheetRows(

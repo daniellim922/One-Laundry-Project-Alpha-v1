@@ -10,7 +10,12 @@ import type { TestInfo, test as PlaywrightTest } from "@playwright/test";
 const RESULT_FOLDER_SLUG: Record<string, string> = {
     "workers/01-worker-new-userflow.spec.ts": "01-worker-new",
     "workers/02-worker-edit-userflow.spec.ts": "01-worker-edit",
-    "timesheets/01-timesheet-march-userflow.spec.ts": "02-timesheet-new",
+    "timesheets/01-timesheet-april-import-userflow.spec.ts":
+        "02-timesheet-april-import",
+    "timesheets/02-timesheet-may-import-userflow.spec.ts":
+        "02-timesheet-may-import",
+    "timesheets/03-timesheet-june-userflow.spec.ts":
+        "02-timesheet-june-manual",
     "payroll/02-payroll-public-holidays-2026-userflow.spec.ts":
         "04-payroll-public-holidays",
     "advance/01-advance-create-userflow.spec.ts": "03-advance-new",

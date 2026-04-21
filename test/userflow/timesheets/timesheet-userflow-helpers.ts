@@ -15,7 +15,7 @@ export const TIMESHEET_USERFLOW_HANDOFF_PATH = path.join(
     "timesheet-userflow-handoff.json",
 );
 
-export const MARCH_2026_MONTH = "2026-03" as const;
+export const JUNE_2026_MONTH = "2026-06" as const;
 
 type PermutationKey = WorkerUserflowPermutation["key"];
 
@@ -25,7 +25,7 @@ type SmokeShiftTemplate = {
     timeOut: string;
 };
 
-export type MarchTimesheetEntryPayload = {
+export type JuneTimesheetEntryPayload = {
     workerId: string;
     workerName: string;
     permutationKey: PermutationKey;
@@ -36,46 +36,46 @@ export type MarchTimesheetEntryPayload = {
     totalHours: number;
 };
 
-export type MarchTimesheetWorkerDataset = {
+export type JuneTimesheetWorkerDataset = {
     workerId: string;
     workerName: string;
     permutationKey: PermutationKey;
-    entries: MarchTimesheetEntryPayload[];
+    entries: JuneTimesheetEntryPayload[];
 };
 
 type TimesheetRowSignatureInput = Pick<
-    MarchTimesheetEntryPayload,
+    JuneTimesheetEntryPayload,
     "workerName" | "dateIn" | "dateOut" | "timeIn" | "timeOut" | "totalHours"
 >;
 
 export type TimesheetUserflowHandoff = {
     runId: string;
-    month: typeof MARCH_2026_MONTH;
-    workers: MarchTimesheetWorkerDataset[];
+    month: typeof JUNE_2026_MONTH;
+    workers: JuneTimesheetWorkerDataset[];
 };
 
 const EXPECTED_PERMUTATION_KEYS = WORKER_USERFLOW_PERMUTATIONS.map(
     (permutation) => permutation.key,
 );
 
-const MARCH_2026_SMOKE_SHIFTS: Record<PermutationKey, SmokeShiftTemplate> = {
+const JUNE_2026_SMOKE_SHIFTS: Record<PermutationKey, SmokeShiftTemplate> = {
     "full-time-local-bank-transfer": {
-        date: "2026-03-02",
+        date: "2026-06-02",
         timeIn: "08:00",
         timeOut: "18:00",
     },
     "full-time-foreign-paynow": {
-        date: "2026-03-09",
+        date: "2026-06-09",
         timeIn: "09:00",
         timeOut: "18:00",
     },
     "part-time-foreign-cash": {
-        date: "2026-03-16",
+        date: "2026-06-16",
         timeIn: "08:30",
         timeOut: "16:30",
     },
     "part-time-local-paynow": {
-        date: "2026-03-23",
+        date: "2026-06-23",
         timeIn: "10:00",
         timeOut: "18:30",
     },
@@ -111,26 +111,26 @@ export async function readWorkerUserflowHandoffForTimesheets(
     return validateWorkerUserflowHandoff(parsed, handoffPath);
 }
 
-export function buildMarch2026TimesheetDataset(
+export function buildJune2026TimesheetDataset(
     handoff: WorkerUserflowHandoff,
 ): TimesheetUserflowHandoff {
     const orderedWorkers = orderWorkerHandoffRecords(handoff);
 
     return {
         runId: handoff.runId,
-        month: MARCH_2026_MONTH,
-        workers: orderedWorkers.map((worker) => buildMarch2026WorkerDataset(worker)),
+        month: JUNE_2026_MONTH,
+        workers: orderedWorkers.map((worker) => buildJune2026WorkerDataset(worker)),
     };
 }
 
-export function buildMarch2026WorkerDataset(
+export function buildJune2026WorkerDataset(
     worker: WorkerUserflowHandoffRecord,
-): MarchTimesheetWorkerDataset {
+): JuneTimesheetWorkerDataset {
     return {
         workerId: worker.workerId,
         workerName: worker.initialValues.name,
         permutationKey: worker.permutationKey,
-        entries: [createMarchTimesheetEntryPayload(worker)],
+        entries: [createJuneTimesheetEntryPayload(worker)],
     };
 }
 
@@ -155,10 +155,10 @@ export async function writeTimesheetUserflowHandoff(
     await writeFile(handoffPath, `${JSON.stringify(handoff, null, 2)}\n`, "utf8");
 }
 
-function createMarchTimesheetEntryPayload(
+function createJuneTimesheetEntryPayload(
     worker: WorkerUserflowHandoffRecord,
-): MarchTimesheetEntryPayload {
-    const smokeShift = MARCH_2026_SMOKE_SHIFTS[worker.permutationKey];
+): JuneTimesheetEntryPayload {
+    const smokeShift = JUNE_2026_SMOKE_SHIFTS[worker.permutationKey];
 
     return {
         workerId: worker.workerId,

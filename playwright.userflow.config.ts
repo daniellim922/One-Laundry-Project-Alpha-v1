@@ -8,12 +8,11 @@ import { defineConfig, devices } from "@playwright/test";
  *
  * Execution order is a dependency queue (handoff JSON between stages):
  *   1. workers — create/edit permutations and persist worker-userflow-handoff.json
- *   2. timesheets — consumes worker handoff; writes timesheet-userflow-handoff.json
- *   3. payroll — consumes worker handoff; writes payroll-userflow-handoff.json
+ *   2. timesheets — April import, May import, then June manual smoke; June writes timesheet-userflow-handoff.json
+ *   3. payroll
  *   4. advance — consumes worker handoff; writes advance-userflow-handoff.json
  *
- * Artifacts under outputDir are renamed after each test to stable folders: `01-worker-new`,
- * `01-worker-edit`, `02-timesheet-new`, `03-advance-new`, `04-payroll-new`
+ * Artifacts under outputDir are renamed after each test to stable folders
  * (see register-userflow-result-folder.ts).
  *
  * Example:
@@ -75,25 +74,32 @@ export default defineConfig({
             dependencies: ["worker-new"],
         },
         {
-            name: "timesheet-march",
+            name: "timesheet-april-import",
             use: {
                 ...devices["Desktop Chrome"],
             },
-            testMatch: ["timesheets/01-*.spec.ts"],
+            testMatch: ["timesheets/01-timesheet-april-import-userflow.spec.ts"],
             dependencies: ["worker-edit"],
         },
         {
-            name: "timesheet-followups",
+            name: "timesheet-may-import",
             use: {
                 ...devices["Desktop Chrome"],
             },
-            testMatch: ["timesheets/**/*.spec.ts"],
-            testIgnore: ["timesheets/01-*.spec.ts"],
-            dependencies: ["timesheet-march"],
+            testMatch: ["timesheets/02-timesheet-may-import-userflow.spec.ts"],
+            dependencies: ["timesheet-april-import"],
+        },
+        {
+            name: "timesheet-june-manual",
+            use: {
+                ...devices["Desktop Chrome"],
+            },
+            testMatch: ["timesheets/03-timesheet-june-userflow.spec.ts"],
+            dependencies: ["timesheet-may-import"],
         },
         {
             name: "userflow-payroll",
-            dependencies: ["timesheet-followups"],
+            dependencies: ["timesheet-june-manual"],
             testMatch: "payroll/**/*.spec.ts",
             use: userflowChrome,
         },
