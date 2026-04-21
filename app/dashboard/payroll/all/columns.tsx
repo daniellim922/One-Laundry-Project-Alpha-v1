@@ -27,6 +27,7 @@ export type PayrollWithWorker = SelectPayroll & {
     status: PayrollStatus;
     employmentType: WorkerEmploymentType;
     employmentArrangement: WorkerEmploymentArrangement;
+    voucherNumber: number | null;
 };
 
 function formatDate(d: string | Date): string {
@@ -39,6 +40,12 @@ function formatDate(d: string | Date): string {
 }
 
 export const columns: ColumnDef<PayrollWithWorker>[] = [
+    {
+        accessorKey: "voucherNumber",
+        header: createSortableHeader("Voucher #"),
+        meta: { globalSearch: true },
+        cell: ({ row }) => row.original.voucherNumber ?? "—",
+    },
     {
         accessorKey: "workerName",
         header: createSortableHeader("Worker"),

@@ -108,6 +108,7 @@ const payrollRow = {
     workerName: "Alice",
     employmentType: "Full Time" as const,
     employmentArrangement: "Local Worker" as const,
+    voucherNumber: 1001,
 };
 
 describe("Payroll selection panels", () => {
