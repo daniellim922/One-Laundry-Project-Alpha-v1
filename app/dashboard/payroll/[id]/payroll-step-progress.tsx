@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ChevronDown, Loader2 } from "lucide-react";
+import { AlertTriangle, ChevronDown, Eye, Loader2 } from "lucide-react";
 
 import {
     StepProgressPanel,
@@ -339,16 +340,37 @@ function RevertPreviewExpandedLines({ row }: { row: RevertPreviewRow }) {
             <Table className="text-sm">
                 <TableHeader>
                     <TableRow>
+                        <TableHead>Current Status</TableHead>
+                        <TableHead>Future Status</TableHead>
                         <TableHead>Date in</TableHead>
                         <TableHead>Date out</TableHead>
                         <TableHead>Time in</TableHead>
                         <TableHead>Time out</TableHead>
                         <TableHead>Hours</TableHead>
+                        <TableHead className="text-right">View</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {row.timesheetLines.map((line) => (
                         <TableRow key={line.id}>
+                            <TableCell>
+                                <Badge
+                                    variant="secondary"
+                                    className={cn(
+                                        statusToneMap[row.currentStatus],
+                                    )}>
+                                    {row.currentStatus}
+                                </Badge>
+                            </TableCell>
+                            <TableCell>
+                                <Badge
+                                    variant="secondary"
+                                    className={cn(
+                                        statusToneMap[row.futureStatus],
+                                    )}>
+                                    {row.futureStatus}
+                                </Badge>
+                            </TableCell>
                             <TableCell>
                                 {formatEnGbDmyNumericFromCalendar(line.dateIn)}
                             </TableCell>
@@ -359,6 +381,19 @@ function RevertPreviewExpandedLines({ row }: { row: RevertPreviewRow }) {
                             <TableCell>{localTimeHm(line.timeOut)}</TableCell>
                             <TableCell>
                                 {Number(line.hours).toFixed(2)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 shrink-0"
+                                    asChild>
+                                    <Link
+                                        href={`/dashboard/timesheet/${line.id}/view`}
+                                        aria-label="View">
+                                        <Eye className="size-4" aria-hidden />
+                                    </Link>
+                                </Button>
                             </TableCell>
                         </TableRow>
                     ))}
@@ -372,13 +407,34 @@ function RevertPreviewExpandedLines({ row }: { row: RevertPreviewRow }) {
             <Table className="text-sm">
                 <TableHeader>
                     <TableRow>
+                        <TableHead>Current Status</TableHead>
+                        <TableHead>Future Status</TableHead>
                         <TableHead>Repayment date</TableHead>
                         <TableHead>Amount</TableHead>
+                        <TableHead className="text-right">View</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {row.advanceInstallmentLines.map((line) => (
                         <TableRow key={line.id}>
+                            <TableCell>
+                                <Badge
+                                    variant="secondary"
+                                    className={cn(
+                                        statusToneMap[row.currentStatus],
+                                    )}>
+                                    {row.currentStatus}
+                                </Badge>
+                            </TableCell>
+                            <TableCell>
+                                <Badge
+                                    variant="secondary"
+                                    className={cn(
+                                        statusToneMap[row.futureStatus],
+                                    )}>
+                                    {row.futureStatus}
+                                </Badge>
+                            </TableCell>
                             <TableCell>
                                 {line.repaymentDate
                                     ? formatEnGbDmyNumericFromCalendar(
@@ -387,6 +443,19 @@ function RevertPreviewExpandedLines({ row }: { row: RevertPreviewRow }) {
                                     : "—"}
                             </TableCell>
                             <TableCell>{`$${line.amount}`}</TableCell>
+                            <TableCell className="text-right">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 shrink-0"
+                                    asChild>
+                                    <Link
+                                        href={`/dashboard/advance/${line.advanceRequestId}`}
+                                        aria-label="View">
+                                        <Eye className="size-4" aria-hidden />
+                                    </Link>
+                                </Button>
+                            </TableCell>
                         </TableRow>
                     ))}
                 </TableBody>

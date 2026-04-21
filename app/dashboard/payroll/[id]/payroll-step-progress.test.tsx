@@ -340,11 +340,20 @@ describe("PayrollStepProgress", () => {
         expect(
             await screen.findByRole("columnheader", { name: "Date in" }),
         ).toBeTruthy();
+        expect(
+            screen.getAllByRole("columnheader", { name: "Current Status" }),
+        ).toHaveLength(2);
+        expect(
+            screen.getAllByRole("columnheader", { name: "Future Status" }),
+        ).toHaveLength(2);
         expect(screen.getByText(formatEnGbDmyNumericFromCalendar("2025-03-01"))).toBeTruthy();
         expect(screen.getByText(formatEnGbDmyNumericFromCalendar("2025-03-02"))).toBeTruthy();
         expect(screen.getByText(localTimeHm("09:15:00"))).toBeTruthy();
         expect(screen.getByText(localTimeHm("17:30:00"))).toBeTruthy();
         expect(screen.getByText("8.25")).toBeTruthy();
+        expect(
+            screen.getByRole("link", { name: "View" }).getAttribute("href"),
+        ).toBe("/dashboard/timesheet/ts-1/view");
     });
 
     it("expands Advance row to show repayment date and amount columns from preview", async () => {
@@ -361,6 +370,7 @@ describe("PayrollStepProgress", () => {
                 advanceInstallmentLines: [
                     {
                         id: "adv-1",
+                        advanceRequestId: "req-1",
                         amount: 40,
                         repaymentDate: "2025-03-10",
                     },
@@ -389,10 +399,19 @@ describe("PayrollStepProgress", () => {
             await screen.findByRole("columnheader", { name: "Repayment date" }),
         ).toBeTruthy();
         expect(
+            screen.getAllByRole("columnheader", { name: "Current Status" }),
+        ).toHaveLength(2);
+        expect(
+            screen.getAllByRole("columnheader", { name: "Future Status" }),
+        ).toHaveLength(2);
+        expect(
             screen.getByRole("columnheader", { name: "Amount" }),
         ).toBeTruthy();
         expect(screen.getByText(formatEnGbDmyNumericFromCalendar("2025-03-10"))).toBeTruthy();
         expect(screen.getByText("$40")).toBeTruthy();
+        expect(
+            screen.getByRole("link", { name: "View" }).getAttribute("href"),
+        ).toBe("/dashboard/advance/req-1");
     });
 
     it("shows error message if preview fetch fails", async () => {

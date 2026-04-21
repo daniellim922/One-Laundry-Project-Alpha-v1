@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { timesheetTable } from "@/db/tables/timesheetTable";
@@ -19,7 +19,7 @@ export async function TimesheetAllTableLoader() {
         .from(timesheetTable)
         .innerJoin(workerTable, eq(timesheetTable.workerId, workerTable.id))
         .orderBy(
-            desc(timesheetTable.status),
+            asc(timesheetTable.status),
             asc(workerTable.name),
             asc(timesheetTable.dateIn),
         );

@@ -17,6 +17,7 @@ export type RevertPreviewTimesheetLine = {
 
 export type RevertPreviewAdvanceInstallmentLine = {
     id: string;
+    advanceRequestId: string;
     amount: number;
     repaymentDate: string | null;
 };
@@ -132,6 +133,7 @@ export async function getPayrollRevertPreview(
             futureStatus: "Installment Loan",
             advanceInstallmentLines: installmentPaidInPeriod.map((advance) => ({
                 id: advance.id,
+                advanceRequestId: advance.advanceRequestId,
                 amount: advance.amount,
                 repaymentDate: advance.repaymentDate,
             })),
