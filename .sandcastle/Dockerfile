@@ -23,6 +23,9 @@ RUN usermod -d /home/agent -m -l agent node
 # Install Codex CLI (run as root before USER agent)
 RUN npm install -g @openai/codex
 
+# Install Playwright dependencies
+RUN npx playwright install --with-deps
+
 USER agent
 
 WORKDIR /home/agent

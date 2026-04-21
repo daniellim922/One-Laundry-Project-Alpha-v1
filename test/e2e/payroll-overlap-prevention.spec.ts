@@ -49,6 +49,23 @@ function isoCalendarToDmy(iso: string): string {
     return `${d}/${m}/${y}`;
 }
 
+/** Ensures the first payroll is visible on `/dashboard/payroll/all` before overlap generation (avoids racing the DB). */
+async function waitForBasePeriodPayrollOnAllPage(page: Page) {
+    await page.goto("/dashboard/payroll/all");
+    await expect(
+        page.getByRole("heading", { name: "All payrolls" }),
+    ).toBeVisible();
+
+    const baseStartDmy = isoCalendarToDmy(BASE_PERIOD.periodStart);
+    const baseEndDmy = isoCalendarToDmy(BASE_PERIOD.periodEnd);
+    await expect(
+        page.getByRole("cell", { name: baseStartDmy }).first(),
+    ).toBeVisible({ timeout: 60_000 });
+    await expect(
+        page.getByRole("cell", { name: baseEndDmy }).first(),
+    ).toBeVisible({ timeout: 60_000 });
+}
+
 async function fillPayrollDates(
     page: Page,
     input: { periodStart: string; periodEnd: string; payrollDate: string },
@@ -82,13 +99,7 @@ test.describe("Payroll overlap prevention", () => {
         await selectFirstWorkerOrSkip(page);
         await submitPayrollGenerateForm(page);
 
-        if (page.url().includes("/dashboard/payroll/all")) {
-            await expect(
-                page.getByRole("heading", { name: "All payrolls" }),
-            ).toBeVisible();
-        } else {
-            await expect(page).toHaveURL(/\/dashboard\/payroll\/new$/);
-        }
+        await waitForBasePeriodPayrollOnAllPage(page);
 
         await page.goto("/dashboard/payroll/new");
         await expect(

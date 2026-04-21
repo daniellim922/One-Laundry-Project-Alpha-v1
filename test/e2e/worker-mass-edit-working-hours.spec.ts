@@ -24,6 +24,14 @@ test.describe("Worker mass edit minimum hours", () => {
         ).toBeVisible();
 
         const panel = page.getByTestId("mass-edit-working-hours-panel");
+        await expect(panel.getByRole("table")).toBeVisible();
+        const noEligibleWorkers = panel.getByRole("cell", {
+            name: "No results.",
+        });
+        test.skip(
+            (await noEligibleWorkers.count()) > 0,
+            "No Active Full Time Foreign workers in DB. Seed workers and re-run e2e.",
+        );
         const workerFilterInput = panel
             .locator("thead tr")
             .nth(1)

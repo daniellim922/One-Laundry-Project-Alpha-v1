@@ -35,6 +35,7 @@ Pick the highest-priority open issue that is not blocked by another open issue.
     - List key decisions made
     - List files changed
     - Note any blockers for the next iteration
+    - If changes meet the acceptance criteria, tick the checkbox
     - Do not push the commit until a human verify the commit
 6. **Close** — close the issue with `gh issue close {{TASK_ID}} --comment "Completed by Sandcastle"` explaining what was done.
 

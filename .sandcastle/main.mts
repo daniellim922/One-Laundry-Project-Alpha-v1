@@ -19,21 +19,20 @@ const result = await run({
     name: "test-new-payroll",
     agent: codex("gpt-5.3-codex", { effort: "medium" }),
     sandbox: docker({
-        imageName: "sandcastle:local",
+        imageName: "sandcastle:one-laundry",
         mounts: [
             {
-                hostPath: "~/.codex",
+                hostPath: ".sandcastle/.codex",
                 sandboxPath: "/home/agent/.codex",
-                readonly: true,
+                readonly: false,
             },
         ],
     }),
 
     promptFile: "./.sandcastle/prompt.md",
-
-    promptArgs: { TASK_FOCUS: taskFocus },
+    promptArgs: { TASK_ID: taskFocus },
     maxIterations: 3,
-    branchStrategy: { type: "branch", branch: "test-new-payroll" },
+    branchStrategy: { type: "merge-to-head" },
     copyToWorktree: ["node_modules", ".env"],
     hooks: {
         onSandboxReady: [{ command: "npm install" }],
