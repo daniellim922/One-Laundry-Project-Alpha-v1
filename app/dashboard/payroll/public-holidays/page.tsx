@@ -37,7 +37,21 @@ export default async function PayrollPublicHolidaysPage({
     return (
         <FormPageLayout
             title="Public holidays"
-            subtitle="Manage the shared payroll holiday calendar one year at a time. Saving replaces that year's list as a single update."
+            subtitle={
+                <>
+                    Manage the shared payroll holiday calendar one year at a
+                    time. Saving replaces that year&apos;s list as a single
+                    update. Source:{" "}
+                    <a
+                        href="https://www.mom.gov.sg/employment-practices/public-holidays"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline underline-offset-2">
+                        Ministry of Manpower public holidays
+                    </a>
+                    .
+                </>
+            }
             maxWidthClassName="max-w-5xl">
             <PublicHolidayCalendarForm
                 key={selectedYear}
