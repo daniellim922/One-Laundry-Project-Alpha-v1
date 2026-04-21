@@ -7,7 +7,9 @@ import { describe, expect, it } from "vitest";
 import {
     FEBRUARY_2026_PAYROLL_MONTH,
     buildFebruary2026PayrollPlan,
+    buildMarch2026PayrollPlan,
     initializePayrollUserflowHandoff,
+    MARCH_2026_PAYROLL_MONTH,
     readWorkerUserflowHandoffForPayroll,
     writePayrollUserflowHandoff,
     type PayrollUserflowHandoff,
@@ -94,26 +96,53 @@ describe("payroll-userflow-helpers", () => {
         ]);
     });
 
-    it("writes a stable payroll handoff initialized for the current run and then persists February payroll IDs", async () => {
+    it("builds a deterministic March 2026 payroll plan ordered by canonical permutations", () => {
+        const reversedHandoff: WorkerUserflowHandoff = {
+            runId: "run-123",
+            workers: [...buildWorkerHandoff().workers].reverse(),
+        };
+
+        const plan = buildMarch2026PayrollPlan(reversedHandoff);
+
+        expect(plan.monthKey).toBe(MARCH_2026_PAYROLL_MONTH);
+        expect(plan.period).toEqual({
+            label: "March 2026 payroll",
+            periodStart: "2026-03-01",
+            periodEnd: "2026-03-31",
+            payrollDate: "2026-04-05",
+        });
+        expect(plan.workerRows.map((row) => row.permutationKey)).toEqual(
+            WORKER_USERFLOW_PERMUTATIONS.map((permutation) => permutation.key),
+        );
+        expect(plan.workerRows.map((row) => row.workerName)).toEqual([
+            "Worker 1 Edited",
+            "Worker 2 Edited",
+            "Worker 3 Edited",
+            "Worker 4 Edited",
+        ]);
+    });
+
+    it("writes a stable payroll handoff initialized for the current run and then persists month-keyed payroll IDs incrementally", async () => {
         const tempDir = await mkdtemp(path.join(os.tmpdir(), "payroll-userflow-write-"));
         const handoffPath = path.join(tempDir, "payroll-userflow-handoff.json");
         const workerHandoff = buildWorkerHandoff();
-        const plan = buildFebruary2026PayrollPlan(workerHandoff);
+        const februaryPlan = buildFebruary2026PayrollPlan(workerHandoff);
+        const marchPlan = buildMarch2026PayrollPlan(workerHandoff);
 
         try {
             const initial = initializePayrollUserflowHandoff(workerHandoff);
 
             await writePayrollUserflowHandoff(initial, handoffPath);
 
-            const created: PayrollUserflowHandoff = {
+            const withFebruary: PayrollUserflowHandoff = {
                 ...initial,
                 periodsByMonth: {
-                    [plan.monthKey]: plan.period,
+                    [februaryPlan.monthKey]: februaryPlan.period,
                 },
                 workers: initial.workers.map((worker, index) => ({
                     ...worker,
                     payrollByMonth: {
-                        [plan.monthKey]: {
+                        [februaryPlan.monthKey]: {
                             payrollId: `payroll-${index + 1}`,
                             status: "Draft",
                         },
@@ -121,7 +150,27 @@ describe("payroll-userflow-helpers", () => {
                 })),
             };
 
-            await writePayrollUserflowHandoff(created, handoffPath);
+            await writePayrollUserflowHandoff(withFebruary, handoffPath);
+
+            const withMarch: PayrollUserflowHandoff = {
+                ...withFebruary,
+                periodsByMonth: {
+                    ...withFebruary.periodsByMonth,
+                    [marchPlan.monthKey]: marchPlan.period,
+                },
+                workers: withFebruary.workers.map((worker, index) => ({
+                    ...worker,
+                    payrollByMonth: {
+                        ...worker.payrollByMonth,
+                        [marchPlan.monthKey]: {
+                            payrollId: `payroll-march-${index + 1}`,
+                            status: "Draft",
+                        },
+                    },
+                })),
+            };
+
+            await writePayrollUserflowHandoff(withMarch, handoffPath);
 
             const written = JSON.parse(
                 await readFile(handoffPath, "utf8"),
@@ -130,9 +179,13 @@ describe("payroll-userflow-helpers", () => {
             expect(written.runId).toBe(workerHandoff.runId);
             expect(Object.keys(written.periodsByMonth)).toEqual([
                 FEBRUARY_2026_PAYROLL_MONTH,
+                MARCH_2026_PAYROLL_MONTH,
             ]);
             expect(written.periodsByMonth[FEBRUARY_2026_PAYROLL_MONTH]).toEqual(
-                plan.period,
+                februaryPlan.period,
+            );
+            expect(written.periodsByMonth[MARCH_2026_PAYROLL_MONTH]).toEqual(
+                marchPlan.period,
             );
             expect(written.workers.map((worker) => worker.permutationKey)).toEqual(
                 WORKER_USERFLOW_PERMUTATIONS.map((permutation) => permutation.key),
@@ -141,6 +194,12 @@ describe("payroll-userflow-helpers", () => {
                 written.workers.every(
                     (worker) =>
                         worker.payrollByMonth[FEBRUARY_2026_PAYROLL_MONTH]?.payrollId,
+                ),
+            ).toBe(true);
+            expect(
+                written.workers.every(
+                    (worker) =>
+                        worker.payrollByMonth[MARCH_2026_PAYROLL_MONTH]?.payrollId,
                 ),
             ).toBe(true);
         } finally {

@@ -16,6 +16,7 @@ export const PAYROLL_USERFLOW_HANDOFF_PATH = path.join(
 );
 
 export const FEBRUARY_2026_PAYROLL_MONTH = "2026-02" as const;
+export const MARCH_2026_PAYROLL_MONTH = "2026-03" as const;
 
 type PermutationKey = WorkerUserflowPermutation["key"];
 
@@ -66,6 +67,13 @@ const FEBRUARY_2026_PAYROLL_PERIOD: PayrollMonthPeriod = {
     payrollDate: "2026-03-05",
 };
 
+const MARCH_2026_PAYROLL_PERIOD: PayrollMonthPeriod = {
+    label: "March 2026 payroll",
+    periodStart: "2026-03-01",
+    periodEnd: "2026-03-31",
+    payrollDate: "2026-04-05",
+};
+
 export async function readWorkerUserflowHandoffForPayroll(
     handoffPath = USERFLOW_HANDOFF_PATH,
 ): Promise<WorkerUserflowHandoff> {
@@ -99,18 +107,21 @@ export async function readWorkerUserflowHandoffForPayroll(
 export function buildFebruary2026PayrollPlan(
     handoff: WorkerUserflowHandoff,
 ): PayrollMonthExecutionPlan {
-    const orderedWorkers = orderWorkerHandoffRecordsStrict(handoff, "in-memory handoff");
+    return buildPayrollMonthExecutionPlan(
+        handoff,
+        FEBRUARY_2026_PAYROLL_MONTH,
+        FEBRUARY_2026_PAYROLL_PERIOD,
+    );
+}
 
-    return {
-        runId: handoff.runId,
-        monthKey: FEBRUARY_2026_PAYROLL_MONTH,
-        period: FEBRUARY_2026_PAYROLL_PERIOD,
-        workerRows: orderedWorkers.map((worker) => ({
-            workerId: worker.workerId,
-            workerName: worker.initialValues.name,
-            permutationKey: worker.permutationKey,
-        })),
-    };
+export function buildMarch2026PayrollPlan(
+    handoff: WorkerUserflowHandoff,
+): PayrollMonthExecutionPlan {
+    return buildPayrollMonthExecutionPlan(
+        handoff,
+        MARCH_2026_PAYROLL_MONTH,
+        MARCH_2026_PAYROLL_PERIOD,
+    );
 }
 
 export function initializePayrollUserflowHandoff(
@@ -136,6 +147,25 @@ export async function writePayrollUserflowHandoff(
 ): Promise<void> {
     await mkdir(path.dirname(handoffPath), { recursive: true });
     await writeFile(handoffPath, `${JSON.stringify(handoff, null, 2)}\n`, "utf8");
+}
+
+function buildPayrollMonthExecutionPlan(
+    handoff: WorkerUserflowHandoff,
+    monthKey: string,
+    period: PayrollMonthPeriod,
+): PayrollMonthExecutionPlan {
+    const orderedWorkers = orderWorkerHandoffRecordsStrict(handoff, "in-memory handoff");
+
+    return {
+        runId: handoff.runId,
+        monthKey,
+        period,
+        workerRows: orderedWorkers.map((worker) => ({
+            workerId: worker.workerId,
+            workerName: worker.initialValues.name,
+            permutationKey: worker.permutationKey,
+        })),
+    };
 }
 
 function validateWorkerUserflowHandoff(

@@ -8,8 +8,11 @@ import {
 } from "../workers/worker-userflow-helpers";
 import {
     buildFebruary2026PayrollPlan,
+    buildMarch2026PayrollPlan,
     initializePayrollUserflowHandoff,
     readWorkerUserflowHandoffForPayroll,
+    type PayrollMonthExecutionPlan,
+    type PayrollUserflowHandoff,
     writePayrollUserflowHandoff,
 } from "./payroll-userflow-helpers";
 import {
@@ -20,7 +23,7 @@ import {
 registerUserflowResultFolderRenaming(test);
 
 test.describe("Payroll userflow", () => {
-    test("creates deterministic February 2026 payrolls from persisted workers and writes the initial payroll handoff", async ({
+    test("creates deterministic February and March 2026 payrolls from persisted workers and writes one shared payroll handoff", async ({
         page,
     }) => {
         const workerHandoff = await readWorkerUserflowHandoffForPayroll();
@@ -32,7 +35,8 @@ test.describe("Payroll userflow", () => {
             WORKER_USERFLOW_PERMUTATIONS.map((permutation) => permutation.key),
         );
 
-        const plan = buildFebruary2026PayrollPlan(workerHandoff);
+        const februaryPlan = buildFebruary2026PayrollPlan(workerHandoff);
+        const marchPlan = buildMarch2026PayrollPlan(workerHandoff);
 
         const payrollHandoff = initializePayrollUserflowHandoff(workerHandoff);
         await writePayrollUserflowHandoff(payrollHandoff);
@@ -40,38 +44,53 @@ test.describe("Payroll userflow", () => {
         await signInToUserflowSession(page, "/dashboard/payroll/new");
         await assertOpenDashboardAccess(page);
 
-        await createPayrollForMonthThroughUi(page, plan);
+        await createPayrollForMonthThroughUi(page, februaryPlan);
 
-        const createdRows = await verifyPayrollMonthRowsInAllPayrollsUi(page, plan);
-
-        expect(createdRows).toHaveLength(plan.workerRows.length);
-
-        const createdByWorkerId = new Map(
-            createdRows.map((row) => [row.workerId, row]),
+        const februaryRows = await verifyPayrollMonthRowsInAllPayrollsUi(
+            page,
+            februaryPlan,
         );
+        expect(februaryRows).toHaveLength(februaryPlan.workerRows.length);
+        persistMonthRowsIntoPayrollHandoff(payrollHandoff, februaryPlan, februaryRows);
+        await writePayrollUserflowHandoff(payrollHandoff);
 
-        payrollHandoff.periodsByMonth[plan.monthKey] = plan.period;
-        payrollHandoff.workers = payrollHandoff.workers.map((worker) => {
-            const created = createdByWorkerId.get(worker.workerId);
+        await createPayrollForMonthThroughUi(page, marchPlan);
 
-            if (!created) {
-                throw new Error(
-                    `Missing created payroll row for workerId ${worker.workerId}.`,
-                );
-            }
-
-            return {
-                ...worker,
-                payrollByMonth: {
-                    ...worker.payrollByMonth,
-                    [plan.monthKey]: {
-                        payrollId: created.payrollId,
-                        status: "Draft",
-                    },
-                },
-            };
-        });
-
+        const marchRows = await verifyPayrollMonthRowsInAllPayrollsUi(page, marchPlan);
+        expect(marchRows).toHaveLength(marchPlan.workerRows.length);
+        persistMonthRowsIntoPayrollHandoff(payrollHandoff, marchPlan, marchRows);
         await writePayrollUserflowHandoff(payrollHandoff);
     });
 });
+
+function persistMonthRowsIntoPayrollHandoff(
+    payrollHandoff: PayrollUserflowHandoff,
+    plan: PayrollMonthExecutionPlan,
+    createdRows: Array<{ workerId: string; payrollId: string; status: "Draft" }>,
+): void {
+    const createdByWorkerId = new Map(
+        createdRows.map((row) => [row.workerId, row]),
+    );
+
+    payrollHandoff.periodsByMonth[plan.monthKey] = plan.period;
+    payrollHandoff.workers = payrollHandoff.workers.map((worker) => {
+        const created = createdByWorkerId.get(worker.workerId);
+
+        if (!created) {
+            throw new Error(
+                `Missing created payroll row for workerId ${worker.workerId} in ${plan.monthKey}.`,
+            );
+        }
+
+        return {
+            ...worker,
+            payrollByMonth: {
+                ...worker.payrollByMonth,
+                [plan.monthKey]: {
+                    payrollId: created.payrollId,
+                    status: "Draft",
+                },
+            },
+        };
+    });
+}
