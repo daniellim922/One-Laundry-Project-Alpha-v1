@@ -31,16 +31,16 @@ const result = await run({
 
     promptFile: "./.sandcastle/prompt.md",
     promptArgs: { TASK_ID: taskFocus },
-    maxIterations: 3,
+    maxIterations: 5,
     branchStrategy: { type: "merge-to-head" },
     copyToWorktree: ["node_modules", ".env"],
-    hooks: {
-        onSandboxReady: [{ command: "npm install" }],
-    },
-    // completionSignal: "<promise>COMPLETE</promise>",
+    // hooks: {
+    //     onSandboxReady: [{ command: "npm install" }],
+    // },
+    completionSignal: "<promise>COMPLETE</promise>",
 });
 
 console.log(result.iterationsRun); // number of iterations executed
-// console.log(result.completionSignal); // matched signal string, or undefined if none fired
+console.log(result.completionSignal); // matched signal string, or undefined if none fired
 console.log(result.commits); // array of { sha } for commits created
 console.log(result.branch); // target branch name
