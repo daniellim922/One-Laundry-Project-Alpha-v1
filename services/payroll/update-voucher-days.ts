@@ -3,11 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
-import { calculatePay, type PayCalcInput } from "@/utils/payroll/payroll-utils";
-import {
-    calculateVoucherAmounts,
-    clampHoursNotMet,
-} from "@/services/payroll/payroll-voucher-amounts";
+import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll-voucher-values";
 
 export type UpdateVoucherDaysResult =
     | {
@@ -24,10 +20,6 @@ export type UpdateVoucherDaysResult =
               | "INTERNAL_ERROR";
           error: string;
       };
-
-function roundHours(value: number): number {
-    return Math.round(value * 100) / 100;
-}
 
 export async function updateVoucherDays(input: {
     payrollId: string;
@@ -119,51 +111,33 @@ export async function updateVoucherDays(input: {
             ? Number(voucher.minimumWorkingHours)
             : null;
 
-    const payCalc = calculatePay({
-        employmentType: (voucher.employmentType ??
-            "Full Time") as PayCalcInput["employmentType"],
-        totalHoursWorked,
-        minimumWorkingHours,
-        monthlyPay:
-            voucher.monthlyPay != null ? Number(voucher.monthlyPay) : null,
-        hourlyRate:
-            voucher.hourlyRate != null ? Number(voucher.hourlyRate) : null,
-        restDayRate:
-            voucher.restDayRate != null ? Number(voucher.restDayRate) : null,
-        restDays,
-        publicHolidays,
-    });
-
-    const hoursNotMet =
-        minimumWorkingHours != null
-            ? clampHoursNotMet(
-                  roundHours(totalHoursWorked - minimumWorkingHours),
-              )
-            : null;
-    const { hoursNotMetDeduction, subTotal, grandTotal } =
-        calculateVoucherAmounts({
-            hoursNotMet,
+    const voucherValues = buildDraftPayrollVoucherValues({
+        employment: {
+            employmentType: voucher.employmentType ?? "Full Time",
+            employmentArrangement: "Local Worker",
+            minimumWorkingHours,
+            monthlyPay:
+                voucher.monthlyPay != null ? Number(voucher.monthlyPay) : null,
             hourlyRate:
                 voucher.hourlyRate != null ? Number(voucher.hourlyRate) : null,
-            basePayTotal: payCalc.totalPay,
+            restDayRate:
+                voucher.restDayRate != null ? Number(voucher.restDayRate) : null,
             cpf: voucher.cpf != null ? Number(voucher.cpf) : null,
-            advance: voucher.advance,
-        });
+            paymentMethod: "Cash",
+            payNowPhone: null,
+            bankAccountNumber: null,
+        },
+        totalHoursWorked,
+        restDays,
+        publicHolidays,
+        advanceTotal: voucher.advance ?? 0,
+    });
 
     try {
         await db
             .update(payrollVoucherTable)
             .set({
-                restDays,
-                publicHolidays,
-                hoursNotMet,
-                hoursNotMetDeduction,
-                overtimeHours: payCalc.overtimeHours,
-                overtimePay: payCalc.overtimePay,
-                restDayPay: payCalc.restDayPay,
-                publicHolidayPay: payCalc.publicHolidayPay,
-                subTotal,
-                grandTotal,
+                ...voucherValues,
                 updatedAt: new Date(),
             })
             .where(eq(payrollVoucherTable.id, voucherId));

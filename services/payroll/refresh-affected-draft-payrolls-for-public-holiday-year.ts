@@ -8,16 +8,12 @@ import { payrollTable } from "@/db/tables/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { workerTable } from "@/db/tables/workerTable";
-import { calculatePay } from "@/utils/payroll/payroll-utils";
 import {
     countMissingTimesheetDateIns,
     restDaysFromMissingDateCount,
 } from "@/utils/payroll/missing-timesheet-dates";
 import { countPayrollPublicHolidays } from "@/services/payroll/public-holiday-payroll";
-import {
-    calculateVoucherAmounts,
-    clampHoursNotMet,
-} from "@/services/payroll/payroll-voucher-amounts";
+import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll-voucher-values";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type DraftPayrollRefreshExecutor = Pick<typeof db, "select" | "update">;
@@ -36,10 +32,6 @@ function yearRange(year: number) {
         start: `${year}-01-01`,
         end: `${year}-12-31`,
     };
-}
-
-function roundHours(n: number): number {
-    return Math.round(n * 100) / 100;
 }
 
 async function refreshAffectedDraftPayrollsForPublicHolidayYearWithExecutor(
@@ -150,23 +142,6 @@ async function refreshDraftPayrollVoucher(
         },
         executor,
     );
-    const payCalc = calculatePay({
-        employmentType: employment.employmentType,
-        totalHoursWorked,
-        minimumWorkingHours: employment.minimumWorkingHours,
-        monthlyPay: employment.monthlyPay,
-        hourlyRate: employment.hourlyRate,
-        restDayRate: employment.restDayRate,
-        restDays,
-        publicHolidays,
-    });
-    const hoursNotMet =
-        employment.minimumWorkingHours != null
-            ? clampHoursNotMet(
-                  roundHours(totalHoursWorked - employment.minimumWorkingHours),
-              )
-            : null;
-
     const advanceRows = await executor
         .select({
             amount: advanceTable.amount,
@@ -187,39 +162,17 @@ async function refreshDraftPayrollVoucher(
     const advanceTotal = advanceRows
         .filter((advance) => advance.status === "Installment Loan")
         .reduce((sum, advance) => sum + advance.amount, 0);
-    const { hoursNotMetDeduction, subTotal, grandTotal } =
-        calculateVoucherAmounts({
-            hoursNotMet,
-            hourlyRate: employment.hourlyRate,
-            basePayTotal: payCalc.totalPay,
-            cpf: employment.cpf,
-            advance: advanceTotal,
-        });
+    const voucherValues = buildDraftPayrollVoucherValues({
+        employment,
+        totalHoursWorked,
+        restDays,
+        publicHolidays,
+        advanceTotal,
+    });
     await executor
         .update(payrollVoucherTable)
         .set({
-            employmentType: employment.employmentType,
-            employmentArrangement: employment.employmentArrangement,
-            monthlyPay: employment.monthlyPay,
-            minimumWorkingHours: employment.minimumWorkingHours,
-            totalHoursWorked,
-            hoursNotMet,
-            hoursNotMetDeduction,
-            overtimeHours: payCalc.overtimeHours,
-            hourlyRate: employment.hourlyRate,
-            overtimePay: payCalc.overtimePay,
-            restDayRate: employment.restDayRate,
-            restDays,
-            restDayPay: payCalc.restDayPay,
-            publicHolidays,
-            publicHolidayPay: payCalc.publicHolidayPay,
-            cpf: employment.cpf,
-            advance: advanceTotal,
-            subTotal,
-            grandTotal,
-            paymentMethod: employment.paymentMethod,
-            payNowPhone: employment.payNowPhone,
-            bankAccountNumber: employment.bankAccountNumber,
+            ...voucherValues,
             updatedAt: new Date(),
         })
         .where(eq(payrollVoucherTable.id, payroll.payrollVoucherId));
