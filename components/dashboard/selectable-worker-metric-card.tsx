@@ -136,7 +136,7 @@ export function SelectableWorkerMetricCard({
                             ))
                         )}
                     </div>
-                    <div className="flex min-w-0 flex-1 flex-col items-center justify-center border-t pt-4 text-center md:min-w-[10rem] md:border-l md:border-t-0 md:pl-6 md:pt-0">
+                    <div className="flex min-w-0 flex-1 flex-col items-center justify-center border-t pt-4 text-center md:min-w-40 md:border-l md:border-t-0 md:pl-6 md:pt-0">
                         <div className="text-4xl font-bold tabular-nums sm:text-5xl lg:text-6xl">
                             ${formatMoney(total)}
                         </div>

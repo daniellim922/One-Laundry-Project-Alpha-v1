@@ -79,9 +79,7 @@ export type MonthlyWorkerStackedAmountCopy = {
     yAxisWidth?: number;
 };
 
-export function getStackedRowTotalAmount(
-    r: MonthlyWorkerAmountRow,
-): number {
+export function getStackedRowTotalAmount(r: MonthlyWorkerAmountRow): number {
     return r.totalAmount;
 }
 
@@ -210,7 +208,12 @@ function StackedBarMonthTotalLabels({
                 }
                 const x = xScale(row.month, { position: "middle" });
                 const y = yScale(row.monthTotal);
-                if (x == null || y == null || !Number.isFinite(x) || !Number.isFinite(y)) {
+                if (
+                    x == null ||
+                    y == null ||
+                    !Number.isFinite(x) ||
+                    !Number.isFinite(y)
+                ) {
                     return null;
                 }
                 return (
@@ -315,7 +318,9 @@ export function MonthlyWorkerStackedAmountOverviewCard<
 
     React.useEffect(() => {
         setChecked(
-            Object.fromEntries(workersRef.current.map((w) => [w.id, true] as const)),
+            Object.fromEntries(
+                workersRef.current.map((w) => [w.id, true] as const),
+            ),
         );
     }, [workerIdsKey]);
 
@@ -502,10 +507,11 @@ export function MonthlyWorkerStackedAmountOverviewCard<
                                         const inType = allWorkersInYear.filter(
                                             (w) => w.employmentType === t,
                                         );
-                                        const bulkState = sliceBulkCheckboxState(
-                                            inType,
-                                            checked,
-                                        );
+                                        const bulkState =
+                                            sliceBulkCheckboxState(
+                                                inType,
+                                                checked,
+                                            );
                                         return (
                                             <div
                                                 key={t}
@@ -513,9 +519,14 @@ export function MonthlyWorkerStackedAmountOverviewCard<
                                                 <Checkbox
                                                     id={id}
                                                     checked={bulkState}
-                                                    disabled={inType.length === 0}
+                                                    disabled={
+                                                        inType.length === 0
+                                                    }
                                                     onCheckedChange={(v) => {
-                                                        if (v === "indeterminate") {
+                                                        if (
+                                                            v ===
+                                                            "indeterminate"
+                                                        ) {
                                                             return;
                                                         }
                                                         setEmploymentTypeAllChecked(
@@ -542,12 +553,14 @@ export function MonthlyWorkerStackedAmountOverviewCard<
                                     {WORKER_EMPLOYMENT_ARRANGEMENTS.map((a) => {
                                         const id = `${copy.idPrefix}-arr-${a}`;
                                         const inArr = allWorkersInYear.filter(
-                                            (w) => w.employmentArrangement === a,
+                                            (w) =>
+                                                w.employmentArrangement === a,
                                         );
-                                        const bulkState = sliceBulkCheckboxState(
-                                            inArr,
-                                            checked,
-                                        );
+                                        const bulkState =
+                                            sliceBulkCheckboxState(
+                                                inArr,
+                                                checked,
+                                            );
                                         return (
                                             <div
                                                 key={a}
@@ -555,9 +568,14 @@ export function MonthlyWorkerStackedAmountOverviewCard<
                                                 <Checkbox
                                                     id={id}
                                                     checked={bulkState}
-                                                    disabled={inArr.length === 0}
+                                                    disabled={
+                                                        inArr.length === 0
+                                                    }
                                                     onCheckedChange={(v) => {
-                                                        if (v === "indeterminate") {
+                                                        if (
+                                                            v ===
+                                                            "indeterminate"
+                                                        ) {
                                                             return;
                                                         }
                                                         setArrangementAllChecked(
@@ -652,7 +670,7 @@ export function MonthlyWorkerStackedAmountOverviewCard<
                         ) : (
                             <ChartContainer
                                 config={chartConfig}
-                                className="aspect-auto h-[95%] min-h-48 w-full min-w-0 shrink-0 self-stretch [&_[data-slot=chart]]:h-full">
+                                className="aspect-auto h-[95%] min-h-48 w-full min-w-0 shrink-0 self-stretch **:data-[slot=chart]:h-full">
                                 <BarChart
                                     accessibilityLayer
                                     data={chartData}
