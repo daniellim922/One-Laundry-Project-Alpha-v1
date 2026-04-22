@@ -34,6 +34,8 @@ function barKey(hours: number): string {
     return `h${String(hours).replace(/\./g, "_")}`;
 }
 
+const AXIS_TICK = { fontSize: 16 } as const;
+
 export function MinimumWorkingHoursBarCard({
     buckets,
 }: {
@@ -102,13 +104,15 @@ export function MinimumWorkingHoursBarCard({
                                 dataKey="label"
                                 tickLine={false}
                                 axisLine={false}
-                                tickMargin={8}
+                                tick={AXIS_TICK}
+                                tickMargin={10}
                             />
                             <YAxis
                                 allowDecimals={false}
                                 tickLine={false}
                                 axisLine={false}
-                                width={32}
+                                width={48}
+                                tick={AXIS_TICK}
                             />
                             <ChartTooltip
                                 cursor={false}

@@ -62,8 +62,8 @@ describe("WorkerOverviewLoader", () => {
         expect(html).toContain("Minimum working hours");
         expect(html).toContain("View all workers");
         expect(html).toContain("New worker");
-        expect(html).toContain("Full Time monthly pay");
-        expect(html).toContain("Local Full Time employee CPF");
+        expect(html).toContain("Full Time Foreign Worker");
+        expect(html).toContain("Full Time Local CPF");
         expect(html).toContain("Workforce composition");
     });
 });

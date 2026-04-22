@@ -17,7 +17,7 @@ export function FullTimeMonthlyPayCard({ rows }: { rows: ForeignFullTimeLine[] }
     }));
     return (
         <SelectableWorkerMetricCard
-            title="Full Time monthly pay"
+            title="Full Time Foreign Worker"
             description="Foreign Full Time — total contracted monthly pay"
             rows={metricRows}
         />

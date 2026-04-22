@@ -130,10 +130,8 @@ export async function WorkerOverviewLoader() {
             />
 
             <div className="space-y-4">
-                <MinimumWorkingHoursBarCard
-                    buckets={minimumHoursBuckets}
-                />
-                <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2">
+                <MinimumWorkingHoursBarCard buckets={minimumHoursBuckets} />
+                <div className="grid w-full grid-cols-1 gap-4 xl:grid-cols-2">
                     <FullTimeMonthlyPayCard rows={foreignFullTimeRows} />
                     <LocalFullTimeEmployeeCpfCard rows={localFullTimeRows} />
                 </div>

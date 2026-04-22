@@ -21,7 +21,7 @@ export function LocalFullTimeEmployeeCpfCard({
     }));
     return (
         <SelectableWorkerMetricCard
-            title="Local Full Time employee CPF"
+            title="Full Time Local CPF"
             description="Local Full Time — total employee CPF on employment"
             rows={metricRows}
         />
