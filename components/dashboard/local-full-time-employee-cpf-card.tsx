@@ -1,43 +1,29 @@
-import { Wallet } from "lucide-react";
-
 import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+    SelectableWorkerMetricCard,
+    type SelectableWorkerMetricRow,
+} from "@/components/dashboard/selectable-worker-metric-card";
 
-const currencyFmt = new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-});
-
-function formatMoney(value: number): string {
-    return currencyFmt.format(value);
-}
+type LocalFullTimeLine = {
+    id: string;
+    name: string;
+    cpf: number | null;
+};
 
 export function LocalFullTimeEmployeeCpfCard({
-    totalEmployeeCpf,
+    rows,
 }: {
-    /** Sum of employee CPF on employment for active Local Full Time workers. */
-    totalEmployeeCpf: number;
+    rows: LocalFullTimeLine[];
 }) {
+    const metricRows: SelectableWorkerMetricRow[] = rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        amount: r.cpf ?? 0,
+    }));
     return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                    Local Full Time employee CPF
-                </CardTitle>
-                <Wallet className="text-muted-foreground size-4" />
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold tabular-nums">
-                    ${formatMoney(totalEmployeeCpf)}
-                </div>
-                <p className="text-muted-foreground text-xs">
-                    Local Full Time — total employee CPF on employment
-                </p>
-            </CardContent>
-        </Card>
+        <SelectableWorkerMetricCard
+            title="Local Full Time employee CPF"
+            description="Local Full Time — total employee CPF on employment"
+            rows={metricRows}
+        />
     );
 }
