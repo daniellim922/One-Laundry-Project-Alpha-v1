@@ -49,6 +49,16 @@ import {
 
 import type { MonthlyWorkerAmountRow } from "@/types/monthly-worker-amount-aggregates";
 
+/** Shared shape for monthly per-worker series rows (amount, hours, etc.). */
+export type MonthlyWorkerStackedChartRow = {
+    workerId: string;
+    workerName: string;
+    employmentType: WorkerEmploymentType;
+    employmentArrangement: WorkerEmploymentArrangement;
+    year: number;
+    month: number;
+};
+
 export type MonthlyWorkerStackedAmountCopy = {
     title: string;
     description: string;
@@ -63,7 +73,17 @@ export type MonthlyWorkerStackedAmountCopy = {
     idPrefix: string;
     /** Recharts `Bar` `stackId` — must differ if multiple charts mount together. */
     stackId: string;
+    /** Axis labels, bar totals, and Y-axis ticks. */
+    formatValue: (n: number) => string;
+    /** Default 52. Use a smaller value for compact scales (e.g. hours). */
+    yAxisWidth?: number;
 };
+
+export function getStackedRowTotalAmount(
+    r: MonthlyWorkerAmountRow,
+): number {
+    return r.totalAmount;
+}
 
 type WorkerMeta = {
     id: string;
@@ -71,6 +91,35 @@ type WorkerMeta = {
     employmentType: WorkerEmploymentType;
     employmentArrangement: WorkerEmploymentArrangement;
 };
+
+function workerIsIncludedInChart(
+    checked: Record<string, boolean>,
+    id: string,
+): boolean {
+    return checked[id] !== false;
+}
+
+function sliceBulkCheckboxState(
+    workers: WorkerMeta[],
+    checked: Record<string, boolean>,
+): boolean | "indeterminate" {
+    if (workers.length === 0) {
+        return false;
+    }
+    let onCount = 0;
+    for (const w of workers) {
+        if (workerIsIncludedInChart(checked, w.id)) {
+            onCount += 1;
+        }
+    }
+    if (onCount === workers.length) {
+        return true;
+    }
+    if (onCount === 0) {
+        return false;
+    }
+    return "indeterminate";
+}
 
 type ComboKey = "ft-foreign" | "ft-local" | "pt-foreign" | "pt-local";
 
@@ -120,7 +169,7 @@ const currencyCompactFmt = new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
 });
 
-function formatCurrencyCompact(n: number): string {
+export function formatStackedChartCurrency(n: number): string {
     return `$${currencyCompactFmt.format(n)}`;
 }
 
@@ -141,7 +190,13 @@ type MonthChartPoint = {
     [workerSeriesKey: string]: string | number;
 };
 
-function StackedBarMonthTotalLabels({ data }: { data: MonthChartPoint[] }) {
+function StackedBarMonthTotalLabels({
+    data,
+    formatValue,
+}: {
+    data: MonthChartPoint[];
+    formatValue: (n: number) => string;
+}) {
     const xScale = useXAxisScale(0);
     const yScale = useYAxisScale(0);
     if (!xScale || !yScale) {
@@ -166,7 +221,7 @@ function StackedBarMonthTotalLabels({ data }: { data: MonthChartPoint[] }) {
                         textAnchor="middle"
                         fill="currentColor"
                         className="text-foreground text-xs font-medium tabular-nums">
-                        {formatCurrencyCompact(row.monthTotal)}
+                        {formatValue(row.monthTotal)}
                     </text>
                 );
             })}
@@ -174,51 +229,28 @@ function StackedBarMonthTotalLabels({ data }: { data: MonthChartPoint[] }) {
     );
 }
 
-export function MonthlyWorkerStackedAmountOverviewCard({
+export function MonthlyWorkerStackedAmountOverviewCard<
+    T extends MonthlyWorkerStackedChartRow,
+>({
     rows,
+    getValue,
     defaultYear,
     yearOptions,
     copy,
 }: {
-    rows: MonthlyWorkerAmountRow[];
+    rows: T[];
+    getValue: (row: T) => number;
     defaultYear: number;
     yearOptions: number[];
     copy: MonthlyWorkerStackedAmountCopy;
 }) {
+    const yAxisW = copy.yAxisWidth ?? 52;
     const [selectedYear, setSelectedYear] = React.useState(defaultYear);
     const [selectedMonths, setSelectedMonths] = React.useState(() =>
         allMonthsSet(),
     );
     const [nameFilter, setNameFilter] = React.useState("");
     const [checked, setChecked] = React.useState<Record<string, boolean>>({});
-    const [selectedEmploymentTypes, setSelectedEmploymentTypes] =
-        React.useState<Set<WorkerEmploymentType>>(
-            () => new Set(WORKER_EMPLOYMENT_TYPES),
-        );
-    const [selectedArrangements, setSelectedArrangements] = React.useState<
-        Set<WorkerEmploymentArrangement>
-    >(() => new Set(WORKER_EMPLOYMENT_ARRANGEMENTS));
-
-    const toggleEmploymentType = (t: WorkerEmploymentType, next: boolean) => {
-        setSelectedEmploymentTypes((prev) => {
-            const s = new Set(prev);
-            if (next) s.add(t);
-            else s.delete(t);
-            return s;
-        });
-    };
-
-    const toggleArrangement = (
-        a: WorkerEmploymentArrangement,
-        next: boolean,
-    ) => {
-        setSelectedArrangements((prev) => {
-            const s = new Set(prev);
-            if (next) s.add(a);
-            else s.delete(a);
-            return s;
-        });
-    };
 
     const workersInYearMeta = React.useMemo(() => {
         const m = new Map<string, WorkerMeta>();
@@ -236,23 +268,50 @@ export function MonthlyWorkerStackedAmountOverviewCard({
         return m;
     }, [rows, selectedYear]);
 
-    const workersAfterEmploymentFilter = React.useMemo(() => {
-        return Array.from(workersInYearMeta.values()).filter(
-            (w) =>
-                selectedEmploymentTypes.has(w.employmentType) &&
-                selectedArrangements.has(w.employmentArrangement),
-        );
-    }, [workersInYearMeta, selectedEmploymentTypes, selectedArrangements]);
-
-    const workerIdsKey = React.useMemo(
-        () => workersKey(workersAfterEmploymentFilter),
-        [workersAfterEmploymentFilter],
+    const allWorkersInYear = React.useMemo(
+        () => Array.from(workersInYearMeta.values()),
+        [workersInYearMeta],
     );
 
-    const workersRef = React.useRef(workersAfterEmploymentFilter);
+    const setEmploymentTypeAllChecked = React.useCallback(
+        (t: WorkerEmploymentType, value: boolean) => {
+            setChecked((prev) => {
+                const next = { ...prev };
+                for (const w of allWorkersInYear) {
+                    if (w.employmentType === t) {
+                        next[w.id] = value;
+                    }
+                }
+                return next;
+            });
+        },
+        [allWorkersInYear],
+    );
+
+    const setArrangementAllChecked = React.useCallback(
+        (a: WorkerEmploymentArrangement, value: boolean) => {
+            setChecked((prev) => {
+                const next = { ...prev };
+                for (const w of allWorkersInYear) {
+                    if (w.employmentArrangement === a) {
+                        next[w.id] = value;
+                    }
+                }
+                return next;
+            });
+        },
+        [allWorkersInYear],
+    );
+
+    const workerIdsKey = React.useMemo(
+        () => workersKey(allWorkersInYear),
+        [allWorkersInYear],
+    );
+
+    const workersRef = React.useRef(allWorkersInYear);
     React.useLayoutEffect(() => {
-        workersRef.current = workersAfterEmploymentFilter;
-    }, [workersAfterEmploymentFilter]);
+        workersRef.current = allWorkersInYear;
+    }, [allWorkersInYear]);
 
     React.useEffect(() => {
         setChecked(
@@ -266,13 +325,7 @@ export function MonthlyWorkerStackedAmountOverviewCard({
         const sections: { header: string; workers: WorkerMeta[] }[] = [];
         for (const type of WORKER_EMPLOYMENT_TYPES) {
             for (const arrangement of WORKER_EMPLOYMENT_ARRANGEMENTS) {
-                if (
-                    !selectedEmploymentTypes.has(type) ||
-                    !selectedArrangements.has(arrangement)
-                ) {
-                    continue;
-                }
-                const inGroup = workersAfterEmploymentFilter.filter(
+                const inGroup = allWorkersInYear.filter(
                     (w) =>
                         w.employmentType === type &&
                         w.employmentArrangement === arrangement,
@@ -292,16 +345,11 @@ export function MonthlyWorkerStackedAmountOverviewCard({
             }
         }
         return sections;
-    }, [
-        workersAfterEmploymentFilter,
-        selectedEmploymentTypes,
-        selectedArrangements,
-        normalizedFilter,
-    ]);
+    }, [allWorkersInYear, normalizedFilter]);
 
     const chartWorkers = React.useMemo(() => {
-        return workersAfterEmploymentFilter.filter((w) => {
-            if (!(checked[w.id] ?? true)) {
+        return allWorkersInYear.filter((w) => {
+            if (!workerIsIncludedInChart(checked, w.id)) {
                 return false;
             }
             if (!normalizedFilter) {
@@ -309,17 +357,17 @@ export function MonthlyWorkerStackedAmountOverviewCard({
             }
             return w.name.toLowerCase().includes(normalizedFilter);
         });
-    }, [workersAfterEmploymentFilter, checked, normalizedFilter]);
+    }, [allWorkersInYear, checked, normalizedFilter]);
 
-    const amountByWorkerMonth = React.useMemo(() => {
+    const valueByWorkerMonth = React.useMemo(() => {
         const map = new Map<string, number>();
         for (const r of rows) {
             if (r.year !== selectedYear) continue;
             const k = `${r.workerId}-${r.month}`;
-            map.set(k, (map.get(k) ?? 0) + r.totalAmount);
+            map.set(k, (map.get(k) ?? 0) + getValue(r));
         }
         return map;
-    }, [rows, selectedYear]);
+    }, [rows, selectedYear, getValue]);
 
     const chartData = React.useMemo((): MonthChartPoint[] => {
         return MONTH_SHORT.map((label, i) => {
@@ -331,14 +379,14 @@ export function MonthlyWorkerStackedAmountOverviewCard({
             };
             for (const w of chartWorkers) {
                 const key = workerSeriesKey(w.id);
-                const amt = amountByWorkerMonth.get(`${w.id}-${month}`) ?? 0;
-                point[key] = amt;
-                monthTotal += amt;
+                const val = valueByWorkerMonth.get(`${w.id}-${month}`) ?? 0;
+                point[key] = val;
+                monthTotal += val;
             }
             point.monthTotal = monthTotal;
             return point;
         }).filter((_, i) => selectedMonths.has(i + 1));
-    }, [chartWorkers, amountByWorkerMonth, selectedMonths]);
+    }, [chartWorkers, valueByWorkerMonth, selectedMonths]);
 
     const chartConfig = React.useMemo(() => {
         const cfg: ChartConfig = {};
@@ -360,32 +408,31 @@ export function MonthlyWorkerStackedAmountOverviewCard({
         if (workersInYearMeta.size === 0) {
             return "year" as const;
         }
-        if (workersAfterEmploymentFilter.length === 0) {
-            return "employment" as const;
-        }
         if (groupedSections.length === 0) {
             return "search" as const;
         }
         return null;
-    }, [
-        workersInYearMeta.size,
-        workersAfterEmploymentFilter.length,
-        groupedSections.length,
-    ]);
+    }, [workersInYearMeta.size, groupedSections.length]);
 
     const chartEmptyReason = React.useMemo(() => {
         if (workersInYearMeta.size === 0) return "year" as const;
-        if (workersAfterEmploymentFilter.length === 0) {
-            return "employment" as const;
-        }
         if (selectedMonths.size === 0) return "months" as const;
-        if (chartWorkers.length === 0) return "selection" as const;
+        if (chartWorkers.length === 0) {
+            const allDeselected =
+                allWorkersInYear.length > 0 &&
+                allWorkersInYear.every((w) => checked[w.id] === false);
+            if (allDeselected) {
+                return "employment" as const;
+            }
+            return "selection" as const;
+        }
         return null;
     }, [
         workersInYearMeta.size,
-        workersAfterEmploymentFilter.length,
+        allWorkersInYear,
         selectedMonths.size,
         chartWorkers.length,
+        checked,
     ]);
 
     return (
@@ -452,21 +499,30 @@ export function MonthlyWorkerStackedAmountOverviewCard({
                                 <div className="space-y-2">
                                     {WORKER_EMPLOYMENT_TYPES.map((t) => {
                                         const id = `${copy.idPrefix}-type-${t}`;
+                                        const inType = allWorkersInYear.filter(
+                                            (w) => w.employmentType === t,
+                                        );
+                                        const bulkState = sliceBulkCheckboxState(
+                                            inType,
+                                            checked,
+                                        );
                                         return (
                                             <div
                                                 key={t}
                                                 className="flex items-center gap-2">
                                                 <Checkbox
                                                     id={id}
-                                                    checked={selectedEmploymentTypes.has(
-                                                        t,
-                                                    )}
-                                                    onCheckedChange={(v) =>
-                                                        toggleEmploymentType(
+                                                    checked={bulkState}
+                                                    disabled={inType.length === 0}
+                                                    onCheckedChange={(v) => {
+                                                        if (v === "indeterminate") {
+                                                            return;
+                                                        }
+                                                        setEmploymentTypeAllChecked(
                                                             t,
                                                             v === true,
-                                                        )
-                                                    }
+                                                        );
+                                                    }}
                                                 />
                                                 <Label
                                                     htmlFor={id}
@@ -485,21 +541,30 @@ export function MonthlyWorkerStackedAmountOverviewCard({
                                 <div className="space-y-2">
                                     {WORKER_EMPLOYMENT_ARRANGEMENTS.map((a) => {
                                         const id = `${copy.idPrefix}-arr-${a}`;
+                                        const inArr = allWorkersInYear.filter(
+                                            (w) => w.employmentArrangement === a,
+                                        );
+                                        const bulkState = sliceBulkCheckboxState(
+                                            inArr,
+                                            checked,
+                                        );
                                         return (
                                             <div
                                                 key={a}
                                                 className="flex items-center gap-2">
                                                 <Checkbox
                                                     id={id}
-                                                    checked={selectedArrangements.has(
-                                                        a,
-                                                    )}
-                                                    onCheckedChange={(v) =>
-                                                        toggleArrangement(
+                                                    checked={bulkState}
+                                                    disabled={inArr.length === 0}
+                                                    onCheckedChange={(v) => {
+                                                        if (v === "indeterminate") {
+                                                            return;
+                                                        }
+                                                        setArrangementAllChecked(
                                                             a,
                                                             v === true,
-                                                        )
-                                                    }
+                                                        );
+                                                    }}
                                                 />
                                                 <Label
                                                     htmlFor={id}
@@ -523,10 +588,6 @@ export function MonthlyWorkerStackedAmountOverviewCard({
                                 <p className="text-muted-foreground text-sm">
                                     {copy.emptyListYear}
                                 </p>
-                            ) : listEmptyReason === "employment" ? (
-                                <p className="text-muted-foreground text-sm">
-                                    {copy.emptyListEmployment}
-                                </p>
                             ) : listEmptyReason === "search" ? (
                                 <p className="text-muted-foreground text-sm">
                                     {copy.emptyListSearch}
@@ -547,10 +608,10 @@ export function MonthlyWorkerStackedAmountOverviewCard({
                                                     <Checkbox
                                                         className="size-5"
                                                         id={`${copy.idPrefix}-${w.id}`}
-                                                        checked={
-                                                            checked[w.id] ??
-                                                            true
-                                                        }
+                                                        checked={workerIsIncludedInChart(
+                                                            checked,
+                                                            w.id,
+                                                        )}
                                                         onCheckedChange={(v) =>
                                                             setRowChecked(
                                                                 w.id,
@@ -612,11 +673,11 @@ export function MonthlyWorkerStackedAmountOverviewCard({
                                     <YAxis
                                         tickLine={false}
                                         axisLine={false}
-                                        width={52}
+                                        width={yAxisW}
                                         tick={AXIS_TICK}
                                         tickFormatter={(v) =>
                                             typeof v === "number"
-                                                ? formatCurrencyCompact(v)
+                                                ? copy.formatValue(v)
                                                 : String(v)
                                         }
                                     />
@@ -637,7 +698,10 @@ export function MonthlyWorkerStackedAmountOverviewCard({
                                             }
                                         />
                                     ))}
-                                    <StackedBarMonthTotalLabels data={chartData} />
+                                    <StackedBarMonthTotalLabels
+                                        data={chartData}
+                                        formatValue={copy.formatValue}
+                                    />
                                 </BarChart>
                             </ChartContainer>
                         )}

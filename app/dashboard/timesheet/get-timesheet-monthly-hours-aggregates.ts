@@ -5,24 +5,13 @@ import { employmentTable } from "@/db/tables/employmentTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { workerTable } from "@/db/tables/workerTable";
 import type {
-    WorkerEmploymentArrangement,
-    WorkerEmploymentType,
-} from "@/types/status";
+    TimesheetMonthlyHoursAggregateRow,
+    TimesheetMonthlyHoursAggregatesPayload,
+} from "@/types/timesheet-monthly-hours-aggregates";
 
-export type TimesheetMonthlyHoursAggregateRow = {
-    workerId: string;
-    workerName: string;
-    employmentType: WorkerEmploymentType;
-    employmentArrangement: WorkerEmploymentArrangement;
-    year: number;
-    month: number;
-    totalHours: number;
-};
-
-export type TimesheetMonthlyHoursAggregatesPayload = {
-    defaultYear: number;
-    yearOptions: number[];
-    rows: TimesheetMonthlyHoursAggregateRow[];
+export type {
+    TimesheetMonthlyHoursAggregateRow,
+    TimesheetMonthlyHoursAggregatesPayload,
 };
 
 export async function getTimesheetMonthlyHoursAggregates(): Promise<TimesheetMonthlyHoursAggregatesPayload> {
