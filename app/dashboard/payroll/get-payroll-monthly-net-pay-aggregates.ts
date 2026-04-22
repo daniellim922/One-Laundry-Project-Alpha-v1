@@ -1,49 +1,49 @@
-import { and, eq, gte, isNotNull, lte, sql } from "drizzle-orm";
+import { and, eq, gte, lte, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
-import { advanceTable } from "@/db/tables/advanceTable";
 import { employmentTable } from "@/db/tables/employmentTable";
+import { payrollTable } from "@/db/tables/payrollTable";
+import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { workerTable } from "@/db/tables/workerTable";
 import type { MonthlyWorkerAmountAggregatesPayload } from "@/types/monthly-worker-amount-aggregates";
 
-export async function getAdvanceMonthlyRepaymentAggregates(): Promise<MonthlyWorkerAmountAggregatesPayload> {
+export async function getPayrollMonthlyNetPayAggregates(): Promise<MonthlyWorkerAmountAggregatesPayload> {
     const maxYear = new Date().getFullYear();
     const minYear = maxYear - 4;
     const yearOptions = Array.from({ length: 5 }, (_, i) => maxYear - i);
 
-    const yearExpr = sql<number>`extract(year from ${advanceTable.repaymentDate})::int`;
-    const monthExpr = sql<number>`extract(month from ${advanceTable.repaymentDate})::int`;
+    const yearExpr = sql<number>`extract(year from ${payrollTable.payrollDate})::int`;
+    const monthExpr = sql<number>`extract(month from ${payrollTable.payrollDate})::int`;
 
     const raw = await db
         .select({
-            workerId: advanceRequestTable.workerId,
+            workerId: payrollTable.workerId,
             workerName: workerTable.name,
             employmentType: employmentTable.employmentType,
             employmentArrangement: employmentTable.employmentArrangement,
             year: yearExpr,
             month: monthExpr,
-            totalAmount: sql<number>`coalesce(sum(${advanceTable.amount}), 0)::double precision`,
+            totalAmount: sql<number>`coalesce(sum(${payrollVoucherTable.netPay}), 0)::double precision`,
         })
-        .from(advanceTable)
+        .from(payrollTable)
         .innerJoin(
-            advanceRequestTable,
-            eq(advanceTable.advanceRequestId, advanceRequestTable.id),
+            payrollVoucherTable,
+            eq(payrollTable.payrollVoucherId, payrollVoucherTable.id),
         )
-        .innerJoin(workerTable, eq(advanceRequestTable.workerId, workerTable.id))
+        .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id))
         .innerJoin(
             employmentTable,
             eq(workerTable.employmentId, employmentTable.id),
         )
         .where(
             and(
-                isNotNull(advanceTable.repaymentDate),
-                gte(advanceTable.repaymentDate, `${minYear}-01-01`),
-                lte(advanceTable.repaymentDate, `${maxYear}-12-31`),
+                eq(payrollTable.status, "Settled"),
+                gte(payrollTable.payrollDate, `${minYear}-01-01`),
+                lte(payrollTable.payrollDate, `${maxYear}-12-31`),
             ),
         )
         .groupBy(
-            advanceRequestTable.workerId,
+            payrollTable.workerId,
             workerTable.name,
             employmentTable.employmentType,
             employmentTable.employmentArrangement,

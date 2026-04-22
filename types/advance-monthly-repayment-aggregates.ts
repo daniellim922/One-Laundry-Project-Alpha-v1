@@ -1,13 +1,4 @@
-export type AdvanceMonthlyRepaymentAggregateRow = {
-    workerId: string;
-    workerName: string;
-    year: number;
-    month: number;
-    totalAmount: number;
-};
-
-export type AdvanceMonthlyRepaymentAggregatesPayload = {
-    defaultYear: number;
-    yearOptions: number[];
-    rows: AdvanceMonthlyRepaymentAggregateRow[];
-};
+export type {
+    MonthlyWorkerAmountRow as AdvanceMonthlyRepaymentAggregateRow,
+    MonthlyWorkerAmountAggregatesPayload as AdvanceMonthlyRepaymentAggregatesPayload,
+} from "./monthly-worker-amount-aggregates";

@@ -47,14 +47,29 @@ import {
     type WorkerEmploymentType,
 } from "@/types/status";
 
-export type TimesheetMonthlyHoursOverviewRow = {
-    workerId: string;
-    workerName: string;
+import type { MonthlyWorkerAmountRow } from "@/types/monthly-worker-amount-aggregates";
+
+export type MonthlyWorkerStackedAmountCopy = {
+    title: string;
+    description: string;
+    emptyListYear: string;
+    emptyListEmployment: string;
+    emptyListSearch: string;
+    emptyChartYear: string;
+    emptyChartEmployment: string;
+    emptyChartMonths: string;
+    emptyChartSelection: string;
+    /** Prefix for checkbox `id` / label `htmlFor` (unique per card on a page). */
+    idPrefix: string;
+    /** Recharts `Bar` `stackId` — must differ if multiple charts mount together. */
+    stackId: string;
+};
+
+type WorkerMeta = {
+    id: string;
+    name: string;
     employmentType: WorkerEmploymentType;
     employmentArrangement: WorkerEmploymentArrangement;
-    year: number;
-    month: number;
-    totalHours: number;
 };
 
 type ComboKey = "ft-foreign" | "ft-local" | "pt-foreign" | "pt-local";
@@ -73,13 +88,6 @@ const SHORT_GROUP_LABEL: Record<ComboKey, string> = {
     "ft-local": "FT · Local",
     "pt-foreign": "PT · Foreign",
     "pt-local": "PT · Local",
-};
-
-type WorkerMeta = {
-    id: string;
-    name: string;
-    employmentType: WorkerEmploymentType;
-    employmentArrangement: WorkerEmploymentArrangement;
 };
 
 const MONTH_SHORT = [
@@ -107,6 +115,15 @@ const CHART_COLORS = [
     "var(--chart-5)",
 ] as const;
 
+const currencyCompactFmt = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+});
+
+function formatCurrencyCompact(n: number): string {
+    return `$${currencyCompactFmt.format(n)}`;
+}
+
 function workerSeriesKey(workerId: string): string {
     return `w_${workerId}`;
 }
@@ -116,13 +133,6 @@ function workersKey(workers: WorkerMeta[]): string {
         .map((w) => w.id)
         .sort()
         .join("\0");
-}
-
-function formatHoursCompact(n: number): string {
-    return `${n.toLocaleString("en-US", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 1,
-    })} h`;
 }
 
 type MonthChartPoint = {
@@ -156,7 +166,7 @@ function StackedBarMonthTotalLabels({ data }: { data: MonthChartPoint[] }) {
                         textAnchor="middle"
                         fill="currentColor"
                         className="text-foreground text-xs font-medium tabular-nums">
-                        {formatHoursCompact(row.monthTotal)}
+                        {formatCurrencyCompact(row.monthTotal)}
                     </text>
                 );
             })}
@@ -164,14 +174,16 @@ function StackedBarMonthTotalLabels({ data }: { data: MonthChartPoint[] }) {
     );
 }
 
-export function TimesheetMonthlyHoursOverviewCard({
+export function MonthlyWorkerStackedAmountOverviewCard({
     rows,
     defaultYear,
     yearOptions,
+    copy,
 }: {
-    rows: TimesheetMonthlyHoursOverviewRow[];
+    rows: MonthlyWorkerAmountRow[];
     defaultYear: number;
     yearOptions: number[];
+    copy: MonthlyWorkerStackedAmountCopy;
 }) {
     const [selectedYear, setSelectedYear] = React.useState(defaultYear);
     const [selectedMonths, setSelectedMonths] = React.useState(() =>
@@ -244,9 +256,7 @@ export function TimesheetMonthlyHoursOverviewCard({
 
     React.useEffect(() => {
         setChecked(
-            Object.fromEntries(
-                workersRef.current.map((w) => [w.id, true] as const),
-            ),
+            Object.fromEntries(workersRef.current.map((w) => [w.id, true] as const)),
         );
     }, [workerIdsKey]);
 
@@ -301,12 +311,12 @@ export function TimesheetMonthlyHoursOverviewCard({
         });
     }, [workersAfterEmploymentFilter, checked, normalizedFilter]);
 
-    const hoursByWorkerMonth = React.useMemo(() => {
+    const amountByWorkerMonth = React.useMemo(() => {
         const map = new Map<string, number>();
         for (const r of rows) {
             if (r.year !== selectedYear) continue;
             const k = `${r.workerId}-${r.month}`;
-            map.set(k, (map.get(k) ?? 0) + r.totalHours);
+            map.set(k, (map.get(k) ?? 0) + r.totalAmount);
         }
         return map;
     }, [rows, selectedYear]);
@@ -321,14 +331,14 @@ export function TimesheetMonthlyHoursOverviewCard({
             };
             for (const w of chartWorkers) {
                 const key = workerSeriesKey(w.id);
-                const hours = hoursByWorkerMonth.get(`${w.id}-${month}`) ?? 0;
-                point[key] = hours;
-                monthTotal += hours;
+                const amt = amountByWorkerMonth.get(`${w.id}-${month}`) ?? 0;
+                point[key] = amt;
+                monthTotal += amt;
             }
             point.monthTotal = monthTotal;
             return point;
         }).filter((_, i) => selectedMonths.has(i + 1));
-    }, [chartWorkers, hoursByWorkerMonth, selectedMonths]);
+    }, [chartWorkers, amountByWorkerMonth, selectedMonths]);
 
     const chartConfig = React.useMemo(() => {
         const cfg: ChartConfig = {};
@@ -384,7 +394,7 @@ export function TimesheetMonthlyHoursOverviewCard({
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                         <CardTitle className="text-lg font-semibold tracking-tight sm:text-xl">
-                            Monthly working hours
+                            {copy.title}
                         </CardTitle>
                         <div className="flex flex-wrap items-center gap-2">
                             <Select
@@ -423,12 +433,7 @@ export function TimesheetMonthlyHoursOverviewCard({
                         />
                     </div>
                 </div>
-                <CardDescription>
-                    Total hours per month from timesheet entries (clock-in
-                    date), stacked by worker. Filter by employment type and
-                    arrangement; only workers with timesheet rows in the
-                    selected year are listed.
-                </CardDescription>
+                <CardDescription>{copy.description}</CardDescription>
             </CardHeader>
             <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden">
                 <div
@@ -446,7 +451,7 @@ export function TimesheetMonthlyHoursOverviewCard({
                                 </p>
                                 <div className="space-y-2">
                                     {WORKER_EMPLOYMENT_TYPES.map((t) => {
-                                        const id = `timesheet-hrs-type-${t}`;
+                                        const id = `${copy.idPrefix}-type-${t}`;
                                         return (
                                             <div
                                                 key={t}
@@ -479,7 +484,7 @@ export function TimesheetMonthlyHoursOverviewCard({
                                 </p>
                                 <div className="space-y-2">
                                     {WORKER_EMPLOYMENT_ARRANGEMENTS.map((a) => {
-                                        const id = `timesheet-hrs-arr-${a}`;
+                                        const id = `${copy.idPrefix}-arr-${a}`;
                                         return (
                                             <div
                                                 key={a}
@@ -507,22 +512,24 @@ export function TimesheetMonthlyHoursOverviewCard({
                                 </div>
                             </div>
                         </div>
+                        <p className="text-muted-foreground mt-4 shrink-0 text-sm font-medium">
+                            Workers
+                        </p>
                         <div
                             className={cn(
-                                "mt-4 flex min-h-48 flex-1 basis-0 flex-col gap-5 overflow-y-auto border-t pt-4 pr-1 md:min-h-0",
+                                "mt-3 flex min-h-48 flex-1 basis-0 flex-col gap-5 overflow-y-auto border-t pt-3 pr-1 md:min-h-0",
                             )}>
                             {listEmptyReason === "year" ? (
                                 <p className="text-muted-foreground text-sm">
-                                    No timesheet data for this year.
+                                    {copy.emptyListYear}
                                 </p>
                             ) : listEmptyReason === "employment" ? (
                                 <p className="text-muted-foreground text-sm">
-                                    No workers match the selected employment
-                                    filters.
+                                    {copy.emptyListEmployment}
                                 </p>
                             ) : listEmptyReason === "search" ? (
                                 <p className="text-muted-foreground text-sm">
-                                    No workers match this search.
+                                    {copy.emptyListSearch}
                                 </p>
                             ) : (
                                 groupedSections.map((section) => (
@@ -539,7 +546,7 @@ export function TimesheetMonthlyHoursOverviewCard({
                                                     className="flex w-max max-w-full min-w-0 items-center gap-3.5">
                                                     <Checkbox
                                                         className="size-5"
-                                                        id={`timesheet-hrs-${w.id}`}
+                                                        id={`${copy.idPrefix}-${w.id}`}
                                                         checked={
                                                             checked[w.id] ??
                                                             true
@@ -552,7 +559,7 @@ export function TimesheetMonthlyHoursOverviewCard({
                                                         }
                                                     />
                                                     <Label
-                                                        htmlFor={`timesheet-hrs-${w.id}`}
+                                                        htmlFor={`${copy.idPrefix}-${w.id}`}
                                                         className="cursor-pointer text-base font-normal whitespace-nowrap">
                                                         {w.name}
                                                     </Label>
@@ -567,21 +574,19 @@ export function TimesheetMonthlyHoursOverviewCard({
                     <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col justify-center border-t pt-4 md:border-l md:border-t-0 md:pl-6 md:pt-0">
                         {chartEmptyReason === "year" ? (
                             <div className="text-muted-foreground flex h-[95%] min-h-48 shrink-0 items-center justify-center self-stretch rounded-md border border-dashed text-center text-sm">
-                                No hours to chart for this year.
+                                {copy.emptyChartYear}
                             </div>
                         ) : chartEmptyReason === "employment" ? (
                             <div className="text-muted-foreground flex h-[95%] min-h-48 shrink-0 items-center justify-center self-stretch rounded-md border border-dashed text-center text-sm">
-                                No hours to chart for the selected employment
-                                filters.
+                                {copy.emptyChartEmployment}
                             </div>
                         ) : chartEmptyReason === "months" ? (
                             <div className="text-muted-foreground flex h-[95%] min-h-48 shrink-0 items-center justify-center self-stretch rounded-md border border-dashed text-center text-sm">
-                                Select at least one month to see the chart.
+                                {copy.emptyChartMonths}
                             </div>
                         ) : chartEmptyReason === "selection" ? (
                             <div className="text-muted-foreground flex h-[95%] min-h-48 shrink-0 items-center justify-center self-stretch rounded-md border border-dashed text-center text-sm">
-                                Select workers or adjust search to see the
-                                chart.
+                                {copy.emptyChartSelection}
                             </div>
                         ) : (
                             <ChartContainer
@@ -607,11 +612,11 @@ export function TimesheetMonthlyHoursOverviewCard({
                                     <YAxis
                                         tickLine={false}
                                         axisLine={false}
-                                        width={44}
+                                        width={52}
                                         tick={AXIS_TICK}
                                         tickFormatter={(v) =>
                                             typeof v === "number"
-                                                ? `${v}`
+                                                ? formatCurrencyCompact(v)
                                                 : String(v)
                                         }
                                     />
@@ -622,7 +627,7 @@ export function TimesheetMonthlyHoursOverviewCard({
                                         <Bar
                                             key={w.id}
                                             dataKey={workerSeriesKey(w.id)}
-                                            stackId="hours"
+                                            stackId={copy.stackId}
                                             isAnimationActive={false}
                                             fill={`var(--color-${workerSeriesKey(w.id)})`}
                                             radius={
