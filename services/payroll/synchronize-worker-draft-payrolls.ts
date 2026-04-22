@@ -11,6 +11,10 @@ import { workerTable } from "@/db/tables/workerTable";
 import { calculatePay } from "@/utils/payroll/payroll-utils";
 import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
 import { countPayrollPublicHolidays } from "@/services/payroll/public-holiday-payroll";
+import {
+    calculateVoucherAmounts,
+    clampHoursNotMet,
+} from "@/services/payroll/payroll-voucher-amounts";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type PayrollSyncExecutor = Pick<typeof db, "select" | "update">;
@@ -19,31 +23,6 @@ export type PayrollSyncResult = { success: true } | { error: string };
 
 function roundHours(n: number): number {
     return Math.round(n * 100) / 100;
-}
-
-function roundMoney(n: number): number {
-    return Math.round(n * 100) / 100;
-}
-
-function clampHoursNotMet(hoursNotMet: number): number {
-    return hoursNotMet > 0 ? 0 : hoursNotMet;
-}
-
-function calcHoursNotMetDeduction(args: {
-    hoursNotMet: number | null;
-    hourlyRate: number | null;
-}): number {
-    const { hoursNotMet, hourlyRate } = args;
-    if (hoursNotMet == null || hoursNotMet === 0) return 0;
-    return -roundMoney(Math.max(0, -hoursNotMet) * (hourlyRate ?? 0));
-}
-
-function calcNetPay(args: {
-    totalPay: number;
-    cpf: number | null;
-    advance?: number | null;
-}): number {
-    return roundMoney(args.totalPay - (args.cpf ?? 0) - (args.advance ?? 0));
 }
 
 async function synchronizeWorkerDraftPayrollsWithExecutor(
@@ -139,13 +118,6 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
                           ),
                       )
                     : null;
-            const hoursNotMetDeduction = calcHoursNotMetDeduction({
-                hoursNotMet,
-                hourlyRate: employment.hourlyRate,
-            });
-            const totalPay = roundMoney(
-                payCalc.totalPay + hoursNotMetDeduction,
-            );
 
             const advanceRows = await executor
                 .select({
@@ -167,12 +139,14 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
             const advanceTotal = advanceRows
                 .filter((advance) => advance.status === "Installment Loan")
                 .reduce((sum, advance) => sum + advance.amount, 0);
-            const netPay = calcNetPay({
-                totalPay,
-                cpf: employment.cpf,
-                advance: advanceTotal,
-            });
-
+            const { hoursNotMetDeduction, subTotal, grandTotal } =
+                calculateVoucherAmounts({
+                    hoursNotMet,
+                    hourlyRate: employment.hourlyRate,
+                    basePayTotal: payCalc.totalPay,
+                    cpf: employment.cpf,
+                    advance: advanceTotal,
+                });
             await executor
                 .update(payrollVoucherTable)
                 .set({
@@ -193,8 +167,8 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
                     publicHolidayPay: payCalc.publicHolidayPay,
                     cpf: employment.cpf,
                     advance: advanceTotal,
-                    totalPay,
-                    netPay,
+                    subTotal,
+                    grandTotal,
                     paymentMethod: employment.paymentMethod,
                     payNowPhone: employment.payNowPhone,
                     bankAccountNumber: employment.bankAccountNumber,

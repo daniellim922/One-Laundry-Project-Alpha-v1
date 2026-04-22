@@ -557,8 +557,8 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                             Total Pay
                                         </p>
                                         <p className="text-sm font-medium">
-                                            {voucher.totalPay != null
-                                                ? `$${voucher.totalPay}`
+                                            {voucher.subTotal != null
+                                                ? `$${voucher.subTotal}`
                                                 : "–"}
                                         </p>
                                     </div>
@@ -587,8 +587,8 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                             Net Pay
                                         </p>
                                         <p className="text-sm font-medium">
-                                            {voucher.netPay != null
-                                                ? `$${voucher.netPay}`
+                                            {voucher.grandTotal != null
+                                                ? `$${voucher.grandTotal}`
                                                 : "–"}
                                         </p>
                                     </div>

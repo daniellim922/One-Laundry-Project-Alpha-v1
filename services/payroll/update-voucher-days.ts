@@ -4,6 +4,10 @@ import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { calculatePay, type PayCalcInput } from "@/utils/payroll/payroll-utils";
+import {
+    calculateVoucherAmounts,
+    clampHoursNotMet,
+} from "@/services/payroll/payroll-voucher-amounts";
 
 export type UpdateVoucherDaysResult =
     | {
@@ -23,31 +27,6 @@ export type UpdateVoucherDaysResult =
 
 function roundHours(value: number): number {
     return Math.round(value * 100) / 100;
-}
-
-function roundMoney(value: number): number {
-    return Math.round(value * 100) / 100;
-}
-
-function clampHoursNotMet(hoursNotMet: number): number {
-    return hoursNotMet > 0 ? 0 : hoursNotMet;
-}
-
-function calcHoursNotMetDeduction(args: {
-    hoursNotMet: number | null;
-    hourlyRate: number | null;
-}): number {
-    const { hoursNotMet, hourlyRate } = args;
-    if (hoursNotMet == null || hoursNotMet === 0) return 0;
-    return -roundMoney(Math.max(0, -hoursNotMet) * (hourlyRate ?? 0));
-}
-
-function calcNetPay(args: {
-    totalPay: number;
-    cpf: number | null;
-    advance?: number | null;
-}): number {
-    return roundMoney(args.totalPay - (args.cpf ?? 0) - (args.advance ?? 0));
 }
 
 export async function updateVoucherDays(input: {
@@ -161,17 +140,15 @@ export async function updateVoucherDays(input: {
                   roundHours(totalHoursWorked - minimumWorkingHours),
               )
             : null;
-    const hoursNotMetDeduction = calcHoursNotMetDeduction({
-        hoursNotMet,
-        hourlyRate:
-            voucher.hourlyRate != null ? Number(voucher.hourlyRate) : null,
-    });
-    const totalPay = roundMoney(payCalc.totalPay + hoursNotMetDeduction);
-    const netPay = calcNetPay({
-        totalPay,
-        cpf: voucher.cpf != null ? Number(voucher.cpf) : null,
-        advance: voucher.advance,
-    });
+    const { hoursNotMetDeduction, subTotal, grandTotal } =
+        calculateVoucherAmounts({
+            hoursNotMet,
+            hourlyRate:
+                voucher.hourlyRate != null ? Number(voucher.hourlyRate) : null,
+            basePayTotal: payCalc.totalPay,
+            cpf: voucher.cpf != null ? Number(voucher.cpf) : null,
+            advance: voucher.advance,
+        });
 
     try {
         await db
@@ -185,8 +162,8 @@ export async function updateVoucherDays(input: {
                 overtimePay: payCalc.overtimePay,
                 restDayPay: payCalc.restDayPay,
                 publicHolidayPay: payCalc.publicHolidayPay,
-                totalPay,
-                netPay,
+                subTotal,
+                grandTotal,
                 updatedAt: new Date(),
             })
             .where(eq(payrollVoucherTable.id, voucherId));

@@ -13,6 +13,7 @@ import { getSeedPayrollStatus } from "./settlement-state";
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
 import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
+import { calculateVoucherAmounts } from "@/services/payroll/payroll-voucher-amounts";
 
 function roundMoney(n: number): number {
     return Math.round(n * 100) / 100;
@@ -37,8 +38,8 @@ export type VoucherEntry = {
     publicHolidayPay: number;
     cpf: number;
     advance: number;
-    totalPay: number;
-    netPay: number;
+    subTotal: number;
+    grandTotal: number;
     paymentMethod: string | null;
     payNowPhone: string | null;
     bankAccountNumber: string | null;
@@ -119,20 +120,20 @@ function generatePayrolls(): PayrollEntry[] {
                     ) ?? [],
             });
 
-            let totalPay = 0;
+            let basePayTotal = 0;
             let overtimePay = 0;
             let restDayPay = 0;
             const publicHolidays = 0;
             const publicHolidayPay = 0;
 
             if (isPartTime) {
-                totalPay =
+                basePayTotal =
                     roundMoney((hourlyRate ?? 0) * totalHoursWorked) +
                     publicHolidayPay;
             } else {
                 overtimePay = roundMoney((hourlyRate ?? 0) * overtimeHours);
                 restDayPay = roundMoney((restDayRate ?? 0) * restDays);
-                totalPay = roundMoney(
+                basePayTotal = roundMoney(
                     (monthlyPay ?? 0) +
                         overtimePay +
                         restDayPay +
@@ -145,12 +146,14 @@ function generatePayrolls(): PayrollEntry[] {
                 workerIndex,
                 period.periodStart,
             );
-            const hoursNotMetDeduction =
-                hoursNotMet != null && hoursNotMet !== 0
-                    ? -roundMoney(Math.max(0, -hoursNotMet) * (hourlyRate ?? 0))
-                    : 0;
-            totalPay = roundMoney(totalPay + hoursNotMetDeduction);
-            const netPay = roundMoney(totalPay - cpf - advance);
+            const { hoursNotMetDeduction, subTotal, grandTotal } =
+                calculateVoucherAmounts({
+                    basePayTotal,
+                    cpf,
+                    advance,
+                    hoursNotMet,
+                    hourlyRate,
+                });
 
             payrolls.push({
                 workerIndex,
@@ -177,8 +180,8 @@ function generatePayrolls(): PayrollEntry[] {
                     publicHolidayPay,
                     cpf,
                     advance,
-                    totalPay,
-                    netPay,
+                    subTotal,
+                    grandTotal,
                     paymentMethod: worker.paymentMethod ?? null,
                     payNowPhone:
                         (worker as { payNowPhone?: string | null }).payNowPhone ??

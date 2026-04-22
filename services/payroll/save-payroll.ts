@@ -15,6 +15,10 @@ import {
 } from "@/utils/payroll/payroll-period-conflicts";
 import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
 import { countPayrollPublicHolidays } from "@/services/payroll/public-holiday-payroll";
+import {
+    calculateVoucherAmounts,
+    clampHoursNotMet,
+} from "@/services/payroll/payroll-voucher-amounts";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type CreatePayrollExecutor = Pick<DbTransaction, "select" | "insert">;
@@ -57,32 +61,6 @@ function generateVoucherNumber(): number {
 
 function roundHours(n: number): number {
     return Math.round(n * 100) / 100;
-}
-
-function roundMoney(n: number): number {
-    return Math.round(n * 100) / 100;
-}
-
-function clampHoursNotMet(hoursNotMet: number): number {
-    return hoursNotMet > 0 ? 0 : hoursNotMet;
-}
-
-function calcHoursNotMetDeduction(args: {
-    hoursNotMet: number | null;
-    hourlyRate: number | null;
-}): number {
-    const { hoursNotMet, hourlyRate } = args;
-    if (hoursNotMet == null) return 0;
-    if (hoursNotMet === 0) return 0;
-    return -roundMoney(Math.max(0, -hoursNotMet) * (hourlyRate ?? 0));
-}
-
-function calcNetPay(args: {
-    totalPay: number;
-    cpf: number | null;
-    advance?: number | null;
-}): number {
-    return roundMoney(args.totalPay - (args.cpf ?? 0) - (args.advance ?? 0));
 }
 
 function dedupePayrollPeriodConflicts(
@@ -178,11 +156,6 @@ async function createPayrollForWorkerInExecutor(
                   roundHours(totalHoursWorked - employment.minimumWorkingHours),
               )
             : null;
-    const hoursNotMetDeduction = calcHoursNotMetDeduction({
-        hoursNotMet,
-        hourlyRate: employment.hourlyRate,
-    });
-    const totalPay = roundMoney(payCalc.totalPay + hoursNotMetDeduction);
     const advances = await getAdvancesForPayrollPeriod(
         workerId,
         periodStart,
@@ -191,12 +164,14 @@ async function createPayrollForWorkerInExecutor(
     const advanceTotal = advances
         .filter((advance) => advance.status === "Installment Loan")
         .reduce((sum, advance) => sum + advance.amount, 0);
-    const netPay = calcNetPay({
-        totalPay,
-        cpf: employment.cpf,
-        advance: advanceTotal,
-    });
-
+    const { hoursNotMetDeduction, subTotal, grandTotal } =
+        calculateVoucherAmounts({
+            hoursNotMet,
+            hourlyRate: employment.hourlyRate,
+            basePayTotal: payCalc.totalPay,
+            cpf: employment.cpf,
+            advance: advanceTotal,
+        });
     const [voucher] = await executor
         .insert(payrollVoucherTable)
         .values({
@@ -218,8 +193,8 @@ async function createPayrollForWorkerInExecutor(
             publicHolidayPay: payCalc.publicHolidayPay,
             cpf: employment.cpf,
             advance: advanceTotal,
-            totalPay,
-            netPay,
+            subTotal,
+            grandTotal,
             paymentMethod: employment.paymentMethod,
             payNowPhone: employment.payNowPhone,
             bankAccountNumber: employment.bankAccountNumber,
@@ -513,11 +488,6 @@ export async function updatePayrollRecord(input: {
                   ),
               )
             : null;
-    const hoursNotMetDeduction = calcHoursNotMetDeduction({
-        hoursNotMet,
-        hourlyRate: row.employment.hourlyRate,
-    });
-    const totalPay = roundMoney(payCalc.totalPay + hoursNotMetDeduction);
     const advances = await getAdvancesForPayrollPeriod(
         existing.workerId,
         periodStart,
@@ -526,8 +496,11 @@ export async function updatePayrollRecord(input: {
     const advanceTotal = advances
         .filter((a) => a.status === "Installment Loan")
         .reduce((sum, a) => sum + a.amount, 0);
-    const netPay = calcNetPay({
-        totalPay,
+    const { hoursNotMetDeduction, subTotal, grandTotal } =
+        calculateVoucherAmounts({
+        hoursNotMet,
+        hourlyRate: row.employment.hourlyRate,
+        basePayTotal: payCalc.totalPay,
         cpf: row.employment.cpf,
         advance: advanceTotal,
     });
@@ -564,8 +537,8 @@ export async function updatePayrollRecord(input: {
                     publicHolidayPay: payCalc.publicHolidayPay,
                     cpf: row.employment.cpf,
                     advance: advanceTotal,
-                    totalPay,
-                    netPay,
+                    subTotal,
+                    grandTotal,
                     paymentMethod: row.employment.paymentMethod,
                     payNowPhone: row.employment.payNowPhone,
                     bankAccountNumber: row.employment.bankAccountNumber,

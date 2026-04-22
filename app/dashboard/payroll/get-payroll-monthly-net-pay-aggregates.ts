@@ -23,7 +23,7 @@ export async function getPayrollMonthlyNetPayAggregates(): Promise<MonthlyWorker
             employmentArrangement: employmentTable.employmentArrangement,
             year: yearExpr,
             month: monthExpr,
-            totalAmount: sql<number>`coalesce(sum(${payrollVoucherTable.netPay}), 0)::double precision`,
+            totalAmount: sql<number>`coalesce(sum(${payrollVoucherTable.grandTotal}), 0)::double precision`,
         })
         .from(payrollTable)
         .innerJoin(

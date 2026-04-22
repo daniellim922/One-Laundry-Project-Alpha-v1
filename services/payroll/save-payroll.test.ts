@@ -344,8 +344,8 @@ describe("payroll overlap action handling", () => {
                 restDays: 3,
                 publicHolidays: 2,
                 publicHolidayPay: 50,
-                totalPay: 1205,
-                netPay: 1155,
+                subTotal: 1205,
+                grandTotal: 1155,
             }),
         );
     });

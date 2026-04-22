@@ -29,8 +29,8 @@ export const payrollVoucherTable = pgTable("payroll_voucher", {
 
     cpf: real("cpf"),
     advance: real("advance"),
-    totalPay: real("total_pay"),
-    netPay: real("net_pay"),
+    subTotal: real("sub_total"),
+    grandTotal: real("grand_total"),
 
     paymentMethod: text("payment_method"),
     payNowPhone: text("paynow_phone"),
