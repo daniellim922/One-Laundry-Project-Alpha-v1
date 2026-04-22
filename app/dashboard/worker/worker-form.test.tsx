@@ -314,10 +314,10 @@ describe("WorkerForm", () => {
         await user.click(screen.getByLabelText(/^Minimum Working Hours/));
         await user.tab();
         expect(
-            await screen.findByText(
+            screen.queryByText(
                 "Minimum working hours are required for full time workers",
             ),
-        ).toBeTruthy();
+        ).toBeNull();
     });
 
     it("shows CPF for Full Time + Local Worker and hides CPF for Full Time + Foreign Worker", async () => {
@@ -473,6 +473,34 @@ describe("WorkerForm", () => {
         expect(
             (screen.getByLabelText(/^Phone/) as HTMLInputElement).disabled,
         ).toBe(true);
+    });
+
+    it("allows full time create with empty minimum working hours and omits it from the payload", async () => {
+        const user = userEvent.setup();
+        render(<WorkerForm />);
+
+        await user.type(screen.getByLabelText(/^Name/), "Full Time No Min");
+        await user.type(screen.getByLabelText(/^Monthly Pay/), "3000");
+        await user.type(screen.getByLabelText(/^Hourly Rate/), "10");
+        await user.type(screen.getByLabelText(/^Rest Day Rate/), "100");
+        // Minimum Working Hours left empty
+
+        const submit = screen.getByRole("button", {
+            name: "Add New Worker",
+        }) as HTMLButtonElement;
+        expect(submit.disabled).toBe(false);
+
+        await user.click(submit);
+
+        await waitFor(() => {
+            expect(mocks.createWorker).toHaveBeenCalledTimes(1);
+        });
+
+        const [payload] = mocks.createWorker.mock.calls[0] as [
+            WorkerUpsertValues,
+        ];
+        expect(payload.employmentType).toBe("Full Time");
+        expect(payload.minimumWorkingHours).toBeUndefined();
     });
 
     it("submits create flow through createWorker and navigates to worker list", async () => {

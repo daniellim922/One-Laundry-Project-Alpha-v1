@@ -53,6 +53,7 @@ function RequiredMark() {
 }
 import {
     workerUpsertSchema,
+    type WorkerUpsertFormInput,
     type WorkerUpsertValues,
 } from "@/db/schemas/worker-employment";
 import type { WorkerWithEmployment } from "@/db/tables/workerTable";
@@ -67,41 +68,34 @@ import { createWorker, updateWorker } from "./actions";
 
 export type { WorkerWithEmployment };
 
-/** Map optional numeric DB values to RHF (undefined, never NaN). */
-function optionalNumber(n: number | null | undefined): number | undefined {
-    if (n == null || Number.isNaN(n)) return undefined;
-    return n;
+function optionalNumberString(n: number | null | undefined): string {
+    if (n == null || Number.isNaN(n)) return "";
+    return String(n);
 }
 
-function bindOptionalNumberField(field: {
+function bindTextNumericField(field: {
     value: unknown;
-    onChange: (v: number | undefined) => void;
+    onChange: (v: string) => void;
     onBlur: () => void;
     name: string;
     ref: React.Ref<HTMLInputElement>;
 }) {
-    const num =
-        typeof field.value === "number" && !Number.isNaN(field.value)
-            ? field.value
-            : undefined;
+    const str =
+        field.value == null || field.value === ""
+            ? ""
+            : String(field.value);
     return {
         name: field.name,
         ref: field.ref,
         onBlur: field.onBlur,
-        value: num === undefined ? "" : num,
+        value: str,
         onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-            const raw = e.target.value;
-            if (raw === "") {
-                field.onChange(undefined);
-                return;
-            }
-            const n = Number(raw);
-            field.onChange(Number.isNaN(n) ? undefined : n);
+            field.onChange(e.target.value);
         },
     };
 }
 
-type WorkerFormValues = WorkerUpsertValues;
+type WorkerFormValues = WorkerUpsertFormInput;
 
 function getDefaultValues(
     worker?: WorkerWithEmployment | null,
@@ -118,11 +112,11 @@ function getDefaultValues(
             "Local Worker") as WorkerFormValues["employmentArrangement"],
         countryOfOrigin: worker?.countryOfOrigin ?? "",
         race: worker?.race ?? "",
-        cpf: optionalNumber(worker?.cpf ?? undefined),
-        monthlyPay: optionalNumber(worker?.monthlyPay ?? undefined),
-        hourlyRate: optionalNumber(worker?.hourlyRate ?? undefined),
-        restDayRate: optionalNumber(worker?.restDayRate ?? undefined),
-        minimumWorkingHours: optionalNumber(
+        cpf: optionalNumberString(worker?.cpf ?? undefined),
+        monthlyPay: optionalNumberString(worker?.monthlyPay ?? undefined),
+        hourlyRate: optionalNumberString(worker?.hourlyRate ?? undefined),
+        restDayRate: optionalNumberString(worker?.restDayRate ?? undefined),
+        minimumWorkingHours: optionalNumberString(
             worker?.minimumWorkingHours ?? undefined,
         ),
         paymentMethod: (worker?.paymentMethod ??
@@ -157,7 +151,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
             ? false
             : workerUpsertSchema.safeParse(watchedValues).success;
 
-    const onSubmit = async (data: WorkerFormValues) => {
+    const onSubmit = async (data: WorkerUpsertValues) => {
         if (disabled) return;
 
         setError(null);
@@ -643,13 +637,12 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             </FieldLabel>
                                             <InputGroup>
                                                 <InputGroupInput
-                                                    {...bindOptionalNumberField(
+                                                    {...bindTextNumericField(
                                                         field,
                                                     )}
                                                     id={`${formId}-monthlyPay`}
-                                                    type="number"
-                                                    step="any"
-                                                    min={0}
+                                                    type="text"
+                                                    inputMode="decimal"
                                                     aria-invalid={
                                                         fieldState.invalid
                                                     }
@@ -683,13 +676,12 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                         </FieldLabel>
                                         <InputGroup>
                                             <InputGroupInput
-                                                {...bindOptionalNumberField(
+                                                {...bindTextNumericField(
                                                     field,
                                                 )}
                                                 id={`${formId}-hourlyRate`}
-                                                type="number"
-                                                step="any"
-                                                min={0}
+                                                type="text"
+                                                inputMode="decimal"
                                                 aria-invalid={
                                                     fieldState.invalid
                                                 }
@@ -724,13 +716,12 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             </FieldLabel>
                                             <InputGroup>
                                                 <InputGroupInput
-                                                    {...bindOptionalNumberField(
+                                                    {...bindTextNumericField(
                                                         field,
                                                     )}
                                                     id={`${formId}-restDayRate`}
-                                                    type="number"
-                                                    step="any"
-                                                    min={0}
+                                                    type="text"
+                                                    inputMode="decimal"
                                                     aria-invalid={
                                                         fieldState.invalid
                                                     }
@@ -761,21 +752,18 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             <FieldLabel
                                                 htmlFor={`${formId}-minimumWorkingHours`}>
                                                 Minimum Working Hours
-                                                <RequiredMark />
                                             </FieldLabel>
                                             <InputGroup>
                                                 <InputGroupInput
-                                                    {...bindOptionalNumberField(
+                                                    {...bindTextNumericField(
                                                         field,
                                                     )}
                                                     id={`${formId}-minimumWorkingHours`}
-                                                    type="number"
-                                                    step="any"
-                                                    min={0}
+                                                    type="text"
+                                                    inputMode="numeric"
                                                     aria-invalid={
                                                         fieldState.invalid
                                                     }
-                                                    aria-required
                                                     disabled={disabled}
                                                 />
                                                 <InputGroupAddon>
@@ -805,13 +793,12 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             </FieldLabel>
                                             <InputGroup>
                                                 <InputGroupInput
-                                                    {...bindOptionalNumberField(
+                                                    {...bindTextNumericField(
                                                         field,
                                                     )}
                                                     id={`${formId}-cpf`}
-                                                    type="number"
-                                                    step="any"
-                                                    min={0}
+                                                    type="text"
+                                                    inputMode="decimal"
                                                     aria-invalid={
                                                         fieldState.invalid
                                                     }

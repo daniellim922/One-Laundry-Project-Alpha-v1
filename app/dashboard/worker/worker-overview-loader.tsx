@@ -12,20 +12,13 @@ import {
     type WorkerCompositionBucket,
 } from "@/components/dashboard/worker-composition-card";
 import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
-import {
     WORKER_EMPLOYMENT_ARRANGEMENTS,
     WORKER_EMPLOYMENT_TYPES,
 } from "@/types/status";
-import { List, Plus, SquarePen, Users } from "lucide-react";
+import { List, Plus, SquarePen } from "lucide-react";
 
 export async function WorkerOverviewLoader() {
-    const [rows, activeWorkersResult, fullTimePayRows, minHoursDistribution] =
-        await Promise.all([
+    const [rows, fullTimePayRows, minHoursDistribution] = await Promise.all([
         db
             .select({
                 employmentType: employmentTable.employmentType,
@@ -42,10 +35,6 @@ export async function WorkerOverviewLoader() {
                 employmentTable.employmentType,
                 employmentTable.employmentArrangement,
             ),
-        db
-            .select({ count: count() })
-            .from(workerTable)
-            .where(eq(workerTable.status, "Active")),
         db
             .select({
                 id: workerTable.id,
@@ -88,8 +77,6 @@ export async function WorkerOverviewLoader() {
             .groupBy(employmentTable.minimumWorkingHours)
             .orderBy(asc(employmentTable.minimumWorkingHours)),
     ]);
-
-    const activeCount = Number(activeWorkersResult[0]?.count ?? 0);
 
     const buckets: WorkerCompositionBucket[] = WORKER_EMPLOYMENT_TYPES.flatMap(
         (type) =>
@@ -143,28 +130,10 @@ export async function WorkerOverviewLoader() {
             />
 
             <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Active workers
-                            </CardTitle>
-                            <Users className="text-muted-foreground size-4" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">
-                                {activeCount}
-                            </div>
-                            <p className="text-muted-foreground text-xs">
-                                Workers with Active status
-                            </p>
-                        </CardContent>
-                    </Card>
-                    <MinimumWorkingHoursBarCard
-                        buckets={minimumHoursBuckets}
-                    />
-                </div>
-                <div className="w-full space-y-4">
+                <MinimumWorkingHoursBarCard
+                    buckets={minimumHoursBuckets}
+                />
+                <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2">
                     <FullTimeMonthlyPayCard rows={foreignFullTimeRows} />
                     <LocalFullTimeEmployeeCpfCard rows={localFullTimeRows} />
                 </div>

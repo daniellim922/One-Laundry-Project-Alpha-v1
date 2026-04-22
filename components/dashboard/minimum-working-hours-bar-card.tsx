@@ -78,8 +78,7 @@ export function MinimumWorkingHoursBarCard({
             </CardHeader>
             <CardContent className="space-y-3">
                 <CardDescription>
-                    Active workers by minimum hours on employment (all types and
-                    arrangements)
+                    Active Full Time Foreign Workers
                 </CardDescription>
                 {data.length === 0 ? (
                     <div className="text-muted-foreground flex h-[160px] items-center justify-center rounded-md border border-dashed text-center text-sm">

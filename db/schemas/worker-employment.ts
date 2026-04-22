@@ -54,8 +54,29 @@ const employmentFields = createInsertSchema(employmentTable, {
     bankAccountNumber: true,
 });
 
+/** Text inputs for CPF, money, and hours fields: keep raw strings in the form, normalize to number | undefined before superRefine. */
+const asOptionalNumberText = z
+    .union([z.string(), z.number(), z.null(), z.undefined()])
+    .transform((v): number | undefined => {
+        if (v == null) return undefined;
+        if (typeof v === "number") {
+            return Number.isFinite(v) && !Number.isNaN(v) ? v : undefined;
+        }
+        const t = v.trim();
+        if (t === "") return undefined;
+        const n = Number(t);
+        return Number.isNaN(n) ? undefined : n;
+    });
+
 export const workerUpsertSchema = workerFields
-    .extend(employmentFields.shape)
+    .extend({
+        ...employmentFields.shape,
+        cpf: asOptionalNumberText,
+        monthlyPay: asOptionalNumberText,
+        hourlyRate: asOptionalNumberText,
+        restDayRate: asOptionalNumberText,
+        minimumWorkingHours: asOptionalNumberText,
+    })
     .superRefine((values, ctx) => {
         const isFullTime = values.employmentType === "Full Time";
         const isPartTime = values.employmentType === "Part Time";
@@ -93,16 +114,10 @@ export const workerUpsertSchema = workerFields
 
         if (isFullTime) {
             const payFields: Array<{
-                key:
-                    | "monthlyPay"
-                    | "hourlyRate"
-                    | "restDayRate"
-                    | "minimumWorkingHours";
+                key: "monthlyPay" | "hourlyRate" | "restDayRate";
                 requiredMessage: string;
                 validationMessage: string;
-                allowZero?: boolean;
-                maxTwoDecimals?: boolean;
-                wholeNumber?: boolean;
+                maxTwoDecimals: boolean;
             }> = [
                 {
                     key: "monthlyPay",
@@ -126,15 +141,6 @@ export const workerUpsertSchema = workerFields
                         "Rest day rate must be a positive number",
                     maxTwoDecimals: true,
                 },
-                {
-                    key: "minimumWorkingHours",
-                    requiredMessage:
-                        "Minimum working hours are required for full time workers",
-                    validationMessage:
-                        "Minimum working hours must be zero or a positive whole number",
-                    allowZero: true,
-                    wholeNumber: true,
-                },
             ];
 
             for (const field of payFields) {
@@ -144,16 +150,6 @@ export const workerUpsertSchema = workerFields
                         code: "custom",
                         path: [field.key],
                         message: field.requiredMessage,
-                    });
-                    continue;
-                }
-
-                if (field.wholeNumber && !isWholeNumber(v)) {
-                    ctx.addIssue({
-                        code: "custom",
-                        path: [field.key],
-                        message:
-                            "Minimum working hours must be a whole number with no decimals",
                     });
                     continue;
                 }
@@ -173,12 +169,30 @@ export const workerUpsertSchema = workerFields
                     continue;
                 }
 
-                const isValidNumber = field.allowZero ? v >= 0 : v > 0;
-                if (!isValidNumber) {
+                if (v <= 0) {
                     ctx.addIssue({
                         code: "custom",
                         path: [field.key],
                         message: field.validationMessage,
+                    });
+                }
+            }
+
+            const mwh = values.minimumWorkingHours;
+            if (mwh != null && !Number.isNaN(mwh)) {
+                if (!isWholeNumber(mwh)) {
+                    ctx.addIssue({
+                        code: "custom",
+                        path: ["minimumWorkingHours"],
+                        message:
+                            "Minimum working hours must be a whole number with no decimals",
+                    });
+                } else if (mwh < 0) {
+                    ctx.addIssue({
+                        code: "custom",
+                        path: ["minimumWorkingHours"],
+                        message:
+                            "Minimum working hours must be zero or a positive whole number",
                     });
                 }
             }
@@ -239,7 +253,8 @@ export const workerUpsertSchema = workerFields
         }
     });
 
-export type WorkerUpsertValues = z.infer<typeof workerUpsertSchema>;
+export type WorkerUpsertFormInput = z.input<typeof workerUpsertSchema>;
+export type WorkerUpsertValues = z.output<typeof workerUpsertSchema>;
 
 export function formatWorkerUpsertZodError(error: z.ZodError): string {
     const first = error.issues[0];

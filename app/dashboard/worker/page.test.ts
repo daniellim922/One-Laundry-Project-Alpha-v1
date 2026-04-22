@@ -14,14 +14,9 @@ vi.mock("@/lib/db", () => ({
 import { WorkerOverviewLoader } from "@/app/dashboard/worker/worker-overview-loader";
 
 function mockSelectSequence(
-    results: [
-        groupBy: unknown,
-        activeCount: unknown,
-        fullTimeRows: unknown,
-        hoursAgg: unknown,
-    ],
+    results: [groupBy: unknown, fullTimeRows: unknown, hoursAgg: unknown],
 ) {
-    const [r0, r1, r2, r3] = results;
+    const [r0, r1, r2] = results;
     mocks.db.select
         .mockReturnValueOnce({
             from: vi.fn().mockReturnValue({
@@ -34,14 +29,9 @@ function mockSelectSequence(
         })
         .mockReturnValueOnce({
             from: vi.fn().mockReturnValue({
-                where: vi.fn().mockResolvedValue(r1),
-            }),
-        })
-        .mockReturnValueOnce({
-            from: vi.fn().mockReturnValue({
                 innerJoin: vi.fn().mockReturnValue({
                     where: vi.fn().mockReturnValue({
-                        orderBy: vi.fn().mockResolvedValue(r2),
+                        orderBy: vi.fn().mockResolvedValue(r1),
                     }),
                 }),
             }),
@@ -51,7 +41,7 @@ function mockSelectSequence(
                 innerJoin: vi.fn().mockReturnValue({
                     where: vi.fn().mockReturnValue({
                         groupBy: vi.fn().mockReturnValue({
-                            orderBy: vi.fn().mockResolvedValue(r3),
+                            orderBy: vi.fn().mockResolvedValue(r2),
                         }),
                     }),
                 }),
@@ -64,13 +54,11 @@ describe("WorkerOverviewLoader", () => {
         vi.clearAllMocks();
     });
 
-    it("renders active worker count and key overview sections", async () => {
-        mockSelectSequence([[], [{ count: 3 }], [], []]);
+    it("renders key overview sections", async () => {
+        mockSelectSequence([[], [], []]);
 
         const html = renderToStaticMarkup(await WorkerOverviewLoader());
 
-        expect(html).toContain("Active workers");
-        expect(html).toContain("3");
         expect(html).toContain("Minimum working hours");
         expect(html).toContain("View all workers");
         expect(html).toContain("New worker");
