@@ -1,8 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { ColumnDef } from "@tanstack/react-table";
-import type { RowSelectionState } from "@tanstack/react-table";
+import type { ColumnDef, Row, RowSelectionState } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 
 import { DataTable } from "@/components/data-table/data-table";
@@ -97,6 +96,14 @@ export function MassEditWorkingHoursPanel({
             worker.name.toLowerCase().includes(normalizedNameFilter),
         );
     }, [normalizedNameFilter, workers]);
+
+    const rowClassNameForNoCurrentMinimum = React.useCallback(
+        (row: Row<WorkerForMassEdit>) =>
+            row.original.minimumWorkingHours == null
+                ? "border-l-4 border-red-400 bg-red-500/10 dark:border-red-400 dark:bg-red-950/40"
+                : undefined,
+        [],
+    );
 
     const columns = React.useMemo<ColumnDef<WorkerForMassEdit>[]>(
         () => [
@@ -390,6 +397,7 @@ export function MassEditWorkingHoursPanel({
                             rowSelection={rowSelection}
                             onRowSelectionChange={setRowSelection}
                             getRowId={(row) => row.id}
+                            getRowClassName={rowClassNameForNoCurrentMinimum}
                         />
                     </div>
 

@@ -12,7 +12,7 @@ export default function TimesheetOverviewPage() {
                     Timesheet
                 </h1>
                 <p className="text-muted-foreground">
-                    Overview of entries and quick actions
+                    Quick actions for timesheet workflows
                 </p>
             </div>
 

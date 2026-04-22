@@ -75,6 +75,8 @@ interface DataTableProps<TData, TValue> {
      * column/global filters (or are absent from `data`) whenever filters or data change.
      */
     pruneRowSelectionOnFilterChange?: boolean;
+    /** Optional per-row class names (e.g. highlight by row data). */
+    getRowClassName?: (row: Row<TData>) => string | undefined;
 }
 
 type ColumnMeta = ColumnFilterMeta & { globalSearch?: boolean };
@@ -126,6 +128,7 @@ export function DataTable<TData, TValue>({
     skeletonColumnCount,
     skeletonRowCount = 10,
     pruneRowSelectionOnFilterChange = true,
+    getRowClassName,
 }: DataTableProps<TData, TValue>) {
     const searchParams = useSearchParams();
     const pathname = usePathname();
@@ -403,6 +406,7 @@ export function DataTable<TData, TValue>({
                             table.getRowModel().rows.map((row) => (
                                 <TableRow
                                     key={row.id}
+                                    className={getRowClassName?.(row)}
                                     data-state={
                                         row.getIsSelected()
                                             ? "selected"
