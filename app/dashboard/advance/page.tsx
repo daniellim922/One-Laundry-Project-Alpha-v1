@@ -12,7 +12,7 @@ export default function AdvanceOverviewPage() {
                     Advance
                 </h1>
                 <p className="text-muted-foreground">
-                    Salary advances overview and quick actions
+                    Repayment terms by month, quick actions, and requests
                 </p>
             </div>
 
