@@ -115,5 +115,14 @@ describe("Payroll breakdown page", () => {
         expect(
             screen.getByText("From the shared public holiday calendar"),
         ).toBeTruthy();
+
+        expect(screen.getByText("Subtotal")).toBeTruthy();
+        expect(screen.getByText("Grand Total")).toBeTruthy();
+        expect(screen.getByText("Advance Pay")).toBeTruthy();
+        expect(
+            screen.getByText("Monthly Pay and additions before subtotal"),
+        ).toBeTruthy();
+        expect(screen.queryByText("Total Pay")).toBeNull();
+        expect(screen.queryByText("Net Pay")).toBeNull();
     });
 });

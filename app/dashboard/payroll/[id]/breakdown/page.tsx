@@ -41,6 +41,11 @@ interface PageProps {
 const formatDate = formatEnGbDmyNumericFromCalendar;
 const formatTime = localTimeHm;
 
+function formatCurrencyAmount(value: number | null | undefined) {
+    if (value == null) return "–";
+    return value < 0 ? `-$${Math.abs(value)}` : `$${value}`;
+}
+
 export default async function PayrollBreakdownPage({ params }: PageProps) {
     const { id } = await params;
     const {
@@ -61,6 +66,14 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
     const voucherRestDaysForCompare = voucher.restDays ?? 0;
     const restDaysDifferFromAttendance =
         voucherRestDaysForCompare !== attendanceRestDays;
+    const earningsTotal =
+        voucher.subTotal != null
+            ? voucher.subTotal - (voucher.hoursNotMetDeduction ?? 0)
+            : null;
+    const earningsContext =
+        voucher.employmentType === "Part Time"
+            ? "Basic Pay and additions before subtotal"
+            : "Monthly Pay and additions before subtotal";
 
     return (
         <div className="space-y-6">
@@ -551,15 +564,47 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="px-4 pt-1">
-                                <div className="grid grid-cols-4 gap-4">
-                                    <div className="space-y-1">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                    <div className="space-y-1 md:col-span-2 xl:col-span-1">
                                         <p className="text-sm text-muted-foreground">
-                                            Total Pay
+                                            Earnings
                                         </p>
                                         <p className="text-sm font-medium">
-                                            {voucher.subTotal != null
-                                                ? `$${voucher.subTotal}`
-                                                : "–"}
+                                            {formatCurrencyAmount(
+                                                earningsTotal,
+                                            )}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {earningsContext}
+                                        </p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-sm text-muted-foreground">
+                                            Hours Not Met Deduction
+                                        </p>
+                                        <p
+                                            className={cn(
+                                                "text-sm font-medium",
+                                                voucher.hoursNotMetDeduction !=
+                                                    null &&
+                                                    Number(
+                                                        voucher.hoursNotMetDeduction,
+                                                    ) !== 0 &&
+                                                    "text-red-600",
+                                            )}>
+                                            {formatCurrencyAmount(
+                                                voucher.hoursNotMetDeduction,
+                                            )}
+                                        </p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-sm text-muted-foreground">
+                                            Subtotal
+                                        </p>
+                                        <p className="text-sm font-medium">
+                                            {formatCurrencyAmount(
+                                                voucher.subTotal,
+                                            )}
                                         </p>
                                     </div>
                                     <div className="space-y-1">
@@ -567,29 +612,27 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                             CPF
                                         </p>
                                         <p className="text-sm font-medium">
-                                            {voucher.cpf != null
-                                                ? `$${voucher.cpf}`
-                                                : "–"}
+                                            {formatCurrencyAmount(voucher.cpf)}
                                         </p>
                                     </div>
                                     <div className="space-y-1">
                                         <p className="text-sm text-muted-foreground">
-                                            Advance
+                                            Advance Pay
                                         </p>
                                         <p className="text-sm font-medium">
-                                            {voucher.advance != null
-                                                ? `$${voucher.advance}`
-                                                : "–"}
+                                            {formatCurrencyAmount(
+                                                voucher.advance,
+                                            )}
                                         </p>
                                     </div>
                                     <div className="space-y-1">
                                         <p className="text-sm text-muted-foreground">
-                                            Net Pay
+                                            Grand Total
                                         </p>
                                         <p className="text-sm font-medium">
-                                            {voucher.grandTotal != null
-                                                ? `$${voucher.grandTotal}`
-                                                : "–"}
+                                            {formatCurrencyAmount(
+                                                voucher.grandTotal,
+                                            )}
                                         </p>
                                     </div>
                                 </div>
