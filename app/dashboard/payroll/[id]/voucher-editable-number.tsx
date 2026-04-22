@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { updateVoucherDays } from "../command-api";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 type Props = {
     payrollId: string;
@@ -12,6 +13,8 @@ type Props = {
     restDays: number | null;
     publicHolidays: number | null;
     readOnly?: boolean;
+    /** Larger typography for dense summary / voucher tape rows */
+    size?: "default" | "lg";
 };
 
 function parseNumber(text: string): number | null {
@@ -30,7 +33,9 @@ export function VoucherEditableNumber({
     restDays,
     publicHolidays,
     readOnly = false,
+    size = "default",
 }: Props) {
+    const isLg = size === "lg";
     const currentValue = field === "restDays" ? restDays : publicHolidays;
     const initial = useMemo(
         () => (currentValue == null ? "" : String(currentValue)),
@@ -70,7 +75,13 @@ export function VoucherEditableNumber({
 
     return (
         <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">{label}</p>
+            <p
+                className={cn(
+                    "text-muted-foreground",
+                    isLg ? "text-base" : "text-sm",
+                )}>
+                {label}
+            </p>
             <div className="flex items-baseline gap-2">
                 <Input
                     aria-label={label}
@@ -78,7 +89,12 @@ export function VoucherEditableNumber({
                     value={text}
                     readOnly={readOnly}
                     disabled={readOnly || isPending}
-                    className="h-8 w-24 text-right text-sm font-medium tabular-nums"
+                    className={cn(
+                        "text-right font-medium tabular-nums",
+                        isLg
+                            ? "h-9 w-28 text-base"
+                            : "h-8 w-24 text-sm",
+                    )}
                     onChange={(e) => setText(e.currentTarget.value)}
                     onBlur={commit}
                     onKeyDown={(e) => {
@@ -94,10 +110,20 @@ export function VoucherEditableNumber({
                     }}
                 />
                 {isPending && (
-                    <span className="text-xs text-muted-foreground">Saving…</span>
+                    <span
+                        className={cn(
+                            "text-muted-foreground",
+                            isLg ? "text-sm" : "text-xs",
+                        )}>
+                        Saving…
+                    </span>
                 )}
             </div>
-            {error && <p className="text-xs text-red-600">{error}</p>}
+            {error && (
+                <p className={cn("text-red-600", isLg ? "text-sm" : "text-xs")}>
+                    {error}
+                </p>
+            )}
         </div>
     );
 }

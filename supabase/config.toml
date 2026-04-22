@@ -1,0 +1,48 @@
+# For detailed configuration reference documentation, visit:
+# https://supabase.com/docs/guides/local-development/cli/config
+project_id = "one-laundry"
+
+[api]
+enabled = true
+port = "env(LOCAL_SUPABASE_API_PORT)"
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = "env(LOCAL_SUPABASE_DB_PORT)"
+shadow_port = 54320
+major_version = 17
+
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[db.migrations]
+enabled = true
+schema_paths = []
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
+
+[realtime]
+enabled = false
+
+[studio]
+enabled = true
+api_url = "env(SUPABASE_STUDIO_URL)"
+port = "env(SUPABASE_STUDIO_URL)"
+openai_api_key = "env(OPENAI_API_KEY)"
+
+[inbucket]
+enabled = false
+
+[storage]
+enabled = false
+
+[auth]
+enabled = false
