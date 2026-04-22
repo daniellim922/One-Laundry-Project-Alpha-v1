@@ -12,7 +12,10 @@ import { Label } from "@/components/ui/label";
 import type { PayrollOverlapErrorResult } from "@/services/payroll/save-payroll";
 import { payrollStatusBadgeTone } from "@/types/badge-tones";
 import type { PayrollStatus } from "@/types/status";
-import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
+import {
+    formatEnGbDmyNumeric,
+    formatEnGbDmyNumericFromCalendar,
+} from "@/utils/time/intl-en-gb";
 
 interface PayrollHeaderProps {
     payroll: {
@@ -21,8 +24,21 @@ interface PayrollHeaderProps {
         periodEnd: string;
         payrollDate: string;
         status: PayrollStatus;
+        updatedAt: string | Date;
     };
     workerName: string;
+}
+
+function formatLastUpdatedAt(value: string | Date): string {
+    const d = value instanceof Date ? value : new Date(String(value));
+    if (Number.isNaN(d.getTime())) return "—";
+    const dateStr = formatEnGbDmyNumeric(d);
+    const timeStr = d.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+    });
+    return `${dateStr} ${timeStr}`;
 }
 
 function isPayrollOverlapErrorResult(
@@ -189,12 +205,13 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
                         </div>
                     </form>
                 ) : (
-                    <p className="text-muted-foreground flex items-center gap-1">
+                    <p className="text-muted-foreground flex flex-wrap items-center gap-1">
                         Period:{" "}
                         {formatEnGbDmyNumericFromCalendar(payroll.periodStart)} –{" "}
                         {formatEnGbDmyNumericFromCalendar(payroll.periodEnd)} |
                         Payroll date:{" "}
-                        {formatEnGbDmyNumericFromCalendar(payroll.payrollDate)}
+                        {formatEnGbDmyNumericFromCalendar(payroll.payrollDate)} |
+                        Last updated: {formatLastUpdatedAt(payroll.updatedAt)}
                         {isDraft && (
                             <Button
                                 variant="ghost"
