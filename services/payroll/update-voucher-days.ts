@@ -113,7 +113,10 @@ export async function updateVoucherDays(input: {
 
     const voucherValues = buildDraftPayrollVoucherValues({
         employment: {
-            employmentType: voucher.employmentType ?? "Full Time",
+            employmentType:
+                voucher.employmentType === "Part Time"
+                    ? "Part Time"
+                    : "Full Time",
             employmentArrangement: "Local Worker",
             minimumWorkingHours,
             monthlyPay:
