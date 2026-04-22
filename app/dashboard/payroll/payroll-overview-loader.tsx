@@ -1,9 +1,7 @@
-import Link from "next/link";
 import { count, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payrollTable";
-import { Button } from "@/components/ui/button";
 import {
     Card,
     CardContent,
@@ -11,8 +9,16 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { DashboardQuickActionsCard } from "@/components/dashboard/dashboard-quick-actions-card";
 import { SimpleDonutChart } from "@/components/dashboard/simple-donut-chart";
-import { ArrowRight, CalendarDays, Download, Plus, Wallet } from "lucide-react";
+import {
+    CalendarDays,
+    ClipboardCheck,
+    Download,
+    List,
+    Plus,
+    Wallet,
+} from "lucide-react";
 
 export async function PayrollOverviewLoader() {
     const [[{ total }], [{ draftCount }]] = await Promise.all([
@@ -24,7 +30,38 @@ export async function PayrollOverviewLoader() {
     ]);
 
     return (
-        <>
+        <div className="space-y-6">
+            <DashboardQuickActionsCard
+                title="Quick actions"
+                actions={[
+                    {
+                        href: "/dashboard/payroll/all",
+                        label: "All payrolls",
+                        icon: List,
+                    },
+                    {
+                        href: "/dashboard/payroll/settle-drafts",
+                        label: "Settle drafts",
+                        icon: ClipboardCheck,
+                    },
+                    {
+                        href: "/dashboard/payroll/download-payrolls",
+                        label: "Download payrolls",
+                        icon: Download,
+                    },
+                    {
+                        href: "/dashboard/payroll/new",
+                        label: "New payroll",
+                        icon: Plus,
+                    },
+                    {
+                        href: "/dashboard/payroll/public-holidays",
+                        label: "Public holidays",
+                        icon: CalendarDays,
+                    },
+                ]}
+            />
+
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -41,39 +78,6 @@ export async function PayrollOverviewLoader() {
                         </p>
                     </CardContent>
                 </Card>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-                <Button asChild>
-                    <Link href="/dashboard/payroll/all">
-                        All payrolls
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
-                <Button variant="destructive" asChild>
-                    <Link href="/dashboard/payroll/settle-drafts">
-                        Settle drafts
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                    <Link href="/dashboard/payroll/download-payrolls">
-                        <Download className="mr-2 h-4 w-4" />
-                        Download payrolls
-                    </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                    <Link href="/dashboard/payroll/new">
-                        <Plus className="mr-2 h-4 w-4" />
-                        New payroll
-                    </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                    <Link href="/dashboard/payroll/public-holidays">
-                        <CalendarDays className="mr-2 h-4 w-4" />
-                        Public holidays
-                    </Link>
-                </Button>
             </div>
 
             <Card>
@@ -99,6 +103,6 @@ export async function PayrollOverviewLoader() {
                     />
                 </CardContent>
             </Card>
-        </>
+        </div>
     );
 }

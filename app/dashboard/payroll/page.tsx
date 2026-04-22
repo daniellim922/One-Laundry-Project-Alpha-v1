@@ -17,7 +17,7 @@ export default function PayrollOverviewPage() {
             </div>
 
             <Suspense
-                fallback={<DashboardHubOverviewSkeleton buttonSlots={4} />}>
+                fallback={<DashboardHubOverviewSkeleton buttonSlots={5} />}>
                 <PayrollOverviewLoader />
             </Suspense>
         </div>

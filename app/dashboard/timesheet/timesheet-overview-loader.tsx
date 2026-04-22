@@ -1,9 +1,7 @@
-import Link from "next/link";
 import { count, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { timesheetTable } from "@/db/tables/timesheetTable";
-import { Button } from "@/components/ui/button";
 import {
     Card,
     CardContent,
@@ -11,8 +9,9 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { DashboardQuickActionsCard } from "@/components/dashboard/dashboard-quick-actions-card";
 import { SimpleDonutChart } from "@/components/dashboard/simple-donut-chart";
-import { ArrowRight, FileSpreadsheet, Plus, Upload } from "lucide-react";
+import { FileSpreadsheet, List, Plus, Upload } from "lucide-react";
 
 export async function TimesheetOverviewLoader() {
     const [[{ total }], [{ unpaid }]] = await Promise.all([
@@ -24,7 +23,28 @@ export async function TimesheetOverviewLoader() {
     ]);
 
     return (
-        <>
+        <div className="space-y-6">
+            <DashboardQuickActionsCard
+                title="Quick actions"
+                actions={[
+                    {
+                        href: "/dashboard/timesheet/all",
+                        label: "All timesheets",
+                        icon: List,
+                    },
+                    {
+                        href: "/dashboard/timesheet/new",
+                        label: "New timesheet",
+                        icon: Plus,
+                    },
+                    {
+                        href: "/dashboard/timesheet/import",
+                        label: "Import timesheets",
+                        icon: Upload,
+                    },
+                ]}
+            />
+
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -41,27 +61,6 @@ export async function TimesheetOverviewLoader() {
                         </p>
                     </CardContent>
                 </Card>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-                <Button asChild>
-                    <Link href="/dashboard/timesheet/all">
-                        All timesheets
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                    <Link href="/dashboard/timesheet/new">
-                        <Plus className="mr-2 h-4 w-4" />
-                        New timesheet
-                    </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                    <Link href="/dashboard/timesheet/import">
-                        <Upload className="mr-2 h-4 w-4" />
-                        Import timesheets
-                    </Link>
-                </Button>
             </div>
 
             <Card>
@@ -89,6 +88,6 @@ export async function TimesheetOverviewLoader() {
                     />
                 </CardContent>
             </Card>
-        </>
+        </div>
     );
 }

@@ -1,9 +1,7 @@
-import Link from "next/link";
 import { count, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
-import { Button } from "@/components/ui/button";
 import {
     Card,
     CardContent,
@@ -11,8 +9,9 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+import { DashboardQuickActionsCard } from "@/components/dashboard/dashboard-quick-actions-card";
 import { SimpleDonutChart } from "@/components/dashboard/simple-donut-chart";
-import { ArrowRight, Banknote, Plus } from "lucide-react";
+import { Banknote, List, Plus } from "lucide-react";
 
 export async function AdvanceOverviewLoader() {
     const [[{ total }], [{ advanceLoanCount }]] = await Promise.all([
@@ -25,7 +24,23 @@ export async function AdvanceOverviewLoader() {
     const paidCount = Number(total) - Number(advanceLoanCount);
 
     return (
-        <>
+        <div className="space-y-6">
+            <DashboardQuickActionsCard
+                title="Quick actions"
+                actions={[
+                    {
+                        href: "/dashboard/advance/all",
+                        label: "All advances",
+                        icon: List,
+                    },
+                    {
+                        href: "/dashboard/advance/new",
+                        label: "New advance",
+                        icon: Plus,
+                    },
+                ]}
+            />
+
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -41,21 +56,6 @@ export async function AdvanceOverviewLoader() {
                         </p>
                     </CardContent>
                 </Card>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-                <Button asChild>
-                    <Link href="/dashboard/advance/all">
-                        All advances
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                    <Link href="/dashboard/advance/new">
-                        <Plus className="mr-2 h-4 w-4" />
-                        New advance
-                    </Link>
-                </Button>
             </div>
 
             <Card>
@@ -83,6 +83,6 @@ export async function AdvanceOverviewLoader() {
                     />
                 </CardContent>
             </Card>
-        </>
+        </div>
     );
 }

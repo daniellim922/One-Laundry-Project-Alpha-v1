@@ -21,9 +21,15 @@ export type DonutSegment = {
 export function SimpleDonutChart({
     segments,
     centerLabel,
+    formatCenterValue,
+    innerRadius = 60,
 }: {
     segments: DonutSegment[];
     centerLabel?: string;
+    /** When set, replaces the raw numeric total in the center (e.g. currency). */
+    formatCenterValue?: (total: number) => string;
+    /** Use `0` for a full pie; default is a donut. */
+    innerRadius?: number;
 }) {
     const chartConfig = React.useMemo(() => {
         const cfg: ChartConfig = {};
@@ -64,38 +70,46 @@ export function SimpleDonutChart({
                     data={data}
                     dataKey="value"
                     nameKey="name"
-                    innerRadius={60}
+                    innerRadius={innerRadius}
                     strokeWidth={2}>
                     {data.map((entry) => (
                         <Cell key={entry.name} fill={entry.fill} />
                     ))}
-                    <Label
-                        content={({ viewBox }) => {
-                            if (viewBox && "cx" in viewBox && "cy" in viewBox) {
-                                return (
-                                    <text
-                                        x={viewBox.cx}
-                                        y={viewBox.cy}
-                                        textAnchor="middle"
-                                        dominantBaseline="middle">
-                                        <tspan
+                    {innerRadius > 0 ? (
+                        <Label
+                            content={({ viewBox }) => {
+                                if (
+                                    viewBox &&
+                                    "cx" in viewBox &&
+                                    "cy" in viewBox
+                                ) {
+                                    return (
+                                        <text
                                             x={viewBox.cx}
                                             y={viewBox.cy}
-                                            className="fill-foreground text-2xl font-bold">
-                                            {total}
-                                        </tspan>
-                                        <tspan
-                                            x={viewBox.cx}
-                                            y={(viewBox.cy ?? 0) + 18}
-                                            className="fill-muted-foreground text-xs">
-                                            {centerLabel ?? "total"}
-                                        </tspan>
-                                    </text>
-                                );
-                            }
-                            return null;
-                        }}
-                    />
+                                            textAnchor="middle"
+                                            dominantBaseline="middle">
+                                            <tspan
+                                                x={viewBox.cx}
+                                                y={viewBox.cy}
+                                                className="fill-foreground text-2xl font-bold">
+                                                {formatCenterValue
+                                                    ? formatCenterValue(total)
+                                                    : total}
+                                            </tspan>
+                                            <tspan
+                                                x={viewBox.cx}
+                                                y={(viewBox.cy ?? 0) + 18}
+                                                className="fill-muted-foreground text-xs">
+                                                {centerLabel ?? "total"}
+                                            </tspan>
+                                        </text>
+                                    );
+                                }
+                                return null;
+                            }}
+                        />
+                    ) : null}
                 </Pie>
             </PieChart>
         </ChartContainer>

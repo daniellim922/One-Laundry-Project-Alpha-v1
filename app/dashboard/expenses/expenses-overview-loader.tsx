@@ -1,10 +1,8 @@
-import Link from "next/link";
 import { count, sum } from "drizzle-orm";
 
 import { SimpleDonutChart } from "@/components/dashboard/simple-donut-chart";
 import { db } from "@/lib/db";
 import { expensesTable } from "@/db/tables/expensesTable";
-import { Button } from "@/components/ui/button";
 import {
     Card,
     CardContent,
@@ -12,7 +10,8 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { ArrowRight, DollarSign, Plus } from "lucide-react";
+import { DashboardQuickActionsCard } from "@/components/dashboard/dashboard-quick-actions-card";
+import { DollarSign, List, Plus } from "lucide-react";
 
 function slugCategory(cat: string | null): string {
     const base = (cat ?? "uncategorized").toLowerCase().replace(/\s+/g, "_");
@@ -47,7 +46,23 @@ export async function ExpensesOverviewLoader() {
         }));
 
     return (
-        <>
+        <div className="space-y-6">
+            <DashboardQuickActionsCard
+                title="Quick actions"
+                actions={[
+                    {
+                        href: "/dashboard/expenses/all",
+                        label: "All expenses",
+                        icon: List,
+                    },
+                    {
+                        href: "/dashboard/expenses/new",
+                        label: "Add expense",
+                        icon: Plus,
+                    },
+                ]}
+            />
+
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -68,21 +83,6 @@ export async function ExpensesOverviewLoader() {
                 </Card>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-                <Button asChild>
-                    <Link href="/dashboard/expenses/all">
-                        All expenses
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
-                <Button variant="outline" asChild>
-                    <Link href="/dashboard/expenses/new">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add expense
-                    </Link>
-                </Button>
-            </div>
-
             <Card>
                 <CardHeader>
                     <CardTitle>By category</CardTitle>
@@ -101,6 +101,6 @@ export async function ExpensesOverviewLoader() {
                     )}
                 </CardContent>
             </Card>
-        </>
+        </div>
     );
 }

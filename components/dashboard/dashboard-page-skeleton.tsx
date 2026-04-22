@@ -1,6 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 
-/** Matches feature hub pages: one stat card, action buttons row, chart card. */
+/** Matches feature hub pages: quick actions card, one stat card, chart card. */
 export function DashboardHubOverviewSkeleton({
     buttonSlots = 4,
 }: {
@@ -9,12 +9,20 @@ export function DashboardHubOverviewSkeleton({
     const n = Math.max(1, Math.min(6, Math.floor(buttonSlots)));
     return (
         <div className="space-y-6">
-            <DashboardStatCardsSkeleton columns={3} count={1} />
-            <div className="flex flex-wrap gap-2">
-                {Array.from({ length: n }).map((_, i) => (
-                    <Skeleton key={i} className="h-10 w-40 max-w-[min(100%,10rem)]" />
-                ))}
+            <div className="bg-card flex flex-col gap-6 rounded-xl border py-6 shadow-sm">
+                <div className="px-6">
+                    <Skeleton className="h-6 w-36" />
+                </div>
+                <div className="flex flex-wrap gap-2 px-6">
+                    {Array.from({ length: n }).map((_, i) => (
+                        <Skeleton
+                            key={i}
+                            className="h-9 w-40 max-w-[min(100%,10rem)]"
+                        />
+                    ))}
+                </div>
             </div>
+            <DashboardStatCardsSkeleton columns={3} count={1} />
             <DashboardSectionCardSkeleton />
         </div>
     );
