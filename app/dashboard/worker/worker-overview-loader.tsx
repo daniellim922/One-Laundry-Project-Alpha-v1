@@ -122,16 +122,6 @@ export async function WorkerOverviewLoader() {
         (r) => r.arrangement === "Local Worker",
     );
 
-    const foreignFtMonthlyPayTotal = foreignFullTimeRows.reduce(
-        (acc, r) => acc + (r.monthlyPay ?? 0),
-        0,
-    );
-
-    const localFtEmployeeCpfTotal = localFullTimeRows.reduce(
-        (acc, r) => acc + (r.cpf ?? 0),
-        0,
-    );
-
     const [hoursRow] = foreignFtHoursAgg;
     const minHours =
         hoursRow?.minHours != null ? Number(hoursRow.minHours) : null;
@@ -180,44 +170,46 @@ export async function WorkerOverviewLoader() {
                 ]}
             />
 
-            <div className="grid grid-cols-2 gap-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Active workers
-                        </CardTitle>
-                        <Users className="text-muted-foreground size-4" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{activeCount}</div>
-                        <p className="text-muted-foreground text-xs">
-                            Workers with Active status
-                        </p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            Min. hours (Foreign FT)
-                        </CardTitle>
-                        <Clock className="text-muted-foreground size-4" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold tabular-nums">
-                            {foreignFtMinHoursRangeLabel}
-                        </div>
-                        <p className="text-muted-foreground text-xs">
-                            Range of minimum working hours on employment for
-                            active Foreign Worker, Full Time staff
-                        </p>
-                    </CardContent>
-                </Card>
-                <FullTimeMonthlyPayCard
-                    totalMonthlyPay={foreignFtMonthlyPayTotal}
-                />
-                <LocalFullTimeEmployeeCpfCard
-                    totalEmployeeCpf={localFtEmployeeCpfTotal}
-                />
+            <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
+                                Active workers
+                            </CardTitle>
+                            <Users className="text-muted-foreground size-4" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">
+                                {activeCount}
+                            </div>
+                            <p className="text-muted-foreground text-xs">
+                                Workers with Active status
+                            </p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
+                                Min. hours (Foreign FT)
+                            </CardTitle>
+                            <Clock className="text-muted-foreground size-4" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold tabular-nums">
+                                {foreignFtMinHoursRangeLabel}
+                            </div>
+                            <p className="text-muted-foreground text-xs">
+                                Range of minimum working hours on employment for
+                                active Foreign Worker, Full Time staff
+                            </p>
+                        </CardContent>
+                    </Card>
+                </div>
+                <div className="w-full space-y-4">
+                    <FullTimeMonthlyPayCard rows={foreignFullTimeRows} />
+                    <LocalFullTimeEmployeeCpfCard rows={localFullTimeRows} />
+                </div>
             </div>
 
             <WorkerCompositionCard buckets={buckets} />
