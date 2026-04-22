@@ -80,7 +80,7 @@ export function buildDraftPayrollVoucherValues(input: {
         calculateVoucherAmounts({
             hoursNotMet,
             hourlyRate: employment.hourlyRate,
-            basePayTotal: payCalc.totalPay,
+            basePayTotal: payCalc.earningsTotal,
             cpf: employment.cpf,
             advance: advanceTotal,
         });
