@@ -861,10 +861,9 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                                         form.getValues(
                                                             "payNowPhone",
                                                         );
-                                                    const phoneTrimmed =
-                                                        String(
-                                                            currentPhone ?? "",
-                                                        ).trim();
+                                                    const phoneTrimmed = String(
+                                                        currentPhone ?? "",
+                                                    ).trim();
                                                     if (
                                                         !currentPayNowPhone &&
                                                         phoneTrimmed

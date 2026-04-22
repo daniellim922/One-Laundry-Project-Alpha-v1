@@ -1,4 +1,4 @@
-import { and, asc, count, eq, max, min } from "drizzle-orm";
+import { and, asc, count, eq, isNotNull } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/workerTable";
@@ -6,6 +6,7 @@ import { employmentTable } from "@/db/tables/employmentTable";
 import { DashboardQuickActionsCard } from "@/components/dashboard/dashboard-quick-actions-card";
 import { FullTimeMonthlyPayCard } from "@/components/dashboard/full-time-monthly-pay-card";
 import { LocalFullTimeEmployeeCpfCard } from "@/components/dashboard/local-full-time-employee-cpf-card";
+import { MinimumWorkingHoursBarCard } from "@/components/dashboard/minimum-working-hours-bar-card";
 import {
     WorkerCompositionCard,
     type WorkerCompositionBucket,
@@ -20,17 +21,10 @@ import {
     WORKER_EMPLOYMENT_ARRANGEMENTS,
     WORKER_EMPLOYMENT_TYPES,
 } from "@/types/status";
-import { Clock, List, Plus, SquarePen, Users } from "lucide-react";
-
-function formatMinimumHours(n: number): string {
-    return n.toLocaleString("en-US", {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-    });
-}
+import { List, Plus, SquarePen, Users } from "lucide-react";
 
 export async function WorkerOverviewLoader() {
-    const [rows, activeWorkersResult, fullTimePayRows, foreignFtHoursAgg] =
+    const [rows, activeWorkersResult, fullTimePayRows, minHoursDistribution] =
         await Promise.all([
         db
             .select({
@@ -77,8 +71,8 @@ export async function WorkerOverviewLoader() {
             ),
         db
             .select({
-                minHours: min(employmentTable.minimumWorkingHours),
-                maxHours: max(employmentTable.minimumWorkingHours),
+                hours: employmentTable.minimumWorkingHours,
+                workerCount: count(),
             })
             .from(workerTable)
             .innerJoin(
@@ -88,13 +82,11 @@ export async function WorkerOverviewLoader() {
             .where(
                 and(
                     eq(workerTable.status, "Active"),
-                    eq(employmentTable.employmentType, "Full Time"),
-                    eq(
-                        employmentTable.employmentArrangement,
-                        "Foreign Worker",
-                    ),
+                    isNotNull(employmentTable.minimumWorkingHours),
                 ),
-            ),
+            )
+            .groupBy(employmentTable.minimumWorkingHours)
+            .orderBy(asc(employmentTable.minimumWorkingHours)),
     ]);
 
     const activeCount = Number(activeWorkersResult[0]?.count ?? 0);
@@ -122,30 +114,10 @@ export async function WorkerOverviewLoader() {
         (r) => r.arrangement === "Local Worker",
     );
 
-    const [hoursRow] = foreignFtHoursAgg;
-    const minHours =
-        hoursRow?.minHours != null ? Number(hoursRow.minHours) : null;
-    const maxHours =
-        hoursRow?.maxHours != null ? Number(hoursRow.maxHours) : null;
-
-    let foreignFtMinHoursRangeLabel: string;
-    if (foreignFullTimeRows.length === 0) {
-        foreignFtMinHoursRangeLabel = "—";
-    } else if (minHours == null && maxHours == null) {
-        foreignFtMinHoursRangeLabel = "Not set";
-    } else if (
-        minHours != null &&
-        maxHours != null &&
-        minHours === maxHours
-    ) {
-        foreignFtMinHoursRangeLabel = `${formatMinimumHours(minHours)} hrs`;
-    } else if (minHours != null && maxHours != null) {
-        foreignFtMinHoursRangeLabel = `${formatMinimumHours(minHours)} – ${formatMinimumHours(maxHours)} hrs`;
-    } else {
-        const only = minHours ?? maxHours;
-        foreignFtMinHoursRangeLabel =
-            only != null ? `${formatMinimumHours(only)} hrs` : "—";
-    }
+    const minimumHoursBuckets = minHoursDistribution.map((row) => ({
+        hours: Number(row.hours),
+        workerCount: Number(row.workerCount),
+    }));
 
     return (
         <div className="space-y-6">
@@ -188,23 +160,9 @@ export async function WorkerOverviewLoader() {
                             </p>
                         </CardContent>
                     </Card>
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">
-                                Min. hours (Foreign FT)
-                            </CardTitle>
-                            <Clock className="text-muted-foreground size-4" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold tabular-nums">
-                                {foreignFtMinHoursRangeLabel}
-                            </div>
-                            <p className="text-muted-foreground text-xs">
-                                Range of minimum working hours on employment for
-                                active Foreign Worker, Full Time staff
-                            </p>
-                        </CardContent>
-                    </Card>
+                    <MinimumWorkingHoursBarCard
+                        buckets={minimumHoursBuckets}
+                    />
                 </div>
                 <div className="w-full space-y-4">
                     <FullTimeMonthlyPayCard rows={foreignFullTimeRows} />

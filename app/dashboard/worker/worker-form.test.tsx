@@ -1,7 +1,21 @@
 /** @vitest-environment jsdom */
 
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import {
+    afterEach,
+    beforeAll,
+    beforeEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from "vitest";
+import {
+    cleanup,
+    render,
+    screen,
+    waitFor,
+    within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const mocks = vi.hoisted(() => ({
@@ -121,14 +135,14 @@ describe("WorkerForm", () => {
         render(<WorkerForm />);
 
         expect(
-            screen.getByRole("button", { name: "Full Time" }).getAttribute(
-                "aria-pressed",
-            ),
+            screen
+                .getByRole("button", { name: "Full Time" })
+                .getAttribute("aria-pressed"),
         ).toBe("true");
         expect(
-            screen.getByRole("button", { name: "Local Worker" }).getAttribute(
-                "aria-pressed",
-            ),
+            screen
+                .getByRole("button", { name: "Local Worker" })
+                .getAttribute("aria-pressed"),
         ).toBe("true");
     });
 
@@ -137,12 +151,14 @@ describe("WorkerForm", () => {
         render(<WorkerForm />);
 
         await user.click(screen.getByRole("button", { name: "Part Time" }));
-        await user.click(screen.getByRole("button", { name: "Foreign Worker" }));
+        await user.click(
+            screen.getByRole("button", { name: "Foreign Worker" }),
+        );
 
         expect(
-            screen.getByRole("button", { name: "Part Time" }).getAttribute(
-                "aria-pressed",
-            ),
+            screen
+                .getByRole("button", { name: "Part Time" })
+                .getAttribute("aria-pressed"),
         ).toBe("true");
         expect(
             screen
@@ -156,12 +172,15 @@ describe("WorkerForm", () => {
         render(<WorkerForm />);
 
         await user.type(screen.getByLabelText(/^NRIC/), "S9999999Z");
-        await user.type(screen.getByLabelText(/^Country of Origin/), "Malaysia");
+        await user.type(
+            screen.getByLabelText(/^Country of Origin/),
+            "Malaysia",
+        );
         await user.type(screen.getByLabelText(/^Race/), "Malay");
 
-        expect(
-            (screen.getByLabelText(/^NRIC/) as HTMLInputElement).value,
-        ).toBe("S9999999Z");
+        expect((screen.getByLabelText(/^NRIC/) as HTMLInputElement).value).toBe(
+            "S9999999Z",
+        );
         expect(
             (screen.getByLabelText(/^Country of Origin/) as HTMLInputElement)
                 .value,
@@ -217,7 +236,10 @@ describe("WorkerForm", () => {
         render(<WorkerForm />);
 
         await user.click(screen.getByLabelText(/^Minimum Working Hours/));
-        await user.type(screen.getByLabelText(/^Minimum Working Hours/), "40.5");
+        await user.type(
+            screen.getByLabelText(/^Minimum Working Hours/),
+            "40.5",
+        );
         await user.tab();
 
         expect(
@@ -304,7 +326,9 @@ describe("WorkerForm", () => {
 
         expect(screen.getByLabelText(/^CPF/)).toBeTruthy();
 
-        await user.click(screen.getByRole("button", { name: "Foreign Worker" }));
+        await user.click(
+            screen.getByRole("button", { name: "Foreign Worker" }),
+        );
 
         expect(screen.queryByLabelText(/^CPF/)).toBeNull();
     });
@@ -377,8 +401,11 @@ describe("WorkerForm", () => {
         await user.click(within(listbox).getByText("PayNow"));
 
         expect(
-            (screen.getByRole("textbox", { name: /PayNow/ }) as HTMLInputElement)
-                .value,
+            (
+                screen.getByRole("textbox", {
+                    name: /PayNow/,
+                }) as HTMLInputElement
+            ).value,
         ).toBe("+65 9000 1111");
 
         await user.click(screen.getByLabelText(/Payment Method/i));
@@ -391,8 +418,11 @@ describe("WorkerForm", () => {
         await user.click(within(listbox).getByText("PayNow"));
 
         expect(
-            (screen.getByRole("textbox", { name: /PayNow/ }) as HTMLInputElement)
-                .value,
+            (
+                screen.getByRole("textbox", {
+                    name: /PayNow/,
+                }) as HTMLInputElement
+            ).value,
         ).toBe("");
     });
 

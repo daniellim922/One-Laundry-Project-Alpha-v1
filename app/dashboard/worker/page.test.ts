@@ -49,7 +49,11 @@ function mockSelectSequence(
         .mockReturnValueOnce({
             from: vi.fn().mockReturnValue({
                 innerJoin: vi.fn().mockReturnValue({
-                    where: vi.fn().mockResolvedValue(r3),
+                    where: vi.fn().mockReturnValue({
+                        groupBy: vi.fn().mockReturnValue({
+                            orderBy: vi.fn().mockResolvedValue(r3),
+                        }),
+                    }),
                 }),
             }),
         });
@@ -61,12 +65,13 @@ describe("WorkerOverviewLoader", () => {
     });
 
     it("renders active worker count and key overview sections", async () => {
-        mockSelectSequence([[], [{ count: 3 }], [], [{ minHours: null, maxHours: null }]]);
+        mockSelectSequence([[], [{ count: 3 }], [], []]);
 
         const html = renderToStaticMarkup(await WorkerOverviewLoader());
 
         expect(html).toContain("Active workers");
         expect(html).toContain("3");
+        expect(html).toContain("Minimum working hours");
         expect(html).toContain("View all workers");
         expect(html).toContain("New worker");
         expect(html).toContain("Full Time monthly pay");
