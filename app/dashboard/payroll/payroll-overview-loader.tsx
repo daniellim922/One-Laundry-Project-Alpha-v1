@@ -48,16 +48,6 @@ export async function PayrollOverviewLoader() {
                         icon: List,
                     },
                     {
-                        href: "/dashboard/payroll/settle-drafts",
-                        label: "Settle drafts",
-                        icon: ClipboardCheck,
-                    },
-                    {
-                        href: "/dashboard/payroll/download-payrolls",
-                        label: "Download payrolls",
-                        icon: Download,
-                    },
-                    {
                         href: "/dashboard/payroll/new",
                         label: "New payroll",
                         icon: Plus,
@@ -66,6 +56,16 @@ export async function PayrollOverviewLoader() {
                         href: "/dashboard/payroll/public-holidays",
                         label: "Public holidays",
                         icon: CalendarDays,
+                    },
+                    {
+                        href: "/dashboard/payroll/download-payrolls",
+                        label: "Download payrolls",
+                        icon: Download,
+                    },
+                    {
+                        href: "/dashboard/payroll/settle-drafts",
+                        label: "Settle drafts",
+                        icon: ClipboardCheck,
                     },
                 ]}
             />

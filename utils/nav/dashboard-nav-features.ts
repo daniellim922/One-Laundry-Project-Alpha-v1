@@ -88,11 +88,11 @@ export const DASHBOARD_NAV_FEATURES: DashboardNavFeature[] = [
                 name: "Public holidays",
                 url: "/dashboard/payroll/public-holidays",
             },
-            { name: "Settle drafts", url: "/dashboard/payroll/settle-drafts" },
             {
                 name: "Download payrolls",
                 url: "/dashboard/payroll/download-payrolls",
             },
+            { name: "Settle drafts", url: "/dashboard/payroll/settle-drafts" },
         ],
         iconName: "Payroll",
     },
