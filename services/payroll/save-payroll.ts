@@ -187,6 +187,7 @@ export async function createPayrollRecord(input: {
     const rangeValidation = validatePayrollPeriodRange({
         periodStart,
         periodEnd,
+        payrollDate,
     });
     if ("error" in rangeValidation) {
         return { error: rangeValidation.error };
@@ -267,6 +268,7 @@ export async function createPayrollRecords(input: {
     const rangeValidation = validatePayrollPeriodRange({
         periodStart,
         periodEnd,
+        payrollDate,
     });
     if ("error" in rangeValidation) {
         return { error: rangeValidation.error };
@@ -361,6 +363,7 @@ export async function updatePayrollRecord(input: {
     const rangeValidation = validatePayrollPeriodRange({
         periodStart,
         periodEnd,
+        payrollDate,
     });
     if ("error" in rangeValidation) {
         return { error: rangeValidation.error };

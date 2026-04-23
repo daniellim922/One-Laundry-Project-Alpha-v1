@@ -81,6 +81,26 @@ describe("payroll overlap action handling", () => {
         expect(mocks.db.select).not.toHaveBeenCalled();
     });
 
+    it("returns validation error when payrollDate is before periodEnd", async () => {
+        const fd = new FormData();
+        fd.append("workerId", "worker-1");
+        fd.set("periodStart", "2026-03-01");
+        fd.set("periodEnd", "2026-03-31");
+        fd.set("payrollDate", "2026-03-30");
+
+        const result = await createPayrollRecords({
+            workerIds: fd.getAll("workerId") as string[],
+            periodStart: fd.get("periodStart") as string,
+            periodEnd: fd.get("periodEnd") as string,
+            payrollDate: fd.get("payrollDate") as string,
+        });
+
+        expect(result).toEqual({
+            error: "Payroll date must be on or after period end",
+        });
+        expect(mocks.db.select).not.toHaveBeenCalled();
+    });
+
     it("returns partial-success payload for batch overlap conflicts", async () => {
         const conflict = {
             payrollId: "payroll-existing-1",

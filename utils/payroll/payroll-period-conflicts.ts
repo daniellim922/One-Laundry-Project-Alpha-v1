@@ -19,9 +19,13 @@ type PayrollPeriodConflictExecutor = Pick<typeof db, "select">;
 export function validatePayrollPeriodRange(input: {
     periodStart: string;
     periodEnd: string;
+    payrollDate: string;
 }): { success: true } | { error: string } {
     if (input.periodEnd < input.periodStart) {
         return { error: "Period end must be on or after period start" };
+    }
+    if (input.payrollDate < input.periodEnd) {
+        return { error: "Payroll date must be on or after period end" };
     }
     return { success: true };
 }
