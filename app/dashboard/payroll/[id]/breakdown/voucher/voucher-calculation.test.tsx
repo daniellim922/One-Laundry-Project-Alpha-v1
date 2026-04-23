@@ -80,6 +80,31 @@ describe("VoucherCalculation", () => {
         expect(body).not.toMatch(/×\s*\$\s*8\s*\/\s*hr/);
     });
 
+    it("shows Hourly Rate label and regular hours x rate subtext for hourly vouchers", () => {
+        render(
+            <VoucherCalculation
+                payrollId="pay-1"
+                payrollStatus="Draft"
+                voucher={voucherFixture({
+                    monthlyPay: null,
+                    hourlyRate: 6,
+                    totalHoursWorked: 67.25,
+                    overtimeHours: 2,
+                    hoursNotMet: 0,
+                    hoursNotMetDeduction: 0,
+                    subTotal: 391.5,
+                    grandTotal: 391.5,
+                })}
+                advances={[]}
+                attendanceRestDays={0}
+            />,
+        );
+
+        expect(screen.getByText("Hourly Rate")).toBeTruthy();
+        const body = document.body.textContent ?? "";
+        expect(body).toContain("65.25 hrs x $6");
+    });
+
     it("hides Rest Day Pay and Public Holiday Pay when the amounts are zero", () => {
         render(
             <VoucherCalculation

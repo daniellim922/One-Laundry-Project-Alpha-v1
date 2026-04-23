@@ -138,19 +138,20 @@ export function VoucherCalculation({
     const voucherRestDays = voucher.restDays ?? 0;
     const restDaysDifferFromAttendance = voucherRestDays !== attendanceRestDays;
 
+    const regularHours = Math.max(
+        0,
+        (voucher.totalHoursWorked ?? 0) - (voucher.overtimeHours ?? 0),
+    );
     const isHourly =
         (voucher.monthlyPay == null || voucher.monthlyPay === 0) &&
         voucher.hourlyRate != null;
     const basePayAmount = isHourly
-        ? Math.max(
-              0,
-              (voucher.totalHoursWorked ?? 0) - (voucher.overtimeHours ?? 0),
-          ) * (voucher.hourlyRate ?? 0)
+        ? regularHours * (voucher.hourlyRate ?? 0)
         : (voucher.monthlyPay ?? 0);
     const baseSubtext = isHourly
-        ? `${voucher.totalHoursWorked ?? 0} hrs worked · ${
-              voucher.hourlyRate != null ? `$${voucher.hourlyRate}/hr` : ""
-          }`
+        ? voucher.hourlyRate != null
+            ? `${regularHours.toFixed(2)} hrs x $${voucher.hourlyRate}`
+            : `${regularHours.toFixed(2)} hrs`
         : `${voucher.totalHoursWorked ?? 0} / ${
               voucher.minimumWorkingHours ?? 0
           } hrs`;
@@ -158,7 +159,7 @@ export function VoucherCalculation({
     return (
         <div className="rounded-lg border bg-muted/10 px-5 py-3 text-base">
             <Line
-                label={isHourly ? "Base Pay" : "Monthly Pay"}
+                label={isHourly ? "Hourly Rate" : "Monthly Pay"}
                 subtext={baseSubtext}
                 amount={basePayAmount}
             />

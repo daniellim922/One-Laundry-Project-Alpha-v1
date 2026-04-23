@@ -27,6 +27,8 @@ export function VoucherDetails({
 }: Props) {
     const [open, setOpen] = useState(false);
     const isDraft = payrollStatus === "Draft";
+    const isPartTime = voucher.employmentType === "Part Time";
+    const partTimeLocked = !isDraft || isPartTime;
 
     return (
         <Collapsible open={open} onOpenChange={setOpen}>
@@ -101,7 +103,7 @@ export function VoucherDetails({
                                 field="monthlyPay"
                                 value={voucher.monthlyPay}
                                 fullWidth
-                                readOnly={!isDraft}
+                                readOnly={partTimeLocked}
                             />
                             <VoucherEditableMoney
                                 payrollId={payrollId}
@@ -119,7 +121,7 @@ export function VoucherDetails({
                                 field="restDayRate"
                                 value={voucher.restDayRate}
                                 fullWidth
-                                readOnly={!isDraft}
+                                readOnly={partTimeLocked}
                             />
                         </div>
                     </CardContent>
@@ -141,7 +143,7 @@ export function VoucherDetails({
                                 value={voucher.minimumWorkingHours}
                                 format="plain"
                                 fullWidth
-                                readOnly={!isDraft}
+                                readOnly={partTimeLocked}
                             />
                             <VoucherEditableNumber
                                 payrollId={payrollId}
@@ -151,7 +153,7 @@ export function VoucherDetails({
                                 restDays={voucher.restDays}
                                 publicHolidays={voucher.publicHolidays}
                                 fullWidth
-                                readOnly={!isDraft}
+                                readOnly={partTimeLocked}
                             />
                             <VoucherEditableNumber
                                 payrollId={payrollId}
@@ -161,7 +163,7 @@ export function VoucherDetails({
                                 restDays={voucher.restDays}
                                 publicHolidays={voucher.publicHolidays}
                                 fullWidth
-                                readOnly={!isDraft}
+                                readOnly={partTimeLocked}
                             />
                         </div>
                     </CardContent>

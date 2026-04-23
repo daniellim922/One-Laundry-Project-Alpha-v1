@@ -108,7 +108,7 @@ export function PaymentVoucher({
 
     if (isPartTime) {
         earnings.push({
-            description: "Basic Pay",
+            description: "Hourly Rate",
             qty: voucher.totalHoursWorked ?? 0,
             unit: "hrs",
             rate: voucher.hourlyRate ?? 0,

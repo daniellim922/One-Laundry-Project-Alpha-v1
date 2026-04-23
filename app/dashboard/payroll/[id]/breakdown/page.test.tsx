@@ -1,8 +1,8 @@
 /** @vitest-environment jsdom */
 
 import React from "react";
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const mocks = vi.hoisted(() => ({
@@ -47,6 +47,10 @@ vi.mock("@/app/dashboard/payroll/[id]/payroll-step-progress", () => ({
 }));
 
 import PayrollBreakdownPage from "@/app/dashboard/payroll/[id]/breakdown/page";
+
+afterEach(() => {
+    cleanup();
+});
 
 describe("Payroll breakdown page", () => {
     it("shows editable rest days, public holidays, and pay rates on draft payrolls", async () => {
@@ -137,5 +141,104 @@ describe("Payroll breakdown page", () => {
         expect(screen.getAllByText("Monthly Pay").length).toBeGreaterThan(0);
         expect(screen.queryByText("Total Pay")).toBeNull();
         expect(screen.queryByText("Net Pay")).toBeNull();
+    });
+
+    it("locks pay-rate and day fields for Part Time on draft payrolls except Hourly Rate", async () => {
+        mocks.getPayrollDetailData.mockResolvedValue({
+            payroll: {
+                id: "payroll-1",
+                workerId: "worker-1",
+                periodStart: "2026-01-01",
+                periodEnd: "2026-01-31",
+                payrollDate: "2026-02-05",
+                status: "Draft",
+            },
+            worker: {
+                id: "worker-1",
+                name: "Bob",
+            },
+            employment: {
+                employmentType: "Part Time",
+                employmentArrangement: "Local Worker",
+                monthlyPay: null,
+                hourlyRate: 8,
+                restDayRate: 15,
+                minimumWorkingHours: 44,
+                paymentMethod: "Cash",
+                payNowPhone: null,
+                bankAccountNumber: null,
+            },
+            voucher: {
+                id: "voucher-1",
+                voucherNumber: 99,
+                employmentType: "Part Time",
+                employmentArrangement: "Local Worker",
+                paymentMethod: "Cash",
+                payNowPhone: null,
+                bankAccountNumber: null,
+                monthlyPay: null,
+                hourlyRate: 8,
+                restDayRate: 15,
+                minimumWorkingHours: 44,
+                totalHoursWorked: 40,
+                hoursNotMet: 0,
+                hoursNotMetDeduction: 0,
+                overtimeHours: 0,
+                overtimePay: 0,
+                restDays: 0,
+                restDayPay: 0,
+                publicHolidays: 0,
+                publicHolidayPay: 0,
+                cpf: 0,
+                advance: 0,
+                subTotal: 320,
+                grandTotal: 320,
+            },
+            entries: [],
+            missingDateIns: [],
+            advances: [],
+        });
+
+        const user = userEvent.setup();
+        render(
+            await PayrollBreakdownPage({
+                params: Promise.resolve({ id: "payroll-1" }),
+            }),
+        );
+
+        await user.click(
+            screen.getByRole("button", { name: /edit payroll voucher/i }),
+        );
+
+        expect(
+            screen
+                .getByTestId("voucher-money-Monthly Pay")
+                .getAttribute("data-read-only"),
+        ).toBe("true");
+        expect(
+            screen
+                .getByTestId("voucher-money-Rest Day Rate")
+                .getAttribute("data-read-only"),
+        ).toBe("true");
+        expect(
+            screen
+                .getByTestId("voucher-money-Minimum Working Hours")
+                .getAttribute("data-read-only"),
+        ).toBe("true");
+        expect(
+            screen
+                .getByTestId("voucher-field-Rest Days")
+                .getAttribute("data-read-only"),
+        ).toBe("true");
+        expect(
+            screen
+                .getByTestId("voucher-field-Public Holidays")
+                .getAttribute("data-read-only"),
+        ).toBe("true");
+        expect(
+            screen
+                .getByTestId("voucher-money-Hourly Rate")
+                .getAttribute("data-read-only"),
+        ).toBe("false");
     });
 });

@@ -84,7 +84,12 @@ export function VoucherEditableMoney({
     };
 
     return (
-        <div className={cn("space-y-1", fullWidth && "w-full")}>
+        <div
+            className={cn(
+                "space-y-1",
+                fullWidth && "w-full",
+                (readOnly || isPending) && "cursor-not-allowed",
+            )}>
             <p
                 className={cn(
                     "text-muted-foreground",
