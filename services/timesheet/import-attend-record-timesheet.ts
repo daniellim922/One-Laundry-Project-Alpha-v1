@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/workerTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
+import { assertWorkerEligibleForTimesheet } from "@/services/worker/assert-worker-eligible-for-timesheet";
 import { calculateHoursFromDateTimes } from "@/utils/payroll/payroll-utils";
 import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
 
@@ -31,10 +32,14 @@ function ddMmYyyyToIso(val: string): string {
 
 export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
     const workerNames = await db
-        .select({ id: workerTable.id, name: workerTable.name })
+        .select({
+            id: workerTable.id,
+            name: workerTable.name,
+            status: workerTable.status,
+        })
         .from(workerTable);
     const nameToId = new Map(
-        workerNames.map((worker) => [worker.name.toLowerCase().trim(), worker.id]),
+        workerNames.map((worker) => [worker.name.toLowerCase().trim(), worker]),
     );
 
     const toInsert: {
@@ -50,11 +55,22 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
     const errors: string[] = [];
 
     for (const worker of data.workers) {
-        const workerId = nameToId.get(worker.name.toLowerCase().trim());
-        if (!workerId) {
+        const matchedWorker = nameToId.get(worker.name.toLowerCase().trim());
+        if (!matchedWorker) {
             errors.push(`Unknown worker "${worker.name}"`);
             continue;
         }
+
+        const eligibility = assertWorkerEligibleForTimesheet(
+            matchedWorker,
+            "import timesheet",
+        );
+        if ("error" in eligibility) {
+            errors.push(eligibility.error);
+            continue;
+        }
+
+        const workerId = matchedWorker.id;
 
         for (const date of worker.dates) {
             const dateIn = ddMmYyyyToIso(date.dateIn);

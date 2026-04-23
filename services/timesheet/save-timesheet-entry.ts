@@ -2,7 +2,9 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { timesheetTable } from "@/db/tables/timesheetTable";
+import { workerTable } from "@/db/tables/workerTable";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
+import { assertWorkerEligibleForTimesheet } from "@/services/worker/assert-worker-eligible-for-timesheet";
 import { calculateHoursFromDateTimes } from "@/utils/payroll/payroll-utils";
 
 type SaveTimesheetEntryInput = {
@@ -24,6 +26,27 @@ export async function createTimesheetEntryRecord(
 
     if (!workerId || !dateIn || !dateOut || !timeIn || !timeOut) {
         return { error: "Missing required fields" };
+    }
+
+    const [worker] = await db
+        .select({
+            name: workerTable.name,
+            status: workerTable.status,
+        })
+        .from(workerTable)
+        .where(eq(workerTable.id, workerId))
+        .limit(1);
+
+    if (!worker) {
+        return { error: "Worker not found" };
+    }
+
+    const eligibility = assertWorkerEligibleForTimesheet(
+        worker,
+        "create timesheet",
+    );
+    if ("error" in eligibility) {
+        return { error: eligibility.error };
     }
 
     const hours = calculateHoursFromDateTimes(dateIn, timeIn, dateOut, timeOut);

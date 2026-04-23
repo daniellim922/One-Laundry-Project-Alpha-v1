@@ -1,15 +1,12 @@
-import type { SelectWorker } from "@/db/tables/workerTable";
+import {
+    assertWorkerActiveForAction,
+    type ActiveWorker,
+} from "@/services/worker/assert-worker-active-for-action";
 
-export type PayrollEligibleWorker = Pick<SelectWorker, "name" | "status">;
+export type PayrollEligibleWorker = ActiveWorker;
 
 export function assertWorkerEligibleForPayroll(
     worker: PayrollEligibleWorker,
 ): { success: true } | { error: string } {
-    if (worker.status === "Active") {
-        return { success: true };
-    }
-
-    return {
-        error: `Cannot create payroll for ${worker.name} because worker status is ${worker.status}`,
-    };
+    return assertWorkerActiveForAction(worker, "create payroll");
 }

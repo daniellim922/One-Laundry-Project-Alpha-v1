@@ -69,8 +69,8 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
         vi.clearAllMocks();
         mocks.db.select.mockReturnValue({
             from: vi.fn().mockResolvedValue([
-                { id: "worker-1", name: "Worker One" },
-                { id: "worker-2", name: "Worker Two" },
+                { id: "worker-1", name: "Worker One", status: "Active" },
+                { id: "worker-2", name: "Worker Two", status: "Active" },
             ]),
         });
         mocks.db.insert.mockReturnValue({
@@ -108,6 +108,29 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
         ).resolves.toEqual({
             imported: 3,
             errors: ["Failed to synchronize Draft payrolls"],
+        });
+    });
+
+    it("returns a clear error when the import includes an inactive worker", async () => {
+        mocks.db.select.mockReturnValue({
+            from: vi.fn().mockResolvedValue([
+                { id: "worker-1", name: "Worker One", status: "Inactive" },
+                { id: "worker-2", name: "Worker Two", status: "Active" },
+            ]),
+        });
+
+        await expect(
+            importAttendRecordTimesheet(makeAttendRecordPayload()),
+        ).resolves.toEqual({
+            imported: 1,
+            errors: [
+                "Cannot import timesheet for Worker One because worker status is Inactive",
+            ],
+        });
+
+        expect(mocks.synchronizeWorkerDraftPayrolls).toHaveBeenCalledTimes(1);
+        expect(mocks.synchronizeWorkerDraftPayrolls).toHaveBeenCalledWith({
+            workerId: "worker-2",
         });
     });
 });
