@@ -30,8 +30,6 @@ import { PayrollHeader } from "../payroll-header";
 import { PayrollStepProgress } from "../payroll-step-progress";
 import { Badge } from "@/components/ui/badge";
 import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
-import { VoucherHero } from "./voucher/voucher-hero";
-import { VoucherSummaryRow } from "./voucher/voucher-summary-row";
 import { VoucherCalculation } from "./voucher/voucher-calculation";
 import { VoucherDetails } from "./voucher/voucher-details";
 
@@ -61,7 +59,6 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
     });
 
     const todayDmy = formatEnGbDmyNumeric(new Date());
-    const payrollDateDmy = formatEnGbDmyNumericFromCalendar(payroll.payrollDate);
 
     return (
         <div className="space-y-6">
@@ -209,16 +206,12 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
 
                 <Card className="print:hidden">
                     <CardHeader>
-                        <CardTitle>
-                            Payroll Voucher Breakdown as of {payrollDateDmy}
-                        </CardTitle>
+                        <CardTitle>Payroll Voucher Breakdown</CardTitle>
                         <p className="text-muted-foreground text-sm">
                             Snapshot of employment terms at payroll generation
                         </p>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <VoucherHero voucher={voucher} />
-                        <VoucherSummaryRow voucher={voucher} />
                         <VoucherCalculation
                             payrollId={payroll.id}
                             payrollStatus={payroll.status}
@@ -230,8 +223,6 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                             payrollId={payroll.id}
                             payrollStatus={payroll.status}
                             voucher={voucher}
-                            advances={advances}
-                            attendanceRestDays={attendanceRestDays}
                         />
                     </CardContent>
                 </Card>
@@ -297,7 +288,8 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                 </TableHeader>
                                 <TableBody>
                                     {entries.map((e) => {
-                                        const paid = e.status === "Timesheet Paid";
+                                        const paid =
+                                            e.status === "Timesheet Paid";
                                         const status =
                                             e.status as TimesheetPaymentStatus;
                                         return (

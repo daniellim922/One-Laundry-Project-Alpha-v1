@@ -3,6 +3,7 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 const mocks = vi.hoisted(() => ({
     getPayrollDetailData: vi.fn(),
@@ -15,10 +16,7 @@ vi.mock("@/app/dashboard/payroll/[id]/payroll-detail-data", () => ({
 }));
 
 vi.mock("@/app/dashboard/payroll/[id]/voucher-editable-number", () => ({
-    VoucherEditableNumber: (props: {
-        label: string;
-        readOnly?: boolean;
-    }) => {
+    VoucherEditableNumber: (props: { label: string; readOnly?: boolean }) => {
         mocks.voucherEditableNumber(props);
         return (
             <div
@@ -28,6 +26,16 @@ vi.mock("@/app/dashboard/payroll/[id]/voucher-editable-number", () => ({
             </div>
         );
     },
+}));
+
+vi.mock("@/app/dashboard/payroll/[id]/voucher-editable-money", () => ({
+    VoucherEditableMoney: (props: { label: string; readOnly?: boolean }) => (
+        <div
+            data-testid={`voucher-money-${props.label}`}
+            data-read-only={String(Boolean(props.readOnly))}>
+            {props.label}
+        </div>
+    ),
 }));
 
 vi.mock("@/app/dashboard/payroll/[id]/payroll-header", () => ({
@@ -41,7 +49,7 @@ vi.mock("@/app/dashboard/payroll/[id]/payroll-step-progress", () => ({
 import PayrollBreakdownPage from "@/app/dashboard/payroll/[id]/breakdown/page";
 
 describe("Payroll breakdown page", () => {
-    it("shows public holidays as computed read-only output on draft payrolls", async () => {
+    it("shows editable rest days, public holidays, and pay rates on draft payrolls", async () => {
         mocks.getPayrollDetailData.mockResolvedValue({
             payroll: {
                 id: "payroll-1",
@@ -97,10 +105,15 @@ describe("Payroll breakdown page", () => {
             advances: [],
         });
 
+        const user = userEvent.setup();
         render(
             await PayrollBreakdownPage({
                 params: Promise.resolve({ id: "payroll-1" }),
             }),
+        );
+
+        await user.click(
+            screen.getByRole("button", { name: /edit payroll voucher/i }),
         );
 
         expect(
@@ -109,16 +122,18 @@ describe("Payroll breakdown page", () => {
                 .getAttribute("data-read-only"),
         ).toBe("false");
         expect(
-            screen.queryByTestId("voucher-field-Public Holidays"),
-        ).toBeNull();
-        expect(screen.getByText("Computed")).toBeTruthy();
+            screen
+                .getByTestId("voucher-field-Public Holidays")
+                .getAttribute("data-read-only"),
+        ).toBe("false");
         expect(
-            screen.getByText("From the shared public holiday calendar"),
-        ).toBeTruthy();
+            screen
+                .getByTestId("voucher-money-Monthly Pay")
+                .getAttribute("data-read-only"),
+        ).toBe("false");
 
         expect(screen.getAllByText("Subtotal").length).toBeGreaterThan(0);
         expect(screen.getAllByText("Grand Total").length).toBeGreaterThan(0);
-        expect(screen.getAllByText("Advance Pay").length).toBeGreaterThan(0);
         expect(screen.getAllByText("Monthly Pay").length).toBeGreaterThan(0);
         expect(screen.queryByText("Total Pay")).toBeNull();
         expect(screen.queryByText("Net Pay")).toBeNull();

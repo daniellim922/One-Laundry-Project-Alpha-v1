@@ -20,8 +20,7 @@ vi.mock("next/cache", () => ({
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
-    createClient: (...args: unknown[]) =>
-        mocks.createClient(...args),
+    createClient: (...args: unknown[]) => mocks.createClient(...args),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -35,10 +34,7 @@ vi.mock("@/services/payroll/synchronize-worker-draft-payrolls", () => ({
         mocks.synchronizeWorkerDraftPayrollsInTx(...args),
 }));
 
-import {
-    createWorker,
-    updateWorker,
-} from "@/app/dashboard/worker/actions";
+import { createWorker, updateWorker } from "@/app/dashboard/worker/actions";
 
 function buildWorkerPayload(
     overrides: Partial<WorkerUpsertValues> = {},
@@ -103,7 +99,6 @@ function queueUpdateRejected(error: unknown) {
     mocks.db.update.mockReturnValueOnce({ set });
     return { set, where };
 }
-
 
 describe("createWorker", () => {
     beforeEach(() => {
@@ -213,7 +208,9 @@ describe("updateWorker", () => {
                 }),
             },
         });
-        mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({ success: true });
+        mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({
+            success: true,
+        });
     });
 
     it("returns validation error when worker id is missing", async () => {
@@ -235,13 +232,10 @@ describe("updateWorker", () => {
     });
 
     it("returns validation error when status is invalid", async () => {
-        const result = await updateWorker(
-            "worker-1",
-            {
-                ...buildWorkerPayload(),
-                status: "Suspended",
-            } as unknown,
-        );
+        const result = await updateWorker("worker-1", {
+            ...buildWorkerPayload(),
+            status: "Suspended",
+        } as unknown);
         expect(result).toEqual({
             success: false,
             error: "Invalid worker status",

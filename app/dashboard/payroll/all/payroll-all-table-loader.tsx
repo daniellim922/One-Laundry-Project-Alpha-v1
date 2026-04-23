@@ -37,8 +37,8 @@ export async function PayrollAllTableLoader() {
         .orderBy(
             asc(payrollTable.status),
             desc(payrollTable.payrollDate),
-            asc(employmentTable.employmentType),
             asc(employmentTable.employmentArrangement),
+            asc(employmentTable.employmentType),
             asc(workerTable.name),
         );
 

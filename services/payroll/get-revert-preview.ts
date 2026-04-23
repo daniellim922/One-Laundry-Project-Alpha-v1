@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, asc, eq, gte, lte } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payrollTable";
@@ -138,60 +138,6 @@ export async function getPayrollRevertPreview(
                 repaymentDate: advance.repaymentDate,
             })),
         });
-    }
-
-    const requestIds = Array.from(
-        new Set(advancesInPeriod.map((advance) => advance.advanceRequestId)),
-    );
-
-    if (requestIds.length > 0) {
-        const requestAdvances = await db
-            .select({
-                advanceRequestId: advanceTable.advanceRequestId,
-                status: advanceTable.status,
-            })
-            .from(advanceTable)
-            .where(inArray(advanceTable.advanceRequestId, requestIds));
-
-        const byRequestId = requestAdvances.reduce(
-            (accumulator, row) => {
-                if (!accumulator[row.advanceRequestId]) {
-                    accumulator[row.advanceRequestId] = [];
-                }
-                accumulator[row.advanceRequestId]!.push({ status: row.status });
-                return accumulator;
-            },
-            {} as Record<
-                string,
-                Array<{ status: "Installment Loan" | "Installment Paid" }>
-            >,
-        );
-
-        const installmentPaidRequestIds = new Set(
-            installmentPaidInPeriod.map((advance) => advance.advanceRequestId),
-        );
-
-        let advanceRequestFlipCount = 0;
-        for (const requestId of requestIds) {
-            const allInstallments = byRequestId[requestId] ?? [];
-            const currentlyAllPaid =
-                allInstallments.length > 0 &&
-                allInstallments.every(
-                    (installment) => installment.status === "Installment Paid",
-                );
-
-            if (currentlyAllPaid && installmentPaidRequestIds.has(requestId)) {
-                advanceRequestFlipCount++;
-            }
-        }
-
-        if (advanceRequestFlipCount > 0) {
-            rows.push({
-                name: `Advance Requests (${advanceRequestFlipCount})`,
-                currentStatus: "Advance Paid",
-                futureStatus: "Advance Loan",
-            });
-        }
     }
 
     return { data: rows };

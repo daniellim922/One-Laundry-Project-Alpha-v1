@@ -12,14 +12,9 @@ import {
     employmentTable,
     type InsertEmployment,
 } from "@/db/tables/employmentTable";
-import {
-    workerTable,
-    type InsertWorker,
-} from "@/db/tables/workerTable";
+import { workerTable, type InsertWorker } from "@/db/tables/workerTable";
 import { db } from "@/lib/db";
-import {
-    synchronizeWorkerDraftPayrolls,
-} from "@/services/payroll/synchronize-worker-draft-payrolls";
+import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
 import {
     massUpdateWorkerMinimumWorkingHours as massUpdateWorkerMinimumWorkingHoursService,
     type WorkerHoursBulkUpdateInput,
@@ -62,32 +57,27 @@ function parsedPayloadToRowValues(
         InsertWorker,
         "id" | "employmentId" | "createdAt" | "updatedAt"
     >;
-    employment: Omit<
-        InsertEmployment,
-        "id" | "createdAt" | "updatedAt"
-    >;
+    employment: Omit<InsertEmployment, "id" | "createdAt" | "updatedAt">;
 } {
     const paymentMethod = data.paymentMethod ?? null;
     const isPayNow = paymentMethod === "PayNow";
 
-    const employment: Omit<
-        InsertEmployment,
-        "id" | "createdAt" | "updatedAt"
-    > = {
-        employmentType: data.employmentType,
-        employmentArrangement: data.employmentArrangement,
-        cpf:
-            data.employmentArrangement === "Local Worker"
-                ? (data.cpf ?? null)
-                : null,
-        monthlyPay: data.monthlyPay ?? null,
-        minimumWorkingHours: data.minimumWorkingHours ?? null,
-        hourlyRate: data.hourlyRate ?? null,
-        restDayRate: data.restDayRate ?? null,
-        paymentMethod,
-        payNowPhone: isPayNow ? trimToNull(data.payNowPhone) : null,
-        bankAccountNumber: trimToNull(data.bankAccountNumber),
-    };
+    const employment: Omit<InsertEmployment, "id" | "createdAt" | "updatedAt"> =
+        {
+            employmentType: data.employmentType,
+            employmentArrangement: data.employmentArrangement,
+            cpf:
+                data.employmentArrangement === "Local Worker"
+                    ? (data.cpf ?? null)
+                    : null,
+            monthlyPay: data.monthlyPay ?? null,
+            minimumWorkingHours: data.minimumWorkingHours ?? null,
+            hourlyRate: data.hourlyRate ?? null,
+            restDayRate: data.restDayRate ?? null,
+            paymentMethod,
+            payNowPhone: isPayNow ? trimToNull(data.payNowPhone) : null,
+            bankAccountNumber: trimToNull(data.bankAccountNumber),
+        };
 
     const worker: Omit<
         InsertWorker,
@@ -110,7 +100,10 @@ export async function createWorker(input: unknown): Promise<ActionResult> {
 
     const parsed = workerUpsertSchema.safeParse(input);
     if (!parsed.success) {
-        return { success: false, error: formatWorkerUpsertZodError(parsed.error) };
+        return {
+            success: false,
+            error: formatWorkerUpsertZodError(parsed.error),
+        };
     }
 
     const { worker, employment } = parsedPayloadToRowValues(parsed.data);
@@ -170,7 +163,10 @@ export async function updateWorker(
 
     const parsed = workerUpsertSchema.safeParse(input);
     if (!parsed.success) {
-        return { success: false, error: formatWorkerUpsertZodError(parsed.error) };
+        return {
+            success: false,
+            error: formatWorkerUpsertZodError(parsed.error),
+        };
     }
 
     const { worker, employment } = parsedPayloadToRowValues(parsed.data);

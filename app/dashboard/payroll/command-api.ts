@@ -19,7 +19,20 @@ async function writePayrollApi<T>(
     init: RequestInit,
 ): Promise<T | { error: string }> {
     const response = await fetch(path, init);
-    const body = (await response.json()) as ApiWriteSuccess<T> | ApiWriteFailure;
+    const raw = await response.text();
+    if (!raw.trim()) {
+        return {
+            error: response.ok
+                ? "Empty response from server"
+                : `Request failed (${response.status})`,
+        };
+    }
+    let body: ApiWriteSuccess<T> | ApiWriteFailure;
+    try {
+        body = JSON.parse(raw) as ApiWriteSuccess<T> | ApiWriteFailure;
+    } catch {
+        return { error: "Invalid response from server" };
+    }
 
     if (!response.ok || !body.ok) {
         return { error: body.ok ? "Request failed" : body.error.message };
@@ -79,6 +92,33 @@ export function updateVoucherDays(input: {
             voucherId: input.voucherId,
             restDays: input.restDays,
             publicHolidays: input.publicHolidays,
+        }),
+    });
+}
+
+export function updateVoucherPayRate(input: {
+    payrollId: string;
+    voucherId: string;
+    field:
+        | "monthlyPay"
+        | "hourlyRate"
+        | "restDayRate"
+        | "minimumWorkingHours";
+    value: number;
+}) {
+    return writePayrollApi<{
+        success: true;
+        payrollId: string;
+        voucherId: string;
+    }>(`/api/payroll/${input.payrollId}/voucher-rates`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            voucherId: input.voucherId,
+            field: input.field,
+            value: input.value,
         }),
     });
 }

@@ -8,7 +8,6 @@ import {
     formatPayrollAdvanceDate,
     payrollAdvanceStatusBadgeClass,
 } from "../payroll-advance-display";
-import { VoucherEditableNumber } from "../../voucher-editable-number";
 import { formatMoney, isZeroish } from "./format-money";
 
 type Props = {
@@ -48,8 +47,7 @@ function Line({
     valueOverride,
     creditGreen = false,
 }: LineProps) {
-    const creditPositive =
-        creditGreen && sign === "+" && !isZeroish(amount);
+    const creditPositive = creditGreen && sign === "+" && !isZeroish(amount);
 
     return (
         <div
@@ -70,7 +68,9 @@ function Line({
                     {badge}
                 </div>
                 {subtext ? (
-                    <div className="text-sm text-muted-foreground">{subtext}</div>
+                    <div className="text-sm text-muted-foreground">
+                        {subtext}
+                    </div>
                 ) : null}
             </div>
             <div
@@ -153,170 +153,175 @@ export function VoucherCalculation({
           }`
         : `${voucher.totalHoursWorked ?? 0} / ${
               voucher.minimumWorkingHours ?? 0
-          } hrs met`;
+          } hrs`;
 
     return (
         <div className="rounded-lg border bg-muted/10 px-5 py-3 text-base">
+            <Line
+                label={isHourly ? "Base Pay" : "Monthly Pay"}
+                subtext={baseSubtext}
+                amount={basePayAmount}
+            />
+
+            {!isZeroish(voucher.overtimePay) && (
                 <Line
-                    label={isHourly ? "Base Pay" : "Monthly Pay"}
-                    subtext={baseSubtext}
-                    amount={basePayAmount}
+                    label="Overtime"
+                    subtext={
+                        voucher.overtimeHours != null &&
+                        voucher.hourlyRate != null
+                            ? `${voucher.overtimeHours} hrs × $${voucher.hourlyRate}/hr`
+                            : undefined
+                    }
+                    sign="+"
+                    amount={voucher.overtimePay}
+                    creditGreen
                 />
+            )}
 
-                {!isZeroish(voucher.overtimePay) && (
-                    <Line
-                        label="Overtime"
-                        subtext={
-                            voucher.overtimeHours != null &&
-                            voucher.hourlyRate != null
-                                ? `${voucher.overtimeHours} hrs × $${voucher.hourlyRate}/hr`
-                                : undefined
-                        }
-                        sign="+"
-                        amount={voucher.overtimePay}
-                        creditGreen
-                    />
-                )}
-
+            {!isZeroish(voucher.restDayPay) && (
                 <Line
                     label="Rest Day Pay"
                     sign="+"
                     amount={voucher.restDayPay}
-                    dim={isZeroish(voucher.restDayPay)}
                     creditGreen
                     labelClassName="text-foreground"
                     subtext={
                         <span className="flex flex-wrap items-center gap-2">
-                            <VoucherEditableNumber
-                                payrollId={payrollId}
-                                voucherId={voucher.id}
-                                label="Rest Days"
-                                field="restDays"
-                                restDays={voucher.restDays}
-                                publicHolidays={voucher.publicHolidays}
-                                readOnly={!isDraft}
-                                size="lg"
-                            />
+                            <span>
+                                {voucher.restDays}{" "}
+                                {voucher.restDays === 1 ? "day" : "days"}
+                            </span>
                             <span className="text-sm text-muted-foreground">
-                                × {voucher.restDayRate != null
+                                {" "}
+                                ×{" "}
+                                {voucher.restDayRate != null
                                     ? `$${voucher.restDayRate}`
                                     : "–"}
-                                /day · from attendance: {attendanceRestDays}
+                                /day
                             </span>
-                            {restDaysDifferFromAttendance && (
-                                <Badge variant="outline" className="text-sm">
-                                    Manual adjustment
-                                </Badge>
-                            )}
                         </span>
                     }
                 />
+            )}
 
+            {!isZeroish(voucher.publicHolidayPay) && (
                 <Line
                     label="Public Holiday Pay"
                     sign="+"
                     amount={voucher.publicHolidayPay}
-                    dim={isZeroish(voucher.publicHolidayPay)}
                     creditGreen
                     labelClassName="text-foreground"
-                    badge={
-                        <Badge variant="secondary" className="text-sm">
-                            Computed
-                        </Badge>
-                    }
                     subtext={
                         <>
                             <span>
-                                {`${voucher.publicHolidays ?? 0} day${
-                                    (voucher.publicHolidays ?? 0) === 1
-                                        ? ""
-                                        : "s"
-                                } · `}
+                                {voucher.publicHolidays}{" "}
+                                {voucher.publicHolidays === 1
+                                    ? "day"
+                                    : "days"}
                             </span>
-                            <span>
-                                From the shared public holiday calendar
+                            <span className="text-sm text-muted-foreground">
+                                {" "}
+                                ×{" "}
+                                {voucher.restDayRate != null
+                                    ? `$${voucher.restDayRate}`
+                                    : "–"}
+                                /day
                             </span>
                         </>
                     }
                 />
+            )}
 
-                {!isZeroish(voucher.hoursNotMetDeduction) && (
-                    <Line
-                        label="Hours Not Met"
-                        subtext={
-                            voucher.hoursNotMet != null
-                                ? `${voucher.hoursNotMet} hrs short`
-                                : undefined
-                        }
-                        sign="-"
-                        amount={Math.abs(voucher.hoursNotMetDeduction ?? 0)}
-                    />
-                )}
-
-                <Divider />
-
+            {!isZeroish(voucher.hoursNotMetDeduction) && (
                 <Line
-                    label="Subtotal"
-                    amount={voucher.subTotal}
-                    emphasis="subtotal"
+                    label="Hours Not Met"
+                    subtext={
+                        voucher.hoursNotMet == null
+                            ? undefined
+                            : voucher.hourlyRate != null ? (
+                                  <span className="flex flex-wrap items-center gap-2">
+                                      <span>
+                                          {`${Math.abs(
+                                              voucher.hoursNotMet,
+                                          )} hrs short`}
+                                      </span>
+                                      <span className="text-sm text-muted-foreground">
+                                          × ${voucher.hourlyRate}/hr
+                                      </span>
+                                  </span>
+                              ) : (
+                                  `${Math.abs(voucher.hoursNotMet)} hrs short`
+                              )
+                    }
+                    sign="-"
+                    amount={Math.abs(voucher.hoursNotMetDeduction ?? 0)}
                 />
+            )}
 
-                {!isZeroish(voucher.cpf) && (
-                    <Line label="CPF" sign="-" amount={voucher.cpf} />
-                )}
+            <Divider />
 
-                {advances.length > 0 && (
-                    <div className="py-2">
-                        <p className="text-base">
-                            Advance Repayment ({advances.length})
-                        </p>
-                        <ul className="mt-1 space-y-1">
-                            {advances.map((adv) => (
-                                <li
-                                    key={adv.id}
-                                    className="flex items-center justify-between gap-4 pl-4 text-base text-muted-foreground">
-                                    <span className="flex items-center gap-2">
-                                        <span>
-                                            {adv.repaymentDate
-                                                ? formatPayrollAdvanceDate(
-                                                      adv.repaymentDate,
-                                                  )
-                                                : "–"}
-                                        </span>
-                                        <span
-                                            className={cn(
-                                                "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
-                                                payrollAdvanceStatusBadgeClass[
-                                                    adv.status
-                                                ] ?? "",
-                                            )}>
-                                            {adv.status}
-                                        </span>
-                                        <Link
-                                            href={`/dashboard/advance/${adv.advanceRequestId}`}
-                                            className="text-primary underline-offset-4 hover:underline">
-                                            view
-                                        </Link>
+            <Line
+                label="Subtotal"
+                amount={voucher.subTotal}
+                emphasis="subtotal"
+            />
+
+            {!isZeroish(voucher.cpf) && (
+                <Line label="CPF" sign="-" amount={voucher.cpf} />
+            )}
+
+            {advances.length > 0 && (
+                <div className="py-2">
+                    <p className="text-base">
+                        Advance Repayment ({advances.length})
+                    </p>
+                    <ul className="mt-1 space-y-1">
+                        {advances.map((adv) => (
+                            <li
+                                key={adv.id}
+                                className="flex items-center justify-between gap-4 pl-4 text-base text-muted-foreground">
+                                <span className="flex items-center gap-2">
+                                    <span>
+                                        {adv.repaymentDate
+                                            ? formatPayrollAdvanceDate(
+                                                  adv.repaymentDate,
+                                              )
+                                            : "–"}
                                     </span>
-                                    <span className="flex items-center tabular-nums text-red-600">
-                                        <span aria-hidden="true" className="mr-px">
-                                            −
-                                        </span>
-                                        {formatMoney(Math.abs(adv.amount))}
+                                    <span
+                                        className={cn(
+                                            "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
+                                            payrollAdvanceStatusBadgeClass[
+                                                adv.status
+                                            ] ?? "",
+                                        )}>
+                                        {adv.status}
                                     </span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
+                                    <Link
+                                        href={`/dashboard/advance/${adv.advanceRequestId}`}
+                                        className="text-primary underline-offset-4 hover:underline">
+                                        view
+                                    </Link>
+                                </span>
+                                <span className="flex items-center tabular-nums text-red-600">
+                                    <span aria-hidden="true" className="mr-px">
+                                        −
+                                    </span>
+                                    {formatMoney(Math.abs(adv.amount))}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
 
-                <Divider double />
+            <Divider double />
 
-                <Line
-                    label="Grand Total"
-                    amount={voucher.grandTotal}
-                    emphasis="total"
-                />
+            <Line
+                label="Grand Total"
+                amount={voucher.grandTotal}
+                emphasis="total"
+            />
         </div>
     );
 }

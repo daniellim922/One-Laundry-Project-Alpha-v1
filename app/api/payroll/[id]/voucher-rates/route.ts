@@ -1,8 +1,8 @@
 import { requireCurrentApiUser } from "@/app/api/_shared/auth";
 import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
 import { apiError, apiSuccess } from "@/app/api/_shared/responses";
-import { payrollVoucherDaysUpdateRequestSchema } from "@/db/schemas/api";
-import { updateVoucherDays } from "@/services/payroll/update-voucher-days";
+import { payrollVoucherPayRateUpdateRequestSchema } from "@/db/schemas/api";
+import { updateVoucherPayRate } from "@/services/payroll/update-voucher-pay-rates";
 
 export async function PATCH(
     request: Request,
@@ -24,18 +24,18 @@ export async function PATCH(
         });
     }
 
-    const parsedBody = payrollVoucherDaysUpdateRequestSchema.safeParse(body);
+    const parsedBody = payrollVoucherPayRateUpdateRequestSchema.safeParse(body);
     if (!parsedBody.success) {
         return apiError({
             status: 400,
             code: "VALIDATION_ERROR",
-            message: "Invalid payroll voucher-day update request.",
+            message: "Invalid payroll voucher pay-rate update request.",
             details: parsedBody.error.flatten(),
         });
     }
 
     const { id } = await context.params;
-    const result = await updateVoucherDays({
+    const result = await updateVoucherPayRate({
         payrollId: id,
         ...parsedBody.data,
     });
@@ -63,7 +63,7 @@ export async function PATCH(
             "/dashboard/payroll/all",
         ]);
     } catch (e) {
-        console.error("revalidateTransportPaths after voucher days", e);
+        console.error("revalidateTransportPaths after voucher pay rate", e);
     }
 
     return apiSuccess(result);

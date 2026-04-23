@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 import {
@@ -10,44 +9,24 @@ import {
     CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { SelectPayrollVoucher } from "@/db/tables/payrollVoucherTable";
-import type { AdvanceForPayrollPeriod } from "@/utils/advance/queries";
-import {
-    formatPayrollAdvanceDate,
-    payrollAdvanceStatusBadgeClass,
-} from "../payroll-advance-display";
+import { VoucherEditableMoney } from "../../voucher-editable-money";
 import { VoucherEditableNumber } from "../../voucher-editable-number";
 
 type Props = {
     payrollId: string;
     payrollStatus: string;
     voucher: SelectPayrollVoucher;
-    advances: AdvanceForPayrollPeriod[];
-    attendanceRestDays: number;
 };
 
 export function VoucherDetails({
     payrollId,
     payrollStatus,
     voucher,
-    advances,
-    attendanceRestDays,
 }: Props) {
     const [open, setOpen] = useState(false);
     const isDraft = payrollStatus === "Draft";
-    const voucherRestDaysForCompare = voucher.restDays ?? 0;
-    const restDaysDifferFromAttendance =
-        voucherRestDaysForCompare !== attendanceRestDays;
 
     return (
         <Collapsible open={open} onOpenChange={setOpen}>
@@ -60,7 +39,7 @@ export function VoucherDetails({
                     ) : (
                         <ChevronRight className="h-4 w-4" />
                     )}
-                    {open ? "Hide full voucher" : "Show full voucher"}
+                    {open ? "Hide payroll voucher" : "Edit payroll voucher"}
                 </button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4 pt-4">
@@ -114,89 +93,33 @@ export function VoucherDetails({
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="px-4 pt-1">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                            <Field
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+                            <VoucherEditableMoney
+                                payrollId={payrollId}
+                                voucherId={voucher.id}
                                 label="Monthly Pay"
-                                value={money(voucher.monthlyPay)}
+                                field="monthlyPay"
+                                value={voucher.monthlyPay}
+                                fullWidth
+                                readOnly={!isDraft}
                             />
-                            <Field
+                            <VoucherEditableMoney
+                                payrollId={payrollId}
+                                voucherId={voucher.id}
                                 label="Hourly Rate"
-                                value={money(voucher.hourlyRate)}
+                                field="hourlyRate"
+                                value={voucher.hourlyRate}
+                                fullWidth
+                                readOnly={!isDraft}
                             />
-                            <div className="md:col-span-2">
-                                <Field
-                                    label="Rest Day Rate"
-                                    value={money(voucher.restDayRate)}
-                                />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="border bg-muted/10 gap-2 py-3">
-                    <CardHeader className="px-4 pb-0">
-                        <CardTitle className="text-sm font-semibold">
-                            Hours & Overtime
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-4 pt-1">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                            <div className="md:col-span-2">
-                                <Field
-                                    label="Total Hours Worked"
-                                    value={voucher.totalHoursWorked}
-                                />
-                            </div>
-                            <div className="md:col-span-2">
-                                <Field
-                                    label="Minimum Working Hours"
-                                    value={voucher.minimumWorkingHours}
-                                />
-                            </div>
-                            <Field
-                                label="Hours Not Met"
-                                value={voucher.hoursNotMet}
-                                valueClassName={cn(
-                                    voucher.hoursNotMet != null &&
-                                        Number(voucher.hoursNotMet) !== 0 &&
-                                        "text-red-600",
-                                )}
-                            />
-                            <Field
-                                label="Hours Not Met Deduction"
-                                value={
-                                    voucher.hoursNotMetDeduction != null
-                                        ? voucher.hoursNotMetDeduction < 0
-                                            ? `-$${Math.abs(
-                                                  voucher.hoursNotMetDeduction,
-                                              )}`
-                                            : `$${voucher.hoursNotMetDeduction}`
-                                        : null
-                                }
-                                valueClassName={cn(
-                                    voucher.hoursNotMetDeduction != null &&
-                                        Number(voucher.hoursNotMetDeduction) !==
-                                            0 &&
-                                        "text-red-600",
-                                )}
-                            />
-                            <Field
-                                label="Overtime Hours"
-                                value={voucher.overtimeHours}
-                                valueClassName={cn(
-                                    voucher.overtimeHours != null &&
-                                        Number(voucher.overtimeHours) !== 0 &&
-                                        "text-emerald-600",
-                                )}
-                            />
-                            <Field
-                                label="Overtime Pay"
-                                value={money(voucher.overtimePay)}
-                                valueClassName={cn(
-                                    voucher.overtimePay != null &&
-                                        Number(voucher.overtimePay) !== 0 &&
-                                        "text-emerald-600",
-                                )}
+                            <VoucherEditableMoney
+                                payrollId={payrollId}
+                                voucherId={voucher.id}
+                                label="Rest Day Rate"
+                                field="restDayRate"
+                                value={voucher.restDayRate}
+                                fullWidth
+                                readOnly={!isDraft}
                             />
                         </div>
                     </CardContent>
@@ -205,136 +128,40 @@ export function VoucherDetails({
                 <Card className="border bg-muted/10 gap-2 py-3">
                     <CardHeader className="px-4 pb-0">
                         <CardTitle className="text-sm font-semibold">
-                            Rest Days & Holidays
+                            Minimum Hours, Rest Days and Public Holidays
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="px-4 pt-1">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                            <div className="space-y-1">
-                                <VoucherEditableNumber
-                                    payrollId={payrollId}
-                                    voucherId={voucher.id}
-                                    label="Rest Days"
-                                    field="restDays"
-                                    restDays={voucher.restDays}
-                                    publicHolidays={voucher.publicHolidays}
-                                    readOnly={!isDraft}
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    From attendance: {attendanceRestDays}
-                                    {restDaysDifferFromAttendance ? (
-                                        <span className="block mt-1 text-muted-foreground/90">
-                                            Voucher differs from this figure
-                                            (manual adjustment).
-                                        </span>
-                                    ) : null}
-                                </p>
-                            </div>
-                            <Field
-                                label="Rest Day Pay"
-                                value={money(voucher.restDayPay)}
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+                            <VoucherEditableMoney
+                                payrollId={payrollId}
+                                voucherId={voucher.id}
+                                label="Minimum Working Hours"
+                                field="minimumWorkingHours"
+                                value={voucher.minimumWorkingHours}
+                                format="plain"
+                                fullWidth
+                                readOnly={!isDraft}
                             />
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                    <p className="text-sm text-muted-foreground">
-                                        Public Holidays
-                                    </p>
-                                    <Badge variant="secondary">Computed</Badge>
-                                </div>
-                                <p className="text-sm font-medium">
-                                    {voucher.publicHolidays ?? 0}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    From the shared public holiday calendar
-                                </p>
-                            </div>
-                            <Field
-                                label="Public Holiday Pay"
-                                value={money(voucher.publicHolidayPay)}
+                            <VoucherEditableNumber
+                                payrollId={payrollId}
+                                voucherId={voucher.id}
+                                label="Rest Days"
+                                field="restDays"
+                                restDays={voucher.restDays}
+                                publicHolidays={voucher.publicHolidays}
+                                fullWidth
+                                readOnly={!isDraft}
                             />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="border bg-muted/10 gap-2 py-3">
-                    <CardHeader className="px-4 pb-0">
-                        <CardTitle className="text-sm font-semibold">
-                            Advances
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-4 pt-1">
-                        {advances.length === 0 ? (
-                            <p className="text-muted-foreground text-sm">
-                                No advances due in this period.
-                            </p>
-                        ) : (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Repayment Date</TableHead>
-                                        <TableHead>Amount</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Advance Request</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {advances.map((adv) => (
-                                        <TableRow key={adv.id}>
-                                            <TableCell>
-                                                {adv.repaymentDate
-                                                    ? formatPayrollAdvanceDate(
-                                                          adv.repaymentDate,
-                                                      )
-                                                    : "–"}
-                                            </TableCell>
-                                            <TableCell>
-                                                {`$${adv.amount}`}
-                                            </TableCell>
-                                            <TableCell>
-                                                <span
-                                                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                                                        payrollAdvanceStatusBadgeClass[
-                                                            adv.status
-                                                        ] ?? ""
-                                                    }`}>
-                                                    {adv.status}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Link
-                                                    href={`/dashboard/advance/${adv.advanceRequestId}`}
-                                                    className="text-primary text-sm underline-offset-4 hover:underline">
-                                                    View
-                                                </Link>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        )}
-                    </CardContent>
-                </Card>
-
-                <Card className="border bg-muted/10 gap-2 py-3">
-                    <CardHeader className="px-4 pb-0">
-                        <CardTitle className="text-sm font-semibold">
-                            Totals
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-4 pt-1">
-                        <div className="grid grid-cols-4 gap-4">
-                            <Field
-                                label="Subtotal"
-                                value={money(voucher.subTotal)}
-                            />
-                            <Field label="CPF" value={money(voucher.cpf)} />
-                            <Field
-                                label="Advance Pay"
-                                value={money(voucher.advance)}
-                            />
-                            <Field
-                                label="Grand Total"
-                                value={money(voucher.grandTotal)}
+                            <VoucherEditableNumber
+                                payrollId={payrollId}
+                                voucherId={voucher.id}
+                                label="Public Holidays"
+                                field="publicHolidays"
+                                restDays={voucher.restDays}
+                                publicHolidays={voucher.publicHolidays}
+                                fullWidth
+                                readOnly={!isDraft}
                             />
                         </div>
                     </CardContent>
@@ -363,7 +190,3 @@ function Field({
     );
 }
 
-function money(value: number | null | undefined): string | null {
-    if (value == null) return null;
-    return `$${value}`;
-}
