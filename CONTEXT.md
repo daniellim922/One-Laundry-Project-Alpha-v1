@@ -16,7 +16,7 @@ CPF is intentionally modeled as a flat manually-entered amount on Employment, no
 
 ### Paid installments are immutable outside of payroll Reopen
 **Status:** Resolved  
-Installments in `Installment Paid` status cannot be edited or deleted through the advance request form. The only path back to `Installment Loan` is via payroll `Reopen`, which reverts the entire settled run.
+Installments in `Installment Paid` status cannot be edited or deleted through the advance request form. The server-side save flow must reject updates that omit or alter paid installments, and matching paid rows should remain stored as-is while only unpaid rows are replaced. The only path back to `Installment Loan` is via payroll `Reopen`, which reverts the entire settled run.
 
 ### Timesheet entries are single-day or overnight shifts
 **Status:** Resolved  

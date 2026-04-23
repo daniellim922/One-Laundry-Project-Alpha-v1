@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
@@ -36,6 +36,12 @@ export type SaveAdvanceRequestInput = {
 
 type ParsedInstallment = {
     repaymentDate: string;
+    amount: number;
+    status: InstallmentStatus;
+};
+
+type ExistingInstallment = {
+    repaymentDate: string | null;
     amount: number;
     status: InstallmentStatus;
 };
@@ -198,6 +204,32 @@ function validateAdvanceInput(
     };
 }
 
+function paidInstallmentsMatch(
+    existingInstallments: ExistingInstallment[],
+    nextInstallments: ParsedInstallment[],
+): boolean {
+    const existingPaid = existingInstallments
+        .filter((installment) => installment.status === "Installment Paid")
+        .map(
+            (installment) =>
+                `${installment.repaymentDate ?? ""}|${installment.amount}|${installment.status}`,
+        )
+        .sort();
+    const nextPaid = nextInstallments
+        .filter((installment) => installment.status === "Installment Paid")
+        .map(
+            (installment) =>
+                `${installment.repaymentDate}|${installment.amount}|${installment.status}`,
+        )
+        .sort();
+
+    if (existingPaid.length !== nextPaid.length) {
+        return false;
+    }
+
+    return existingPaid.every((signature, index) => signature === nextPaid[index]);
+}
+
 export async function createAdvanceRequestRecord(
     input: SaveAdvanceRequestInput,
 ): Promise<ActionResult> {
@@ -285,6 +317,21 @@ export async function updateAdvanceRequestRecord(
         .where(eq(advanceRequestTable.id, id))
         .limit(1);
     const oldWorkerId = existing?.workerId ?? null;
+    const existingInstallments = await db
+        .select({
+            repaymentDate: advanceTable.repaymentDate,
+            amount: advanceTable.amount,
+            status: advanceTable.status,
+        })
+        .from(advanceTable)
+        .where(eq(advanceTable.advanceRequestId, id));
+
+    if (!paidInstallmentsMatch(existingInstallments, parsed.validInstallments)) {
+        return {
+            success: false,
+            error: "Paid installments cannot be edited or deleted",
+        };
+    }
 
     const now = new Date();
 
@@ -307,20 +354,27 @@ export async function updateAdvanceRequestRecord(
 
             await tx
                 .delete(advanceTable)
-                .where(eq(advanceTable.advanceRequestId, id));
+                .where(
+                    and(
+                        eq(advanceTable.advanceRequestId, id),
+                        ne(advanceTable.status, "Installment Paid"),
+                    ),
+                );
 
-            const advanceInserts: InsertAdvance[] = parsed.validInstallments.map(
-                (inst) => ({
+            const advanceInserts: InsertAdvance[] = parsed.validInstallments
+                .filter((inst) => inst.status !== "Installment Paid")
+                .map((inst) => ({
                     advanceRequestId: id,
                     amount: inst.amount,
                     status: inst.status,
                     repaymentDate: inst.repaymentDate,
                     createdAt: now,
                     updatedAt: now,
-                }),
-            );
+                }));
 
-            await tx.insert(advanceTable).values(advanceInserts);
+            if (advanceInserts.length > 0) {
+                await tx.insert(advanceTable).values(advanceInserts);
+            }
         });
 
         const sync = await synchronizeWorkerDraftPayrolls({
