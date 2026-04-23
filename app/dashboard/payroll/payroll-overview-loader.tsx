@@ -1,10 +1,9 @@
 import { DashboardQuickActionsCard } from "@/components/dashboard/dashboard-quick-actions-card";
 import {
     formatStackedChartCurrency,
-    getStackedRowTotalAmount,
-    MonthlyWorkerStackedAmountOverviewCard,
     type MonthlyWorkerStackedAmountCopy,
 } from "@/components/dashboard/monthly-worker-stacked-amount-overview-card";
+import { PayrollMonthlyOverviewChart } from "@/app/dashboard/payroll/payroll-monthly-overview-chart";
 import {
     CalendarDays,
     ClipboardCheck,
@@ -15,21 +14,21 @@ import {
 
 import { getPayrollMonthlyGrandTotalAggregates } from "./get-payroll-monthly-grand-total-aggregates";
 
-const PAYROLL_MONTHLY_GRAND_TOTAL_COPY = {
-    title: "Monthly Grand Total",
+const PAYROLL_MONTHLY_AMOUNTS_COPY = {
+    title: "Monthly payroll amounts",
     description:
-        "Voucher Grand Total for Settled payrolls, stacked by worker by calendar month of payroll date. Employment type and arrangement checkboxes select or clear all workers in that group; individual workers can be toggled separately. Only workers with a Settled payroll in the selected year are listed.",
-    emptyListYear: "No Settled payroll Grand Total for this year.",
+        "Voucher Subtotal or Grand Total for Settled payrolls, stacked by worker by calendar month of payroll date. Use the amount control to choose Subtotal or Grand Total. Employment type and arrangement in the top row bulk select or clear all workers in that group; individual workers can be toggled in the list. Only workers with a Settled payroll in the selected year are listed.",
+    emptyListYear: "No Settled payroll amounts for this year.",
     emptyListEmployment:
         "No workers match the selected employment filters.",
     emptyListSearch: "No workers match this search.",
-    emptyChartYear: "No Grand Total to chart for this year.",
+    emptyChartYear: "No amount to chart for this year.",
     emptyChartEmployment:
-        "No Grand Total to chart — all workers are deselected.",
+        "No amount to chart — all workers are deselected.",
     emptyChartMonths: "Select at least one month to see the chart.",
     emptyChartSelection:
         "Select workers or adjust search to see the chart.",
-    idPrefix: "payroll-grand-total",
+    idPrefix: "payroll-monthly-amounts",
     stackId: "grandTotal",
     formatValue: formatStackedChartCurrency,
 } satisfies MonthlyWorkerStackedAmountCopy;
@@ -70,12 +69,11 @@ export async function PayrollOverviewLoader() {
                     },
                 ]}
             />
-            <MonthlyWorkerStackedAmountOverviewCard
+            <PayrollMonthlyOverviewChart
                 rows={rows}
-                getValue={getStackedRowTotalAmount}
                 defaultYear={defaultYear}
                 yearOptions={yearOptions}
-                copy={PAYROLL_MONTHLY_GRAND_TOTAL_COPY}
+                copy={PAYROLL_MONTHLY_AMOUNTS_COPY}
             />
         </div>
     );

@@ -62,6 +62,7 @@ export async function getAdvanceMonthlyRepaymentAggregates(): Promise<MonthlyWor
             year: Number(r.year),
             month: Number(r.month),
             totalAmount: Number(r.totalAmount),
+            subTotalAmount: 0,
         })),
     };
 }

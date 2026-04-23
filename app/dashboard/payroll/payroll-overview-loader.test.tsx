@@ -22,8 +22,8 @@ vi.mock("@/components/dashboard/dashboard-quick-actions-card", () => ({
     }) => <div>{title}</div>,
 }));
 
-vi.mock("@/components/dashboard/monthly-worker-stacked-amount-overview-card", () => ({
-    MonthlyWorkerStackedAmountOverviewCard: ({
+vi.mock("@/app/dashboard/payroll/payroll-monthly-overview-chart", () => ({
+    PayrollMonthlyOverviewChart: ({
         copy,
     }: {
         copy: {
@@ -44,12 +44,10 @@ vi.mock("@/components/dashboard/monthly-worker-stacked-amount-overview-card", ()
             <p>{copy.stackId}</p>
         </section>
     ),
-    formatStackedChartCurrency: (value: number) => `$${value}`,
-    getStackedRowTotalAmount: (row: { totalAmount: number }) => row.totalAmount,
 }));
 
 describe("PayrollOverviewLoader", () => {
-    it("uses grand total terminology in payroll reporting copy", async () => {
+    it("uses subtotal and grand total copy on the monthly payroll chart", async () => {
         getPayrollMonthlyGrandTotalAggregates.mockResolvedValue({
             defaultYear: 2026,
             yearOptions: [2026],
@@ -58,19 +56,21 @@ describe("PayrollOverviewLoader", () => {
 
         render(await PayrollOverviewLoader());
 
-        expect(screen.getByText("Monthly Grand Total")).toBeTruthy();
+        expect(screen.getByText("Monthly payroll amounts")).toBeTruthy();
         expect(
-            screen.getByText(/Voucher Grand Total for Settled payrolls/i),
+            screen.getByText(
+                /Voucher Subtotal or Grand Total for Settled payrolls/i,
+            ),
         ).toBeTruthy();
         expect(
-            screen.getByText("No Settled payroll Grand Total for this year."),
+            screen.getByText("No Settled payroll amounts for this year."),
         ).toBeTruthy();
         expect(
-            screen.getByText("No Grand Total to chart for this year."),
+            screen.getByText("No amount to chart for this year."),
         ).toBeTruthy();
         expect(
             screen.getByText(
-                "No Grand Total to chart — all workers are deselected.",
+                "No amount to chart — all workers are deselected.",
             ),
         ).toBeTruthy();
         expect(screen.getByText("grandTotal")).toBeTruthy();

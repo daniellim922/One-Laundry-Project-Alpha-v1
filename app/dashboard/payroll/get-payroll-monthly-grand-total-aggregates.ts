@@ -24,6 +24,7 @@ export async function getPayrollMonthlyGrandTotalAggregates(): Promise<MonthlyWo
             year: yearExpr,
             month: monthExpr,
             totalAmount: sql<number>`coalesce(sum(${payrollVoucherTable.grandTotal}), 0)::double precision`,
+            subTotalAmount: sql<number>`coalesce(sum(${payrollVoucherTable.subTotal}), 0)::double precision`,
         })
         .from(payrollTable)
         .innerJoin(
@@ -62,6 +63,7 @@ export async function getPayrollMonthlyGrandTotalAggregates(): Promise<MonthlyWo
             year: Number(r.year),
             month: Number(r.month),
             totalAmount: Number(r.totalAmount),
+            subTotalAmount: Number(r.subTotalAmount),
         })),
     };
 }

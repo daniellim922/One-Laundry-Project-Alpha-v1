@@ -36,6 +36,8 @@ import {
     type ChartConfig,
 } from "@/components/ui/chart";
 import { cn } from "@/lib/utils";
+import { EmploymentArrangementBulkSelect } from "@/components/dashboard/employment-arrangement-bulk-select";
+import { EmploymentTypeBulkSelect } from "@/components/dashboard/employment-type-bulk-select";
 import {
     MonthMultiSelectFilter,
     allMonthsSet,
@@ -83,6 +85,12 @@ export function getStackedRowTotalAmount(r: MonthlyWorkerAmountRow): number {
     return r.totalAmount;
 }
 
+export function getStackedRowSubTotalAmount(r: MonthlyWorkerAmountRow): number {
+    return r.subTotalAmount;
+}
+
+export type StackedAmountMetric = "grandTotal" | "subTotal";
+
 type WorkerMeta = {
     id: string;
     name: string;
@@ -95,28 +103,6 @@ function workerIsIncludedInChart(
     id: string,
 ): boolean {
     return checked[id] !== false;
-}
-
-function sliceBulkCheckboxState(
-    workers: WorkerMeta[],
-    checked: Record<string, boolean>,
-): boolean | "indeterminate" {
-    if (workers.length === 0) {
-        return false;
-    }
-    let onCount = 0;
-    for (const w of workers) {
-        if (workerIsIncludedInChart(checked, w.id)) {
-            onCount += 1;
-        }
-    }
-    if (onCount === workers.length) {
-        return true;
-    }
-    if (onCount === 0) {
-        return false;
-    }
-    return "indeterminate";
 }
 
 type ComboKey = "ft-foreign" | "ft-local" | "pt-foreign" | "pt-local";
@@ -240,14 +226,24 @@ export function MonthlyWorkerStackedAmountOverviewCard<
     defaultYear,
     yearOptions,
     copy,
+    amountMetricControl,
+    chartStackId,
 }: {
     rows: T[];
     getValue: (row: T) => number;
     defaultYear: number;
     yearOptions: number[];
     copy: MonthlyWorkerStackedAmountCopy;
+    /** When set, shows Grand Total vs Subtotal beside other filters (payroll). */
+    amountMetricControl?: {
+        value: StackedAmountMetric;
+        onChange: (m: StackedAmountMetric) => void;
+    };
+    /** Optional override for Recharts `stackId` when the metric changes (e.g. subTotal). */
+    chartStackId?: string;
 }) {
     const yAxisW = copy.yAxisWidth ?? 52;
+    const rechartsStackId = chartStackId ?? copy.stackId;
     const [selectedYear, setSelectedYear] = React.useState(defaultYear);
     const [selectedMonths, setSelectedMonths] = React.useState(() =>
         allMonthsSet(),
@@ -443,8 +439,8 @@ export function MonthlyWorkerStackedAmountOverviewCard<
     return (
         <Card className="h-[min(88vh,56rem)] min-h-144 max-h-[90vh]">
             <CardHeader className="shrink-0 space-y-4 pb-2">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between lg:gap-4">
+                    <div className="flex min-w-0 flex-1 flex-col gap-2">
                         <CardTitle className="text-lg font-semibold tracking-tight sm:text-xl">
                             {copy.title}
                         </CardTitle>
@@ -472,9 +468,42 @@ export function MonthlyWorkerStackedAmountOverviewCard<
                                 selected={selectedMonths}
                                 onChange={setSelectedMonths}
                             />
+                            <EmploymentTypeBulkSelect
+                                allWorkers={allWorkersInYear}
+                                checked={checked}
+                                onTypeBulkChange={setEmploymentTypeAllChecked}
+                            />
+                            <EmploymentArrangementBulkSelect
+                                allWorkers={allWorkersInYear}
+                                checked={checked}
+                                onArrangementBulkChange={setArrangementAllChecked}
+                            />
+                            {amountMetricControl ? (
+                                <Select
+                                    value={amountMetricControl.value}
+                                    onValueChange={(v) => {
+                                        amountMetricControl.onChange(
+                                            v as StackedAmountMetric,
+                                        );
+                                    }}>
+                                    <SelectTrigger
+                                        className="w-40"
+                                        aria-label="Amount basis for chart">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="grandTotal">
+                                            Grand Total
+                                        </SelectItem>
+                                        <SelectItem value="subTotal">
+                                            Subtotal
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            ) : null}
                         </div>
                     </div>
-                    <div className="w-full min-w-0 lg:max-w-sm">
+                    <div className="w-full min-w-0 shrink-0 lg:max-w-sm">
                         <Input
                             value={nameFilter}
                             onChange={(e) => setNameFilter(e.target.value)}
@@ -494,113 +523,14 @@ export function MonthlyWorkerStackedAmountOverviewCard<
                     )}>
                     <div
                         className={cn(
-                            "flex min-h-0 w-full max-w-full shrink-0 flex-col md:h-full md:max-h-full md:overflow-hidden md:w-56 2xl:w-80",
+                            "flex h-full min-h-0 w-full max-w-full shrink-0 flex-col overflow-hidden md:max-h-full md:w-56 2xl:w-80",
                         )}>
-                        <div className="space-y-6 shrink-0">
-                            <div className="space-y-3">
-                                <p className="text-sm font-medium">
-                                    Employment type
-                                </p>
-                                <div className="space-y-2">
-                                    {WORKER_EMPLOYMENT_TYPES.map((t) => {
-                                        const id = `${copy.idPrefix}-type-${t}`;
-                                        const inType = allWorkersInYear.filter(
-                                            (w) => w.employmentType === t,
-                                        );
-                                        const bulkState =
-                                            sliceBulkCheckboxState(
-                                                inType,
-                                                checked,
-                                            );
-                                        return (
-                                            <div
-                                                key={t}
-                                                className="flex items-center gap-2">
-                                                <Checkbox
-                                                    id={id}
-                                                    checked={bulkState}
-                                                    disabled={
-                                                        inType.length === 0
-                                                    }
-                                                    onCheckedChange={(v) => {
-                                                        if (
-                                                            v ===
-                                                            "indeterminate"
-                                                        ) {
-                                                            return;
-                                                        }
-                                                        setEmploymentTypeAllChecked(
-                                                            t,
-                                                            v === true,
-                                                        );
-                                                    }}
-                                                />
-                                                <Label
-                                                    htmlFor={id}
-                                                    className="text-sm font-normal">
-                                                    {t}
-                                                </Label>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                            <div className="space-y-3">
-                                <p className="text-sm font-medium">
-                                    Arrangement
-                                </p>
-                                <div className="space-y-2">
-                                    {WORKER_EMPLOYMENT_ARRANGEMENTS.map((a) => {
-                                        const id = `${copy.idPrefix}-arr-${a}`;
-                                        const inArr = allWorkersInYear.filter(
-                                            (w) =>
-                                                w.employmentArrangement === a,
-                                        );
-                                        const bulkState =
-                                            sliceBulkCheckboxState(
-                                                inArr,
-                                                checked,
-                                            );
-                                        return (
-                                            <div
-                                                key={a}
-                                                className="flex items-center gap-2">
-                                                <Checkbox
-                                                    id={id}
-                                                    checked={bulkState}
-                                                    disabled={
-                                                        inArr.length === 0
-                                                    }
-                                                    onCheckedChange={(v) => {
-                                                        if (
-                                                            v ===
-                                                            "indeterminate"
-                                                        ) {
-                                                            return;
-                                                        }
-                                                        setArrangementAllChecked(
-                                                            a,
-                                                            v === true,
-                                                        );
-                                                    }}
-                                                />
-                                                <Label
-                                                    htmlFor={id}
-                                                    className="text-sm font-normal">
-                                                    {a}
-                                                </Label>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        </div>
-                        <p className="text-muted-foreground mt-4 shrink-0 text-sm font-medium">
+                        <p className="text-muted-foreground shrink-0 text-sm font-medium">
                             Workers
                         </p>
                         <div
                             className={cn(
-                                "mt-3 flex min-h-48 flex-1 basis-0 flex-col gap-5 overflow-y-auto border-t pt-3 pr-1 md:min-h-0",
+                                "mt-2 flex min-h-48 flex-1 basis-0 flex-col gap-5 overflow-y-auto border-t pt-3 pr-1 md:min-h-0",
                             )}>
                             {listEmptyReason === "year" ? (
                                 <p className="text-muted-foreground text-sm">
@@ -706,7 +636,7 @@ export function MonthlyWorkerStackedAmountOverviewCard<
                                         <Bar
                                             key={w.id}
                                             dataKey={workerSeriesKey(w.id)}
-                                            stackId={copy.stackId}
+                                            stackId={rechartsStackId}
                                             isAnimationActive={false}
                                             fill={`var(--color-${workerSeriesKey(w.id)})`}
                                             radius={

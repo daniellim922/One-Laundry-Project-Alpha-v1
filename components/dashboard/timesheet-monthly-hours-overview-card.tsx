@@ -21,7 +21,7 @@ function getStackedRowTotalHours(r: TimesheetMonthlyHoursAggregateRow): number {
 const TIMESHEET_MONTHLY_HOURS_COPY = {
     title: "Monthly working hours",
     description:
-        "Total hours per month from timesheet entries (clock-in date), stacked by worker. Employment type and arrangement checkboxes select or clear all workers in that group; individual workers can be toggled separately. Only workers with timesheet rows in the selected year are listed.",
+        "Total hours per month from timesheet entries (clock-in date), stacked by worker. Employment type and arrangement in the top row bulk select or clear all workers in that group; individual workers can be toggled in the list. Only workers with timesheet rows in the selected year are listed.",
     emptyListYear: "No timesheet data for this year.",
     emptyListEmployment:
         "No workers match the selected employment filters.",

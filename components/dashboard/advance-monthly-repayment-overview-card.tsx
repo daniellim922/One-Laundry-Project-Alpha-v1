@@ -12,7 +12,7 @@ import type { AdvanceMonthlyRepaymentAggregateRow } from "@/types/advance-monthl
 const ADVANCE_MONTHLY_REPAYMENT_COPY = {
     title: "Monthly advance repayments",
     description:
-        "Repayment-term installment amounts (advance rows) with repayment in each month, stacked by worker. Not request totals. Employment type and arrangement checkboxes select or clear all workers in that group; individual workers can be toggled separately. Only workers with a repayment in the selected year are listed.",
+        "Repayment-term installment amounts (advance rows) with repayment in each month, stacked by worker. Not request totals. Employment type and arrangement in the top row bulk select or clear all workers in that group; individual workers can be toggled in the list. Only workers with a repayment in the selected year are listed.",
     emptyListYear: "No advance repayments for this year.",
     emptyListEmployment:
         "No workers match the selected employment filters.",
