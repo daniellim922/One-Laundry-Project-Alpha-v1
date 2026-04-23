@@ -708,6 +708,7 @@ function AdvanceRequestFormEditable({
                                                     size="icon"
                                                     disabled={
                                                         pending ||
+                                                        isPaidInstallment ||
                                                         fields.length === 1
                                                     }
                                                     aria-label="Remove this installment row"
