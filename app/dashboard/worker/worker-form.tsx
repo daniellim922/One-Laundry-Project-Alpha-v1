@@ -139,7 +139,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
 
-    const form = useForm<WorkerFormValues>({
+    const form = useForm<WorkerFormValues, undefined, WorkerUpsertValues>({
         resolver: zodResolver(workerUpsertSchema),
         defaultValues: getDefaultValues(worker),
         mode: "onTouched",

@@ -324,17 +324,17 @@ export function VoucherDetails({
                     <CardContent className="px-4 pt-1">
                         <div className="grid grid-cols-4 gap-4">
                             <Field
-                                label="Total Pay"
-                                value={money(voucher.totalPay)}
+                                label="Subtotal"
+                                value={money(voucher.subTotal)}
                             />
                             <Field label="CPF" value={money(voucher.cpf)} />
                             <Field
-                                label="Advance"
+                                label="Advance Pay"
                                 value={money(voucher.advance)}
                             />
                             <Field
-                                label="Net Pay"
-                                value={money(voucher.netPay)}
+                                label="Grand Total"
+                                value={money(voucher.grandTotal)}
                             />
                         </div>
                     </CardContent>

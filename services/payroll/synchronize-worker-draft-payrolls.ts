@@ -8,43 +8,14 @@ import { payrollTable } from "@/db/tables/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { workerTable } from "@/db/tables/workerTable";
-import { calculatePay } from "@/utils/payroll/payroll-utils";
 import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
 import { countPayrollPublicHolidays } from "@/services/payroll/public-holiday-payroll";
+import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll-voucher-values";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type PayrollSyncExecutor = Pick<typeof db, "select" | "update">;
 
 export type PayrollSyncResult = { success: true } | { error: string };
-
-function roundHours(n: number): number {
-    return Math.round(n * 100) / 100;
-}
-
-function roundMoney(n: number): number {
-    return Math.round(n * 100) / 100;
-}
-
-function clampHoursNotMet(hoursNotMet: number): number {
-    return hoursNotMet > 0 ? 0 : hoursNotMet;
-}
-
-function calcHoursNotMetDeduction(args: {
-    hoursNotMet: number | null;
-    hourlyRate: number | null;
-}): number {
-    const { hoursNotMet, hourlyRate } = args;
-    if (hoursNotMet == null || hoursNotMet === 0) return 0;
-    return -roundMoney(Math.max(0, -hoursNotMet) * (hourlyRate ?? 0));
-}
-
-function calcNetPay(args: {
-    totalPay: number;
-    cpf: number | null;
-    advance?: number | null;
-}): number {
-    return roundMoney(args.totalPay - (args.cpf ?? 0) - (args.advance ?? 0));
-}
 
 async function synchronizeWorkerDraftPayrollsWithExecutor(
     executor: PayrollSyncExecutor,
@@ -120,33 +91,6 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
                 executor,
             );
 
-            const payCalc = calculatePay({
-                employmentType: employment.employmentType,
-                totalHoursWorked,
-                minimumWorkingHours: employment.minimumWorkingHours,
-                monthlyPay: employment.monthlyPay,
-                hourlyRate: employment.hourlyRate,
-                restDayRate: employment.restDayRate,
-                restDays,
-                publicHolidays,
-            });
-
-            const hoursNotMet =
-                employment.minimumWorkingHours != null
-                    ? clampHoursNotMet(
-                          roundHours(
-                              totalHoursWorked - employment.minimumWorkingHours,
-                          ),
-                      )
-                    : null;
-            const hoursNotMetDeduction = calcHoursNotMetDeduction({
-                hoursNotMet,
-                hourlyRate: employment.hourlyRate,
-            });
-            const totalPay = roundMoney(
-                payCalc.totalPay + hoursNotMetDeduction,
-            );
-
             const advanceRows = await executor
                 .select({
                     amount: advanceTable.amount,
@@ -167,37 +111,17 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
             const advanceTotal = advanceRows
                 .filter((advance) => advance.status === "Installment Loan")
                 .reduce((sum, advance) => sum + advance.amount, 0);
-            const netPay = calcNetPay({
-                totalPay,
-                cpf: employment.cpf,
-                advance: advanceTotal,
+            const voucherValues = buildDraftPayrollVoucherValues({
+                employment,
+                totalHoursWorked,
+                restDays,
+                publicHolidays,
+                advanceTotal,
             });
-
             await executor
                 .update(payrollVoucherTable)
                 .set({
-                    employmentType: employment.employmentType,
-                    employmentArrangement: employment.employmentArrangement,
-                    monthlyPay: employment.monthlyPay,
-                    minimumWorkingHours: employment.minimumWorkingHours,
-                    totalHoursWorked,
-                    hoursNotMet,
-                    hoursNotMetDeduction,
-                    overtimeHours: payCalc.overtimeHours,
-                    hourlyRate: employment.hourlyRate,
-                    overtimePay: payCalc.overtimePay,
-                    restDayRate: employment.restDayRate,
-                    restDays,
-                    restDayPay: payCalc.restDayPay,
-                    publicHolidays,
-                    publicHolidayPay: payCalc.publicHolidayPay,
-                    cpf: employment.cpf,
-                    advance: advanceTotal,
-                    totalPay,
-                    netPay,
-                    paymentMethod: employment.paymentMethod,
-                    payNowPhone: employment.payNowPhone,
-                    bankAccountNumber: employment.bankAccountNumber,
+                    ...voucherValues,
                     updatedAt: new Date(),
                 })
                 .where(eq(payrollVoucherTable.id, payroll.payrollVoucherId));

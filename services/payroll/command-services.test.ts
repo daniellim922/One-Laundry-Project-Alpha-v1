@@ -197,8 +197,8 @@ describe("payroll command services", () => {
             expect.objectContaining({
                 restDays: 4,
                 publicHolidays: 1,
-                totalPay: expect.any(Number),
-                netPay: expect.any(Number),
+                subTotal: expect.any(Number),
+                grandTotal: expect.any(Number),
             }),
         );
     });

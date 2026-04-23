@@ -256,8 +256,8 @@ export function VoucherCalculation({
                 <Divider />
 
                 <Line
-                    label="Total Pay"
-                    amount={voucher.totalPay}
+                    label="Subtotal"
+                    amount={voucher.subTotal}
                     emphasis="subtotal"
                 />
 
@@ -312,7 +312,11 @@ export function VoucherCalculation({
 
                 <Divider double />
 
-                <Line label="Net Pay" amount={voucher.netPay} emphasis="total" />
+                <Line
+                    label="Grand Total"
+                    amount={voucher.grandTotal}
+                    emphasis="total"
+                />
         </div>
     );
 }

@@ -101,8 +101,8 @@ describe("refresh affected draft payrolls for public holiday year", () => {
             expect.objectContaining({
                 publicHolidays: 2,
                 publicHolidayPay: 50,
-                totalPay: 1205,
-                netPay: 1155,
+                subTotal: 1205,
+                grandTotal: 1155,
             }),
         );
         expect(updateWhere).toHaveBeenCalledTimes(1);

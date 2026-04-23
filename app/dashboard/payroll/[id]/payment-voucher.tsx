@@ -42,8 +42,8 @@ interface PaymentVoucherProps {
         publicHolidayPay: number | null;
         cpf: number | null;
         advance?: number | null;
-        totalPay: number | null;
-        netPay: number | null;
+        subTotal: number | null;
+        grandTotal: number | null;
         paymentMethod: string | null;
         payNowPhone?: string | null;
         bankAccountNumber?: string | null;
@@ -121,7 +121,7 @@ export function PaymentVoucher({
         });
     } else {
         earnings.push({
-            description: `Basic Salary for ${periodLabel}`,
+            description: "Monthly Pay",
             amount: voucher.monthlyPay ?? 0,
         });
 
@@ -195,10 +195,10 @@ export function PaymentVoucher({
         (sum, item) => sum + item.amount,
         0,
     );
-    const subtotalPay =
-        voucher.totalPay ?? grossPay + (hoursNotMetItem?.amount ?? 0);
-    const netPay =
-        voucher.netPay ?? voucher.totalPay ?? grossPay + totalDeductions;
+    const subTotal =
+        voucher.subTotal ?? grossPay + (hoursNotMetItem?.amount ?? 0);
+    const grandTotal =
+        voucher.grandTotal ?? voucher.subTotal ?? grossPay + totalDeductions;
 
     const baseMethod = voucher.paymentMethod ?? "Cheque / Cash / Bank Transfer";
     const paymentMethodDisplay =
@@ -331,7 +331,7 @@ export function PaymentVoucher({
                                 <TableCell
                                     className="border-l border-black py-2 pl-3 pr-3 text-right font-semibold"
                                     colSpan={2}>
-                                    ${currencyFmt.format(subtotalPay)}
+                                    ${currencyFmt.format(subTotal)}
                                 </TableCell>
                             </TableRow>
 
@@ -353,7 +353,7 @@ export function PaymentVoucher({
                                 <TableCell
                                     className="border-l border-black py-3 pl-3 pr-3 text-right text-base font-bold"
                                     colSpan={2}>
-                                    ${currencyFmt.format(netPay)}
+                                    ${currencyFmt.format(grandTotal)}
                                 </TableCell>
                             </TableRow>
                         </TableFooter>

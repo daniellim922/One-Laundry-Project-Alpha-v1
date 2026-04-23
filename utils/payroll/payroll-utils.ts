@@ -161,7 +161,7 @@ interface PayCalcResult {
     overtimePay: number;
     restDayPay: number;
     publicHolidayPay: number;
-    totalPay: number;
+    earningsTotal: number;
 }
 
 function roundMoney(n: number): number {
@@ -169,10 +169,10 @@ function roundMoney(n: number): number {
 }
 
 /**
- * Part-time:  totalPay = hourlyRate * totalHoursWorked
+ * Part-time:  earningsTotal = hourlyRate * totalHoursWorked
  * Full-time:  overtimePay = hourlyRate * overtimeHours
  *             restDayPay  = restDayRate * restDays
- *             totalPay    = monthlyPay + overtimePay + restDayPay + publicHolidayPay
+ *             earningsTotal = monthlyPay + overtimePay + restDayPay + publicHolidayPay
  */
 export function calculatePay(input: PayCalcInput): PayCalcResult {
     const {
@@ -195,21 +195,23 @@ export function calculatePay(input: PayCalcInput): PayCalcResult {
 
     if (employmentType === "Part Time") {
         const basePay = roundMoney((hourlyRate ?? 0) * totalHoursWorked);
-        const totalPay = roundMoney(basePay + publicHolidayPay);
+        const earningsTotal = roundMoney(basePay + publicHolidayPay);
         return {
             basePay,
             overtimeHours: 0,
             overtimePay: 0,
             restDayPay: 0,
             publicHolidayPay,
-            totalPay,
+            earningsTotal,
         };
     }
 
     const basePay = monthlyPay ?? 0;
     const overtimePay = roundMoney((hourlyRate ?? 0) * overtimeHours);
     const restDayPay = roundMoney((restDayRate ?? 0) * restDays);
-    const totalPay = roundMoney(basePay + overtimePay + restDayPay + publicHolidayPay);
+    const earningsTotal = roundMoney(
+        basePay + overtimePay + restDayPay + publicHolidayPay,
+    );
 
     return {
         basePay,
@@ -217,6 +219,6 @@ export function calculatePay(input: PayCalcInput): PayCalcResult {
         overtimePay,
         restDayPay,
         publicHolidayPay,
-        totalPay,
+        earningsTotal,
     };
 }

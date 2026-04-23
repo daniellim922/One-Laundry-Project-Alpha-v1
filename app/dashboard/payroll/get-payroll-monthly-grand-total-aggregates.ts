@@ -7,7 +7,7 @@ import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { workerTable } from "@/db/tables/workerTable";
 import type { MonthlyWorkerAmountAggregatesPayload } from "@/types/monthly-worker-amount-aggregates";
 
-export async function getPayrollMonthlyNetPayAggregates(): Promise<MonthlyWorkerAmountAggregatesPayload> {
+export async function getPayrollMonthlyGrandTotalAggregates(): Promise<MonthlyWorkerAmountAggregatesPayload> {
     const maxYear = new Date().getFullYear();
     const minYear = maxYear - 4;
     const yearOptions = Array.from({ length: 5 }, (_, i) => maxYear - i);
@@ -23,7 +23,7 @@ export async function getPayrollMonthlyNetPayAggregates(): Promise<MonthlyWorker
             employmentArrangement: employmentTable.employmentArrangement,
             year: yearExpr,
             month: monthExpr,
-            totalAmount: sql<number>`coalesce(sum(${payrollVoucherTable.netPay}), 0)::double precision`,
+            totalAmount: sql<number>`coalesce(sum(${payrollVoucherTable.grandTotal}), 0)::double precision`,
         })
         .from(payrollTable)
         .innerJoin(

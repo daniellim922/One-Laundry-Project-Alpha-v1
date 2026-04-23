@@ -89,8 +89,8 @@ describe("Payroll breakdown page", () => {
                 publicHolidayPay: 30,
                 cpf: 0,
                 advance: 0,
-                totalPay: 2045,
-                netPay: 2045,
+                subTotal: 2045,
+                grandTotal: 2045,
             },
             entries: [],
             missingDateIns: [],
@@ -115,5 +115,12 @@ describe("Payroll breakdown page", () => {
         expect(
             screen.getByText("From the shared public holiday calendar"),
         ).toBeTruthy();
+
+        expect(screen.getAllByText("Subtotal").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("Grand Total").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("Advance Pay").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("Monthly Pay").length).toBeGreaterThan(0);
+        expect(screen.queryByText("Total Pay")).toBeNull();
+        expect(screen.queryByText("Net Pay")).toBeNull();
     });
 });
