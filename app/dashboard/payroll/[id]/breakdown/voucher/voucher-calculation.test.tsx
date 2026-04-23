@@ -105,7 +105,7 @@ describe("VoucherCalculation", () => {
         expect(body).toContain("65.25 hrs x $6");
     });
 
-    it("hides Rest Day Pay and Public Holiday Pay when the amounts are zero", () => {
+    it("hides Rest-day premium and Public Holiday Pay when the amounts are zero", () => {
         render(
             <VoucherCalculation
                 payrollId="pay-1"
@@ -119,11 +119,11 @@ describe("VoucherCalculation", () => {
             />,
         );
 
-        expect(screen.queryByText("Rest Day Pay")).toBeNull();
+        expect(screen.queryByText("Rest-day premium")).toBeNull();
         expect(screen.queryByText("Public Holiday Pay")).toBeNull();
     });
 
-    it("shows Rest Day Pay and Public Holiday Pay when the amounts are non-zero", () => {
+    it("shows Rest-day premium and Public Holiday Pay when the amounts are non-zero", () => {
         render(
             <VoucherCalculation
                 payrollId="pay-1"
@@ -137,7 +137,7 @@ describe("VoucherCalculation", () => {
             />,
         );
 
-        expect(screen.getByText("Rest Day Pay")).toBeTruthy();
+        expect(screen.getByText("Rest-day premium")).toBeTruthy();
         expect(screen.getByText("Public Holiday Pay")).toBeTruthy();
     });
 });

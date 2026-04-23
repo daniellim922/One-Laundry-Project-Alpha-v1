@@ -6,7 +6,7 @@
 **Status:** Resolved  
 Employment exists as a separate table purely for normalization and ease of view. It is **not** a historical contract record. A Worker has exactly one current Employment. Rate changes mutate this record directly; Draft payrolls re-sync from it, while Settled payrolls remain frozen via voucher snapshots.
 
-### Rest day pay is premium for working on rest days
+### Rest-day premium is premium for working on rest days
 **Status:** Resolved  
 `restDays` on the voucher represents **rest days worked** (typically Sundays worked), inferred as the rest-day budget minus days with no timesheet entry (assumed rest days taken off). The UI allows manual override for edge cases such as 5-Sunday months. The hardcoded budget of 4 should eventually be replaced by dynamic counting of actual rest days in the pay period.
 

@@ -141,7 +141,7 @@ export function PaymentVoucher({
             voucher.restDayRate != null
         ) {
             earnings.push({
-                description: "Rest Day Pay",
+                description: "Rest-day premium",
                 qty: voucher.restDays,
                 unit: "day",
                 rate: voucher.restDayRate,

@@ -181,7 +181,7 @@ export function VoucherCalculation({
 
             {!isZeroish(voucher.restDayPay) && (
                 <Line
-                    label="Rest Day Pay"
+                    label="Rest-day premium"
                     sign="+"
                     amount={voucher.restDayPay}
                     creditGreen

@@ -148,7 +148,7 @@ export function VoucherDetails({
                             <VoucherEditableNumber
                                 payrollId={payrollId}
                                 voucherId={voucher.id}
-                                label="Rest Days"
+                                label="Rest days worked"
                                 field="restDays"
                                 restDays={voucher.restDays}
                                 publicHolidays={voucher.publicHolidays}

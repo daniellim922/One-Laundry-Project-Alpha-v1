@@ -122,7 +122,7 @@ describe("Payroll breakdown page", () => {
 
         expect(
             screen
-                .getByTestId("voucher-field-Rest Days")
+                .getByTestId("voucher-field-Rest days worked")
                 .getAttribute("data-read-only"),
         ).toBe("false");
         expect(
@@ -227,7 +227,7 @@ describe("Payroll breakdown page", () => {
         ).toBe("true");
         expect(
             screen
-                .getByTestId("voucher-field-Rest Days")
+                .getByTestId("voucher-field-Rest days worked")
                 .getAttribute("data-read-only"),
         ).toBe("true");
         expect(
