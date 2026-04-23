@@ -22,10 +22,11 @@ export function calculateVoucherAmounts(args: {
     hoursNotMet: number | null;
     hourlyRate: number | null;
 }) {
-    const hoursNotMetDeduction = calcHoursNotMetDeduction({
+    const rawDeduction = calcHoursNotMetDeduction({
         hoursNotMet: args.hoursNotMet,
         hourlyRate: args.hourlyRate,
     });
+    const hoursNotMetDeduction = Math.max(rawDeduction, -args.basePayTotal);
     const subTotal = roundMoney(args.basePayTotal + hoursNotMetDeduction);
     const grandTotal = roundMoney(
         subTotal - (args.cpf ?? 0) - (args.advance ?? 0),
