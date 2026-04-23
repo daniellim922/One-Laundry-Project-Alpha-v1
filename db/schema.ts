@@ -7,5 +7,6 @@ export * from "./tables/advanceRequestTable";
 export * from "./tables/advanceTable";
 export * from "./tables/payrollTable";
 export * from "./tables/payrollVoucherTable";
+export * from "./tables/payrollVoucherCounterTable";
 export * from "./tables/publicHolidayTable";
 export * from "./tables/expensesTable";
