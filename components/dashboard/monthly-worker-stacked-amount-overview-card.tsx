@@ -81,8 +81,8 @@ export type MonthlyWorkerStackedAmountCopy = {
     yAxisWidth?: number;
 };
 
-export function getStackedRowTotalAmount(r: MonthlyWorkerAmountRow): number {
-    return r.totalAmount;
+export function getStackedRowGrandTotalAmount(r: MonthlyWorkerAmountRow): number {
+    return r.grandTotalAmount;
 }
 
 export function getStackedRowSubTotalAmount(r: MonthlyWorkerAmountRow): number {

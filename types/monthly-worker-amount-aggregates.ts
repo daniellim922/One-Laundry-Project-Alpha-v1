@@ -10,8 +10,8 @@ export type MonthlyWorkerAmountRow = {
     employmentArrangement: WorkerEmploymentArrangement;
     year: number;
     month: number;
-    /** Voucher grand total (payroll) or the primary amount (advance). */
-    totalAmount: number;
+    /** Voucher grand total (payroll) or summed repayment amounts (advance). */
+    grandTotalAmount: number;
     /**
      * Subtotal for payroll vouchers. Zero when the row is not from payroll
      * (e.g. advance repayments).

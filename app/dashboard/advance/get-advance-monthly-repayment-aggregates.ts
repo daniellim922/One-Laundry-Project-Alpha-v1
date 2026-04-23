@@ -23,7 +23,7 @@ export async function getAdvanceMonthlyRepaymentAggregates(): Promise<MonthlyWor
             employmentArrangement: employmentTable.employmentArrangement,
             year: yearExpr,
             month: monthExpr,
-            totalAmount: sql<number>`coalesce(sum(${advanceTable.amount}), 0)::double precision`,
+            grandTotalAmount: sql<number>`coalesce(sum(${advanceTable.amount}), 0)::double precision`,
         })
         .from(advanceTable)
         .innerJoin(
@@ -61,7 +61,7 @@ export async function getAdvanceMonthlyRepaymentAggregates(): Promise<MonthlyWor
             employmentArrangement: r.employmentArrangement,
             year: Number(r.year),
             month: Number(r.month),
-            totalAmount: Number(r.totalAmount),
+            grandTotalAmount: Number(r.grandTotalAmount),
             subTotalAmount: 0,
         })),
     };

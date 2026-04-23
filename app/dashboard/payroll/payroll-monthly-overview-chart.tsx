@@ -3,8 +3,8 @@
 import * as React from "react";
 
 import {
+    getStackedRowGrandTotalAmount,
     getStackedRowSubTotalAmount,
-    getStackedRowTotalAmount,
     MonthlyWorkerStackedAmountOverviewCard,
     type MonthlyWorkerStackedAmountCopy,
     type StackedAmountMetric,
@@ -28,7 +28,7 @@ export function PayrollMonthlyOverviewChart({
     const getValue = React.useCallback(
         (r: MonthlyWorkerAmountRow) =>
             amountMetric === "grandTotal"
-                ? getStackedRowTotalAmount(r)
+                ? getStackedRowGrandTotalAmount(r)
                 : getStackedRowSubTotalAmount(r),
         [amountMetric],
     );

@@ -2,7 +2,7 @@
 
 import {
     formatStackedChartCurrency,
-    getStackedRowTotalAmount,
+    getStackedRowGrandTotalAmount,
     MonthlyWorkerStackedAmountOverviewCard,
     type MonthlyWorkerStackedAmountCopy,
 } from "@/components/dashboard/monthly-worker-stacked-amount-overview-card";
@@ -39,7 +39,7 @@ export function AdvanceMonthlyRepaymentOverviewCard({
     return (
         <MonthlyWorkerStackedAmountOverviewCard
             rows={rows}
-            getValue={getStackedRowTotalAmount}
+            getValue={getStackedRowGrandTotalAmount}
             defaultYear={defaultYear}
             yearOptions={yearOptions}
             copy={ADVANCE_MONTHLY_REPAYMENT_COPY}
