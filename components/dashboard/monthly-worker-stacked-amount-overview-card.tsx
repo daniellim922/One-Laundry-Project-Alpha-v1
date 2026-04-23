@@ -81,7 +81,9 @@ export type MonthlyWorkerStackedAmountCopy = {
     yAxisWidth?: number;
 };
 
-export function getStackedRowGrandTotalAmount(r: MonthlyWorkerAmountRow): number {
+export function getStackedRowGrandTotalAmount(
+    r: MonthlyWorkerAmountRow,
+): number {
     return r.grandTotalAmount;
 }
 
@@ -155,6 +157,11 @@ const currencyCompactFmt = new Intl.NumberFormat("en-US", {
 
 export function formatStackedChartCurrency(n: number): string {
     return `$${currencyCompactFmt.format(n)}`;
+}
+
+/** Y-axis ticks: whole dollars, rounded up (no fractional display). */
+export function formatStackedChartYAxisTick(n: number): string {
+    return formatStackedChartCurrency(Math.ceil(n));
 }
 
 function workerSeriesKey(workerId: string): string {
@@ -242,7 +249,7 @@ export function MonthlyWorkerStackedAmountOverviewCard<
     /** Optional override for Recharts `stackId` when the metric changes (e.g. subTotal). */
     chartStackId?: string;
 }) {
-    const yAxisW = copy.yAxisWidth ?? 52;
+    const yAxisW = copy.yAxisWidth ?? 70;
     const rechartsStackId = chartStackId ?? copy.stackId;
     const [selectedYear, setSelectedYear] = React.useState(defaultYear);
     const [selectedMonths, setSelectedMonths] = React.useState(() =>
@@ -370,6 +377,33 @@ export function MonthlyWorkerStackedAmountOverviewCard<
         return map;
     }, [rows, selectedYear, getValue]);
 
+    /** Workers matching the name search only (ignore checkbox state) — full-stack max per month for Y scale. */
+    const workersInScopeForYAxis = React.useMemo(() => {
+        if (!normalizedFilter) {
+            return allWorkersInYear;
+        }
+        return allWorkersInYear.filter((w) =>
+            w.name.toLowerCase().includes(normalizedFilter),
+        );
+    }, [allWorkersInYear, normalizedFilter]);
+
+    const yAxisDomainUpper = React.useMemo(() => {
+        let max = 0;
+        for (const monthNum of selectedMonths) {
+            let monthSum = 0;
+            for (const w of workersInScopeForYAxis) {
+                monthSum += valueByWorkerMonth.get(`${w.id}-${monthNum}`) ?? 0;
+            }
+            if (monthSum > max) {
+                max = monthSum;
+            }
+        }
+        if (max <= 0) {
+            return 1;
+        }
+        return Math.max(1, Math.ceil(max * 1.08));
+    }, [valueByWorkerMonth, selectedMonths, workersInScopeForYAxis]);
+
     const chartData = React.useMemo((): MonthChartPoint[] => {
         return MONTH_SHORT.map((label, i) => {
             const month = i + 1;
@@ -476,7 +510,9 @@ export function MonthlyWorkerStackedAmountOverviewCard<
                             <EmploymentArrangementBulkSelect
                                 allWorkers={allWorkersInYear}
                                 checked={checked}
-                                onArrangementBulkChange={setArrangementAllChecked}
+                                onArrangementBulkChange={
+                                    setArrangementAllChecked
+                                }
                             />
                             {amountMetricControl ? (
                                 <Select
@@ -605,10 +641,10 @@ export function MonthlyWorkerStackedAmountOverviewCard<
                                     accessibilityLayer
                                     data={chartData}
                                     margin={{
-                                        top: 36,
-                                        right: 8,
-                                        left: 0,
-                                        bottom: 0,
+                                        top: 44,
+                                        right: 20,
+                                        left: 4,
+                                        bottom: 8,
                                     }}>
                                     <CartesianGrid vertical={false} />
                                     <XAxis
@@ -619,13 +655,14 @@ export function MonthlyWorkerStackedAmountOverviewCard<
                                         tickMargin={8}
                                     />
                                     <YAxis
+                                        domain={[0, yAxisDomainUpper]}
                                         tickLine={false}
                                         axisLine={false}
                                         width={yAxisW}
                                         tick={AXIS_TICK}
                                         tickFormatter={(v) =>
                                             typeof v === "number"
-                                                ? copy.formatValue(v)
+                                                ? copy.formatValue(Math.ceil(v))
                                                 : String(v)
                                         }
                                     />
@@ -637,7 +674,9 @@ export function MonthlyWorkerStackedAmountOverviewCard<
                                             key={w.id}
                                             dataKey={workerSeriesKey(w.id)}
                                             stackId={rechartsStackId}
-                                            isAnimationActive={false}
+                                            isAnimationActive
+                                            animationDuration={300}
+                                            animationEasing="ease-in-out"
                                             fill={`var(--color-${workerSeriesKey(w.id)})`}
                                             radius={
                                                 i === chartWorkers.length - 1
