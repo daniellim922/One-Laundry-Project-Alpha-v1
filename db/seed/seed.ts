@@ -32,6 +32,7 @@ import { workers } from "@/db/seed/workers";
 import { timesheets } from "./timesheet";
 import { advances } from "./advances";
 import { payrolls } from "./payrolls";
+import { seedPublicHolidays } from "./public-holidays";
 import { SEED_TIMESTAMP } from "./constants";
 
 type SplitWorkerSeed = {
@@ -195,6 +196,9 @@ async function seed() {
         .values(workerInserts)
         .returning();
     console.log("New workers and employments created!");
+
+    await seedPublicHolidays();
+    console.log("New public holidays created!");
 
     await seedTimesheets(insertedWorkers);
     console.log("New timesheet entries created!");
