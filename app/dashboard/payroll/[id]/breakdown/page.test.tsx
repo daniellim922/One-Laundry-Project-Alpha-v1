@@ -116,12 +116,10 @@ describe("Payroll breakdown page", () => {
             screen.getByText("From the shared public holiday calendar"),
         ).toBeTruthy();
 
-        expect(screen.getByText("Subtotal")).toBeTruthy();
-        expect(screen.getByText("Grand Total")).toBeTruthy();
-        expect(screen.getByText("Advance Pay")).toBeTruthy();
-        expect(
-            screen.getByText("Monthly Pay and additions before subtotal"),
-        ).toBeTruthy();
+        expect(screen.getAllByText("Subtotal").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("Grand Total").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("Advance Pay").length).toBeGreaterThan(0);
+        expect(screen.getAllByText("Monthly Pay").length).toBeGreaterThan(0);
         expect(screen.queryByText("Total Pay")).toBeNull();
         expect(screen.queryByText("Net Pay")).toBeNull();
     });

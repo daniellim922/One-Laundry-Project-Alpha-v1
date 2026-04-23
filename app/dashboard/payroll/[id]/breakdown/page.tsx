@@ -1,10 +1,6 @@
 import Link from "next/link";
 import { Eye, MoreHorizontal, Pencil } from "lucide-react";
 
-import {
-    formatPayrollAdvanceDate,
-    payrollAdvanceStatusBadgeClass,
-} from "./payroll-advance-display";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -24,15 +20,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { TimesheetPaymentStatus } from "@/types/status";
 import { timesheetPaymentStatusBadgeTone } from "@/types/badge-tones";
-import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
+import {
+    formatEnGbDmyNumeric,
+    formatEnGbDmyNumericFromCalendar,
+} from "@/utils/time/intl-en-gb";
 import { localTimeHm } from "@/utils/time/local-time";
-import { cn } from "@/lib/utils";
 import { getPayrollDetailData } from "../payroll-detail-data";
 import { PayrollHeader } from "../payroll-header";
 import { PayrollStepProgress } from "../payroll-step-progress";
-import { VoucherEditableNumber } from "../voucher-editable-number";
 import { Badge } from "@/components/ui/badge";
 import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
+import { VoucherHero } from "./voucher/voucher-hero";
+import { VoucherSummaryRow } from "./voucher/voucher-summary-row";
+import { VoucherCalculation } from "./voucher/voucher-calculation";
+import { VoucherDetails } from "./voucher/voucher-details";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -40,11 +41,6 @@ interface PageProps {
 
 const formatDate = formatEnGbDmyNumericFromCalendar;
 const formatTime = localTimeHm;
-
-function formatCurrencyAmount(value: number | null | undefined) {
-    if (value == null) return "–";
-    return value < 0 ? `-$${Math.abs(value)}` : `$${value}`;
-}
 
 export default async function PayrollBreakdownPage({ params }: PageProps) {
     const { id } = await params;
@@ -63,17 +59,9 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
         periodEnd: payroll.periodEnd,
         presentDateInKeys: entries.map((e) => e.dateIn),
     });
-    const voucherRestDaysForCompare = voucher.restDays ?? 0;
-    const restDaysDifferFromAttendance =
-        voucherRestDaysForCompare !== attendanceRestDays;
-    const earningsTotal =
-        voucher.subTotal != null
-            ? voucher.subTotal - (voucher.hoursNotMetDeduction ?? 0)
-            : null;
-    const earningsContext =
-        voucher.employmentType === "Part Time"
-            ? "Basic Pay and additions before subtotal"
-            : "Monthly Pay and additions before subtotal";
+
+    const todayDmy = formatEnGbDmyNumeric(new Date());
+    const payrollDateDmy = formatEnGbDmyNumericFromCalendar(payroll.payrollDate);
 
     return (
         <div className="space-y-6">
@@ -91,7 +79,9 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
             <section className="space-y-6 min-h-[calc(100vh-10rem)] print:hidden">
                 <Card className="print:hidden">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0">
-                        <CardTitle>Employment breakdown</CardTitle>
+                        <CardTitle>
+                            Worker Employment Breakdown as of {todayDmy}
+                        </CardTitle>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button
@@ -219,425 +209,30 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
 
                 <Card className="print:hidden">
                     <CardHeader>
-                        <CardTitle>Payroll Voucher</CardTitle>
+                        <CardTitle>
+                            Payroll Voucher Breakdown as of {payrollDateDmy}
+                        </CardTitle>
                         <p className="text-muted-foreground text-sm">
                             Snapshot of employment terms at payroll generation
                         </p>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <Card className="border bg-muted/10 gap-2 py-3">
-                            <CardHeader className="px-4 pb-0">
-                                <CardTitle className="text-sm font-semibold">
-                                    Employment & Payment
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="px-4 pt-1">
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            Employment Type
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {voucher.employmentType ?? "–"}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            Employment Arrangement
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {voucher.employmentArrangement ??
-                                                "–"}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            Payment Method
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {voucher.paymentMethod ?? "–"}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            {voucher.paymentMethod === "PayNow"
-                                                ? "PayNow"
-                                                : voucher.paymentMethod ===
-                                                    "Bank Transfer"
-                                                  ? "Bank Account"
-                                                  : "PayNow/Bank Account"}
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {voucher.paymentMethod === "PayNow"
-                                                ? (voucher.payNowPhone ?? "–")
-                                                : voucher.paymentMethod ===
-                                                    "Bank Transfer"
-                                                  ? (voucher.bankAccountNumber ??
-                                                    "–")
-                                                  : (voucher.payNowPhone ??
-                                                    voucher.bankAccountNumber ??
-                                                    "–")}
-                                        </p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border bg-muted/10 gap-2 py-3">
-                            <CardHeader className="px-4 pb-0">
-                                <CardTitle className="text-sm font-semibold">
-                                    Pay Rates
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="px-4 pt-1">
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            Monthly Pay
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {voucher.monthlyPay != null
-                                                ? `$${voucher.monthlyPay}`
-                                                : "–"}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            Hourly Rate
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {voucher.hourlyRate != null
-                                                ? `$${voucher.hourlyRate}`
-                                                : "–"}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1 md:col-span-2">
-                                        <p className="text-sm text-muted-foreground">
-                                            Rest Day Rate
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {voucher.restDayRate != null
-                                                ? `$${voucher.restDayRate}`
-                                                : "–"}
-                                        </p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border bg-muted/10 gap-2 py-3">
-                            <CardHeader className="px-4 pb-0">
-                                <CardTitle className="text-sm font-semibold">
-                                    Hours & Overtime
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="px-4 pt-1">
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                                    <div className="space-y-1 md:col-span-2">
-                                        <p className="text-sm text-muted-foreground">
-                                            Total Hours Worked
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {voucher.totalHoursWorked ?? "–"}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1 md:col-span-2">
-                                        <p className="text-sm text-muted-foreground">
-                                            Minimum Working Hours
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {voucher.minimumWorkingHours ?? "–"}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            Hours Not Met
-                                        </p>
-                                        <p
-                                            className={cn(
-                                                "text-sm font-medium",
-                                                voucher.hoursNotMet != null &&
-                                                    Number(
-                                                        voucher.hoursNotMet,
-                                                    ) !== 0 &&
-                                                    "text-red-600",
-                                            )}>
-                                            {voucher.hoursNotMet ?? "–"}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            Hours Not Met Deduction
-                                        </p>
-                                        <p
-                                            className={cn(
-                                                "text-sm font-medium",
-                                                voucher.hoursNotMetDeduction !=
-                                                    null &&
-                                                    Number(
-                                                        voucher.hoursNotMetDeduction,
-                                                    ) !== 0 &&
-                                                    "text-red-600",
-                                            )}>
-                                            {voucher.hoursNotMetDeduction !=
-                                            null
-                                                ? voucher.hoursNotMetDeduction <
-                                                  0
-                                                    ? `-$${Math.abs(voucher.hoursNotMetDeduction)}`
-                                                    : `$${voucher.hoursNotMetDeduction}`
-                                                : "–"}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            Overtime Hours
-                                        </p>
-                                        <p
-                                            className={cn(
-                                                "text-sm font-medium",
-                                                voucher.overtimeHours != null &&
-                                                    Number(
-                                                        voucher.overtimeHours,
-                                                    ) !== 0 &&
-                                                    "text-emerald-600",
-                                            )}>
-                                            {voucher.overtimeHours ?? "–"}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            Overtime Pay
-                                        </p>
-                                        <p
-                                            className={cn(
-                                                "text-sm font-medium",
-                                                voucher.overtimePay != null &&
-                                                    Number(
-                                                        voucher.overtimePay,
-                                                    ) !== 0 &&
-                                                    "text-emerald-600",
-                                            )}>
-                                            {voucher.overtimePay != null
-                                                ? `$${voucher.overtimePay}`
-                                                : "–"}
-                                        </p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border bg-muted/10 gap-2 py-3">
-                            <CardHeader className="px-4 pb-0">
-                                <CardTitle className="text-sm font-semibold">
-                                    Rest Days & Holidays
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="px-4 pt-1">
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                                    <div className="space-y-1">
-                                        <VoucherEditableNumber
-                                            payrollId={payroll.id}
-                                            voucherId={voucher.id}
-                                            label="Rest Days"
-                                            field="restDays"
-                                            restDays={voucher.restDays}
-                                            publicHolidays={voucher.publicHolidays}
-                                            readOnly={payroll.status !== "Draft"}
-                                        />
-                                        <p className="text-xs text-muted-foreground">
-                                            From attendance: {attendanceRestDays}
-                                            {restDaysDifferFromAttendance ? (
-                                                <span className="block mt-1 text-muted-foreground/90">
-                                                    Voucher differs from this figure
-                                                    (manual adjustment).
-                                                </span>
-                                            ) : null}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            Rest Day Pay
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {voucher.restDayPay != null
-                                                ? `$${voucher.restDayPay}`
-                                                : "–"}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <div className="flex items-center gap-2">
-                                            <p className="text-sm text-muted-foreground">
-                                                Public Holidays
-                                            </p>
-                                            <Badge variant="secondary">
-                                                Computed
-                                            </Badge>
-                                        </div>
-                                        <p className="text-sm font-medium">
-                                            {voucher.publicHolidays ?? 0}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            From the shared public holiday calendar
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            Public Holiday Pay
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {voucher.publicHolidayPay != null
-                                                ? `$${voucher.publicHolidayPay}`
-                                                : "–"}
-                                        </p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border bg-muted/10 gap-2 py-3">
-                            <CardHeader className="px-4 pb-0">
-                                <CardTitle className="text-sm font-semibold">
-                                    Advances
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="px-4 pt-1">
-                                {advances.length === 0 ? (
-                                    <p className="text-muted-foreground text-sm">
-                                        No advances due in this period.
-                                    </p>
-                                ) : (
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>
-                                                    Repayment Date
-                                                </TableHead>
-                                                <TableHead>Amount</TableHead>
-                                                <TableHead>Status</TableHead>
-                                                <TableHead>
-                                                    Advance Request
-                                                </TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {advances.map((adv) => (
-                                                <TableRow key={adv.id}>
-                                                    <TableCell>
-                                                        {adv.repaymentDate
-                                                            ? formatPayrollAdvanceDate(
-                                                                  adv.repaymentDate,
-                                                              )
-                                                            : "–"}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {`$${adv.amount}`}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <span
-                                                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                                                                payrollAdvanceStatusBadgeClass[
-                                                                    adv.status
-                                                                ] ?? ""
-                                                            }`}>
-                                                            {adv.status}
-                                                        </span>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Link
-                                                            href={`/dashboard/advance/${adv.advanceRequestId}`}
-                                                            className="text-primary text-sm underline-offset-4 hover:underline">
-                                                            View
-                                                        </Link>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        <Card className="border bg-muted/10 gap-2 py-3">
-                            <CardHeader className="px-4 pb-0">
-                                <CardTitle className="text-sm font-semibold">
-                                    Totals
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="px-4 pt-1">
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                                    <div className="space-y-1 md:col-span-2 xl:col-span-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            Earnings
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {formatCurrencyAmount(
-                                                earningsTotal,
-                                            )}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {earningsContext}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            Hours Not Met Deduction
-                                        </p>
-                                        <p
-                                            className={cn(
-                                                "text-sm font-medium",
-                                                voucher.hoursNotMetDeduction !=
-                                                    null &&
-                                                    Number(
-                                                        voucher.hoursNotMetDeduction,
-                                                    ) !== 0 &&
-                                                    "text-red-600",
-                                            )}>
-                                            {formatCurrencyAmount(
-                                                voucher.hoursNotMetDeduction,
-                                            )}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            Subtotal
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {formatCurrencyAmount(
-                                                voucher.subTotal,
-                                            )}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            CPF
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {formatCurrencyAmount(voucher.cpf)}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            Advance Pay
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {formatCurrencyAmount(
-                                                voucher.advance,
-                                            )}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-sm text-muted-foreground">
-                                            Grand Total
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                            {formatCurrencyAmount(
-                                                voucher.grandTotal,
-                                            )}
-                                        </p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                        <VoucherHero voucher={voucher} />
+                        <VoucherSummaryRow voucher={voucher} />
+                        <VoucherCalculation
+                            payrollId={payroll.id}
+                            payrollStatus={payroll.status}
+                            voucher={voucher}
+                            advances={advances}
+                            attendanceRestDays={attendanceRestDays}
+                        />
+                        <VoucherDetails
+                            payrollId={payroll.id}
+                            payrollStatus={payroll.status}
+                            voucher={voucher}
+                            advances={advances}
+                            attendanceRestDays={attendanceRestDays}
+                        />
                     </CardContent>
                 </Card>
 
