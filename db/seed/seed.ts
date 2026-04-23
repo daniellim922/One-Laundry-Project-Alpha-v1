@@ -176,7 +176,9 @@ async function seedPayrolls(insertedWorkers: { id: string }[]): Promise<void> {
     }
 }
 
-async function seed() {
+export async function seedWorkersAndHolidays(): Promise<
+    { id: string; name: string }[]
+> {
     // Normalize workers into employment + worker props
     const split = workers.map(splitWorkerSeed);
     const employmentInserts = split.map((s) => s.employment);
@@ -200,6 +202,12 @@ async function seed() {
     await seedPublicHolidays();
     console.log("New public holidays created!");
 
+    return insertedWorkers;
+}
+
+async function seed() {
+    const insertedWorkers = await seedWorkersAndHolidays();
+
     await seedTimesheets(insertedWorkers);
     console.log("New timesheet entries created!");
 
@@ -215,8 +223,13 @@ async function main() {
     process.exit(0);
 }
 
-void main().catch((error: unknown) => {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error(message);
-    process.exit(1);
-});
+const isMainModule =
+    import.meta.url === `file://${process.argv[1] ?? ""}`;
+
+if (isMainModule) {
+    void main().catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(message);
+        process.exit(1);
+    });
+}
