@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
-    REST_DAY_DEFAULT_BUDGET,
     computeRestDaysForPayrollPeriod,
     countMissingTimesheetDateIns,
+    countSundaysInPeriod,
     listMissingTimesheetDateIns,
     restDaysFromMissingDateCount,
     timesheetDateInKey,
@@ -67,50 +67,111 @@ describe("listMissingTimesheetDateIns / countMissingTimesheetDateIns", () => {
     });
 });
 
+describe("countSundaysInPeriod", () => {
+    it("counts 4 Sundays in February 2025", () => {
+        expect(
+            countSundaysInPeriod({
+                periodStart: "2025-02-01",
+                periodEnd: "2025-02-28",
+            }),
+        ).toBe(4);
+    });
+
+    it("counts 5 Sundays in March 2025", () => {
+        expect(
+            countSundaysInPeriod({
+                periodStart: "2025-03-01",
+                periodEnd: "2025-03-31",
+            }),
+        ).toBe(5);
+    });
+
+    it("counts only Sundays within a partial period (mid-month hire)", () => {
+        expect(
+            countSundaysInPeriod({
+                periodStart: "2025-02-15",
+                periodEnd: "2025-02-28",
+            }),
+        ).toBe(2);
+    });
+
+    it("returns 0 when the period contains no Sundays", () => {
+        expect(
+            countSundaysInPeriod({
+                periodStart: "2025-01-06",
+                periodEnd: "2025-01-08",
+            }),
+        ).toBe(0);
+    });
+});
+
 describe("restDaysFromMissingDateCount", () => {
-    it("uses REST_DAY_DEFAULT_BUDGET minus missing count, floored at zero, capped at budget", () => {
-        expect(REST_DAY_DEFAULT_BUDGET).toBe(4);
-        expect(restDaysFromMissingDateCount(0)).toBe(4);
-        expect(restDaysFromMissingDateCount(1)).toBe(3);
-        expect(restDaysFromMissingDateCount(2)).toBe(2);
-        expect(restDaysFromMissingDateCount(3)).toBe(1);
-        expect(restDaysFromMissingDateCount(4)).toBe(0);
-        expect(restDaysFromMissingDateCount(5)).toBe(0);
+    it("uses budget minus missing count, floored at zero, capped at budget", () => {
+        expect(restDaysFromMissingDateCount(0, 4)).toBe(4);
+        expect(restDaysFromMissingDateCount(1, 4)).toBe(3);
+        expect(restDaysFromMissingDateCount(2, 4)).toBe(2);
+        expect(restDaysFromMissingDateCount(3, 4)).toBe(1);
+        expect(restDaysFromMissingDateCount(4, 4)).toBe(0);
+        expect(restDaysFromMissingDateCount(5, 4)).toBe(0);
+    });
+
+    it("adapts to a dynamic budget of 5", () => {
+        expect(restDaysFromMissingDateCount(0, 5)).toBe(5);
+        expect(restDaysFromMissingDateCount(5, 5)).toBe(0);
+        expect(restDaysFromMissingDateCount(6, 5)).toBe(0);
+    });
+
+    it("returns 0 for any missing count when budget is 0", () => {
+        expect(restDaysFromMissingDateCount(0, 0)).toBe(0);
+        expect(restDaysFromMissingDateCount(3, 0)).toBe(0);
     });
 });
 
 describe("computeRestDaysForPayrollPeriod", () => {
-    it("matches countMissingTimesheetDateIns then restDaysFromMissingDateCount", () => {
+    it("returns full dynamic budget when every calendar day has a clock-in", () => {
         const args = {
-            periodStart: "2026-03-01",
-            periodEnd: "2026-03-07",
-            presentDateInKeys: ["2026-03-01", "2026-03-02", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-06", "2026-03-07"],
+            periodStart: "2025-02-01",
+            periodEnd: "2025-02-28",
+            presentDateInKeys: Array.from({ length: 28 }, (_, i) =>
+                `2025-02-${String(i + 1).padStart(2, "0")}`,
+            ),
         };
-        const missing = countMissingTimesheetDateIns(args);
-        expect(computeRestDaysForPayrollPeriod(args)).toBe(
-            restDaysFromMissingDateCount(missing),
-        );
-        expect(missing).toBe(0);
         expect(computeRestDaysForPayrollPeriod(args)).toBe(4);
     });
 
-    it("returns zero rest days when missing count meets or exceeds budget", () => {
+    it("returns zero rest days when all days are missing", () => {
         expect(
             computeRestDaysForPayrollPeriod({
-                periodStart: "2026-03-01",
-                periodEnd: "2026-03-07",
+                periodStart: "2025-02-01",
+                periodEnd: "2025-02-28",
                 presentDateInKeys: [],
             }),
         ).toBe(0);
     });
 
-    it("returns intermediate values for partial attendance", () => {
+    it("returns the dynamic budget minus missing count for partial attendance", () => {
+        // February 2025 has 4 Sundays. Worker present every day except 2 non-Sundays.
+        const presentDateInKeys = Array.from({ length: 28 }, (_, i) =>
+            `2025-02-${String(i + 1).padStart(2, "0")}`,
+        ).filter((d) => d !== "2025-02-03" && d !== "2025-02-04");
         expect(
             computeRestDaysForPayrollPeriod({
-                periodStart: "2026-03-01",
-                periodEnd: "2026-03-04",
-                presentDateInKeys: ["2026-03-01", "2026-03-02"],
+                periodStart: "2025-02-01",
+                periodEnd: "2025-02-28",
+                presentDateInKeys,
             }),
         ).toBe(2);
+    });
+
+    it("scales to a 5-Sunday month", () => {
+        // March 2025 has 5 Sundays. Full attendance → 5 rest days.
+        const args = {
+            periodStart: "2025-03-01",
+            periodEnd: "2025-03-31",
+            presentDateInKeys: Array.from({ length: 31 }, (_, i) =>
+                `2025-03-${String(i + 1).padStart(2, "0")}`,
+            ),
+        };
+        expect(computeRestDaysForPayrollPeriod(args)).toBe(5);
     });
 });
