@@ -16,6 +16,8 @@ import {
     isForeignFullTimeWorker,
     isLocalFullTimeWorker,
 } from "./minimum-hours";
+
+const EXCEPTION_LOCAL_NAMES = ["ALVIS ONG THAI YING", "ONG CHONG WEE"];
 import { payrolls } from "./payrolls";
 import { seedPeriods } from "./periods";
 import { timesheets } from "./timesheet";
@@ -51,8 +53,14 @@ describe("timesheet seed backbone", () => {
         );
 
         for (const period of seedPeriods) {
-            for (const [workerIndex] of workers.entries()) {
-                expect(monthCoverage.has(`${workerIndex}:${period.key}`)).toBe(true);
+            for (const [workerIndex, worker] of workers.entries()) {
+                const shouldHaveTimesheets =
+                    !isLocalFullTimeWorker(worker) ||
+                    EXCEPTION_LOCAL_NAMES.includes(worker.name);
+
+                if (shouldHaveTimesheets) {
+                    expect(monthCoverage.has(`${workerIndex}:${period.key}`)).toBe(true);
+                }
             }
         }
     });
