@@ -10,7 +10,7 @@
         "lint": "eslint",
         "typecheck": "tsc --noEmit",
         "db:wipe": "npx tsx db/wipe-db.ts",
-        "db:migrate": "npx drizzle-kit push",
+        "db:migrate": "npx drizzle-kit push && npx tsx db/apply-custom-schema.ts",
         "db:seed": "npx tsx db/seed/seed.ts",
         "db:reset": "npm run db:wipe && npm run db:migrate && npm run db:seed",
         "test": "npm run test:unit && npm run test:e2e",
