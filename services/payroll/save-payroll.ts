@@ -15,6 +15,7 @@ import {
 import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
 import { countPayrollPublicHolidays } from "@/services/payroll/public-holiday-payroll";
 import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll-voucher-values";
+import { assertWorkerEligibleForPayroll } from "@/services/worker/assert-worker-eligible-for-payroll";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type CreatePayrollExecutor = Pick<DbTransaction, "select" | "insert">;
@@ -210,6 +211,11 @@ export async function createPayrollRecord(input: {
         return { error: "Worker not found" };
     }
 
+    const eligibility = assertWorkerEligibleForPayroll(row.worker);
+    if ("error" in eligibility) {
+        return { error: eligibility.error };
+    }
+
     const conflicts = await findPayrollPeriodConflicts(db, {
         workerId,
         periodStart,
@@ -297,6 +303,11 @@ export async function createPayrollRecords(input: {
             .limit(1);
 
         if (!row) continue;
+
+        const eligibility = assertWorkerEligibleForPayroll(row.worker);
+        if ("error" in eligibility) {
+            return { error: eligibility.error };
+        }
 
         const preConflicts = await findPayrollPeriodConflicts(db, {
             workerId,

@@ -61,6 +61,56 @@ describe("payroll overlap action handling", () => {
         vi.clearAllMocks();
     });
 
+    it("returns an error when creating payroll for an inactive worker", async () => {
+        mockSelectWithJoinLimitResolved([
+            {
+                worker: {
+                    id: "worker-1",
+                    name: "Alicia",
+                    status: "Inactive",
+                },
+                employment: {},
+            },
+        ]);
+
+        const result = await createPayrollRecord({
+            workerId: "worker-1",
+            periodStart: "2026-03-01",
+            periodEnd: "2026-03-31",
+            payrollDate: "2026-04-05",
+        });
+
+        expect(result).toEqual({
+            error: expect.stringContaining("Inactive"),
+        });
+        expect(mocks.findPayrollPeriodConflicts).not.toHaveBeenCalled();
+        expect(mocks.db.transaction).not.toHaveBeenCalled();
+    });
+
+    it("includes the worker name and status in the inactive payroll error", async () => {
+        mockSelectWithJoinLimitResolved([
+            {
+                worker: {
+                    id: "worker-1",
+                    name: "Alicia",
+                    status: "Inactive",
+                },
+                employment: {},
+            },
+        ]);
+
+        const result = await createPayrollRecord({
+            workerId: "worker-1",
+            periodStart: "2026-03-01",
+            periodEnd: "2026-03-31",
+            payrollDate: "2026-04-05",
+        });
+
+        expect(result).toEqual({
+            error: "Cannot create payroll for Alicia because worker status is Inactive",
+        });
+    });
+
     it("returns validation error when period range is reversed", async () => {
         const fd = new FormData();
         fd.append("workerId", "worker-1");
@@ -113,7 +163,11 @@ describe("payroll overlap action handling", () => {
 
         mockSelectWithJoinLimitResolved([
             {
-                worker: { id: "worker-1" },
+                worker: {
+                    id: "worker-1",
+                    name: "Alicia",
+                    status: "Active",
+                },
                 employment: {},
             },
         ]);
@@ -142,7 +196,7 @@ describe("payroll overlap action handling", () => {
         expect(mocks.revalidatePath).not.toHaveBeenCalled();
     });
 
-    it("creates a draft payroll with computed cross-year public holidays", async () => {
+    it("creates a draft payroll for an active worker with computed cross-year public holidays", async () => {
         const txSelect = vi
             .fn()
             .mockReturnValueOnce({
@@ -189,7 +243,11 @@ describe("payroll overlap action handling", () => {
 
         mockSelectWithJoinLimitResolved([
             {
-                worker: { id: "worker-1" },
+                worker: {
+                    id: "worker-1",
+                    name: "Alicia",
+                    status: "Active",
+                },
                 employment: {
                     employmentType: "Full Time",
                     employmentArrangement: "Local Worker",
@@ -231,6 +289,32 @@ describe("payroll overlap action handling", () => {
         );
     });
 
+    it("returns an error when batch payroll creation includes an inactive worker", async () => {
+        mockSelectWithJoinLimitResolved([
+            {
+                worker: {
+                    id: "worker-1",
+                    name: "Alicia",
+                    status: "Inactive",
+                },
+                employment: {},
+            },
+        ]);
+
+        const result = await createPayrollRecords({
+            workerIds: ["worker-1"],
+            periodStart: "2026-03-01",
+            periodEnd: "2026-03-31",
+            payrollDate: "2026-04-05",
+        });
+
+        expect(result).toEqual({
+            error: "Cannot create payroll for Alicia because worker status is Inactive",
+        });
+        expect(mocks.findPayrollPeriodConflicts).not.toHaveBeenCalled();
+        expect(mocks.db.transaction).not.toHaveBeenCalled();
+    });
+
     it("returns structured overlap conflict on payroll edit", async () => {
         const conflict = {
             payrollId: "payroll-existing-2",
@@ -251,7 +335,11 @@ describe("payroll overlap action handling", () => {
         ]);
         mockSelectWithJoinLimitResolved([
             {
-                worker: { id: "worker-1" },
+                worker: {
+                    id: "worker-1",
+                    name: "Alicia",
+                    status: "Active",
+                },
                 employment: {},
             },
         ]);
@@ -288,7 +376,11 @@ describe("payroll overlap action handling", () => {
         ]);
         mockSelectWithJoinLimitResolved([
             {
-                worker: { id: "worker-1" },
+                worker: {
+                    id: "worker-1",
+                    name: "Alicia",
+                    status: "Active",
+                },
                 employment: {
                     employmentType: "Full Time",
                     employmentArrangement: "Local Worker",
