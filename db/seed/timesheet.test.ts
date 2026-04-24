@@ -1,8 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
-import { seedPeriods } from "./periods";
+import {
+    openTimesheetSeedPeriods,
+    seedPeriods,
+    settledHistoricalPayrollSeedPeriods,
+} from "./periods";
 import { isLocalFullTimeWorker } from "./minimum-hours";
 
 const EXCEPTION_LOCAL_NAMES = ["ALVIS ONG THAI YING", "ONG CHONG WEE"];
@@ -83,5 +87,58 @@ describe("timesheet Local FT filtering", () => {
                 expect(workerTimesheets.length).toBeGreaterThan(0);
             }
         }
+    });
+});
+
+describe("timesheet seed windows", () => {
+    it("extends eligible worker coverage into the Jan-Mar 2026 open timesheet window as unpaid entries", () => {
+        const monthCoverage = new Set(
+            timesheets.map((entry) => `${entry.workerIndex}:${entry.dateIn.slice(0, 7)}`),
+        );
+
+        for (const period of [...settledHistoricalPayrollSeedPeriods, ...openTimesheetSeedPeriods]) {
+            for (const [workerIndex, worker] of workers.entries()) {
+                const shouldHaveTimesheets =
+                    !isLocalFullTimeWorker(worker) ||
+                    EXCEPTION_LOCAL_NAMES.includes(worker.name);
+
+                if (shouldHaveTimesheets) {
+                    expect(monthCoverage.has(`${workerIndex}:${period.key}`)).toBe(true);
+                }
+            }
+        }
+
+        const openWindowMonthKeys = new Set(
+            openTimesheetSeedPeriods.map((period) => period.key),
+        );
+
+        const openWindowTimesheets = timesheets.filter((entry) =>
+            openWindowMonthKeys.has(entry.dateIn.slice(0, 7)),
+        );
+
+        expect(openWindowTimesheets.length).toBeGreaterThan(0);
+        expect(
+            openWindowTimesheets.every(
+                (entry) => entry.status === "Timesheet Unpaid",
+            ),
+        ).toBe(true);
+        expect(
+            timesheets
+                .filter((entry) =>
+                    settledHistoricalPayrollSeedPeriods.some(
+                        (period) => period.key === entry.dateIn.slice(0, 7),
+                    ),
+                )
+                .every((entry) => entry.status === "Timesheet Paid"),
+        ).toBe(true);
+    });
+
+    it("keeps generated timesheets deterministic across repeated module evaluation", async () => {
+        const firstEvaluation = structuredClone(timesheets);
+
+        vi.resetModules();
+        const { timesheets: secondEvaluation } = await import("./timesheet");
+
+        expect(secondEvaluation).toEqual(firstEvaluation);
     });
 });
