@@ -15,6 +15,7 @@ export const ADVANCE_COHORT_SIZE = 5;
 export const QUARTERLY_ADVANCE_AMOUNT = 300;
 export const QUARTERLY_ADVANCE_INSTALLMENT_AMOUNT =
     QUARTERLY_ADVANCE_AMOUNT / 3;
+export const advanceSeedPeriods = settledHistoricalPayrollSeedPeriods;
 
 export const ADVANCE_PURPOSE_BY_QUARTER = [
     "Family support expenses",
@@ -46,7 +47,7 @@ export type SeedAdvanceRequest = {
 };
 
 type Quarter = {
-    periods: (typeof settledHistoricalPayrollSeedPeriods)[number][];
+    periods: (typeof advanceSeedPeriods)[number][];
     quarterIndex: number;
 };
 
@@ -55,11 +56,11 @@ function chunkPeriodsIntoQuarters(): Quarter[] {
 
     for (
         let index = 0;
-        index < settledHistoricalPayrollSeedPeriods.length;
+        index < advanceSeedPeriods.length;
         index += 3
     ) {
         quarters.push({
-            periods: settledHistoricalPayrollSeedPeriods.slice(index, index + 3),
+            periods: advanceSeedPeriods.slice(index, index + 3),
             quarterIndex: index / 3,
         });
     }
