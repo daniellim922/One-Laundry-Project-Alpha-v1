@@ -104,7 +104,7 @@ export function updateVoucherPayRate(input: {
         | "hourlyRate"
         | "restDayRate"
         | "minimumWorkingHours";
-    value: number;
+    value: number | null;
 }) {
     return writePayrollApi<{
         success: true;

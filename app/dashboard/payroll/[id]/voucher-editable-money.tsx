@@ -60,8 +60,9 @@ export function VoucherEditableMoney({
     const commit = () => {
         if (readOnly) return;
         const parsed = parseAmount(text, format);
-        const numeric = parsed ?? 0;
-        if (numeric < 0) {
+        const numeric =
+            field === "minimumWorkingHours" ? parsed : (parsed ?? 0);
+        if (numeric !== null && numeric < 0) {
             setError("Must be ≥ 0");
             return;
         }

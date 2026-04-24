@@ -26,19 +26,30 @@ export const payrollVoucherDaysUpdateRequestSchema = z.object({
     publicHolidays: voucherDayFields.shape.publicHolidays,
 });
 
-export const payrollVoucherPayRateUpdateRequestSchema = z.object({
-    voucherId: z.uuid(),
-    field: z.enum([
-        "monthlyPay",
-        "hourlyRate",
-        "restDayRate",
-        "minimumWorkingHours",
-    ]),
-    value: z
-        .number()
-        .finite()
-        .refine((n) => n >= 0, { message: "Must be ≥ 0" }),
-});
+export const payrollVoucherPayRateUpdateRequestSchema = z
+    .object({
+        voucherId: z.uuid(),
+        field: z.enum([
+            "monthlyPay",
+            "hourlyRate",
+            "restDayRate",
+            "minimumWorkingHours",
+        ]),
+        value: z.union([
+            z
+                .number()
+                .finite()
+                .refine((n) => n >= 0, { message: "Must be ≥ 0" }),
+            z.null(),
+        ]),
+    })
+    .refine(
+        (data) => data.value !== null || data.field === "minimumWorkingHours",
+        {
+            message: "Value is required for this field",
+            path: ["value"],
+        },
+    );
 
 const minimumWorkingHoursField = createSelectSchema(employmentTable, {
     minimumWorkingHours: z.number(),

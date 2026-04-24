@@ -32,7 +32,7 @@ export async function updateVoucherPayRate(input: {
     payrollId: string;
     voucherId: string;
     field: VoucherPayRateField;
-    value: number;
+    value: number | null;
 }): Promise<UpdateVoucherPayRateResult> {
     const { payrollId, voucherId, field, value } = input;
 
@@ -54,7 +54,19 @@ export async function updateVoucherPayRate(input: {
             error: "Invalid field",
         };
     }
-    if (!Number.isFinite(value) || value < 0) {
+    if (field === "minimumWorkingHours") {
+        if (value !== null && (!Number.isFinite(value) || value < 0)) {
+            return {
+                success: false,
+                code: "VALIDATION_ERROR",
+                error: "Invalid value",
+            };
+        }
+    } else if (
+        value === null ||
+        !Number.isFinite(value) ||
+        value < 0
+    ) {
         return {
             success: false,
             code: "VALIDATION_ERROR",

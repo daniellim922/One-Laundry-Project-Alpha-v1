@@ -84,6 +84,75 @@ describe("PATCH /api/payroll/[id]/voucher-rates", () => {
         ]);
     });
 
+    it("allows null value for minimumWorkingHours", async () => {
+        mocks.updateVoucherPayRate.mockResolvedValue({
+            success: true,
+            payrollId: PAYROLL_1,
+            voucherId: VOUCHER_1,
+        });
+
+        const response = await PATCH(
+            new Request(
+                `http://localhost/api/payroll/${PAYROLL_1}/voucher-rates`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        voucherId: VOUCHER_1,
+                        field: "minimumWorkingHours",
+                        value: null,
+                    }),
+                },
+            ),
+            {
+                params: Promise.resolve({ id: PAYROLL_1 }),
+            },
+        );
+
+        expect(response.status).toBe(200);
+        await expect(response.json()).resolves.toEqual({
+            ok: true,
+            data: {
+                success: true,
+                payrollId: PAYROLL_1,
+                voucherId: VOUCHER_1,
+            },
+        });
+        expect(mocks.updateVoucherPayRate).toHaveBeenCalledWith({
+            payrollId: PAYROLL_1,
+            voucherId: VOUCHER_1,
+            field: "minimumWorkingHours",
+            value: null,
+        });
+    });
+
+    it("rejects null value for non-minimumWorkingHours fields", async () => {
+        const response = await PATCH(
+            new Request(
+                `http://localhost/api/payroll/${PAYROLL_1}/voucher-rates`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        voucherId: VOUCHER_1,
+                        field: "hourlyRate",
+                        value: null,
+                    }),
+                },
+            ),
+            {
+                params: Promise.resolve({ id: PAYROLL_1 }),
+            },
+        );
+
+        expect(response.status).toBe(400);
+        expect(mocks.updateVoucherPayRate).not.toHaveBeenCalled();
+    });
+
     it("maps voucher conflicts to 409", async () => {
         mocks.updateVoucherPayRate.mockResolvedValue({
             success: false,
