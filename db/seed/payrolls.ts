@@ -6,12 +6,14 @@
 import {
     getVoucherMinimumWorkingHours,
     isForeignFullTimeWorker,
+    isLocalFullTimeWorker,
 } from "./minimum-hours";
 import { getAdvanceDeductionForWorkerPeriod } from "./advances";
 import { seedPeriods } from "./periods";
 import { getSeedPayrollStatus } from "./settlement-state";
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
+import { publicHolidays } from "./public-holidays";
 import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
 import { calculateVoucherAmounts } from "@/services/payroll/payroll-voucher-amounts";
 
@@ -54,6 +56,28 @@ export type PayrollEntry = {
     voucher: VoucherEntry;
 };
 
+function countWorkingDaysInPeriod(periodStart: string, periodEnd: string): number {
+    const start = new Date(Date.UTC(
+        Number(periodStart.slice(0, 4)),
+        Number(periodStart.slice(5, 7)) - 1,
+        Number(periodStart.slice(8, 10)),
+    ));
+    const end = new Date(Date.UTC(
+        Number(periodEnd.slice(0, 4)),
+        Number(periodEnd.slice(5, 7)) - 1,
+        Number(periodEnd.slice(8, 10)),
+    ));
+    let count = 0;
+    const cursor = new Date(start);
+    while (cursor <= end) {
+        if (cursor.getUTCDay() !== 0) {
+            count += 1;
+        }
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+    return count;
+}
+
 function generatePayrolls(): PayrollEntry[] {
     const hoursMap = new Map<string, number>();
     const presentDateInKeysByWorkerPeriod = new Map<string, string[]>();
@@ -66,6 +90,8 @@ function generatePayrolls(): PayrollEntry[] {
         dateInKeys.push(t.dateIn);
         presentDateInKeysByWorkerPeriod.set(key, dateInKeys);
     }
+
+    const publicHolidayDates = publicHolidays.map((h) => h.date);
 
     const payrolls: PayrollEntry[] = [];
 
@@ -120,11 +146,47 @@ function generatePayrolls(): PayrollEntry[] {
                     ) ?? [],
             });
 
+            const phDatesInPeriod = publicHolidayDates.filter(
+                (date) => date >= period.periodStart && date <= period.periodEnd,
+            );
+            const hasTimesheets = presentDateInKeysByWorkerPeriod.has(
+                `${workerIndex}:${period.key}`,
+            );
+            const isZeroTimesheetLocal =
+                isLocalFullTimeWorker(worker) && !hasTimesheets;
+
+            let publicHolidaysCount: number;
+            if (isZeroTimesheetLocal) {
+                publicHolidaysCount = phDatesInPeriod.length;
+            } else {
+                const presentDateInKeys =
+                    presentDateInKeysByWorkerPeriod.get(
+                        `${workerIndex}:${period.key}`,
+                    ) ?? [];
+                const presentSet = new Set(presentDateInKeys);
+                publicHolidaysCount = phDatesInPeriod.filter((date) =>
+                    presentSet.has(date),
+                ).length;
+            }
+
+            let publicHolidayPay: number;
+            if (isZeroTimesheetLocal) {
+                const periodWorkingDays = countWorkingDaysInPeriod(
+                    period.periodStart,
+                    period.periodEnd,
+                );
+                publicHolidayPay = roundMoney(
+                    ((monthlyPay ?? 0) / periodWorkingDays) * publicHolidaysCount,
+                );
+            } else {
+                publicHolidayPay = roundMoney(
+                    (restDayRate ?? 0) * publicHolidaysCount,
+                );
+            }
+
             let basePayTotal = 0;
             let overtimePay = 0;
             let restDayPay = 0;
-            const publicHolidays = 0;
-            const publicHolidayPay = 0;
 
             if (isPartTime) {
                 basePayTotal =
@@ -176,7 +238,7 @@ function generatePayrolls(): PayrollEntry[] {
                     restDays,
                     restDayRate,
                     restDayPay,
-                    publicHolidays,
+                    publicHolidays: publicHolidaysCount,
                     publicHolidayPay,
                     cpf,
                     advance,

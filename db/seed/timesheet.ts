@@ -79,6 +79,17 @@ function generateTimesheets(): TimesheetEntry[] {
         for (const [workerIndex, worker] of workers.entries()) {
             const isPartTime = worker.employmentType === "Part Time";
             const isForeignFullTime = isForeignFullTimeWorker(worker);
+            const isLocalFullTime =
+                worker.employmentType === "Full Time" &&
+                worker.employmentArrangement === "Local Worker";
+            const isExceptionLocal =
+                worker.name === "ALVIS ONG THAI YING" ||
+                worker.name === "ONG CHONG WEE";
+
+            if (isLocalFullTime && !isExceptionLocal) {
+                continue;
+            }
+
             const status = getSeedTimesheetStatus(period);
 
             if (isPartTime) {

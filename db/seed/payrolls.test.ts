@@ -16,11 +16,14 @@ import {
     isForeignFullTimeWorker,
     isLocalFullTimeWorker,
 } from "./minimum-hours";
+
+const EXCEPTION_LOCAL_NAMES = ["ALVIS ONG THAI YING", "ONG CHONG WEE"];
 import { payrolls } from "./payrolls";
 import { seedPeriods } from "./periods";
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
 import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
+import { publicHolidays } from "./public-holidays";
 
 describe("seedPeriods", () => {
     it("covers April through December 2025 without gaps", () => {
@@ -51,8 +54,14 @@ describe("timesheet seed backbone", () => {
         );
 
         for (const period of seedPeriods) {
-            for (const [workerIndex] of workers.entries()) {
-                expect(monthCoverage.has(`${workerIndex}:${period.key}`)).toBe(true);
+            for (const [workerIndex, worker] of workers.entries()) {
+                const shouldHaveTimesheets =
+                    !isLocalFullTimeWorker(worker) ||
+                    EXCEPTION_LOCAL_NAMES.includes(worker.name);
+
+                if (shouldHaveTimesheets) {
+                    expect(monthCoverage.has(`${workerIndex}:${period.key}`)).toBe(true);
+                }
             }
         }
     });
@@ -340,6 +349,163 @@ describe("phase 3 quarterly advance cohort", () => {
                     ),
             ),
         ).toBe(false);
+    });
+});
+
+describe("public holiday calculations", () => {
+    it("assigns publicHolidays > 0 to foreign full-time workers in months with PH dates", () => {
+        const april2025Payrolls = payrolls.filter(
+            (p) => p.periodStart.slice(0, 7) === "2025-04" &&
+                isForeignFullTimeWorker(workers[p.workerIndex]!),
+        );
+
+        expect(april2025Payrolls.length).toBeGreaterThan(0);
+
+        for (const payroll of april2025Payrolls) {
+            expect(payroll.voucher.publicHolidays).toBeGreaterThan(0);
+        }
+    });
+
+    it("gives zero-timesheet local full-time workers base-pay-only vouchers with PH pay", () => {
+        const EXCEPTION_LOCAL_NAMES = ["ALVIS ONG THAI YING", "ONG CHONG WEE"];
+        const zeroTimesheetLocals = payrolls.filter((p) => {
+            const worker = workers[p.workerIndex]!;
+            return (
+                isLocalFullTimeWorker(worker) &&
+                !EXCEPTION_LOCAL_NAMES.includes(worker.name)
+            );
+        });
+
+        expect(zeroTimesheetLocals.length).toBeGreaterThan(0);
+
+        for (const payroll of zeroTimesheetLocals) {
+            expect(payroll.voucher.totalHoursWorked).toBe(0);
+            expect(payroll.voucher.overtimeHours).toBe(0);
+            expect(payroll.voucher.overtimePay).toBe(0);
+            expect(payroll.voucher.restDays).toBe(0);
+            expect(payroll.voucher.restDayPay).toBe(0);
+
+            const phDatesInMonth = publicHolidays.filter(
+                (h) =>
+                    h.date >= payroll.periodStart && h.date <= payroll.periodEnd,
+            );
+            expect(payroll.voucher.publicHolidays).toBe(phDatesInMonth.length);
+
+            if (phDatesInMonth.length > 0) {
+                expect(payroll.voucher.publicHolidayPay).toBeGreaterThan(0);
+            }
+        }
+    });
+
+    it("computes exact publicHolidays for foreign full-time workers matching all PH dates in period", () => {
+        for (const period of seedPeriods) {
+            const phDatesInPeriod = publicHolidays.filter(
+                (h) => h.date >= period.periodStart && h.date <= period.periodEnd,
+            );
+
+            const foreignFtPayrolls = payrolls.filter(
+                (p) =>
+                    p.periodStart === period.periodStart &&
+                    isForeignFullTimeWorker(workers[p.workerIndex]!),
+            );
+
+            for (const payroll of foreignFtPayrolls) {
+                expect(payroll.voucher.publicHolidays).toBe(
+                    phDatesInPeriod.length,
+                );
+                expect(payroll.voucher.publicHolidayPay).toBe(
+                    Math.round(
+                        (payroll.voucher.restDayRate ?? 0) *
+                            phDatesInPeriod.length *
+                            100,
+                    ) / 100,
+                );
+            }
+        }
+    });
+
+    it("derives exception local publicHolidays from their timesheet coverage only", () => {
+        const EXCEPTION_LOCAL_NAMES = ["ALVIS ONG THAI YING", "ONG CHONG WEE"];
+        const exceptionLocalPayrolls = payrolls.filter((p) => {
+            const worker = workers[p.workerIndex]!;
+            return (
+                isLocalFullTimeWorker(worker) &&
+                EXCEPTION_LOCAL_NAMES.includes(worker.name)
+            );
+        });
+
+        expect(exceptionLocalPayrolls.length).toBeGreaterThan(0);
+
+        for (const payroll of exceptionLocalPayrolls) {
+            const presentDateInKeys = timesheets
+                .filter(
+                    (entry) =>
+                        entry.workerIndex === payroll.workerIndex &&
+                        entry.dateIn >= payroll.periodStart &&
+                        entry.dateIn <= payroll.periodEnd,
+                )
+                .map((entry) => entry.dateIn);
+
+            const presentSet = new Set(presentDateInKeys);
+            const phDatesInPeriod = publicHolidays.filter(
+                (h) =>
+                    h.date >= payroll.periodStart &&
+                    h.date <= payroll.periodEnd,
+            );
+            const expectedPublicHolidays = phDatesInPeriod.filter((h) =>
+                presentSet.has(h.date),
+            ).length;
+
+            expect(payroll.voucher.publicHolidays).toBe(expectedPublicHolidays);
+        }
+    });
+
+    it("computes zero-timesheet local publicHolidayPay from monthlyPay / periodWorkingDays", () => {
+        const EXCEPTION_LOCAL_NAMES = ["ALVIS ONG THAI YING", "ONG CHONG WEE"];
+        const zeroTimesheetLocals = payrolls.filter((p) => {
+            const worker = workers[p.workerIndex]!;
+            return (
+                isLocalFullTimeWorker(worker) &&
+                !EXCEPTION_LOCAL_NAMES.includes(worker.name)
+            );
+        });
+
+        for (const payroll of zeroTimesheetLocals) {
+            const phDatesInPeriod = publicHolidays.filter(
+                (h) =>
+                    h.date >= payroll.periodStart &&
+                    h.date <= payroll.periodEnd,
+            );
+            if (phDatesInPeriod.length === 0) continue;
+
+            const monthlyPay = payroll.voucher.monthlyPay ?? 0;
+            const periodStart = payroll.periodStart;
+            const periodEnd = payroll.periodEnd;
+            const start = new Date(Date.UTC(
+                Number(periodStart.slice(0, 4)),
+                Number(periodStart.slice(5, 7)) - 1,
+                Number(periodStart.slice(8, 10)),
+            ));
+            const end = new Date(Date.UTC(
+                Number(periodEnd.slice(0, 4)),
+                Number(periodEnd.slice(5, 7)) - 1,
+                Number(periodEnd.slice(8, 10)),
+            ));
+            let workingDays = 0;
+            const cursor = new Date(start);
+            while (cursor <= end) {
+                if (cursor.getUTCDay() !== 0) workingDays += 1;
+                cursor.setUTCDate(cursor.getUTCDate() + 1);
+            }
+
+            const expectedPublicHolidayPay =
+                Math.round((monthlyPay / workingDays) * phDatesInPeriod.length * 100) /
+                100;
+
+            expect(payroll.voucher.publicHolidayPay).toBe(
+                expectedPublicHolidayPay,
+            );
+        }
     });
 });
 
