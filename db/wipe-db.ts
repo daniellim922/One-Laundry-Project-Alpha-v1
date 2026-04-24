@@ -34,7 +34,7 @@ function rowsFromExecute<T extends Record<string, unknown>>(
  * types in `public`. The reset flow clears the database so `drizzle-kit push` can
  * apply `db/schema.ts` from scratch against the configured Postgres database.
  */
-async function wipeDb() {
+export async function wipeDb() {
     console.log("Discovering tables to drop...");
 
     const tableResult: unknown = await db.execute(sql`
@@ -92,10 +92,19 @@ async function wipeDb() {
         console.log("No custom enum types found in public.");
     }
 
+}
+
+async function main() {
+    await wipeDb();
     process.exit(0);
 }
 
-wipeDb().catch((err) => {
-    console.error("Failed to wipe database:", err);
-    process.exit(1);
-});
+const isMainModule =
+    import.meta.url === `file://${process.argv[1] ?? ""}`;
+
+if (isMainModule) {
+    main().catch((err) => {
+        console.error("Failed to wipe database:", err);
+        process.exit(1);
+    });
+}

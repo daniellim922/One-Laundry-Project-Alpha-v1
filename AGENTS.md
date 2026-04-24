@@ -21,6 +21,7 @@ npm run test:e2e:ui             # Playwright UI runner
 npm run db:reset                # wipe + push schema + seed (DATABASE_URL)
 npm run db:migrate              # drizzle-kit push (db/schema.ts) + custom SQL schema artifacts (DATABASE_URL)
 npm run db:seed                 # seed the database (Postgres only; create Auth users in Supabase Studio)
+npm run db:seed:workers         # wipe + push schema + seed workers + public holidays only (DATABASE_URL)
 npm run db:wipe                 # wipe database (DATABASE_URL)
 ```
 
@@ -60,6 +61,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 ## Seed Dataset
 
 - `npm run db:seed` loads a deterministic 9-month historical dataset spanning `2025-04` through `2025-12` from `db/seed/`.
+- `npm run db:seed:workers` is the lightweight production bootstrap: wipe, push schema, then seed only workers and public holidays (no timesheets, payrolls, or advances).
 - `npm run db:reset` is the default bootstrap for a seeded app-ready database: wipe, push schema, then seed.
 - `db:*` runs Drizzle push, wipe, and seed via `DATABASE_URL` only.
 - Every active worker receives seeded monthly timesheets and payroll rows across that full window so payroll, advance, and reporting screens have browseable history.
