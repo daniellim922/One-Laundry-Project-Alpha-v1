@@ -20,7 +20,7 @@ function roundMoney(n: number): number {
 }
 
 export type VoucherEntry = {
-    voucherNumber: number;
+    voucherNumber: string;
     employmentType: string | null;
     employmentArrangement: string | null;
     monthlyPay: number | null;
@@ -57,6 +57,7 @@ export type PayrollEntry = {
 function generatePayrolls(): PayrollEntry[] {
     const hoursMap = new Map<string, number>();
     const presentDateInKeysByWorkerPeriod = new Map<string, string[]>();
+    let voucherSequence = 0;
 
     for (const t of timesheets) {
         const monthKey = t.dateIn.slice(0, 7);
@@ -162,7 +163,7 @@ function generatePayrolls(): PayrollEntry[] {
                 payrollDate: period.payrollDate,
                 status,
                 voucher: {
-                    voucherNumber: period.monthIndex * 1000 + workerIndex + 1,
+                    voucherNumber: `2025-${String((voucherSequence += 1)).padStart(4, "0")}`,
                     employmentType: worker.employmentType ?? null,
                     employmentArrangement: worker.employmentArrangement ?? null,
                     monthlyPay,

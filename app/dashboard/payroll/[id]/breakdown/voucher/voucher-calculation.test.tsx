@@ -13,7 +13,7 @@ function voucherFixture(
     const now = new Date("2026-01-15T00:00:00.000Z");
     return {
         id: "voucher-1",
-        voucherNumber: 1,
+        voucherNumber: "2026-0001",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
         monthlyPay: 2000,

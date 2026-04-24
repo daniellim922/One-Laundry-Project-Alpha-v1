@@ -28,7 +28,7 @@ export type PayrollWithWorker = SelectPayroll & {
     status: PayrollStatus;
     employmentType: WorkerEmploymentType;
     employmentArrangement: WorkerEmploymentArrangement;
-    voucherNumber: number | null;
+    voucherNumber: string | null;
 };
 
 export const columns: ColumnDef<PayrollWithWorker>[] = [

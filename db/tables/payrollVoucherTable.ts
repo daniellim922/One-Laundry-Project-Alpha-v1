@@ -8,7 +8,7 @@ import {
 
 export const payrollVoucherTable = pgTable("payroll_voucher", {
     id: uuid().primaryKey().defaultRandom(),
-    voucherNumber: real("voucher_number"),
+    voucherNumber: text("voucher_number"),
     employmentType: text("employment_type"),
     employmentArrangement: text("employment_arrangement"),
     monthlyPay: real("monthly_pay"),

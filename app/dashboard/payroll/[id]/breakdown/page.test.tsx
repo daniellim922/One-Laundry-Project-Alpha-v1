@@ -80,7 +80,7 @@ describe("Payroll breakdown page", () => {
             },
             voucher: {
                 id: "voucher-1",
-                voucherNumber: 1234,
+                voucherNumber: "2026-1234",
                 employmentType: "Full Time",
                 employmentArrangement: "Local Worker",
                 paymentMethod: "Cash",
@@ -170,7 +170,7 @@ describe("Payroll breakdown page", () => {
             },
             voucher: {
                 id: "voucher-1",
-                voucherNumber: 99,
+                voucherNumber: "2026-0099",
                 employmentType: "Part Time",
                 employmentArrangement: "Local Worker",
                 paymentMethod: "Cash",

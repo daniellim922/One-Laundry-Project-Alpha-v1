@@ -25,7 +25,7 @@ import {
 
 interface PaymentVoucherProps {
     voucher: {
-        voucherNumber: number | null;
+        voucherNumber: string | null;
         employmentType: string | null;
         monthlyPay: number | null;
         hourlyRate: number | null;
