@@ -19,15 +19,20 @@ import {
 
 const EXCEPTION_LOCAL_NAMES = ["ALVIS ONG THAI YING", "ONG CHONG WEE"];
 import { payrolls } from "./payrolls";
-import { seedPeriods } from "./periods";
+import {
+    openTimesheetSeedPeriods,
+    settledHistoricalPayrollSeedPeriods,
+} from "./periods";
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
 import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
 import { publicHolidays } from "./public-holidays";
 
+const payrollSeedPeriods = settledHistoricalPayrollSeedPeriods;
+
 describe("seedPeriods", () => {
-    it("covers April through December 2025 without gaps", () => {
-        expect(seedPeriods.map((period) => period.key)).toEqual([
+    it("covers April through December 2025 without gaps for settled payroll history", () => {
+        expect(payrollSeedPeriods.map((period) => period.key)).toEqual([
             "2025-04",
             "2025-05",
             "2025-06",
@@ -40,10 +45,10 @@ describe("seedPeriods", () => {
         ]);
     });
 
-    it("excludes January through March 2026 from the shared seed window", () => {
-        expect(seedPeriods.some((period) => period.key.startsWith("2026-"))).toBe(
-            false,
-        );
+    it("excludes January through March 2026 from the settled payroll seed window", () => {
+        expect(
+            payrollSeedPeriods.some((period) => period.key.startsWith("2026-")),
+        ).toBe(false);
     });
 });
 
@@ -53,7 +58,7 @@ describe("timesheet seed backbone", () => {
             timesheets.map((entry) => `${entry.workerIndex}:${entry.dateIn.slice(0, 7)}`),
         );
 
-        for (const period of seedPeriods) {
+        for (const period of payrollSeedPeriods) {
             for (const [workerIndex, worker] of workers.entries()) {
                 const shouldHaveTimesheets =
                     !isLocalFullTimeWorker(worker) ||
@@ -77,14 +82,14 @@ describe("timesheet seed backbone", () => {
 });
 
 describe("payroll seed backbone", () => {
-    it("creates one deterministic payroll per worker per month", () => {
-        expect(payrolls).toHaveLength(seedPeriods.length * workers.length);
+    it("creates one deterministic payroll per worker per settled historical payroll month", () => {
+        expect(payrolls).toHaveLength(payrollSeedPeriods.length * workers.length);
 
         const payrollCoverage = new Set(
             payrolls.map((payroll) => `${payroll.workerIndex}:${payroll.periodStart.slice(0, 7)}`),
         );
 
-        for (const period of seedPeriods) {
+        for (const period of payrollSeedPeriods) {
             for (const [workerIndex] of workers.entries()) {
                 expect(payrollCoverage.has(`${workerIndex}:${period.key}`)).toBe(true);
             }
@@ -92,17 +97,28 @@ describe("payroll seed backbone", () => {
 
         expect(payrolls[0]?.voucher.voucherNumber).toBe("2025-0001");
         expect(payrolls.at(-1)?.voucher.voucherNumber).toBe(
-            `2025-${String(seedPeriods.length * workers.length).padStart(4, "0")}`,
+            `2025-${String(payrollSeedPeriods.length * workers.length).padStart(4, "0")}`,
         );
     });
 
-    it("produces no Jan-Mar 2026 payroll rows", () => {
+    it("keeps payroll and voucher seeds out of the open timesheet window", () => {
+        const openTimesheetMonthKeys = new Set(
+            openTimesheetSeedPeriods.map((period) => period.key),
+        );
+
+        const openWindowPayrolls = payrolls.filter((payroll) =>
+            openTimesheetMonthKeys.has(payroll.periodStart.slice(0, 7)),
+        );
+
+        expect(openWindowPayrolls).toHaveLength(0);
         expect(
-            payrolls.some((payroll) => {
-                const monthKey = payroll.periodStart.slice(0, 7);
-                return monthKey >= "2026-01" && monthKey <= "2026-03";
-            }),
-        ).toBe(false);
+            payrolls.every((payroll) => payroll.voucher.voucherNumber.startsWith("2025-")),
+        ).toBe(true);
+    });
+
+    it("seeds only Settled payrolls and no Draft payrolls", () => {
+        expect(payrolls.every((payroll) => payroll.status === "Settled")).toBe(true);
+        expect(payrolls.some((payroll) => payroll.status === "Draft")).toBe(false);
     });
 
     it("derives voucher restDays from seeded attendance coverage using the live missing-date rule", () => {
@@ -173,7 +189,7 @@ describe("phase 2 minimum-hours attainment", () => {
         );
 
         for (const payroll of foreignFullTimePayrolls) {
-            const period = seedPeriods.find(
+            const period = payrollSeedPeriods.find(
                 (candidate) => candidate.periodStart === payroll.periodStart,
             );
 
@@ -259,7 +275,7 @@ describe("phase 3 quarterly advance cohort", () => {
 
     it("creates one fixed-amount advance per cohort member per quarter with 3 monthly installments", () => {
         expect(advances).toHaveLength(
-            quarterlyAdvanceCohortWorkerIndexes.length * (seedPeriods.length / 3),
+            quarterlyAdvanceCohortWorkerIndexes.length * (payrollSeedPeriods.length / 3),
         );
 
         for (const advance of advances) {
@@ -273,7 +289,7 @@ describe("phase 3 quarterly advance cohort", () => {
             ).toBe(QUARTERLY_ADVANCE_AMOUNT);
 
             const requestQuarter = Math.floor(
-                seedPeriods.findIndex(
+                payrollSeedPeriods.findIndex(
                     (period) => period.key === advance.dateRequested.slice(0, 7),
                 ) / 3,
             );
@@ -290,7 +306,7 @@ describe("phase 3 quarterly advance cohort", () => {
                     QUARTERLY_ADVANCE_INSTALLMENT_AMOUNT,
                 );
                 const installmentQuarter = Math.floor(
-                    seedPeriods.findIndex(
+                    payrollSeedPeriods.findIndex(
                         (period) =>
                             period.key === installment.installmentDate.slice(0, 7),
                     ) / 3,
@@ -302,7 +318,7 @@ describe("phase 3 quarterly advance cohort", () => {
     });
 
     it("is deterministic and feeds the correct payroll advance deductions", () => {
-        const expectedRequests = seedPeriods
+        const expectedRequests = payrollSeedPeriods
             .filter((_, periodIndex) => periodIndex % 3 === 0)
             .flatMap((period) =>
             quarterlyAdvanceCohortWorkerIndexes.map((workerIndex) => ({
@@ -398,7 +414,7 @@ describe("public holiday calculations", () => {
     });
 
     it("computes exact publicHolidays for foreign full-time workers matching all PH dates in period", () => {
-        for (const period of seedPeriods) {
+        for (const period of payrollSeedPeriods) {
             const phDatesInPeriod = publicHolidays.filter(
                 (h) => h.date >= period.periodStart && h.date <= period.periodEnd,
             );
@@ -510,10 +526,6 @@ describe("public holiday calculations", () => {
 });
 
 describe("phase 4 historical settlement states", () => {
-    it("seeds no Draft payrolls in the trimmed historical dataset", () => {
-        expect(payrolls.every((payroll) => payroll.status === "Settled")).toBe(true);
-    });
-
     it("marks all remaining timesheets paid", () => {
         expect(
             timesheets.every((timesheet) => timesheet.status === "Timesheet Paid"),
