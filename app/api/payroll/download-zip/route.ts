@@ -8,6 +8,7 @@ import { apiError } from "@/app/api/_shared/responses";
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payrollTable";
 import { workerTable } from "@/db/tables/workerTable";
+import { recordGuidedMonthlyWorkflowStepCompletion } from "@/services/payroll/guided-monthly-workflow-activity";
 
 export const runtime = "nodejs";
 
@@ -91,6 +92,19 @@ export function createZipFilename(args: {
     return safeFilenamePart(
         `payrolls-${args.periodStart}-${args.periodEnd}${partialSuffix}.zip`,
     );
+}
+
+async function recordPayrollDownloadWorkflowCompletion() {
+    try {
+        await recordGuidedMonthlyWorkflowStepCompletion({
+            stepId: "payroll_download",
+        });
+    } catch (error) {
+        console.warn(
+            "Failed to record guided monthly workflow completion for payroll download",
+            error,
+        );
+    }
 }
 
 function enqueueNdjsonLine(
@@ -248,6 +262,8 @@ function createNdjsonZipResponseStream(args: {
                     })();
                 });
 
+                await recordPayrollDownloadWorkflowCompletion();
+
                 enqueueLine({
                     type: "done",
                     filename: zipName,
@@ -366,7 +382,6 @@ export async function POST(req: NextRequest) {
             zip.on("data", (chunk: Buffer) =>
                 controller.enqueue(new Uint8Array(chunk)),
             );
-            zip.on("end", () => controller.close());
             zip.on("warning", (err: unknown) => {
                 controller.error(err);
             });
@@ -374,6 +389,12 @@ export async function POST(req: NextRequest) {
 
             void (async () => {
                 try {
+                    const zipDone = new Promise<void>((resolve, reject) => {
+                        zip.on("end", () => resolve());
+                        zip.on("error", reject);
+                        zip.on("warning", reject);
+                    });
+
                     for (const entry of pdfEntries) {
                         zip.append(Readable.from(entry.buffer), {
                             name: entry.name,
@@ -384,6 +405,9 @@ export async function POST(req: NextRequest) {
                         zip.append(report, { name: "_download-errors.txt" });
                     }
                     await zip.finalize();
+                    await zipDone;
+                    await recordPayrollDownloadWorkflowCompletion();
+                    controller.close();
                 } catch (e) {
                     controller.error(e);
                 }

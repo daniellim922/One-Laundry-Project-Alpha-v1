@@ -79,6 +79,43 @@ describe("getGuidedMonthlyWorkflowSnapshot", () => {
         ]);
     });
 
+    it("marks the final download step done when payroll download activity exists", async () => {
+        getGuidedMonthlyWorkflowCompletedStepIds.mockResolvedValue([
+            "minimum_hours_bulk_update",
+            "timesheet_import",
+            "payroll_creation",
+            "payroll_download",
+        ]);
+
+        const snapshot = await getGuidedMonthlyWorkflowSnapshot({
+            now: new Date("2026-04-20T03:30:00.000Z"),
+        });
+
+        expect(snapshot.steps.map((step) => step.status)).toEqual([
+            "done",
+            "done",
+            "done",
+            "done",
+        ]);
+    });
+
+    it("keeps the download step current until qualifying download activity exists", async () => {
+        getGuidedMonthlyWorkflowCompletedStepIds.mockResolvedValue([
+            "minimum_hours_bulk_update",
+            "timesheet_import",
+            "payroll_creation",
+        ]);
+
+        const snapshot = await getGuidedMonthlyWorkflowSnapshot({
+            now: new Date("2026-04-20T03:30:00.000Z"),
+        });
+
+        expect(snapshot.steps.at(-1)).toMatchObject({
+            id: "payroll_download",
+            status: "current",
+        });
+    });
+
     it("keeps the first incomplete step current even when later steps are already done", async () => {
         getGuidedMonthlyWorkflowCompletedStepIds.mockResolvedValue([
             "timesheet_import",

@@ -5,6 +5,7 @@ import { NextRequest } from "next/server";
 
 const mocks = vi.hoisted(() => ({
     requireCurrentApiUser: vi.fn(),
+    recordGuidedMonthlyWorkflowStepCompletion: vi.fn(),
     db: {
         select: vi.fn(),
     },
@@ -17,6 +18,11 @@ vi.mock("@/app/api/_shared/auth", () => ({
 
 vi.mock("@/lib/db", () => ({
     db: mocks.db,
+}));
+
+vi.mock("@/services/payroll/guided-monthly-workflow-activity", () => ({
+    recordGuidedMonthlyWorkflowStepCompletion: (...args: unknown[]) =>
+        mocks.recordGuidedMonthlyWorkflowStepCompletion(...args),
 }));
 
 import { POST } from "@/app/api/payroll/download-zip/route";
@@ -139,5 +145,32 @@ describe("POST /api/payroll/download-zip", () => {
         };
         expect(last.type).toBe("done");
         expect(typeof last.filename).toBe("string");
+        expect(
+            mocks.recordGuidedMonthlyWorkflowStepCompletion,
+        ).toHaveBeenCalledWith({
+            stepId: "payroll_download",
+        });
+    });
+
+    it("records guided workflow completion after the standard ZIP stream completes", async () => {
+        const response = await POST(
+            new NextRequest("http://localhost/api/payroll/download-zip", {
+                method: "POST",
+                body: JSON.stringify({ payrollIds: ["payroll-1"] }),
+            }),
+        );
+
+        expect(response.status).toBe(200);
+        expect(response.headers.get("Content-Type")).toBe("application/zip");
+
+        const zipBuffer = Buffer.from(await response.arrayBuffer());
+        expect(zipBuffer.length).toBeGreaterThan(0);
+        expect(zipBuffer[0]).toBe(0x50);
+        expect(zipBuffer[1]).toBe(0x4b);
+        expect(
+            mocks.recordGuidedMonthlyWorkflowStepCompletion,
+        ).toHaveBeenCalledWith({
+            stepId: "payroll_download",
+        });
     });
 });

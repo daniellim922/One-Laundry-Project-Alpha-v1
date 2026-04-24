@@ -22,6 +22,7 @@ const mocks = vi.hoisted(() => {
             select: vi.fn(),
         },
         chromiumLaunch: vi.fn(),
+        recordGuidedMonthlyWorkflowStepCompletion: vi.fn(),
         page,
         browser,
     };
@@ -38,6 +39,11 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/app/api/_shared/auth", () => ({
     requireCurrentApiUser: (...args: unknown[]) =>
         mocks.requireCurrentApiUser(...args),
+}));
+
+vi.mock("@/services/payroll/guided-monthly-workflow-activity", () => ({
+    recordGuidedMonthlyWorkflowStepCompletion: (...args: unknown[]) =>
+        mocks.recordGuidedMonthlyWorkflowStepCompletion(...args),
 }));
 
 vi.mock("playwright", () => ({
@@ -110,6 +116,9 @@ describe("GET /api/payroll/[id]/pdf", () => {
         });
         expect(mocks.page.evaluate).toHaveBeenCalledTimes(1);
         expect(mocks.page.pdf).toHaveBeenCalledTimes(1);
+        expect(
+            mocks.recordGuidedMonthlyWorkflowStepCompletion,
+        ).not.toHaveBeenCalled();
         expect(mocks.browser.close).toHaveBeenCalledTimes(1);
         await expect(response.arrayBuffer()).resolves.toSatisfy((value) => {
             return Buffer.from(value).toString("utf8") === "payroll-pdf";
