@@ -8,8 +8,6 @@ export type AttendRecordDate = {
     timeIn: string;
     dateOut: string;
     timeOut: string;
-    /** Decimal hours worked; computed from dateIn/timeIn to dateOut/timeOut when present */
-    hours?: number;
 };
 
 export type AttendRecordWorker = {

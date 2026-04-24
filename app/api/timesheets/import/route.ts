@@ -21,7 +21,6 @@ const attendRecordSchema = z.object({
                     timeIn: z.string(),
                     dateOut: z.string(),
                     timeOut: z.string(),
-                    hours: z.number().optional(),
                 }),
             ),
         }),

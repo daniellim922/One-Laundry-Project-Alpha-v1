@@ -19,6 +19,7 @@ vi.mock("@/services/payroll/synchronize-worker-draft-payrolls", () => ({
 }));
 
 import { createTimesheetEntryRecord } from "@/services/timesheet/save-timesheet-entry";
+import { updateTimesheetEntryRecord } from "@/services/timesheet/save-timesheet-entry";
 
 function mockSelectWorkerResolved(
     rows: Array<{ name: string; status: "Active" | "Inactive" }>,
@@ -80,6 +81,41 @@ describe("services/timesheet/save-timesheet-entry", () => {
 
         expect(result).toEqual({ success: true });
         expect(mocks.db.insert).toHaveBeenCalledTimes(1);
+        expect(
+            mocks.db.insert.mock.results[0]?.value.values,
+        ).toHaveBeenCalledWith(
+            expect.not.objectContaining({ hours: expect.anything() }),
+        );
+        expect(mocks.synchronizeWorkerDraftPayrolls).toHaveBeenCalledWith({
+            workerId: "worker-1",
+        });
+    });
+
+    it("updates a timesheet entry using only timestamp fields", async () => {
+        const where = vi.fn().mockResolvedValue(undefined);
+        const set = vi.fn().mockReturnValue({ where });
+        mocks.db.update.mockReturnValue({ set });
+        mockSelectWorkerResolved([
+            {
+                workerId: "worker-1",
+                status: "Timesheet Unpaid",
+            },
+        ] as never);
+
+        const result = await updateTimesheetEntryRecord({
+            id: "entry-1",
+            workerId: "worker-1",
+            dateIn: "2026-03-01",
+            dateOut: "2026-03-01",
+            timeIn: "09:00",
+            timeOut: "17:00",
+        });
+
+        expect(result).toEqual({ success: true });
+        expect(mocks.db.update).toHaveBeenCalledTimes(1);
+        expect(set).toHaveBeenCalledWith(
+            expect.not.objectContaining({ hours: expect.anything() }),
+        );
         expect(mocks.synchronizeWorkerDraftPayrolls).toHaveBeenCalledWith({
             workerId: "worker-1",
         });
