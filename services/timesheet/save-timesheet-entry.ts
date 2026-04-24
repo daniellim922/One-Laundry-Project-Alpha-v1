@@ -5,7 +5,6 @@ import { timesheetTable } from "@/db/tables/timesheetTable";
 import { workerTable } from "@/db/tables/workerTable";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
 import { assertWorkerEligibleForTimesheet } from "@/services/worker/assert-worker-eligible-for-timesheet";
-import { calculateHoursFromDateTimes } from "@/utils/payroll/payroll-utils";
 
 type SaveTimesheetEntryInput = {
     workerId: string;
@@ -49,15 +48,12 @@ export async function createTimesheetEntryRecord(
         return { error: eligibility.error };
     }
 
-    const hours = calculateHoursFromDateTimes(dateIn, timeIn, dateOut, timeOut);
-
     await db.insert(timesheetTable).values({
         workerId,
         dateIn,
         timeIn,
         dateOut,
         timeOut,
-        hours,
         createdAt: new Date(),
         updatedAt: new Date(),
     });
@@ -101,8 +97,6 @@ export async function updateTimesheetEntryRecord(
         return { error: "Timesheet Paid entries cannot be edited" };
     }
 
-    const hours = calculateHoursFromDateTimes(dateIn, timeIn, dateOut, timeOut);
-
     await db
         .update(timesheetTable)
         .set({
@@ -111,7 +105,6 @@ export async function updateTimesheetEntryRecord(
             timeIn,
             dateOut,
             timeOut,
-            hours,
             updatedAt: new Date(),
         })
         .where(eq(timesheetTable.id, id));

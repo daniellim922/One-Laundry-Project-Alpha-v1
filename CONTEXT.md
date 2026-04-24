@@ -24,7 +24,7 @@ The timesheet model supports `dateIn`/`dateOut` spanning two calendar days to ha
 
 ### Timesheet hours must be a faithful derivative of timestamps
 **Status:** Resolved  
-`timesheetTable.hours` must always equal the computed duration from `dateIn`/`timeIn`/`dateOut`/`timeOut`. The application already recalculates on edit, but the schema currently allows independent mutation. `hours` should become a Postgres generated column (or be dropped in favor of on-read computation) so the invariant is structural, not just conventional.
+`timesheetTable.hours` must always equal the computed duration from `dateIn`/`timeIn`/`dateOut`/`timeOut`. The invariant now lives in the database: `hours` is a Postgres generated column, and create/update/import flows write timestamps only. This keeps backfilled legacy rows and future edits structurally aligned without trusting application-side recalculation.
 
 ### Inactive workers block new work but preserve existing drafts
 **Status:** Resolved  

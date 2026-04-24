@@ -4,7 +4,6 @@ import { workerTable } from "@/db/tables/workerTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
 import { assertWorkerEligibleForTimesheet } from "@/services/worker/assert-worker-eligible-for-timesheet";
-import { calculateHoursFromDateTimes } from "@/utils/payroll/payroll-utils";
 import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
 
 function toTimeString(val: string): string {
@@ -48,7 +47,6 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
         timeIn: string;
         dateOut: string;
         timeOut: string;
-        hours: number;
         createdAt: Date;
         updatedAt: Date;
     }[] = [];
@@ -87,11 +85,6 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
                     ? "23:59:59"
                     : toTimeString(date.timeOut);
 
-            const hours =
-                typeof date.hours === "number" && date.hours >= 0
-                    ? date.hours
-                    : calculateHoursFromDateTimes(dateIn, timeIn, dateOut, timeOut);
-
             const rowParsed = timesheetEntryFormSchema.safeParse({
                 workerId,
                 dateIn,
@@ -111,7 +104,6 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
                 timeIn,
                 dateOut,
                 timeOut,
-                hours,
                 createdAt: new Date(),
                 updatedAt: new Date(),
             });

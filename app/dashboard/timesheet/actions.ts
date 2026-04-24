@@ -14,7 +14,6 @@ import {
 import { deleteTimesheetEntry as deleteTimesheetEntryRecord } from "@/services/timesheet/delete-timesheet-entry";
 import { importAttendRecordTimesheet as importAttendRecordTimesheetRecord } from "@/services/timesheet/import-attend-record-timesheet";
 import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
-import { calculateHoursFromDateTimes } from "@/utils/payroll/payroll-utils";
 
 function toTimeString(val: string): string {
     const s = String(val).trim();
@@ -133,7 +132,6 @@ export async function importTimesheetEntries(rows: ImportRow[]) {
         timeIn: string;
         dateOut: string;
         timeOut: string;
-        hours: number;
         createdAt: Date;
         updatedAt: Date;
     }[] = [];
@@ -160,14 +158,12 @@ export async function importTimesheetEntries(rows: ImportRow[]) {
             errors.push(`Row ${i + 1}: Invalid date`);
             continue;
         }
-        const hours = calculateHoursFromDateTimes(date, timeIn, date, timeOut);
         toInsert.push({
             workerId,
             dateIn: date,
             timeIn,
             dateOut: date,
             timeOut,
-            hours,
             createdAt: new Date(),
             updatedAt: new Date(),
         });
