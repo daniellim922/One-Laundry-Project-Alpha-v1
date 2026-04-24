@@ -77,6 +77,7 @@ describe("PATCH /api/workers/minimum-working-hours", () => {
             updates: [{ workerId: WORKER_1, minimumWorkingHours: 260 }],
         });
         expect(mocks.revalidateTransportPaths).toHaveBeenCalledWith([
+            "/dashboard",
             "/dashboard/worker",
             "/dashboard/worker/all",
             "/dashboard/payroll",

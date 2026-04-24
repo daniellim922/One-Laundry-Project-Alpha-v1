@@ -4,6 +4,7 @@ import { employmentTable } from "@/db/tables/employmentTable";
 import { workerTable } from "@/db/tables/workerTable";
 import { db } from "@/lib/db";
 import { synchronizeWorkerDraftPayrollsInTx } from "@/services/payroll/synchronize-worker-draft-payrolls";
+import { recordGuidedMonthlyWorkflowStepCompletion } from "@/services/payroll/guided-monthly-workflow-activity";
 
 export type WorkerHoursBulkUpdateInput = {
     updates: Array<{
@@ -148,6 +149,19 @@ export async function massUpdateWorkerMinimumWorkingHours(
                 workerName: "Unknown worker",
                 error: "Failed to update worker minimum hours",
             });
+        }
+    }
+
+    if (updatedCount > 0) {
+        try {
+            await recordGuidedMonthlyWorkflowStepCompletion({
+                stepId: "minimum_hours_bulk_update",
+            });
+        } catch (error) {
+            console.error(
+                "Failed to record guided monthly workflow completion for minimum-hours bulk update",
+                error,
+            );
         }
     }
 

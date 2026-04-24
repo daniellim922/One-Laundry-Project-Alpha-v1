@@ -5,7 +5,7 @@ import { getGuidedMonthlyWorkflowSnapshot } from "@/services/payroll/guided-mont
 import { getPayrollMonthlyCategoryAggregates } from "./get-payroll-monthly-category-aggregates";
 
 export async function DashboardHomeLoader() {
-    const workflowSnapshot = getGuidedMonthlyWorkflowSnapshot();
+    const workflowSnapshot = await getGuidedMonthlyWorkflowSnapshot();
     const { rows, defaultYear, yearOptions } =
         await getPayrollMonthlyCategoryAggregates();
 

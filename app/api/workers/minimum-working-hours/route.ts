@@ -35,6 +35,7 @@ export async function PATCH(request: Request) {
 
     if (result.updatedCount > 0) {
         revalidateTransportPaths([
+            "/dashboard",
             "/dashboard/worker",
             "/dashboard/worker/all",
             "/dashboard/payroll",

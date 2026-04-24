@@ -1,10 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+const { getGuidedMonthlyWorkflowCompletedStepIds } = vi.hoisted(() => ({
+    getGuidedMonthlyWorkflowCompletedStepIds: vi.fn(),
+}));
+
+vi.mock("@/services/payroll/guided-monthly-workflow-activity", () => ({
+    getGuidedMonthlyWorkflowCompletedStepIds,
+}));
 
 import { getGuidedMonthlyWorkflowSnapshot } from "@/services/payroll/guided-monthly-workflow";
 
 describe("getGuidedMonthlyWorkflowSnapshot", () => {
-    it("returns the default ordered workflow with the first step marked current", () => {
-        const snapshot = getGuidedMonthlyWorkflowSnapshot({
+    it("returns the default ordered workflow with the first step marked current", async () => {
+        getGuidedMonthlyWorkflowCompletedStepIds.mockResolvedValue([]);
+
+        const snapshot = await getGuidedMonthlyWorkflowSnapshot({
             now: new Date("2026-04-01T00:00:00.000Z"),
         });
 
@@ -27,10 +37,32 @@ describe("getGuidedMonthlyWorkflowSnapshot", () => {
             "/dashboard/payroll/new",
             "/dashboard/payroll/download-payrolls",
         ]);
+        expect(getGuidedMonthlyWorkflowCompletedStepIds).toHaveBeenCalledWith({
+            monthKey: "2026-04",
+        });
     });
 
-    it("resolves the month key in the business timezone", () => {
-        const snapshot = getGuidedMonthlyWorkflowSnapshot({
+    it("marks minimum-hours bulk update done when this business month has activity", async () => {
+        getGuidedMonthlyWorkflowCompletedStepIds.mockResolvedValue([
+            "minimum_hours_bulk_update",
+        ]);
+
+        const snapshot = await getGuidedMonthlyWorkflowSnapshot({
+            now: new Date("2026-04-15T01:30:00.000Z"),
+        });
+
+        expect(snapshot.steps.map((step) => step.status)).toEqual([
+            "done",
+            "current",
+            "up_next",
+            "up_next",
+        ]);
+    });
+
+    it("resolves the month key in the business timezone", async () => {
+        getGuidedMonthlyWorkflowCompletedStepIds.mockResolvedValue([]);
+
+        const snapshot = await getGuidedMonthlyWorkflowSnapshot({
             now: new Date("2026-01-31T16:30:00.000Z"),
         });
 

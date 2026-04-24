@@ -10,3 +10,4 @@ export * from "./tables/payrollVoucherTable";
 export * from "./tables/payrollVoucherCounterTable";
 export * from "./tables/publicHolidayTable";
 export * from "./tables/expensesTable";
+export * from "./tables/guidedMonthlyWorkflowActivityTable";

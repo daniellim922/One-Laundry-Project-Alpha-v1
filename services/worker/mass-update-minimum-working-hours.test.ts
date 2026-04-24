@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
     synchronizeWorkerDraftPayrollsInTx: vi.fn(),
+    recordGuidedMonthlyWorkflowStepCompletion: vi.fn(),
     db: {
         transaction: vi.fn(),
     },
@@ -14,6 +15,10 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/services/payroll/synchronize-worker-draft-payrolls", () => ({
     synchronizeWorkerDraftPayrollsInTx: (...args: unknown[]) =>
         mocks.synchronizeWorkerDraftPayrollsInTx(...args),
+}));
+vi.mock("@/services/payroll/guided-monthly-workflow-activity", () => ({
+    recordGuidedMonthlyWorkflowStepCompletion: (...args: unknown[]) =>
+        mocks.recordGuidedMonthlyWorkflowStepCompletion(...args),
 }));
 
 import { massUpdateWorkerMinimumWorkingHours } from "@/services/worker/mass-update-minimum-working-hours";
@@ -71,6 +76,9 @@ describe("massUpdateWorkerMinimumWorkingHours", () => {
 
         expect(result).toEqual({ updatedCount: 0, failed: [] });
         expect(mocks.db.transaction).not.toHaveBeenCalled();
+        expect(
+            mocks.recordGuidedMonthlyWorkflowStepCompletion,
+        ).not.toHaveBeenCalled();
     });
 
     it("returns partial success and preserves failures when one worker sync fails", async () => {
@@ -121,6 +129,14 @@ describe("massUpdateWorkerMinimumWorkingHours", () => {
         expect(mocks.synchronizeWorkerDraftPayrollsInTx).toHaveBeenCalledTimes(
             2,
         );
+        expect(
+            mocks.recordGuidedMonthlyWorkflowStepCompletion,
+        ).toHaveBeenCalledTimes(1);
+        expect(
+            mocks.recordGuidedMonthlyWorkflowStepCompletion,
+        ).toHaveBeenCalledWith({
+            stepId: "minimum_hours_bulk_update",
+        });
     });
 
     it("enforces Active + Full Time eligibility", async () => {

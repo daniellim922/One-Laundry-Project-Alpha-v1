@@ -13,7 +13,31 @@ export type GuidedMonthlyWorkflowSnapshot = {
     steps: GuidedMonthlyWorkflowStep[];
 };
 
+import { getGuidedMonthlyWorkflowCompletedStepIds } from "@/services/payroll/guided-monthly-workflow-activity";
+
 const BUSINESS_TIME_ZONE = "Asia/Singapore";
+const ORDERED_STEPS = [
+    {
+        id: "minimum_hours_bulk_update" as const,
+        label: "Mass edit working hours",
+        href: "/dashboard/worker/mass-edit",
+    },
+    {
+        id: "timesheet_import" as const,
+        label: "Import timesheets",
+        href: "/dashboard/timesheet/import",
+    },
+    {
+        id: "payroll_creation" as const,
+        label: "Generate payroll",
+        href: "/dashboard/payroll/new",
+    },
+    {
+        id: "payroll_download" as const,
+        label: "Download payrolls",
+        href: "/dashboard/payroll/download-payrolls",
+    },
+];
 
 function formatBusinessMonthParts(now: Date): { year: string; month: string } {
     const parts = new Intl.DateTimeFormat("en-CA", {
@@ -32,45 +56,37 @@ function formatBusinessMonthParts(now: Date): { year: string; month: string } {
     return { year, month };
 }
 
-export function getGuidedMonthlyWorkflowSnapshot({
+export async function getGuidedMonthlyWorkflowSnapshot({
     now = new Date(),
 }: {
     now?: Date;
-} = {}): GuidedMonthlyWorkflowSnapshot {
+} = {}): Promise<GuidedMonthlyWorkflowSnapshot> {
     const { year, month } = formatBusinessMonthParts(now);
+    const monthKey = `${year}-${month}`;
+    const completedStepIds = new Set(
+        await getGuidedMonthlyWorkflowCompletedStepIds({
+            monthKey,
+        }),
+    );
+    const firstIncompleteStepIndex = ORDERED_STEPS.findIndex(
+        (step) => !completedStepIds.has(step.id),
+    );
 
     return {
-        monthKey: `${year}-${month}`,
+        monthKey,
         monthLabel: new Intl.DateTimeFormat("en-GB", {
             timeZone: BUSINESS_TIME_ZONE,
             month: "long",
             year: "numeric",
         }).format(now),
-        steps: [
-            {
-                id: "minimum_hours_bulk_update",
-                label: "Mass edit working hours",
-                href: "/dashboard/worker/mass-edit",
-                status: "current",
-            },
-            {
-                id: "timesheet_import",
-                label: "Import timesheets",
-                href: "/dashboard/timesheet/import",
-                status: "up_next",
-            },
-            {
-                id: "payroll_creation",
-                label: "Generate payroll",
-                href: "/dashboard/payroll/new",
-                status: "up_next",
-            },
-            {
-                id: "payroll_download",
-                label: "Download payrolls",
-                href: "/dashboard/payroll/download-payrolls",
-                status: "up_next",
-            },
-        ],
+        steps: ORDERED_STEPS.map((step, index) => ({
+            ...step,
+            status: completedStepIds.has(step.id)
+                ? "done"
+                : index === firstIncompleteStepIndex ||
+                    firstIncompleteStepIndex === -1
+                  ? "current"
+                  : "up_next",
+        })),
     };
 }
