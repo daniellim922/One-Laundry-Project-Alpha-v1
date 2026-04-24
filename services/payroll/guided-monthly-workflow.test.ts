@@ -59,6 +59,44 @@ describe("getGuidedMonthlyWorkflowSnapshot", () => {
         ]);
     });
 
+    it("marks steps two and three done for the same month and keeps ordering states", async () => {
+        getGuidedMonthlyWorkflowCompletedStepIds.mockResolvedValue([
+            "minimum_hours_bulk_update",
+            "timesheet_import",
+            "payroll_creation",
+        ]);
+
+        const snapshot = await getGuidedMonthlyWorkflowSnapshot({
+            now: new Date("2026-04-20T03:30:00.000Z"),
+        });
+
+        expect(snapshot.monthKey).toBe("2026-04");
+        expect(snapshot.steps.map((step) => step.status)).toEqual([
+            "done",
+            "done",
+            "done",
+            "current",
+        ]);
+    });
+
+    it("keeps the first incomplete step current even when later steps are already done", async () => {
+        getGuidedMonthlyWorkflowCompletedStepIds.mockResolvedValue([
+            "timesheet_import",
+            "payroll_creation",
+        ]);
+
+        const snapshot = await getGuidedMonthlyWorkflowSnapshot({
+            now: new Date("2026-04-20T03:30:00.000Z"),
+        });
+
+        expect(snapshot.steps.map((step) => step.status)).toEqual([
+            "current",
+            "done",
+            "done",
+            "up_next",
+        ]);
+    });
+
     it("resolves the month key in the business timezone", async () => {
         getGuidedMonthlyWorkflowCompletedStepIds.mockResolvedValue([]);
 

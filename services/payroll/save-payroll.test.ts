@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
     revalidatePath: vi.fn(),
     findPayrollPeriodConflicts: vi.fn(),
     getAdvancesForPayrollPeriod: vi.fn(),
+    recordGuidedMonthlyWorkflowStepCompletion: vi.fn(),
     db: {
         select: vi.fn(),
         transaction: vi.fn(),
@@ -21,6 +22,10 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/utils/advance/queries", () => ({
     getAdvancesForPayrollPeriod: (...args: unknown[]) =>
         mocks.getAdvancesForPayrollPeriod(...args),
+}));
+vi.mock("@/services/payroll/guided-monthly-workflow-activity", () => ({
+    recordGuidedMonthlyWorkflowStepCompletion: (...args: unknown[]) =>
+        mocks.recordGuidedMonthlyWorkflowStepCompletion(...args),
 }));
 
 vi.mock("@/utils/payroll/payroll-period-conflicts", async () => {
@@ -242,6 +247,9 @@ describe("payroll overlap action handling", () => {
         });
         expect(mocks.db.transaction).not.toHaveBeenCalled();
         expect(mocks.revalidatePath).not.toHaveBeenCalled();
+        expect(
+            mocks.recordGuidedMonthlyWorkflowStepCompletion,
+        ).not.toHaveBeenCalled();
     });
 
     it("creates a draft payroll for an active worker with computed cross-year public holidays", async () => {
@@ -319,6 +327,77 @@ describe("payroll overlap action handling", () => {
                 publicHolidayPay: 50,
             }),
         );
+        expect(
+            mocks.recordGuidedMonthlyWorkflowStepCompletion,
+        ).toHaveBeenCalledWith({
+            stepId: "payroll_creation",
+        });
+    });
+
+    it("records guided monthly workflow completion after batch payroll creation", async () => {
+        const txSelect = vi
+            .fn()
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockResolvedValue([]),
+                }),
+            })
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockResolvedValue([]),
+                }),
+            });
+        const insertedVoucherValues: Array<Record<string, unknown>> = [];
+
+        mockSelectWithJoinLimitResolved([
+            {
+                worker: {
+                    id: "worker-1",
+                    name: "Alicia",
+                    status: "Active",
+                },
+                employment: {
+                    employmentType: "Full Time",
+                    employmentArrangement: "Local Worker",
+                    minimumWorkingHours: 16,
+                    monthlyPay: 2000,
+                    hourlyRate: 10,
+                    restDayRate: 25,
+                    cpf: 0,
+                    paymentMethod: "Cash",
+                    payNowPhone: null,
+                    bankAccountNumber: null,
+                },
+            },
+        ]);
+        mocks.findPayrollPeriodConflicts.mockResolvedValueOnce([]);
+        mocks.getAdvancesForPayrollPeriod.mockResolvedValueOnce([]);
+        mocks.db.transaction.mockImplementationOnce(
+            async (callback: (tx: unknown) => Promise<void>) =>
+                callback({
+                    select: txSelect,
+                    insert: createPayrollInsertExecutor(insertedVoucherValues),
+                }),
+        );
+
+        const result = await createPayrollRecords({
+            workerIds: ["worker-1"],
+            periodStart: "2026-01-01",
+            periodEnd: "2026-01-31",
+            payrollDate: "2026-02-05",
+        });
+
+        expect(result).toEqual({
+            success: true,
+            created: 1,
+            skipped: 0,
+            conflicts: [],
+        });
+        expect(
+            mocks.recordGuidedMonthlyWorkflowStepCompletion,
+        ).toHaveBeenCalledWith({
+            stepId: "payroll_creation",
+        });
     });
 
     it("creates payroll with the first sequential voucher number for the payroll year", async () => {

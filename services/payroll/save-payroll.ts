@@ -16,6 +16,7 @@ import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timeshe
 import { countPayrollPublicHolidays } from "@/services/payroll/public-holiday-payroll";
 import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll-voucher-values";
 import { generateVoucherNumber } from "@/services/payroll/generate-voucher-number";
+import { recordGuidedMonthlyWorkflowStepCompletion } from "@/services/payroll/guided-monthly-workflow-activity";
 import { assertWorkerEligibleForPayroll } from "@/services/worker/assert-worker-eligible-for-payroll";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -88,6 +89,19 @@ function isPayrollOverlapConstraintError(error: unknown): boolean {
     if (dbError.code !== "23P01") return false;
     if (!dbError.constraint) return true;
     return dbError.constraint === PAYROLL_PERIOD_OVERLAP_CONSTRAINT;
+}
+
+async function recordPayrollCreationWorkflowCompletion() {
+    try {
+        await recordGuidedMonthlyWorkflowStepCompletion({
+            stepId: "payroll_creation",
+        });
+    } catch (error) {
+        console.error(
+            "Failed to record guided monthly workflow completion for payroll creation",
+            error,
+        );
+    }
 }
 
 async function createPayrollForWorkerInExecutor(
@@ -251,6 +265,7 @@ export async function createPayrollRecord(input: {
         return { error: "Failed to create payroll" };
     }
 
+    await recordPayrollCreationWorkflowCompletion();
     return { success: true };
 }
 
@@ -348,6 +363,10 @@ export async function createPayrollRecords(input: {
             console.error("Error creating payrolls", error);
             return { error: "Failed to create payrolls" };
         }
+    }
+
+    if (created > 0) {
+        await recordPayrollCreationWorkflowCompletion();
     }
 
     return {

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/workerTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
+import { recordGuidedMonthlyWorkflowStepCompletion } from "@/services/payroll/guided-monthly-workflow-activity";
 import { assertWorkerEligibleForTimesheet } from "@/services/worker/assert-worker-eligible-for-timesheet";
 import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
 
@@ -112,6 +113,17 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
 
     if (toInsert.length > 0) {
         await db.insert(timesheetTable).values(toInsert);
+
+        try {
+            await recordGuidedMonthlyWorkflowStepCompletion({
+                stepId: "timesheet_import",
+            });
+        } catch (error) {
+            console.error(
+                "Failed to record guided monthly workflow completion for timesheet import",
+                error,
+            );
+        }
 
         const affectedWorkerIds = [...new Set(toInsert.map((row) => row.workerId))];
         for (const workerId of affectedWorkerIds) {

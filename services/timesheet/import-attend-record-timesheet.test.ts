@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
     synchronizeWorkerDraftPayrolls: vi.fn(),
+    recordGuidedMonthlyWorkflowStepCompletion: vi.fn(),
     db: {
         select: vi.fn(),
         insert: vi.fn(),
@@ -15,6 +16,10 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/services/payroll/synchronize-worker-draft-payrolls", () => ({
     synchronizeWorkerDraftPayrolls: (...args: unknown[]) =>
         mocks.synchronizeWorkerDraftPayrolls(...args),
+}));
+vi.mock("@/services/payroll/guided-monthly-workflow-activity", () => ({
+    recordGuidedMonthlyWorkflowStepCompletion: (...args: unknown[]) =>
+        mocks.recordGuidedMonthlyWorkflowStepCompletion(...args),
 }));
 
 import { importAttendRecordTimesheet } from "@/services/timesheet/import-attend-record-timesheet";
@@ -97,6 +102,11 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
         });
         expect(mocks.synchronizeWorkerDraftPayrolls).toHaveBeenNthCalledWith(2, {
             workerId: "worker-2",
+        });
+        expect(
+            mocks.recordGuidedMonthlyWorkflowStepCompletion,
+        ).toHaveBeenCalledWith({
+            stepId: "timesheet_import",
         });
     });
 
