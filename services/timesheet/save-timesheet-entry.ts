@@ -2,8 +2,9 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { timesheetTable } from "@/db/tables/timesheetTable";
+import { workerTable } from "@/db/tables/workerTable";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
-import { calculateHoursFromDateTimes } from "@/utils/payroll/payroll-utils";
+import { assertWorkerEligibleForTimesheet } from "@/services/worker/assert-worker-eligible-for-timesheet";
 
 type SaveTimesheetEntryInput = {
     workerId: string;
@@ -26,7 +27,26 @@ export async function createTimesheetEntryRecord(
         return { error: "Missing required fields" };
     }
 
-    const hours = calculateHoursFromDateTimes(dateIn, timeIn, dateOut, timeOut);
+    const [worker] = await db
+        .select({
+            name: workerTable.name,
+            status: workerTable.status,
+        })
+        .from(workerTable)
+        .where(eq(workerTable.id, workerId))
+        .limit(1);
+
+    if (!worker) {
+        return { error: "Worker not found" };
+    }
+
+    const eligibility = assertWorkerEligibleForTimesheet(
+        worker,
+        "create timesheet",
+    );
+    if ("error" in eligibility) {
+        return { error: eligibility.error };
+    }
 
     await db.insert(timesheetTable).values({
         workerId,
@@ -34,7 +54,6 @@ export async function createTimesheetEntryRecord(
         timeIn,
         dateOut,
         timeOut,
-        hours,
         createdAt: new Date(),
         updatedAt: new Date(),
     });
@@ -78,8 +97,6 @@ export async function updateTimesheetEntryRecord(
         return { error: "Timesheet Paid entries cannot be edited" };
     }
 
-    const hours = calculateHoursFromDateTimes(dateIn, timeIn, dateOut, timeOut);
-
     await db
         .update(timesheetTable)
         .set({
@@ -88,7 +105,6 @@ export async function updateTimesheetEntryRecord(
             timeIn,
             dateOut,
             timeOut,
-            hours,
             updatedAt: new Date(),
         })
         .where(eq(timesheetTable.id, id));

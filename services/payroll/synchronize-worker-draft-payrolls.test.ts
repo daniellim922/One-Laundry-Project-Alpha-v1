@@ -182,11 +182,11 @@ describe("synchronizeWorkerDraftPayrolls", () => {
         expect(r).toEqual({ success: true });
         expect(updateSet).toHaveBeenCalledWith(
             expect.objectContaining({
-                restDays: 3,
+                restDays: 0,
                 publicHolidays: 2,
                 publicHolidayPay: 50,
-                subTotal: 1205,
-                grandTotal: 1155,
+                subTotal: 1130,
+                grandTotal: 1080,
             }),
         );
     });

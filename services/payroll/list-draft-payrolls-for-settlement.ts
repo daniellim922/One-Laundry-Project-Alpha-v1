@@ -16,7 +16,7 @@ export type PayrollSelectionRow = SelectPayroll & {
     status: PayrollStatus;
     employmentType: WorkerEmploymentType;
     employmentArrangement: WorkerEmploymentArrangement;
-    voucherNumber: number | null;
+    voucherNumber: string | null;
 };
 
 export async function listDraftPayrollsForSettlement(): Promise<

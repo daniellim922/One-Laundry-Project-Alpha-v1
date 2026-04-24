@@ -7,6 +7,7 @@ import {
     real,
     index,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { workerTable } from "./workerTable";
 import { timesheetPaymentStatusEnum } from "./statusEnums";
 
@@ -18,7 +19,11 @@ export const timesheetTable = pgTable(
         timeIn: time("time_in").notNull(),
         dateOut: date("date_out").notNull(),
         timeOut: time("time_out").notNull(),
-        hours: real("hours").notNull().default(0),
+        hours: real("hours")
+            .generatedAlwaysAs(
+                sql`(extract(epoch from (("date_out" + "time_out") - ("date_in" + "time_in"))) / 3600.0)::real`,
+            )
+            .notNull(),
         status: timesheetPaymentStatusEnum("status")
             .notNull()
             .default("Timesheet Unpaid"),

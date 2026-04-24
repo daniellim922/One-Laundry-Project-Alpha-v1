@@ -31,7 +31,6 @@ describe("importAttendRecordTimesheet", () => {
                             timeIn: "09:00",
                             dateOut: "01/01/2026",
                             timeOut: "17:00",
-                            hours: 8,
                         },
                     ],
                 },
@@ -58,6 +57,68 @@ describe("importAttendRecordTimesheet", () => {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(payload),
+        });
+    });
+
+    it("strips stale hours values before posting the import payload", async () => {
+        const payloadWithHours = {
+            attendanceDate: {
+                startDate: "01/01/2026",
+                endDate: "28/01/2026",
+            },
+            tablingDate: "28/01/2026 17:10:10",
+            workers: [
+                {
+                    userId: "",
+                    name: "Worker One",
+                    dates: [
+                        {
+                            dateIn: "01/01/2026",
+                            timeIn: "09:00",
+                            dateOut: "01/01/2026",
+                            timeOut: "17:00",
+                            hours: 8,
+                        },
+                    ],
+                },
+            ],
+        };
+
+        fetchMock.mockResolvedValue({
+            ok: true,
+            json: vi.fn().mockResolvedValue({
+                ok: true,
+                data: {
+                    imported: 1,
+                },
+            }),
+        });
+
+        await importAttendRecordTimesheet(payloadWithHours as never);
+
+        expect(fetchMock).toHaveBeenCalledWith("/api/timesheets/import", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                attendanceDate: payloadWithHours.attendanceDate,
+                tablingDate: payloadWithHours.tablingDate,
+                workers: [
+                    {
+                        userId: "",
+                        name: "Worker One",
+                        dates: [
+                            {
+                                dateIn: "01/01/2026",
+                                timeIn: "09:00",
+                                dateOut: "01/01/2026",
+                                timeOut: "17:00",
+                            },
+                        ],
+                    },
+                ],
+            }),
         });
     });
 

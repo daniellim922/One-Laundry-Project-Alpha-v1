@@ -6,7 +6,7 @@
 **Status:** Resolved  
 Employment exists as a separate table purely for normalization and ease of view. It is **not** a historical contract record. A Worker has exactly one current Employment. Rate changes mutate this record directly; Draft payrolls re-sync from it, while Settled payrolls remain frozen via voucher snapshots.
 
-### Rest day pay is premium for working on rest days
+### Rest-day premium is premium for working on rest days
 **Status:** Resolved  
 `restDays` on the voucher represents **rest days worked** (typically Sundays worked), inferred as the rest-day budget minus days with no timesheet entry (assumed rest days taken off). The UI allows manual override for edge cases such as 5-Sunday months. The hardcoded budget of 4 should eventually be replaced by dynamic counting of actual rest days in the pay period.
 
@@ -16,7 +16,7 @@ CPF is intentionally modeled as a flat manually-entered amount on Employment, no
 
 ### Paid installments are immutable outside of payroll Reopen
 **Status:** Resolved  
-Installments in `Installment Paid` status cannot be edited or deleted through the advance request form. The only path back to `Installment Loan` is via payroll `Reopen`, which reverts the entire settled run.
+Installments in `Installment Paid` status cannot be edited or deleted through the advance request form. The server-side save flow must reject updates that omit or alter paid installments, and matching paid rows should remain stored as-is while only unpaid rows are replaced. The only path back to `Installment Loan` is via payroll `Reopen`, which reverts the entire settled run.
 
 ### Timesheet entries are single-day or overnight shifts
 **Status:** Resolved  
@@ -24,7 +24,7 @@ The timesheet model supports `dateIn`/`dateOut` spanning two calendar days to ha
 
 ### Timesheet hours must be a faithful derivative of timestamps
 **Status:** Resolved  
-`timesheetTable.hours` must always equal the computed duration from `dateIn`/`timeIn`/`dateOut`/`timeOut`. The application already recalculates on edit, but the schema currently allows independent mutation. `hours` should become a Postgres generated column (or be dropped in favor of on-read computation) so the invariant is structural, not just conventional.
+`timesheetTable.hours` must always equal the computed duration from `dateIn`/`timeIn`/`dateOut`/`timeOut`. The invariant now lives in the database: `hours` is a Postgres generated column, and create/update/import flows write timestamps only. This keeps backfilled legacy rows and future edits structurally aligned without trusting application-side recalculation.
 
 ### Inactive workers block new work but preserve existing drafts
 **Status:** Resolved  

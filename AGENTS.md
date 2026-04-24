@@ -19,7 +19,7 @@ npm run test:e2e                # Playwright E2E
 npm run test:e2e:worker         # worker E2E subset
 npm run test:e2e:ui             # Playwright UI runner
 npm run db:reset                # wipe + push schema + seed (DATABASE_URL)
-npm run db:migrate              # drizzle-kit push (db/schema.ts) (DATABASE_URL)
+npm run db:migrate              # drizzle-kit push (db/schema.ts) + custom SQL schema artifacts (DATABASE_URL)
 npm run db:seed                 # seed the database (Postgres only; create Auth users in Supabase Studio)
 npm run db:seed:workers         # wipe + push schema + seed workers + public holidays only (DATABASE_URL)
 npm run db:wipe                 # wipe database (DATABASE_URL)
@@ -51,7 +51,9 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 - **Data tables** use the shared `DataTable` from `components/data-table/`. Columns are defined in `columns.tsx` next to the route. Use `createSortableHeader`, `createBadgeCell`, `createActionsColumn` from `column-builders.tsx`.
 - **Async UX** must expose loading state. Interactive client components show pending/disabled UI for submits and fetches; async route sections should use Suspense or a route-level loading fallback where the wait is user-visible.
 - **Database tables** use `pgTable("snake_case", { ... })` with UUID PKs. Enums are `text(..., { enum: [...] as const })` aligned with `types/status.ts`. Types are exported via `$inferSelect` / `$inferInsert`.
-- **Database connection.** `lib/db.ts` uses `DATABASE_URL` for the app, Drizzle Kit (`npm run db:migrate`), wipe, and seed. Hosted Supabase provides Postgres and Auth; Drizzle remains schema authority.
+- **Timesheet hours** are schema-owned. `timesheetTable.hours` is a Postgres generated column derived from `dateIn` / `timeIn` / `dateOut` / `timeOut`; application writes and imports should send timestamps only and let the DB compute hours.
+- **Database connection.** `lib/db.ts` uses `DATABASE_URL` for the app, Drizzle Kit (`npm run db:migrate`), wipe, and seed. Hosted Supabase provides Postgres and Auth; Drizzle remains schema authority. PostgreSQL features that Drizzle does not model directly, such as the payroll worker-period exclusion constraint, are applied by the custom SQL step chained after `drizzle-kit push`.
+- **Voucher numbering.** `payrollVoucherTable.voucherNumber` is a text serial allocated transactionally as a year-scoped formatted value like `2026-0001`; treat it as a human-facing identifier, not a numeric counter in application code.
 - **Auth contract.** Any Supabase Auth user who completes `signInWithPassword` with email and password may use the dashboard and API routes; there is no app-level email allowlist. Create users in Supabase Studio (or Auth Admin API) when self-service signup is disabled. Runtime needs `NEXT_PUBLIC_SUPABASE_URL` and the publishable/anon key; `SUPABASE_SERVICE_ROLE_KEY` is for tooling and server-side admin APIs only, not for normal browser sign-in.
 - **Auth session handling.** Cookie-backed Supabase SSR clients live under `lib/supabase/` for browser, server, and proxy contexts. Use `supabase.auth.getUser()` for server-side authorization checks, and keep dashboard logout in the protected shell so users can explicitly end their session.
 - **Codex workspace automation** lives under `.codex/` for repo rules, hooks, prompts, custom agents, and architecture docs.

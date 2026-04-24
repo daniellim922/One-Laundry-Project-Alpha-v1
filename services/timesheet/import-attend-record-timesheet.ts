@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/workerTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
-import { calculateHoursFromDateTimes } from "@/utils/payroll/payroll-utils";
+import { assertWorkerEligibleForTimesheet } from "@/services/worker/assert-worker-eligible-for-timesheet";
 import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
 
 function toTimeString(val: string): string {
@@ -31,10 +31,14 @@ function ddMmYyyyToIso(val: string): string {
 
 export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
     const workerNames = await db
-        .select({ id: workerTable.id, name: workerTable.name })
+        .select({
+            id: workerTable.id,
+            name: workerTable.name,
+            status: workerTable.status,
+        })
         .from(workerTable);
     const nameToId = new Map(
-        workerNames.map((worker) => [worker.name.toLowerCase().trim(), worker.id]),
+        workerNames.map((worker) => [worker.name.toLowerCase().trim(), worker]),
     );
 
     const toInsert: {
@@ -43,18 +47,28 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
         timeIn: string;
         dateOut: string;
         timeOut: string;
-        hours: number;
         createdAt: Date;
         updatedAt: Date;
     }[] = [];
     const errors: string[] = [];
 
     for (const worker of data.workers) {
-        const workerId = nameToId.get(worker.name.toLowerCase().trim());
-        if (!workerId) {
+        const matchedWorker = nameToId.get(worker.name.toLowerCase().trim());
+        if (!matchedWorker) {
             errors.push(`Unknown worker "${worker.name}"`);
             continue;
         }
+
+        const eligibility = assertWorkerEligibleForTimesheet(
+            matchedWorker,
+            "import timesheet",
+        );
+        if ("error" in eligibility) {
+            errors.push(eligibility.error);
+            continue;
+        }
+
+        const workerId = matchedWorker.id;
 
         for (const date of worker.dates) {
             const dateIn = ddMmYyyyToIso(date.dateIn);
@@ -70,11 +84,6 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
                 !timeOutRaw || /^\s+$/.test(timeOutRaw)
                     ? "23:59:59"
                     : toTimeString(date.timeOut);
-
-            const hours =
-                typeof date.hours === "number" && date.hours >= 0
-                    ? date.hours
-                    : calculateHoursFromDateTimes(dateIn, timeIn, dateOut, timeOut);
 
             const rowParsed = timesheetEntryFormSchema.safeParse({
                 workerId,
@@ -95,7 +104,6 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
                 timeIn,
                 dateOut,
                 timeOut,
-                hours,
                 createdAt: new Date(),
                 updatedAt: new Date(),
             });

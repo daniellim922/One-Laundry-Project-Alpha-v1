@@ -31,6 +31,24 @@ import {
     updateAdvanceRequestRecord,
 } from "@/services/advance/save-advance-request";
 
+function mockSelectResultOnce(result: unknown) {
+    mocks.db.select.mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+                limit: vi.fn().mockResolvedValue(result),
+            }),
+        }),
+    });
+}
+
+function mockSelectWhereResultOnce(result: unknown) {
+    mocks.db.select.mockReturnValueOnce({
+        from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue(result),
+        }),
+    });
+}
+
 describe("services/advance/save-advance-request", () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -79,13 +97,19 @@ describe("services/advance/save-advance-request", () => {
     });
 
     it("updates the request and synchronizes both workers when ownership changes", async () => {
-        mocks.db.select.mockReturnValueOnce({
-            from: vi.fn().mockReturnValue({
-                where: vi.fn().mockReturnValue({
-                    limit: vi.fn().mockResolvedValue([{ workerId: "worker-old" }]),
-                }),
-            }),
-        });
+        mockSelectResultOnce([{ workerId: "worker-old" }]);
+        mockSelectWhereResultOnce([
+            {
+                amount: 300,
+                repaymentDate: "2026-04-25",
+                status: "Installment Paid",
+            },
+            {
+                amount: 400,
+                repaymentDate: "2026-04-30",
+                status: "Installment Loan",
+            },
+        ]);
 
         const txAdvanceRequestWhere = vi.fn().mockResolvedValue(undefined);
         const txAdvanceRequestSet = vi.fn().mockReturnValue({
@@ -154,5 +178,94 @@ describe("services/advance/save-advance-request", () => {
         expect(txAdvanceRequestUpdate).toHaveBeenCalledTimes(1);
         expect(txDelete).toHaveBeenCalledTimes(1);
         expect(txInsert).toHaveBeenCalledTimes(1);
+        expect(txInsertInstallmentsValues).toHaveBeenCalledWith([
+            expect.objectContaining({
+                advanceRequestId: "advance-request-1",
+                amount: 400,
+                repaymentDate: "2026-04-30",
+                status: "Installment Loan",
+            }),
+        ]);
+    });
+
+    it("returns an error when an update omits an existing paid installment", async () => {
+        mockSelectResultOnce([{ workerId: "worker-1" }]);
+        mockSelectWhereResultOnce([
+            {
+                amount: 300,
+                repaymentDate: "2026-04-25",
+                status: "Installment Paid",
+            },
+            {
+                amount: 400,
+                repaymentDate: "2026-04-30",
+                status: "Installment Loan",
+            },
+        ]);
+
+        await expect(
+            updateAdvanceRequestRecord("advance-request-1", {
+                workerId: "worker-1",
+                requestDate: "2026-04-20",
+                amount: 700,
+                purpose: "Updated purpose",
+                installmentAmounts: [
+                    {
+                        amount: 700,
+                        repaymentDate: "2026-04-30",
+                        status: "Installment Loan",
+                    },
+                ],
+            }),
+        ).resolves.toEqual({
+            success: false,
+            error: "Paid installments cannot be edited or deleted",
+        });
+
+        expect(mocks.db.transaction).not.toHaveBeenCalled();
+        expect(mocks.synchronizeWorkerDraftPayrolls).not.toHaveBeenCalled();
+    });
+
+    it("returns an error when an update changes the amount of a paid installment", async () => {
+        mockSelectResultOnce([{ workerId: "worker-1" }]);
+        mockSelectWhereResultOnce([
+            {
+                amount: 300,
+                repaymentDate: "2026-04-25",
+                status: "Installment Paid",
+            },
+            {
+                amount: 400,
+                repaymentDate: "2026-04-30",
+                status: "Installment Loan",
+            },
+        ]);
+
+        await expect(
+            updateAdvanceRequestRecord("advance-request-1", {
+                workerId: "worker-1",
+                requestDate: "2026-04-20",
+                amount: 700,
+                purpose: "Updated purpose",
+                installmentAmounts: [
+                    {
+                        amount: 301,
+                        repaymentDate: "2026-04-25",
+                        status: "Installment Paid",
+                    },
+                    {
+                        amount: 399,
+                        repaymentDate: "2026-04-30",
+                        status: "Installment Loan",
+                    },
+                ],
+            }),
+        ).resolves.toEqual({
+            success: false,
+            error: "Paid installments cannot be edited or deleted",
+        });
+
+        expect(mocks.db.transaction).not.toHaveBeenCalled();
+        expect(mocks.synchronizeWorkerDraftPayrolls).not.toHaveBeenCalled();
     });
 });

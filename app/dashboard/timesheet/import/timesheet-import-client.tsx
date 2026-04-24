@@ -26,7 +26,6 @@ import {
 import { Trash2, Upload } from "lucide-react";
 import { parseAttendRecord } from "@/utils/payroll/parse-attendrecord";
 import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
-import { calculateHoursFromDateTimes } from "@/utils/payroll/payroll-utils";
 
 const ACCEPTED_TYPES = [
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -230,25 +229,12 @@ function editableRowsToAttendRecord(
     const workers = Array.from(workersMap.entries()).map(([name, rows]) => ({
         userId: "",
         name,
-        dates: rows.map((r) => {
-            const dateIn = r.dateIn;
-            const dateOut = r.dateOut;
-            const timeIn = r.timeIn;
-            const timeOut = r.timeOut || "     ";
-            const hours = calculateHoursFromDateTimes(
-                dateIn,
-                timeIn,
-                dateOut,
-                timeOut,
-            );
-            return {
-                dateIn,
-                timeIn,
-                dateOut,
-                timeOut,
-                hours,
-            };
-        }),
+        dates: rows.map((r) => ({
+            dateIn: r.dateIn,
+            timeIn: r.timeIn,
+            dateOut: r.dateOut,
+            timeOut: r.timeOut || "     ",
+        })),
     }));
     return {
         attendanceDate: meta.attendanceDate,

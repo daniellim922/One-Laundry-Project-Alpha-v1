@@ -11,7 +11,7 @@ describe("PaymentVoucher", () => {
         render(
             <PaymentVoucher
                 voucher={{
-                    voucherNumber: 1001,
+                    voucherNumber: "2026-1001",
                     employmentType: "Full Time",
                     monthlyPay: 2000,
                     hourlyRate: 10,
@@ -55,7 +55,7 @@ describe("PaymentVoucher", () => {
         render(
             <PaymentVoucher
                 voucher={{
-                    voucherNumber: 2002,
+                    voucherNumber: "2026-2002",
                     employmentType: "Part Time",
                     monthlyPay: null,
                     hourlyRate: 6,

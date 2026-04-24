@@ -27,5 +27,9 @@ export const payrollTable = pgTable("payroll", {
     updatedAt: timestamp("updated_at", { withTimezone: false }).notNull(),
 });
 
+// Drizzle's schema builder does not currently model PostgreSQL exclusion
+// constraints, so `db/apply-custom-schema.ts` installs the worker-period overlap
+// constraint after `drizzle-kit push`.
+
 export type SelectPayroll = typeof payrollTable.$inferSelect;
 export type InsertPayroll = typeof payrollTable.$inferInsert;

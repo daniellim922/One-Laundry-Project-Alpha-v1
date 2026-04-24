@@ -40,7 +40,7 @@ describe("GET /api/payroll/settlement-candidates", () => {
                 workerName: "Alice",
                 employmentType: "Monthly",
                 employmentArrangement: "Full-time",
-                voucherNumber: 1001,
+                voucherNumber: "2026-1001",
             },
         ]);
 
@@ -63,7 +63,7 @@ describe("GET /api/payroll/settlement-candidates", () => {
                     workerName: "Alice",
                     employmentType: "Monthly",
                     employmentArrangement: "Full-time",
-                    voucherNumber: 1001,
+                    voucherNumber: "2026-1001",
                 },
             ],
         });

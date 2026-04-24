@@ -80,7 +80,7 @@ describe("Payroll breakdown page", () => {
             },
             voucher: {
                 id: "voucher-1",
-                voucherNumber: 1234,
+                voucherNumber: "2026-1234",
                 employmentType: "Full Time",
                 employmentArrangement: "Local Worker",
                 paymentMethod: "Cash",
@@ -122,7 +122,7 @@ describe("Payroll breakdown page", () => {
 
         expect(
             screen
-                .getByTestId("voucher-field-Rest Days")
+                .getByTestId("voucher-field-Rest days worked")
                 .getAttribute("data-read-only"),
         ).toBe("false");
         expect(
@@ -170,7 +170,7 @@ describe("Payroll breakdown page", () => {
             },
             voucher: {
                 id: "voucher-1",
-                voucherNumber: 99,
+                voucherNumber: "2026-0099",
                 employmentType: "Part Time",
                 employmentArrangement: "Local Worker",
                 paymentMethod: "Cash",
@@ -227,7 +227,7 @@ describe("Payroll breakdown page", () => {
         ).toBe("true");
         expect(
             screen
-                .getByTestId("voucher-field-Rest Days")
+                .getByTestId("voucher-field-Rest days worked")
                 .getAttribute("data-read-only"),
         ).toBe("true");
         expect(

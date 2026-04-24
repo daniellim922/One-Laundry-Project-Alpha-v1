@@ -27,7 +27,7 @@ export type PayrollWithWorker = SelectPayroll & {
     status: PayrollStatus;
     employmentType: WorkerEmploymentType;
     employmentArrangement: WorkerEmploymentArrangement;
-    voucherNumber: number | null;
+    voucherNumber: string | null;
 };
 
 function formatDate(d: string | Date): string {

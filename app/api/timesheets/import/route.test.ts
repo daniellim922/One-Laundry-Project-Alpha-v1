@@ -76,7 +76,24 @@ describe("POST /api/timesheets/import", () => {
                 imported: 1,
             },
         });
-        expect(mocks.importAttendRecordTimesheet).toHaveBeenCalledWith(payload);
+        expect(mocks.importAttendRecordTimesheet).toHaveBeenCalledWith({
+            attendanceDate: payload.attendanceDate,
+            tablingDate: payload.tablingDate,
+            workers: [
+                {
+                    userId: "",
+                    name: "Worker One",
+                    dates: [
+                        {
+                            dateIn: "01/01/2026",
+                            timeIn: "09:00",
+                            dateOut: "01/01/2026",
+                            timeOut: "17:00",
+                        },
+                    ],
+                },
+            ],
+        });
         expect(mocks.revalidateTransportPaths).toHaveBeenCalledWith([
             "/dashboard/timesheet",
             "/dashboard/timesheet/all",

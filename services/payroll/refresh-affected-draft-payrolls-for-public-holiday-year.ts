@@ -10,6 +10,7 @@ import { timesheetTable } from "@/db/tables/timesheetTable";
 import { workerTable } from "@/db/tables/workerTable";
 import {
     countMissingTimesheetDateIns,
+    countSundaysInPeriod,
     restDaysFromMissingDateCount,
 } from "@/utils/payroll/missing-timesheet-dates";
 import { countPayrollPublicHolidays } from "@/services/payroll/public-holiday-payroll";
@@ -133,7 +134,11 @@ async function refreshDraftPayrollVoucher(
         periodEnd: payroll.periodEnd,
         presentDateInKeys: entryRows.map((entry) => entry.dateIn),
     });
-    const restDays = restDaysFromMissingDateCount(missingCount);
+    const sundayBudget = countSundaysInPeriod({
+        periodStart: payroll.periodStart,
+        periodEnd: payroll.periodEnd,
+    });
+    const restDays = restDaysFromMissingDateCount(missingCount, sundayBudget);
     const publicHolidays = await countPayrollPublicHolidays(
         {
             periodStart: payroll.periodStart,

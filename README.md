@@ -62,31 +62,3 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## Payroll overlap diagnostics
-
-The payroll table enforces no overlapping payroll periods for the same worker.
-If inserting or updating payroll rows fails with an exclusion constraint violation on overlapping periods, run:
-
-```sql
-SELECT
-  p1.id AS payroll_id_1,
-  p2.id AS payroll_id_2,
-  w.name AS worker_name,
-  p1.period_start AS payroll_1_start,
-  p1.period_end AS payroll_1_end,
-  p2.period_start AS payroll_2_start,
-  p2.period_end AS payroll_2_end,
-  p1.status AS payroll_1_status,
-  p2.status AS payroll_2_status
-FROM payroll p1
-JOIN payroll p2
-  ON p1.worker_id = p2.worker_id
- AND p1.id < p2.id
- AND daterange(p1.period_start, p1.period_end, '[]')
-     && daterange(p2.period_start, p2.period_end, '[]')
-JOIN worker w ON w.id = p1.worker_id
-ORDER BY w.name, p1.period_start, p2.period_start;
-```
-
-Manual cleanup default: keep `Settled` payroll records over `Draft` when resolving overlaps, unless finance confirms the settled row is incorrect.

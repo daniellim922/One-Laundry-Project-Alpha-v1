@@ -15,6 +15,8 @@ import {
 import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
 import { countPayrollPublicHolidays } from "@/services/payroll/public-holiday-payroll";
 import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll-voucher-values";
+import { generateVoucherNumber } from "@/services/payroll/generate-voucher-number";
+import { assertWorkerEligibleForPayroll } from "@/services/worker/assert-worker-eligible-for-payroll";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type CreatePayrollExecutor = Pick<DbTransaction, "select" | "insert">;
@@ -50,10 +52,6 @@ type PgDatabaseError = {
     code?: string;
     constraint?: string;
 };
-
-function generateVoucherNumber(): number {
-    return parseInt(crypto.randomUUID().slice(0, 8), 16);
-}
 
 function dedupePayrollPeriodConflicts(
     conflicts: PayrollPeriodConflict[],
@@ -103,6 +101,11 @@ async function createPayrollForWorkerInExecutor(
     },
 ) {
     const { workerId, employment, periodStart, periodEnd, payrollDate } = input;
+    const voucherYear = Number.parseInt(payrollDate.slice(0, 4), 10);
+
+    if (Number.isNaN(voucherYear)) {
+        throw new Error(`Invalid payroll date for voucher numbering: ${payrollDate}`);
+    }
 
     const entries = await executor
         .select()
@@ -150,7 +153,7 @@ async function createPayrollForWorkerInExecutor(
     const [voucher] = await executor
         .insert(payrollVoucherTable)
         .values({
-            voucherNumber: generateVoucherNumber(),
+            voucherNumber: await generateVoucherNumber(voucherYear, executor),
             ...voucherValues,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -187,6 +190,7 @@ export async function createPayrollRecord(input: {
     const rangeValidation = validatePayrollPeriodRange({
         periodStart,
         periodEnd,
+        payrollDate,
     });
     if ("error" in rangeValidation) {
         return { error: rangeValidation.error };
@@ -207,6 +211,11 @@ export async function createPayrollRecord(input: {
 
     if (!row) {
         return { error: "Worker not found" };
+    }
+
+    const eligibility = assertWorkerEligibleForPayroll(row.worker);
+    if ("error" in eligibility) {
+        return { error: eligibility.error };
     }
 
     const conflicts = await findPayrollPeriodConflicts(db, {
@@ -267,6 +276,7 @@ export async function createPayrollRecords(input: {
     const rangeValidation = validatePayrollPeriodRange({
         periodStart,
         periodEnd,
+        payrollDate,
     });
     if ("error" in rangeValidation) {
         return { error: rangeValidation.error };
@@ -295,6 +305,11 @@ export async function createPayrollRecords(input: {
             .limit(1);
 
         if (!row) continue;
+
+        const eligibility = assertWorkerEligibleForPayroll(row.worker);
+        if ("error" in eligibility) {
+            return { error: eligibility.error };
+        }
 
         const preConflicts = await findPayrollPeriodConflicts(db, {
             workerId,
@@ -361,6 +376,7 @@ export async function updatePayrollRecord(input: {
     const rangeValidation = validatePayrollPeriodRange({
         periodStart,
         periodEnd,
+        payrollDate,
     });
     if ("error" in rangeValidation) {
         return { error: rangeValidation.error };

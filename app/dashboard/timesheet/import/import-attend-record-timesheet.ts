@@ -16,16 +16,36 @@ type ImportAttendRecordTimesheetResponse =
           };
       };
 
+function stripHoursFromAttendRecordPayload(
+    data: AttendRecordOutput,
+): AttendRecordOutput {
+    return {
+        attendanceDate: data.attendanceDate,
+        tablingDate: data.tablingDate,
+        workers: data.workers.map((worker) => ({
+            userId: worker.userId,
+            name: worker.name,
+            dates: worker.dates.map((date) => ({
+                dateIn: date.dateIn,
+                timeIn: date.timeIn,
+                dateOut: date.dateOut,
+                timeOut: date.timeOut,
+            })),
+        })),
+    };
+}
+
 export async function importAttendRecordTimesheet(
     data: AttendRecordOutput,
 ): Promise<{ imported: number; errors?: string[] } | { error: string }> {
     try {
+        const sanitizedData = stripHoursFromAttendRecordPayload(data);
         const response = await fetch("/api/timesheets/import", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(data),
+            body: JSON.stringify(sanitizedData),
         });
 
         let body: ImportAttendRecordTimesheetResponse | null = null;

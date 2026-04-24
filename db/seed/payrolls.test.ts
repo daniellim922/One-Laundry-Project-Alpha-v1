@@ -90,9 +90,9 @@ describe("payroll seed backbone", () => {
             }
         }
 
-        expect(payrolls[0]?.voucher.voucherNumber).toBe(1);
+        expect(payrolls[0]?.voucher.voucherNumber).toBe("2025-0001");
         expect(payrolls.at(-1)?.voucher.voucherNumber).toBe(
-            (seedPeriods.length - 1) * 1000 + workers.length,
+            `2025-${String(seedPeriods.length * workers.length).padStart(4, "0")}`,
         );
     });
 
