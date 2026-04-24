@@ -1,5 +1,5 @@
 /**
- * Timesheet seed entries for the currently generated settled historical payroll seed window.
+ * Timesheet seed entries across settled payroll history and the open timesheet window.
  * workerIndex references the workers array in workers.ts (0-based).
  * Resolved to workerId when seeding.
  */
@@ -9,7 +9,7 @@ import {
     getVoucherMinimumWorkingHours,
     isForeignFullTimeWorker,
 } from "./minimum-hours";
-import { seedPeriods } from "./periods";
+import { timesheetSeedPeriods } from "./periods";
 import { getSeedTimesheetStatus } from "./settlement-state";
 import { workers } from "./workers";
 import type { TimesheetPaymentStatus } from "@/types/status";
@@ -67,7 +67,7 @@ function generateTimesheets(): TimesheetEntry[] {
     const rand = seededRandom(42);
     const entries: TimesheetEntry[] = [];
 
-    for (const period of seedPeriods) {
+    for (const period of timesheetSeedPeriods) {
         const workingDays: number[] = [];
 
         for (let day = 1; day <= Number(period.periodEnd.slice(-2)); day += 1) {

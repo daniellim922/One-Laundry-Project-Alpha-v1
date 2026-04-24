@@ -71,13 +71,21 @@ describe("timesheet seed backbone", () => {
         }
     });
 
-    it("produces no Jan-Mar 2026 timesheet rows", () => {
+    it("extends timesheet rows into Jan-Mar 2026 without broadening payroll rows", () => {
+        const openTimesheetMonthKeys = new Set(
+            openTimesheetSeedPeriods.map((period) => period.key),
+        );
+
+        const openWindowTimesheets = timesheets.filter((entry) =>
+            openTimesheetMonthKeys.has(entry.dateIn.slice(0, 7)),
+        );
+
+        expect(openWindowTimesheets.length).toBeGreaterThan(0);
         expect(
-            timesheets.some((entry) => {
-                const monthKey = entry.dateIn.slice(0, 7);
-                return monthKey >= "2026-01" && monthKey <= "2026-03";
-            }),
-        ).toBe(false);
+            openWindowTimesheets.every(
+                (timesheet) => timesheet.status === "Timesheet Unpaid",
+            ),
+        ).toBe(true);
     });
 });
 
@@ -526,9 +534,26 @@ describe("public holiday calculations", () => {
 });
 
 describe("phase 4 historical settlement states", () => {
-    it("marks all remaining timesheets paid", () => {
+    it("keeps settled-history timesheets paid and open-window timesheets unpaid", () => {
+        const openTimesheetMonthKeys = new Set(
+            openTimesheetSeedPeriods.map((period) => period.key),
+        );
+
         expect(
-            timesheets.every((timesheet) => timesheet.status === "Timesheet Paid"),
+            timesheets
+                .filter(
+                    (timesheet) =>
+                        !openTimesheetMonthKeys.has(timesheet.dateIn.slice(0, 7)),
+                )
+                .every((timesheet) => timesheet.status === "Timesheet Paid"),
+        ).toBe(true);
+
+        expect(
+            timesheets
+                .filter((timesheet) =>
+                    openTimesheetMonthKeys.has(timesheet.dateIn.slice(0, 7)),
+                )
+                .every((timesheet) => timesheet.status === "Timesheet Unpaid"),
         ).toBe(true);
     });
 

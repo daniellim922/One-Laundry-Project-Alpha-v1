@@ -217,8 +217,12 @@ async function seed() {
     console.log("New payroll entries created!");
 }
 
-async function main() {
+export async function seedDatabase() {
     await seed();
+}
+
+async function main() {
+    await seedDatabase();
     process.exit(0);
 }
 
