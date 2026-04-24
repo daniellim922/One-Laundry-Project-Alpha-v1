@@ -12,6 +12,7 @@ import {
     listMissingTimesheetDateIns,
     timesheetDateInKey,
 } from "@/utils/payroll/missing-timesheet-dates";
+import { listPayrollPublicHolidays } from "@/services/payroll/public-holiday-payroll";
 
 export async function getPayrollDetailData(id: string) {
     const [row] = await db
@@ -62,5 +63,20 @@ export async function getPayrollDetailData(id: string) {
         payroll.periodEnd,
     );
 
-    return { payroll, worker, employment, voucher, entries, missingDateIns, advances };
+    const applicablePublicHolidays = await listPayrollPublicHolidays({
+        periodStart: payroll.periodStart,
+        periodEnd: payroll.periodEnd,
+        workedDateIns: entries.map((e) => e.dateIn),
+    });
+
+    return {
+        payroll,
+        worker,
+        employment,
+        voucher,
+        entries,
+        missingDateIns,
+        advances,
+        applicablePublicHolidays,
+    };
 }

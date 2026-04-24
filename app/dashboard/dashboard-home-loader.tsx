@@ -12,7 +12,7 @@ export async function DashboardHomeLoader() {
             defaultYear={defaultYear}
             yearOptions={yearOptions}
             title="Monthly payroll by category"
-            description="Settled payrolls by calendar month of payroll date: Part Time and Full Time foreign subtotals (named workers excluded from those buckets), subtotal for Alvis Ong and Ong Chong Wee, and employee CPF for Full Time local workers. Toggle categories in the list to change the stack."
+            description="Settled payrolls by calendar month of payroll period end (work covered by period start–end): Part Time and Full Time foreign subtotals (named workers excluded from those buckets), subtotal for Alvis Ong and Ong Chong Wee, and employee CPF for Full Time local workers. Toggle categories in the list to change the stack."
             idPrefix="dashboard-payroll-categories"
             stackId="payrollCategories"
         />

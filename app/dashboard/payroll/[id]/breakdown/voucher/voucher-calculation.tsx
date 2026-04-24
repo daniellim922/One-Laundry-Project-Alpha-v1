@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -8,6 +9,8 @@ import {
     formatPayrollAdvanceDate,
     payrollAdvanceStatusBadgeClass,
 } from "../payroll-advance-display";
+import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
+import type { PayrollApplicablePublicHoliday } from "@/services/payroll/public-holiday-payroll";
 import { formatMoney, isZeroish } from "./format-money";
 
 type Props = {
@@ -16,21 +19,22 @@ type Props = {
     voucher: SelectPayrollVoucher;
     advances: AdvanceForPayrollPeriod[];
     attendanceRestDays: number;
+    applicablePublicHolidays?: PayrollApplicablePublicHoliday[];
 };
 
 type LineSign = "+" | "-" | "=" | null;
 
 type LineProps = {
-    label: string;
-    subtext?: React.ReactNode;
-    badge?: React.ReactNode;
+    label: ReactNode;
+    subtext?: ReactNode;
+    badge?: ReactNode;
     sign?: LineSign;
     amount: number | null;
     dim?: boolean;
     /** When `dim` is on, the row is muted; use this to keep the label at full contrast. */
     labelClassName?: string;
     emphasis?: "none" | "subtotal" | "total";
-    valueOverride?: React.ReactNode;
+    valueOverride?: ReactNode;
     /** Green + and amount for positive credit lines (overtime, rest day, PH, etc.) */
     creditGreen?: boolean;
 };
@@ -133,6 +137,7 @@ export function VoucherCalculation({
     voucher,
     advances,
     attendanceRestDays,
+    applicablePublicHolidays = [],
 }: Props) {
     const isDraft = payrollStatus === "Draft";
     const voucherRestDays = voucher.restDays ?? 0;
@@ -207,7 +212,34 @@ export function VoucherCalculation({
 
             {!isZeroish(voucher.publicHolidayPay) && (
                 <Line
-                    label="Public Holiday Pay"
+                    label={
+                        <>
+                            <span>Public Holiday Pay</span>
+                            {applicablePublicHolidays.length > 0 ? (
+                                <span
+                                    className={cn(
+                                        "font-normal text-muted-foreground",
+                                        "ml-2 inline-flex flex-wrap items-center gap-x-1 gap-y-0.5",
+                                    )}>
+                                    <span aria-hidden="true">·</span>
+                                    {applicablePublicHolidays.map((h, i) => (
+                                        <span key={h.date}>
+                                            {i > 0 ? (
+                                                <span aria-hidden="true">
+                                                    {" "}
+                                                    ·{" "}
+                                                </span>
+                                            ) : null}
+                                            {formatEnGbDmyNumericFromCalendar(
+                                                h.date,
+                                            )}{" "}
+                                            {h.name}
+                                        </span>
+                                    ))}
+                                </span>
+                            ) : null}
+                        </>
+                    }
                     sign="+"
                     amount={voucher.publicHolidayPay}
                     creditGreen

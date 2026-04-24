@@ -12,8 +12,8 @@ export async function getPayrollMonthlyGrandTotalAggregates(): Promise<MonthlyWo
     const minYear = maxYear - 4;
     const yearOptions = Array.from({ length: 5 }, (_, i) => maxYear - i);
 
-    const yearExpr = sql<number>`extract(year from ${payrollTable.payrollDate})::int`;
-    const monthExpr = sql<number>`extract(month from ${payrollTable.payrollDate})::int`;
+    const yearExpr = sql<number>`extract(year from ${payrollTable.periodEnd})::int`;
+    const monthExpr = sql<number>`extract(month from ${payrollTable.periodEnd})::int`;
 
     const raw = await db
         .select({
@@ -39,8 +39,8 @@ export async function getPayrollMonthlyGrandTotalAggregates(): Promise<MonthlyWo
         .where(
             and(
                 eq(payrollTable.status, "Settled"),
-                gte(payrollTable.payrollDate, `${minYear}-01-01`),
-                lte(payrollTable.payrollDate, `${maxYear}-12-31`),
+                gte(payrollTable.periodEnd, `${minYear}-01-01`),
+                lte(payrollTable.periodStart, `${maxYear}-12-31`),
             ),
         )
         .groupBy(

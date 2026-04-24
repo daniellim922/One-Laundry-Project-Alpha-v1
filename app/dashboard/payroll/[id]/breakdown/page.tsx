@@ -50,6 +50,7 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
         entries,
         missingDateIns,
         advances,
+        applicablePublicHolidays,
     } = await getPayrollDetailData(id);
 
     const attendanceRestDays = computeRestDaysForPayrollPeriod({
@@ -218,6 +219,7 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                             voucher={voucher}
                             advances={advances}
                             attendanceRestDays={attendanceRestDays}
+                            applicablePublicHolidays={applicablePublicHolidays}
                         />
                         <VoucherDetails
                             payrollId={payroll.id}

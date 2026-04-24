@@ -140,4 +140,29 @@ describe("VoucherCalculation", () => {
         expect(screen.getByText("Rest-day premium")).toBeTruthy();
         expect(screen.getByText("Public Holiday Pay")).toBeTruthy();
     });
+
+    it("shows applicable public holiday dates and names beside Public Holiday Pay", () => {
+        render(
+            <VoucherCalculation
+                payrollId="pay-1"
+                payrollStatus="Draft"
+                voucher={voucherFixture({
+                    restDayPay: 0,
+                    publicHolidays: 1,
+                    publicHolidayPay: 98.9,
+                    restDayRate: 98.9,
+                })}
+                advances={[]}
+                attendanceRestDays={0}
+                applicablePublicHolidays={[
+                    { date: "2026-01-01", name: "New Year's Day" },
+                ]}
+            />,
+        );
+
+        expect(screen.getByText("Public Holiday Pay")).toBeTruthy();
+        const body = document.body.textContent ?? "";
+        expect(body).toContain("01/01/2026");
+        expect(body).toContain("New Year's Day");
+    });
 });

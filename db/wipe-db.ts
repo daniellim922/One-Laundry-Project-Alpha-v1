@@ -99,8 +99,10 @@ async function main() {
     process.exit(0);
 }
 
+import { pathToFileURL } from "node:url";
+
 const isMainModule =
-    import.meta.url === `file://${process.argv[1] ?? ""}`;
+    import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
 
 if (isMainModule) {
     main().catch((err) => {

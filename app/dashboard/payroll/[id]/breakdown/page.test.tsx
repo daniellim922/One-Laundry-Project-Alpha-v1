@@ -107,6 +107,7 @@ describe("Payroll breakdown page", () => {
             entries: [],
             missingDateIns: [],
             advances: [],
+            applicablePublicHolidays: [],
         });
 
         const user = userEvent.setup();
@@ -197,6 +198,7 @@ describe("Payroll breakdown page", () => {
             entries: [],
             missingDateIns: [],
             advances: [],
+            applicablePublicHolidays: [],
         });
 
         const user = userEvent.setup();
