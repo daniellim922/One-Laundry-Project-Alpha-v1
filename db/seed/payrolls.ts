@@ -9,7 +9,7 @@ import {
     isLocalFullTimeWorker,
 } from "./minimum-hours";
 import { getAdvanceDeductionForWorkerPeriod } from "./advances";
-import { seedPeriods } from "./periods";
+import { settledHistoricalPayrollSeedPeriods } from "./periods";
 import { getSeedPayrollStatus } from "./settlement-state";
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
@@ -96,7 +96,7 @@ function generatePayrolls(): PayrollEntry[] {
 
     const payrolls: PayrollEntry[] = [];
 
-    for (const period of seedPeriods) {
+    for (const period of settledHistoricalPayrollSeedPeriods) {
         const status = getSeedPayrollStatus(period);
 
         for (let workerIndex = 0; workerIndex < workers.length; workerIndex += 1) {

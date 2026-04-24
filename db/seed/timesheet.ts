@@ -1,5 +1,5 @@
 /**
- * Timesheet seed entries for April through December 2025.
+ * Timesheet seed entries for the currently generated settled historical payroll seed window.
  * workerIndex references the workers array in workers.ts (0-based).
  * Resolved to workerId when seeding.
  */

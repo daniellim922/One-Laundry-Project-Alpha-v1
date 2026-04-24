@@ -1,10 +1,10 @@
 /**
- * Deterministic quarterly advance cohort for April through December 2025.
+ * Deterministic quarterly advance cohort for the settled historical payroll seed window.
  * workerName is resolved to workerId when seeding.
  */
 
 import { isForeignFullTimeWorker } from "./minimum-hours";
-import { seedPeriods } from "./periods";
+import { settledHistoricalPayrollSeedPeriods } from "./periods";
 import {
     getSeedAdvanceRequestStatus,
     getSeedInstallmentStatus,
@@ -46,16 +46,20 @@ export type SeedAdvanceRequest = {
 };
 
 type Quarter = {
-    periods: (typeof seedPeriods)[number][];
+    periods: (typeof settledHistoricalPayrollSeedPeriods)[number][];
     quarterIndex: number;
 };
 
 function chunkPeriodsIntoQuarters(): Quarter[] {
     const quarters: Quarter[] = [];
 
-    for (let index = 0; index < seedPeriods.length; index += 3) {
+    for (
+        let index = 0;
+        index < settledHistoricalPayrollSeedPeriods.length;
+        index += 3
+    ) {
         quarters.push({
-            periods: seedPeriods.slice(index, index + 3),
+            periods: settledHistoricalPayrollSeedPeriods.slice(index, index + 3),
             quarterIndex: index / 3,
         });
     }
