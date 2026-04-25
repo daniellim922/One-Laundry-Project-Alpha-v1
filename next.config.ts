@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
     reactCompiler: true,
     serverExternalPackages: ["@sparticuz/chromium"],
+    outputFileTracingIncludes: {
+        "/api/**/*": ["./node_modules/@sparticuz/chromium/**/*"],
+    },
     async redirects() {
         return [
             {
