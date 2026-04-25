@@ -9,8 +9,10 @@ import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payrollTable";
 import { workerTable } from "@/db/tables/workerTable";
 import { recordGuidedMonthlyWorkflowStepCompletion } from "@/services/payroll/guided-monthly-workflow-activity";
+import { generatePdf } from "@/services/pdf/generate-pdf";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 type Body = { payrollIds?: unknown };
 type PayrollPdfFailure = { payrollId: string; reason: string };
@@ -133,43 +135,33 @@ async function collectPdfEntries(args: {
         const meta = metaById.get(id);
         const workerNameForProgress = meta?.workerName ?? `payroll-${id}`;
         try {
-            const url = `${origin}/api/payroll/${id}/pdf?mode=summary`;
-            const res = await fetch(url, {
-                headers: cookie ? { cookie } : undefined,
-                cache: "no-store",
+            const url = `${origin}/dashboard/payroll/${id}/summary?print=1`;
+            const pdf = await generatePdf({
+                url,
+                cookieHeader: cookie || undefined,
             });
-            if (!res.ok) {
-                const reason = `PDF failed (${res.status})`;
-                failures.push({ payrollId: id, reason });
-                console.warn(`[payroll/download-zip] Failed to fetch PDF`, {
+
+            const workerName = meta?.workerName ?? `payroll-${id}`;
+            const periodStart = isoToDdmmyyyy(isoDate(meta?.periodStart ?? ""));
+            const periodEnd = isoToDdmmyyyy(isoDate(meta?.periodEnd ?? ""));
+            const baseName = createPayrollPdfBaseName({
+                workerName,
+                periodStart,
+                periodEnd,
+            });
+            const uniqueName = makeUniqueZipEntryName(baseName, seenNames);
+            if (uniqueName !== baseName) {
+                console.warn(`[payroll/download-zip] Duplicate filename collision`, {
                     payrollId: id,
-                    status: res.status,
-                });
-            } else {
-                const buf = Buffer.from(await res.arrayBuffer());
-
-                const workerName = meta?.workerName ?? `payroll-${id}`;
-                const periodStart = isoToDdmmyyyy(isoDate(meta?.periodStart ?? ""));
-                const periodEnd = isoToDdmmyyyy(isoDate(meta?.periodEnd ?? ""));
-                const baseName = createPayrollPdfBaseName({
-                    workerName,
-                    periodStart,
-                    periodEnd,
-                });
-                const uniqueName = makeUniqueZipEntryName(baseName, seenNames);
-                if (uniqueName !== baseName) {
-                    console.warn(`[payroll/download-zip] Duplicate filename collision`, {
-                        payrollId: id,
-                        baseName,
-                        uniqueName,
-                    });
-                }
-
-                pdfEntries.push({
-                    name: uniqueName,
-                    buffer: buf,
+                    baseName,
+                    uniqueName,
                 });
             }
+
+            pdfEntries.push({
+                name: uniqueName,
+                buffer: pdf,
+            });
         } catch (error) {
             const reason =
                 error instanceof Error ? error.message : "Unknown error";
@@ -268,6 +260,7 @@ function createNdjsonZipResponseStream(args: {
                     type: "done",
                     filename: zipName,
                     failed: failures.length,
+                    skippedIds: failures.map((f) => f.payrollId),
                 });
                 controller.close();
             } catch (e) {
@@ -422,11 +415,15 @@ export async function POST(req: NextRequest) {
     });
     const zipNameStar = encodeURIComponent(zipName);
 
-    return new Response(stream, {
-        headers: {
-            "Content-Type": "application/zip",
-            "Content-Disposition": `attachment; filename="${zipName}"; filename*=UTF-8''${zipNameStar}`,
-            "Cache-Control": "no-store",
-        },
-    });
+    const headers: Record<string, string> = {
+        "Content-Type": "application/zip",
+        "Content-Disposition": `attachment; filename="${zipName}"; filename*=UTF-8''${zipNameStar}`,
+        "Cache-Control": "no-store",
+    };
+
+    if (failures.length > 0) {
+        headers["X-Skipped-Ids"] = failures.map((f) => f.payrollId).join(",");
+    }
+
+    return new Response(stream, { headers });
 }

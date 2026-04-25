@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
     db: {
         select: vi.fn(),
     },
+    generatePdf: vi.fn(),
 }));
 
 vi.mock("@/app/api/_shared/auth", () => ({
@@ -23,6 +24,10 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/services/payroll/guided-monthly-workflow-activity", () => ({
     recordGuidedMonthlyWorkflowStepCompletion: (...args: unknown[]) =>
         mocks.recordGuidedMonthlyWorkflowStepCompletion(...args),
+}));
+
+vi.mock("@/services/pdf/generate-pdf", () => ({
+    generatePdf: (...args: unknown[]) => mocks.generatePdf(...args),
 }));
 
 import { POST } from "@/app/api/payroll/download-zip/route";
@@ -47,15 +52,9 @@ describe("POST /api/payroll/download-zip", () => {
                 }),
             }),
         });
-        global.fetch = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
-            const url = String(input);
-            if (url.includes("/pdf?mode=summary")) {
-                return new Response(new Uint8Array([0x25, 0x50, 0x44, 0x46]), {
-                    status: 200,
-                });
-            }
-            return new Response(null, { status: 404 });
-        });
+        mocks.generatePdf.mockResolvedValue(
+            Buffer.from([0x25, 0x50, 0x44, 0x46]),
+        );
     });
 
     it("returns INVALID_JSON for malformed payloads", async () => {
@@ -172,5 +171,56 @@ describe("POST /api/payroll/download-zip", () => {
         ).toHaveBeenCalledWith({
             stepId: "payroll_download",
         });
+    });
+
+    it("includes X-Skipped-Ids header and continues when one PDF fails", async () => {
+        mocks.db.select.mockReturnValue({
+            from: vi.fn().mockReturnValue({
+                innerJoin: vi.fn().mockReturnValue({
+                    where: vi.fn().mockResolvedValue([
+                        {
+                            id: "payroll-1",
+                            periodStart: "2026-01-01",
+                            periodEnd: "2026-01-31",
+                            workerName: "Alice",
+                        },
+                        {
+                            id: "payroll-2",
+                            periodStart: "2026-01-01",
+                            periodEnd: "2026-01-31",
+                            workerName: "Bob",
+                        },
+                    ]),
+                }),
+            }),
+        });
+
+        mocks.generatePdf.mockImplementation(async ({ url }: { url: string }) => {
+            if (url.includes("payroll-1")) {
+                throw new Error("PDF generation failed");
+            }
+            return Buffer.from([0x25, 0x50, 0x44, 0x46]);
+        });
+
+        const response = await POST(
+            new NextRequest("http://localhost/api/payroll/download-zip", {
+                method: "POST",
+                body: JSON.stringify({
+                    payrollIds: ["payroll-1", "payroll-2"],
+                }),
+            }),
+        );
+
+        expect(response.status).toBe(200);
+        expect(response.headers.get("Content-Type")).toBe("application/zip");
+        expect(response.headers.get("X-Skipped-Ids")).toBe("payroll-1");
+
+        const zipBuffer = Buffer.from(await response.arrayBuffer());
+        expect(zipBuffer.length).toBeGreaterThan(0);
+        expect(zipBuffer[0]).toBe(0x50);
+        expect(zipBuffer[1]).toBe(0x4b);
+
+        // Should have called generatePdf for both, even though first failed
+        expect(mocks.generatePdf).toHaveBeenCalledTimes(2);
     });
 });
