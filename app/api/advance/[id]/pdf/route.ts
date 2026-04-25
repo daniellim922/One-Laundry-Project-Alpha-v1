@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
 
 import { requireCurrentApiUser } from "@/app/api/_shared/auth";
+import { getRequestOrigin } from "@/app/api/_shared/origin";
 import { db } from "@/lib/db";
 import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
 import { workerTable } from "@/db/tables/workerTable";
@@ -32,7 +33,8 @@ export async function GET(
 
     const { id } = await ctx.params;
 
-    const url = `${req.nextUrl.origin}/dashboard/advance/${id}/summary?print=1`;
+    const origin = getRequestOrigin(req);
+    const url = `${origin}/dashboard/advance/${id}/summary?print=1`;
 
     const [meta] = await db
         .select({

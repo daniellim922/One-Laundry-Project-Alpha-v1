@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
 
 import { requireCurrentApiUser } from "@/app/api/_shared/auth";
+import { getRequestOrigin } from "@/app/api/_shared/origin";
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payrollTable";
 import { workerTable } from "@/db/tables/workerTable";
@@ -38,10 +39,11 @@ export async function GET(
     const { id } = await ctx.params;
 
     const mode = req.nextUrl.searchParams.get("mode") ?? "summary";
+    const origin = getRequestOrigin(req);
     const url =
         mode === "voucher"
-            ? `${req.nextUrl.origin}/dashboard/payroll/${id}/summary?mode=voucher&print=1`
-            : `${req.nextUrl.origin}/dashboard/payroll/${id}/summary?print=1`;
+            ? `${origin}/dashboard/payroll/${id}/summary?mode=voucher&print=1`
+            : `${origin}/dashboard/payroll/${id}/summary?print=1`;
 
     const [meta] = await db
         .select({

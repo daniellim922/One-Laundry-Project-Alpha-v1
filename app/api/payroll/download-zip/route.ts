@@ -4,6 +4,7 @@ import { Readable } from "node:stream";
 import { eq, inArray } from "drizzle-orm";
 
 import { requireCurrentApiUser } from "@/app/api/_shared/auth";
+import { getRequestOrigin } from "@/app/api/_shared/origin";
 import { apiError } from "@/app/api/_shared/responses";
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payrollTable";
@@ -337,7 +338,7 @@ export async function POST(req: NextRequest) {
     const periodEndForZipLabel = isoToDdmmyyyy(periodEndForZip);
 
     const cookie = req.headers.get("cookie") ?? "";
-    const origin = req.nextUrl.origin;
+    const origin = getRequestOrigin(req);
     const progressNdjson =
         req.nextUrl.searchParams.get("progress") === "1";
 
