@@ -1,13 +1,14 @@
 import { NextRequest } from "next/server";
-import { chromium } from "playwright";
 import { eq } from "drizzle-orm";
 
 import { requireCurrentApiUser } from "@/app/api/_shared/auth";
 import { db } from "@/lib/db";
 import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
 import { workerTable } from "@/db/tables/workerTable";
+import { generatePdf } from "@/services/pdf/generate-pdf";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 function safeFilenamePart(s: string): string {
     return String(s).replace(/[/\\:*?"<>|]/g, "-").trim();
@@ -44,45 +45,23 @@ export async function GET(
         .where(eq(advanceRequestTable.id, id))
         .limit(1);
 
-    const browser = await chromium.launch({
-        headless: true,
-        args: ["--no-sandbox"],
+    const pdf = await generatePdf({
+        url,
+        cookieHeader: req.headers.get("cookie") ?? undefined,
     });
-    try {
-        const page = await browser.newPage({
-            viewport: { width: 1240, height: 1754 },
-        });
-        await page.goto(url, { waitUntil: "networkidle" });
-        await page.emulateMedia({ media: "print" });
-        await page.evaluate(async () => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const fonts = (document as any).fonts;
-            if (fonts?.ready) await fonts.ready;
-        });
 
-        const pdf = await page.pdf({
-            format: "A4",
-            printBackground: true,
-            preferCSSPageSize: true,
-            scale: 1,
-            margin: { top: "10mm", right: "10mm", bottom: "10mm", left: "10mm" },
-        });
+    const workerName = meta?.workerName ?? `advance-${id}`;
+    const amount = meta?.amountRequested ?? 0;
+    const requestDate = isoToDdmmyyyy(meta?.requestDate ?? "");
+    const filename = safeFilenamePart(
+        `${workerName} - Advance - $${amount} - ${requestDate}.pdf`,
+    );
 
-        const workerName = meta?.workerName ?? `advance-${id}`;
-        const amount = meta?.amountRequested ?? 0;
-        const requestDate = isoToDdmmyyyy(meta?.requestDate ?? "");
-        const filename = safeFilenamePart(
-            `${workerName} - Advance - $${amount} - ${requestDate}.pdf`,
-        );
-
-        return new Response(new Uint8Array(pdf), {
-            headers: {
-                "Content-Type": "application/pdf",
-                "Content-Disposition": `attachment; filename="${filename}"`,
-                "Cache-Control": "no-store",
-            },
-        });
-    } finally {
-        await browser.close();
-    }
+    return new Response(new Uint8Array(pdf), {
+        headers: {
+            "Content-Type": "application/pdf",
+            "Content-Disposition": `attachment; filename="${filename}"`,
+            "Cache-Control": "no-store",
+        },
+    });
 }

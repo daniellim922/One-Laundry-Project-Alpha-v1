@@ -2,28 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 const mocks = vi.hoisted(() => {
-    const page = {
-        setExtraHTTPHeaders: vi.fn(),
-        goto: vi.fn(),
-        emulateMedia: vi.fn(),
-        evaluate: vi.fn(),
-        pdf: vi.fn(),
-    };
-
-    const browser = {
-        newPage: vi.fn(),
-        close: vi.fn(),
-    };
-
     return {
         requireCurrentApiUser: vi.fn(),
         eq: vi.fn(),
         db: {
             select: vi.fn(),
         },
-        chromiumLaunch: vi.fn(),
-        page,
-        browser,
+        generatePdf: vi.fn(),
     };
 });
 
@@ -40,10 +25,8 @@ vi.mock("@/app/api/_shared/auth", () => ({
         mocks.requireCurrentApiUser(...args),
 }));
 
-vi.mock("playwright", () => ({
-    chromium: {
-        launch: (...args: unknown[]) => mocks.chromiumLaunch(...args),
-    },
+vi.mock("@/services/pdf/generate-pdf", () => ({
+    generatePdf: (...args: unknown[]) => mocks.generatePdf(...args),
 }));
 
 import { GET } from "@/app/api/advance/[id]/pdf/route";
@@ -55,9 +38,7 @@ describe("GET /api/advance/[id]/pdf", () => {
             email: "operator@example.com",
         });
 
-        mocks.page.pdf.mockResolvedValue(Buffer.from("advance-pdf"));
-        mocks.browser.newPage.mockResolvedValue(mocks.page);
-        mocks.chromiumLaunch.mockResolvedValue(mocks.browser);
+        mocks.generatePdf.mockResolvedValue(Buffer.from("advance-pdf"));
 
         mocks.db.select.mockReturnValue({
             from: vi.fn().mockReturnValue({
@@ -78,7 +59,9 @@ describe("GET /api/advance/[id]/pdf", () => {
 
     it("renders the advance summary PDF and returns an attachment filename", async () => {
         const response = await GET(
-            new NextRequest("http://localhost/api/advance/adv-1/pdf"),
+            new NextRequest("http://localhost/api/advance/adv-1/pdf", {
+                headers: { cookie: "sb-access-token=abc" },
+            }),
             {
                 params: Promise.resolve({ id: "adv-1" }),
             },
@@ -89,11 +72,12 @@ describe("GET /api/advance/[id]/pdf", () => {
         expect(response.headers.get("content-disposition")).toBe(
             'attachment; filename="Jamie - Tan - Advance - $700 - 20_04_2026.pdf"',
         );
-        expect(mocks.page.setExtraHTTPHeaders).not.toHaveBeenCalled();
-        expect(mocks.page.goto).toHaveBeenCalledWith(
-            "http://localhost/dashboard/advance/adv-1/summary?print=1",
-            { waitUntil: "networkidle" },
-        );
-        expect(mocks.browser.close).toHaveBeenCalledTimes(1);
+        expect(mocks.generatePdf).toHaveBeenCalledWith({
+            url: "http://localhost/dashboard/advance/adv-1/summary?print=1",
+            cookieHeader: "sb-access-token=abc",
+        });
+        await expect(response.arrayBuffer()).resolves.toSatisfy((value) => {
+            return Buffer.from(value).toString("utf8") === "advance-pdf";
+        });
     });
 });
