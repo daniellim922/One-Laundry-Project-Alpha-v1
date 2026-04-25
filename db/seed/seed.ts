@@ -1,9 +1,6 @@
 import "dotenv/config";
 import { db } from "@/lib/db";
-import {
-    workerTable,
-    type InsertWorker,
-} from "@/db/tables/workerTable";
+import { workerTable, type InsertWorker } from "@/db/tables/workerTable";
 import {
     employmentTable,
     type InsertEmployment,
@@ -16,14 +13,8 @@ import {
     advanceRequestTable,
     type InsertAdvanceRequest,
 } from "@/db/tables/advanceRequestTable";
-import {
-    advanceTable,
-    type InsertAdvance,
-} from "@/db/tables/advanceTable";
-import {
-    payrollTable,
-    type InsertPayroll,
-} from "@/db/tables/payrollTable";
+import { advanceTable, type InsertAdvance } from "@/db/tables/advanceTable";
+import { payrollTable, type InsertPayroll } from "@/db/tables/payrollTable";
 import {
     payrollVoucherTable,
     type InsertPayrollVoucher,
