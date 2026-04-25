@@ -3,17 +3,25 @@ import { chromium as playwrightChromium, Browser } from "playwright-core";
 
 let browserPromise: Promise<Browser> | null = null;
 
+const isDev = process.env.NODE_ENV === "development";
+
 export function getBrowser(): Promise<Browser> {
     if (!browserPromise) {
         browserPromise = (async () => {
+            const executablePath = isDev
+                ? undefined
+                : await chromium.executablePath();
+
             return playwrightChromium.launch({
-                args: [
-                    ...chromium.args,
-                    "--disable-dev-shm-usage",
-                    "--disable-gpu",
-                    "--single-process",
-                ],
-                executablePath: await chromium.executablePath(),
+                args: isDev
+                    ? ["--disable-dev-shm-usage", "--disable-gpu"]
+                    : [
+                          ...chromium.args,
+                          "--disable-dev-shm-usage",
+                          "--disable-gpu",
+                          "--single-process",
+                      ],
+                executablePath,
                 headless: true,
             });
         })();
