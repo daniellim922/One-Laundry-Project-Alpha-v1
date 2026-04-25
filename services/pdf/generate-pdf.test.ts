@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => {
 
     return {
         getBrowser: vi.fn().mockResolvedValue(browser),
+        closeBrowser: vi.fn().mockResolvedValue(undefined),
         withBrowserRetry: vi.fn().mockImplementation(
             async <T>(operation: (browser: unknown) => Promise<T>) => {
                 return operation(mocks.browser);
@@ -38,6 +39,7 @@ const mocks = vi.hoisted(() => {
 
 vi.mock("./browser-manager", () => ({
     getBrowser: mocks.getBrowser,
+    closeBrowser: mocks.closeBrowser,
     withBrowserRetry: mocks.withBrowserRetry,
 }));
 

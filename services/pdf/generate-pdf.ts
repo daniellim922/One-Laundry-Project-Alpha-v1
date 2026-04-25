@@ -1,4 +1,4 @@
-import { withBrowserRetry } from "./browser-manager";
+import { withBrowserRetry, closeBrowser } from "./browser-manager";
 
 export interface GeneratePdfOptions {
     url: string;
@@ -37,7 +37,7 @@ export async function generatePdf(
                 const page = await context.newPage();
 
                 const response = await page.goto(url, {
-                    waitUntil: "networkidle",
+                    waitUntil: "load",
                 });
 
                 const finalUrl = page.url();
@@ -91,6 +91,8 @@ export async function generatePdf(
             "TRANSIENT_ERROR",
             `PDF generation failed due to a temporary browser error: ${error instanceof Error ? error.message : "Unknown error"}`,
         );
+    } finally {
+        await closeBrowser();
     }
 }
 
