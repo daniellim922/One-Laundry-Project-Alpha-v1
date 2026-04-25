@@ -67,3 +67,79 @@ describe("browser-manager", () => {
         expect(browser2).not.toBe(browser1);
     });
 });
+
+describe("withBrowserRetry", () => {
+    beforeEach(async () => {
+        vi.clearAllMocks();
+        mocks.browsers.length = 0;
+        vi.resetModules();
+    });
+
+    it("retries once after a transient browser-closed error and succeeds", async () => {
+        const { withBrowserRetry } = await import("./browser-manager");
+
+        let attempt = 0;
+        const operation = vi.fn().mockImplementation(async () => {
+            attempt++;
+            if (attempt === 1) {
+                throw new Error("browser has been closed");
+            }
+            return "success";
+        });
+
+        const result = await withBrowserRetry(operation);
+
+        expect(result).toBe("success");
+        expect(operation).toHaveBeenCalledTimes(2);
+        expect(mocks.launch).toHaveBeenCalledTimes(2);
+    });
+
+    it("retries once after ERR_INSUFFICIENT_RESOURCES and succeeds", async () => {
+        const { withBrowserRetry } = await import("./browser-manager");
+
+        let attempt = 0;
+        const operation = vi.fn().mockImplementation(async () => {
+            attempt++;
+            if (attempt === 1) {
+                const err = new Error("Operation failed");
+                (err as Error & { code: string }).code =
+                    "ERR_INSUFFICIENT_RESOURCES";
+                throw err;
+            }
+            return "success";
+        });
+
+        const result = await withBrowserRetry(operation);
+
+        expect(result).toBe("success");
+        expect(operation).toHaveBeenCalledTimes(2);
+    });
+
+    it("does not retry permanent errors", async () => {
+        const { withBrowserRetry } = await import("./browser-manager");
+
+        const operation = vi.fn().mockRejectedValue(
+            new Error("Navigation failed: net::ERR_ABORTED"),
+        );
+
+        await expect(withBrowserRetry(operation)).rejects.toThrow(
+            "Navigation failed: net::ERR_ABORTED",
+        );
+        expect(operation).toHaveBeenCalledTimes(1);
+        expect(mocks.launch).toHaveBeenCalledTimes(1);
+    });
+
+    it("throws the final error when the retry also fails", async () => {
+        const { withBrowserRetry } = await import("./browser-manager");
+
+        const operation = vi.fn().mockRejectedValue(
+            new Error("browser has been closed"),
+        );
+
+        await expect(withBrowserRetry(operation)).rejects.toThrow(
+            "browser has been closed",
+        );
+        expect(operation).toHaveBeenCalledTimes(2);
+        expect(mocks.launch).toHaveBeenCalledTimes(2);
+    });
+});
