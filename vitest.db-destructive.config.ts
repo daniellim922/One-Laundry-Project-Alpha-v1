@@ -18,6 +18,7 @@ export default defineConfig({
             "db/seed/workers-only.test.ts",
             "db/tables/payrollTable.test.ts",
             "db/tables/timesheetTable.test.ts",
+            "services/payroll/public-holiday-calendar.integration.test.ts",
             "services/payroll/generate-voucher-number.test.ts",
         ],
         exclude: ["node_modules", ".next", "test/e2e"],
