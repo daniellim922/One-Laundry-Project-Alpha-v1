@@ -23,6 +23,7 @@ vi.mock("@/services/payroll/guided-monthly-workflow-activity", () => ({
 }));
 
 import { importAttendRecordTimesheet } from "@/services/timesheet/import-attend-record-timesheet";
+import { timesheetTable } from "@/db/tables/timesheetTable";
 
 function makeAttendRecordPayload() {
     return {
@@ -64,6 +65,78 @@ function makeAttendRecordPayload() {
             },
         ],
     };
+}
+
+function clone<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function makeOperationalState() {
+    return {
+        workers: [
+            { id: "worker-1", name: "Worker One", status: "Active" },
+            { id: "worker-2", name: "Worker Two", status: "Active" },
+        ],
+        timesheets: [
+            {
+                id: "existing-timesheet",
+                workerId: "worker-2",
+                dateIn: "2026-01-15",
+                timeIn: "08:00:00",
+                dateOut: "2026-01-15",
+                timeOut: "16:00:00",
+                status: "Timesheet Paid",
+            },
+        ],
+        payrolls: [
+            {
+                id: "existing-payroll",
+                workerId: "worker-2",
+                periodStart: "2026-01-01",
+                periodEnd: "2026-01-31",
+                status: "Settled",
+            },
+        ],
+        advances: [
+            {
+                id: "existing-advance",
+                workerId: "worker-2",
+                status: "Paid",
+                amount: 300,
+            },
+        ],
+        publicHolidays: [
+            {
+                id: "existing-holiday",
+                date: "2026-01-01",
+                name: "New Year's Day",
+            },
+        ],
+    };
+}
+
+function configureStatefulImportDatabase(
+    state: ReturnType<typeof makeOperationalState>,
+) {
+    mocks.db.select.mockReturnValue({
+        from: vi.fn().mockResolvedValue(state.workers),
+    });
+    mocks.db.insert.mockImplementation((table) => {
+        if (table !== timesheetTable) {
+            throw new Error("Timesheet import should only insert timesheet rows");
+        }
+
+        return {
+            values: vi.fn().mockImplementation(async (rows) => {
+                state.timesheets.push(
+                    ...rows.map((row: Record<string, unknown>, index: number) => ({
+                        id: `imported-timesheet-${index + 1}`,
+                        ...row,
+                    })),
+                );
+            }),
+        };
+    });
 }
 
 describe("services/timesheet/import-attend-record-timesheet", () => {
@@ -146,5 +219,110 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
         expect(mocks.synchronizeWorkerDraftPayrolls).toHaveBeenCalledWith({
             workerId: "worker-2",
         });
+    });
+
+    it("adds matched AttendRecord rows while preserving existing operational records", async () => {
+        const state = makeOperationalState();
+        const preserved = {
+            workers: clone(state.workers),
+            existingTimesheet: clone(state.timesheets[0]),
+            payrolls: clone(state.payrolls),
+            advances: clone(state.advances),
+            publicHolidays: clone(state.publicHolidays),
+        };
+        configureStatefulImportDatabase(state);
+
+        await expect(
+            importAttendRecordTimesheet({
+                attendanceDate: {
+                    startDate: "01/01/2026",
+                    endDate: "01/01/2026",
+                },
+                tablingDate: "01/01/2026 17:10:10",
+                workers: [
+                    {
+                        userId: "",
+                        name: "Worker One",
+                        dates: [
+                            {
+                                dateIn: "01/01/2026",
+                                timeIn: "09:00",
+                                dateOut: "01/01/2026",
+                                timeOut: "17:00",
+                            },
+                        ],
+                    },
+                ],
+            }),
+        ).resolves.toEqual({
+            imported: 1,
+            errors: undefined,
+        });
+
+        expect(state.workers).toEqual(preserved.workers);
+        expect(state.payrolls).toEqual(preserved.payrolls);
+        expect(state.advances).toEqual(preserved.advances);
+        expect(state.publicHolidays).toEqual(preserved.publicHolidays);
+        expect(state.timesheets).toHaveLength(2);
+        expect(state.timesheets[0]).toEqual(preserved.existingTimesheet);
+        expect(state.timesheets[1]).toMatchObject({
+            workerId: "worker-1",
+            dateIn: "2026-01-01",
+            timeIn: "09:00:00",
+            dateOut: "2026-01-01",
+            timeOut: "17:00:00",
+        });
+    });
+
+    it("reports unmatched or invalid AttendRecord rows without deleting unrelated data", async () => {
+        const state = makeOperationalState();
+        const preserved = clone(state);
+        configureStatefulImportDatabase(state);
+
+        await expect(
+            importAttendRecordTimesheet({
+                attendanceDate: {
+                    startDate: "01/01/2026",
+                    endDate: "02/01/2026",
+                },
+                tablingDate: "02/01/2026 17:10:10",
+                workers: [
+                    {
+                        userId: "",
+                        name: "Unknown Worker",
+                        dates: [
+                            {
+                                dateIn: "01/01/2026",
+                                timeIn: "09:00",
+                                dateOut: "01/01/2026",
+                                timeOut: "17:00",
+                            },
+                        ],
+                    },
+                    {
+                        userId: "",
+                        name: "Worker One",
+                        dates: [
+                            {
+                                dateIn: "not-a-date",
+                                timeIn: "09:00",
+                                dateOut: "02/01/2026",
+                                timeOut: "17:00",
+                            },
+                        ],
+                    },
+                ],
+            }),
+        ).resolves.toEqual({
+            imported: 0,
+            errors: [
+                'Unknown worker "Unknown Worker"',
+                "Invalid date for Worker One: not-a-date",
+            ],
+        });
+
+        expect(state).toEqual(preserved);
+        expect(mocks.recordGuidedMonthlyWorkflowStepCompletion).not.toHaveBeenCalled();
+        expect(mocks.synchronizeWorkerDraftPayrolls).not.toHaveBeenCalled();
     });
 });
