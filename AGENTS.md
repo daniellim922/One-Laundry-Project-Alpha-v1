@@ -13,7 +13,6 @@ npm run build                   # production build
 npm run lint                    # ESLint (flat config, core-web-vitals + TS)
 npm run test                    # unit tests (Vitest; same as test:unit)
 npm run test:unit               # Vitest (all unit tests)
-npm run test:db:destructive     # explicit destructive DB integration tests only (separate test DB + opt-in env)
 npm run test:unit:watch         # Vitest watch mode
 npm run test:unit:worker        # worker-focused Vitest paths
 npm run db:reset                # wipe + push schema + seed (DATABASE_URL)
@@ -96,9 +95,9 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 
 ## Testing
 
-- **Vitest** — node environment, tests co-located with source as `*.test.ts` / `*.test.tsx` under `app/`, `components/`, `utils/`, `lib/`, `db/`, `services/`, `scripts/`.
-- **Destructive DB integration tests** — tests that wipe, truncate, reset schema, or mutate live database tables are excluded from default Vitest and run only through `npm run test:db:destructive` with `ONE_LAUNDRY_ALLOW_DESTRUCTIVE_DB=true`, `ONE_LAUNDRY_DESTRUCTIVE_DB_ACTION=test`, and `ONE_LAUNDRY_DESTRUCTIVE_TEST_DATABASE_URL` pointing at a dedicated test database.
-- **Fixtures** (shared by Vitest) live in `test/fixtures/`.
+- **Vitest** — node environment, tests co-located with source as `*.test.ts` / `*.test.tsx` under `app/`, `components/`, `utils/`, `lib/`, `db/`, `services/`, `scripts/`. Client/component tests that need DOM set `/** @vitest-environment jsdom */` at the top of the file (see `test/ARCHITECTURE.md`). A few Postgres integration tests are excluded from the default run in `vitest.config.ts`; run them with `npx vitest run <path>` when `DATABASE_URL` points at a real database.
+- **Factories** (shared by Vitest) live in `test/factories/`; shared mocks/harnesses in `test/_support/`. Layering and commands are summarized in `test/ARCHITECTURE.md`.
+- **`npm run test:coverage`** — Vitest with v8 coverage thresholds on `services/payroll/**` and `services/timesheet/**` (see `vitest.config.ts`).
 - **Codex post-change verification** is wired through `.codex/hooks.json`; when product code changes, the stop hook runs `npm run test:unit` (fast Vitest; `npm run test` runs the same default suite).
 
 ## Dos

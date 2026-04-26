@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { mockAuthenticatedApiOperator } from "@/test/_support/api-auth-mock";
+
 const mocks = vi.hoisted(() => ({
     requireCurrentApiUser: vi.fn(),
     getPayrollRevertPreview: vi.fn(),
@@ -20,9 +22,7 @@ import { GET } from "@/app/api/payroll/[id]/revert-preview/route";
 describe("GET /api/payroll/[id]/revert-preview", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.requireCurrentApiUser.mockResolvedValue({
-            email: "operator@example.com",
-        });
+        mockAuthenticatedApiOperator(mocks);
     });
 
     it("returns structured preview data on success", async () => {
@@ -57,49 +57,55 @@ describe("GET /api/payroll/[id]/revert-preview", () => {
         expect(mocks.getPayrollRevertPreview).toHaveBeenCalledWith("payroll-1");
     });
 
-    it("returns structured not-found errors", async () => {
-        mocks.getPayrollRevertPreview.mockResolvedValue({
-            error: "Payroll not found",
-            code: "NOT_FOUND",
-        });
-
-        const response = await GET(
-            new Request("http://localhost/api/payroll/missing/revert-preview"),
-            {
-                params: Promise.resolve({ id: "missing" }),
+    it.each([
+        {
+            title: "not-found",
+            id: "missing",
+            mock: {
+                error: "Payroll not found",
+                code: "NOT_FOUND" as const,
             },
-        );
-
-        expect(response.status).toBe(404);
-        await expect(response.json()).resolves.toEqual({
-            ok: false,
-            error: {
-                code: "NOT_FOUND",
-                message: "Payroll not found",
+            status: 404,
+            expected: {
+                ok: false,
+                error: {
+                    code: "NOT_FOUND",
+                    message: "Payroll not found",
+                },
             },
-        });
-    });
-
-    it("returns structured invalid-state errors", async () => {
-        mocks.getPayrollRevertPreview.mockResolvedValue({
-            error: "Only Settled payrolls can be previewed for revert",
-            code: "INVALID_STATE",
-        });
-
-        const response = await GET(
-            new Request("http://localhost/api/payroll/payroll-1/revert-preview"),
-            {
-                params: Promise.resolve({ id: "payroll-1" }),
+        },
+        {
+            title: "invalid-state",
+            id: "payroll-1",
+            mock: {
+                error: "Only Settled payrolls can be previewed for revert",
+                code: "INVALID_STATE" as const,
             },
-        );
-
-        expect(response.status).toBe(409);
-        await expect(response.json()).resolves.toEqual({
-            ok: false,
-            error: {
-                code: "INVALID_STATE",
-                message: "Only Settled payrolls can be previewed for revert",
+            status: 409,
+            expected: {
+                ok: false,
+                error: {
+                    code: "INVALID_STATE",
+                    message: "Only Settled payrolls can be previewed for revert",
+                },
             },
-        });
-    });
+        },
+    ])(
+        "returns structured $title errors",
+        async ({ id, mock, status, expected }) => {
+            mocks.getPayrollRevertPreview.mockResolvedValue(mock);
+
+            const response = await GET(
+                new Request(
+                    `http://localhost/api/payroll/${id}/revert-preview`,
+                ),
+                {
+                    params: Promise.resolve({ id }),
+                },
+            );
+
+            expect(response.status).toBe(status);
+            await expect(response.json()).resolves.toEqual(expected);
+        },
+    );
 });

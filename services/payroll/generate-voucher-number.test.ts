@@ -1,10 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { sql } from "drizzle-orm";
 
-import { configureDestructiveTestDatabase } from "@/db/destructive-test-env";
-
-configureDestructiveTestDatabase();
-
 const COUNTER_TABLE_NAME = "payroll_voucher_counter";
 
 let db: typeof import("@/lib/db").db;

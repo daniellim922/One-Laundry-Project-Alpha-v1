@@ -48,20 +48,17 @@ import {
 import { payrollTable } from "@/db/tables/payrollTable";
 import { payrollVoucherCounterTable } from "@/db/tables/payrollVoucherCounterTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
+import {
+    drizzleMockSelectJoinLimitResolved,
+    drizzleMockSelectLimitResolved,
+} from "@/test/_support/drizzle-mocks";
 
 function mockSelectWithLimitResolved(value: unknown) {
-    const limit = vi.fn().mockResolvedValue(value);
-    const where = vi.fn().mockReturnValue({ limit });
-    const from = vi.fn().mockReturnValue({ where });
-    mocks.db.select.mockReturnValueOnce({ from });
+    drizzleMockSelectLimitResolved(mocks.db.select, value);
 }
 
 function mockSelectWithJoinLimitResolved(value: unknown) {
-    const limit = vi.fn().mockResolvedValue(value);
-    const where = vi.fn().mockReturnValue({ limit });
-    const innerJoin = vi.fn().mockReturnValue({ where });
-    const from = vi.fn().mockReturnValue({ innerJoin });
-    mocks.db.select.mockReturnValueOnce({ from });
+    drizzleMockSelectJoinLimitResolved(mocks.db.select, value);
 }
 
 function createPayrollInsertExecutor(insertedVoucherValues: unknown[]) {

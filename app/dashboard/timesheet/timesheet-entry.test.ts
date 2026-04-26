@@ -23,11 +23,10 @@ describe("timesheetEntryFormSchema", () => {
             timeOut: "09:00",
         });
         expect(r.success).toBe(false);
-        if (!r.success) {
-            expect(
-                r.error.flatten().fieldErrors.timeOut?.length,
-            ).toBeGreaterThan(0);
+        if (r.success) {
+            throw new Error("expected parse failure");
         }
+        expect(r.error.flatten().fieldErrors.timeOut?.length).toBeGreaterThan(0);
     });
 
     it("allows overnight shifts when date out is the next calendar day", () => {

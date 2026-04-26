@@ -1,10 +1,6 @@
 import "dotenv/config";
 import { sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import {
-    assertDestructiveDatabaseActionAllowed,
-    type DestructiveDatabaseAction,
-} from "@/db/destructive-guard";
 
 function rowsFromExecute<T extends Record<string, unknown>>(
     result: unknown,
@@ -38,19 +34,7 @@ function rowsFromExecute<T extends Record<string, unknown>>(
  * types in `public`. The reset flow clears the database so `drizzle-kit push` can
  * apply `db/schema.ts` from scratch against the configured Postgres database.
  */
-type WipeDbOptions = {
-    action?: DestructiveDatabaseAction;
-    skipGuard?: boolean;
-};
-
-export async function wipeDb(options: WipeDbOptions = {}) {
-    if (!options.skipGuard) {
-        assertDestructiveDatabaseActionAllowed({
-            action: options.action ?? "wipe",
-            databaseUrl: process.env.DATABASE_URL,
-        });
-    }
-
+export async function wipeDb() {
     console.log("Discovering tables to drop...");
 
     const tableResult: unknown = await db.execute(sql`

@@ -4,12 +4,9 @@ import { eq, sql } from "drizzle-orm";
 import postgres from "postgres";
 
 import { applyCustomSchemaArtifacts } from "@/db/apply-custom-schema";
-import { configureDestructiveTestDatabase } from "@/db/destructive-test-env";
 import { employmentTable } from "@/db/tables/employmentTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { workerTable } from "@/db/tables/workerTable";
-
-configureDestructiveTestDatabase();
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -209,13 +206,11 @@ describe("timesheet table hours invariant", () => {
                 WHERE "id" = ${fixture.timesheetId}
             `);
 
-            await expect(directUpdate).rejects.toBeDefined();
-
-            await directUpdate.catch((error) => {
-                expect(getErrorMessage(error)).toMatch(
-                    /generated column|can only be updated to DEFAULT/i,
-                );
-            });
+            await expect(directUpdate).rejects.toSatisfy((error) =>
+                /generated column|can only be updated to DEFAULT/i.test(
+                    getErrorMessage(error),
+                ),
+            );
         } finally {
             await cleanupTimesheetFixture(fixture);
         }

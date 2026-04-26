@@ -1,16 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-const mocks = vi.hoisted(() => {
-    return {
-        requireCurrentApiUser: vi.fn(),
-        eq: vi.fn(),
-        db: {
-            select: vi.fn(),
-        },
-        generatePdf: vi.fn(),
-    };
-});
+import { mockAuthenticatedApiOperator } from "@/test/_support/api-auth-mock";
+
+const mocks = vi.hoisted(() => ({
+    requireCurrentApiUser: vi.fn(),
+    eq: vi.fn(),
+    db: {
+        select: vi.fn(),
+    },
+    generatePdf: vi.fn(),
+}));
 
 vi.mock("drizzle-orm", () => ({
     eq: (...args: unknown[]) => mocks.eq(...args),
@@ -34,9 +34,7 @@ import { GET } from "@/app/api/advance/[id]/pdf/route";
 describe("GET /api/advance/[id]/pdf", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.requireCurrentApiUser.mockResolvedValue({
-            email: "operator@example.com",
-        });
+        mockAuthenticatedApiOperator(mocks);
 
         mocks.generatePdf.mockResolvedValue(Buffer.from("advance-pdf"));
 

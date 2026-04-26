@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { mockAuthenticatedApiOperator } from "@/test/_support/api-auth-mock";
+
 const mocks = vi.hoisted(() => ({
     requireCurrentApiUser: vi.fn(),
     revalidateTransportPaths: vi.fn(),
@@ -29,9 +31,7 @@ const PAYROLL_B = "10000000-0000-4000-8000-000000000002";
 describe("POST /api/payroll/settle", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.requireCurrentApiUser.mockResolvedValue({
-            email: "operator@example.com",
-        });
+        mockAuthenticatedApiOperator(mocks);
     });
 
     it("returns structured success and revalidates all affected pages", async () => {

@@ -35,8 +35,12 @@ vi.mock("./import-attend-record-timesheet", () => ({
     importAttendRecordTimesheet: importAttendRecordTimesheetMock,
 }));
 
+const nextNavBackMocks = vi.hoisted(() => ({
+    back: vi.fn(),
+}));
+
 vi.mock("next/navigation", () => ({
-    useRouter: () => ({ back: vi.fn() }),
+    useRouter: () => ({ back: nextNavBackMocks.back }),
 }));
 
 import { TimesheetImportClient } from "./timesheet-import-client";

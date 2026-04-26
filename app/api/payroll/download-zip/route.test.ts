@@ -3,6 +3,8 @@ import { Buffer } from "node:buffer";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
+import { mockAuthenticatedApiOperator } from "@/test/_support/api-auth-mock";
+
 const mocks = vi.hoisted(() => ({
     requireCurrentApiUser: vi.fn(),
     recordGuidedMonthlyWorkflowStepCompletion: vi.fn(),
@@ -35,9 +37,7 @@ import { POST } from "@/app/api/payroll/download-zip/route";
 describe("POST /api/payroll/download-zip", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.requireCurrentApiUser.mockResolvedValue({
-            email: "operator@example.com",
-        });
+        mockAuthenticatedApiOperator(mocks);
         mocks.db.select.mockReturnValue({
             from: vi.fn().mockReturnValue({
                 innerJoin: vi.fn().mockReturnValue({

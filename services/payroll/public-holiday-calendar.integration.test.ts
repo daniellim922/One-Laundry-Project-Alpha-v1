@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { config as loadDotenv } from "dotenv";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { eq } from "drizzle-orm";
@@ -15,7 +14,7 @@ import { advanceTable } from "@/db/tables/advanceTable";
 import { publicHolidayTable } from "@/db/tables/publicHolidayTable";
 import { savePublicHolidaysForYear } from "@/services/payroll/public-holiday-calendar";
 
-loadDotenv({ override: true });
+/** Requires `DATABASE_URL` (real Postgres). */
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {

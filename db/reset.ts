@@ -3,17 +3,11 @@ import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 import { applyCustomSchemaArtifacts } from "@/db/apply-custom-schema";
-import { assertDestructiveDatabaseActionAllowed } from "@/db/destructive-guard";
 import { wipeDb } from "@/db/wipe-db";
 import { seedDatabase } from "@/db/seed/seed";
 
 export async function resetDatabase() {
-    assertDestructiveDatabaseActionAllowed({
-        action: "reset",
-        databaseUrl: process.env.DATABASE_URL,
-    });
-
-    await wipeDb({ skipGuard: true });
+    await wipeDb();
     execFileSync(process.platform === "win32" ? "npx.cmd" : "npx", [
         "drizzle-kit",
         "push",

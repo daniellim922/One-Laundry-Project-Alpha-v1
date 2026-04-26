@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { mockAuthenticatedApiOperator } from "@/test/_support/api-auth-mock";
+
 const mocks = vi.hoisted(() => ({
     requireCurrentApiUser: vi.fn(),
     listDraftPayrollsForSettlement: vi.fn(),
@@ -20,9 +22,7 @@ import { GET } from "@/app/api/payroll/settlement-candidates/route";
 describe("GET /api/payroll/settlement-candidates", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.requireCurrentApiUser.mockResolvedValue({
-            email: "operator@example.com",
-        });
+        mockAuthenticatedApiOperator(mocks);
     });
 
     it("returns settlement candidates", async () => {

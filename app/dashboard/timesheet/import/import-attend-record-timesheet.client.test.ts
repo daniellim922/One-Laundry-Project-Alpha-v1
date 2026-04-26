@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { importAttendRecordTimesheet } from "@/app/dashboard/timesheet/import/import-attend-record-timesheet";
+import { mockFetchJsonResponse } from "@/test/_support/mock-fetch-json";
 
 describe("importAttendRecordTimesheet", () => {
     const fetchMock = vi.fn();
@@ -37,15 +38,14 @@ describe("importAttendRecordTimesheet", () => {
             ],
         };
 
-        fetchMock.mockResolvedValue({
-            ok: true,
-            json: vi.fn().mockResolvedValue({
+        fetchMock.mockResolvedValue(
+            mockFetchJsonResponse({
                 ok: true,
                 data: {
                     imported: 1,
                 },
             }),
-        });
+        );
 
         await expect(importAttendRecordTimesheet(payload)).resolves.toEqual({
             imported: 1,
@@ -84,15 +84,14 @@ describe("importAttendRecordTimesheet", () => {
             ],
         };
 
-        fetchMock.mockResolvedValue({
-            ok: true,
-            json: vi.fn().mockResolvedValue({
+        fetchMock.mockResolvedValue(
+            mockFetchJsonResponse({
                 ok: true,
                 data: {
                     imported: 1,
                 },
             }),
-        });
+        );
 
         await importAttendRecordTimesheet(payloadWithHours as never);
 
@@ -123,16 +122,18 @@ describe("importAttendRecordTimesheet", () => {
     });
 
     it("maps API failures to the existing import error fallback", async () => {
-        fetchMock.mockResolvedValue({
-            ok: false,
-            json: vi.fn().mockResolvedValue({
-                ok: false,
-                error: {
-                    code: "FORBIDDEN",
-                    message: "Forbidden",
+        fetchMock.mockResolvedValue(
+            mockFetchJsonResponse(
+                {
+                    ok: false,
+                    error: {
+                        code: "FORBIDDEN",
+                        message: "Forbidden",
+                    },
                 },
-            }),
-        });
+                false,
+            ),
+        );
 
         await expect(
             importAttendRecordTimesheet({

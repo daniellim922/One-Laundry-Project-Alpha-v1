@@ -1,9 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/cache", () => ({
-    revalidatePath: vi.fn(),
-}));
-
 const mocks = vi.hoisted(() => ({
     db: {
         select: vi.fn(),
@@ -11,6 +7,10 @@ const mocks = vi.hoisted(() => ({
         insert: vi.fn(),
         transaction: vi.fn(),
     },
+}));
+
+vi.mock("next/cache", () => ({
+    revalidatePath: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({

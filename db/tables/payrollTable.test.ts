@@ -3,14 +3,11 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { eq } from "drizzle-orm";
 import postgres from "postgres";
 
-import { configureDestructiveTestDatabase } from "@/db/destructive-test-env";
 import { employmentTable } from "@/db/tables/employmentTable";
 import { applyCustomSchemaArtifacts } from "@/db/apply-custom-schema";
 import { payrollTable } from "@/db/tables/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { workerTable } from "@/db/tables/workerTable";
-
-configureDestructiveTestDatabase();
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -133,11 +130,9 @@ describe("payroll table overlap constraint", () => {
                 payrollDate: "2026-02-16",
             });
 
-            await expect(overlappingInsert).rejects.toBeDefined();
-
-            await overlappingInsert.catch((error) => {
-                expect(getErrorMessage(error)).toMatch(/exclusion constraint/i);
-            });
+            await expect(overlappingInsert).rejects.toSatisfy((error) =>
+                /exclusion constraint/i.test(getErrorMessage(error)),
+            );
         } finally {
             await cleanupPayrollFixture(fixture);
         }

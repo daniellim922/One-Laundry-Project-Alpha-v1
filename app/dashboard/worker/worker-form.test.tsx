@@ -40,35 +40,7 @@ vi.mock("@/app/dashboard/worker/actions", () => ({
 import { WorkerForm } from "@/app/dashboard/worker/worker-form";
 import type { WorkerUpsertValues } from "@/db/schemas/worker-employment";
 import type { WorkerWithEmployment } from "@/db/tables/workerTable";
-
-function makeWorker(
-    overrides: Partial<WorkerWithEmployment> = {},
-): WorkerWithEmployment {
-    return {
-        id: "worker-1",
-        employmentId: "employment-1",
-        name: "Existing Worker",
-        nric: "S1234567A",
-        email: "existing@example.com",
-        phone: "81112222",
-        status: "Active",
-        countryOfOrigin: "Singapore",
-        race: "Chinese",
-        employmentType: "Full Time",
-        employmentArrangement: "Local Worker",
-        cpf: 300,
-        monthlyPay: 2100,
-        hourlyRate: 10,
-        restDayRate: 88,
-        minimumWorkingHours: 240,
-        paymentMethod: "Cash",
-        payNowPhone: null,
-        bankAccountNumber: null,
-        createdAt: new Date("2026-01-01"),
-        updatedAt: new Date("2026-02-01"),
-        ...overrides,
-    };
-}
+import { makeWorkerWithEmployment } from "@/test/factories/worker";
 
 describe("WorkerForm", () => {
     afterEach(() => {
@@ -355,7 +327,7 @@ describe("WorkerForm", () => {
         const user = userEvent.setup();
         render(
             <WorkerForm
-                worker={makeWorker({
+                worker={makeWorkerWithEmployment({
                     paymentMethod: "Bank Transfer",
                     bankAccountNumber: "",
                 })}
@@ -430,7 +402,7 @@ describe("WorkerForm", () => {
         const user = userEvent.setup();
         render(
             <WorkerForm
-                worker={makeWorker({
+                worker={makeWorkerWithEmployment({
                     paymentMethod: "PayNow",
                     payNowPhone: "",
                 })}
@@ -456,7 +428,7 @@ describe("WorkerForm", () => {
     });
 
     it("honors disabled mode (read-only): no submit button and disabled fields", () => {
-        render(<WorkerForm worker={makeWorker()} disabled />);
+        render(<WorkerForm worker={makeWorkerWithEmployment()} disabled />);
 
         expect(
             screen.queryByRole("button", { name: "Save changes" }),
@@ -555,7 +527,7 @@ describe("WorkerForm", () => {
 
     it("submits edit flow through updateWorker with worker id", async () => {
         const user = userEvent.setup();
-        render(<WorkerForm worker={makeWorker()} />);
+        render(<WorkerForm worker={makeWorkerWithEmployment()} />);
 
         await user.click(screen.getByRole("button", { name: "Save changes" }));
 

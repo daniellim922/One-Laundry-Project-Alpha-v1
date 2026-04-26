@@ -1,3 +1,7 @@
+/**
+ * Default payroll/advance shapes for tests. Calendar dates align with the seeded
+ * “current” window used across dashboard tests (2026).
+ */
 export function makePayroll(overrides?: Partial<{
     id: string;
     workerId: string;
@@ -9,9 +13,9 @@ export function makePayroll(overrides?: Partial<{
     return {
         id: "payroll-1",
         workerId: "worker-1",
-        periodStart: "2025-03-01",
-        periodEnd: "2025-03-31",
-        payrollDate: "2025-04-05",
+        periodStart: "2026-03-01",
+        periodEnd: "2026-03-31",
+        payrollDate: "2026-04-05",
         status: "Draft" as const,
         ...overrides,
     };
@@ -29,7 +33,7 @@ export function makeAdvance(overrides?: Partial<{
         advanceRequestId: "req-1",
         status: "Installment Loan" as const,
         amount: 100,
-        repaymentDate: "2025-03-15",
+        repaymentDate: "2026-03-15",
         ...overrides,
     };
 }

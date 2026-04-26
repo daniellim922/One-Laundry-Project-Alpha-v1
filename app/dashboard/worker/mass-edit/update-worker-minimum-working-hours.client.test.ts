@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { updateWorkerMinimumWorkingHours } from "@/app/dashboard/worker/mass-edit/update-worker-minimum-working-hours";
+import { mockFetchJsonResponse } from "@/test/_support/mock-fetch-json";
 
 describe("updateWorkerMinimumWorkingHours", () => {
     const fetchMock = vi.fn();
@@ -15,16 +16,15 @@ describe("updateWorkerMinimumWorkingHours", () => {
     });
 
     it("calls the worker minimum-hours API and returns structured data", async () => {
-        fetchMock.mockResolvedValue({
-            ok: true,
-            json: vi.fn().mockResolvedValue({
+        fetchMock.mockResolvedValue(
+            mockFetchJsonResponse({
                 ok: true,
                 data: {
                     updatedCount: 1,
                     failed: [],
                 },
             }),
-        });
+        );
 
         await expect(
             updateWorkerMinimumWorkingHours({
@@ -50,16 +50,18 @@ describe("updateWorkerMinimumWorkingHours", () => {
     });
 
     it("maps API errors to the existing dialog fallback message", async () => {
-        fetchMock.mockResolvedValue({
-            ok: false,
-            json: vi.fn().mockResolvedValue({
-                ok: false,
-                error: {
-                    code: "FORBIDDEN",
-                    message: "Forbidden",
+        fetchMock.mockResolvedValue(
+            mockFetchJsonResponse(
+                {
+                    ok: false,
+                    error: {
+                        code: "FORBIDDEN",
+                        message: "Forbidden",
+                    },
                 },
-            }),
-        });
+                false,
+            ),
+        );
 
         await expect(
             updateWorkerMinimumWorkingHours({
