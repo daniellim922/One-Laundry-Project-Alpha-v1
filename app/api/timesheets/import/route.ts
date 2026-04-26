@@ -58,6 +58,7 @@ export async function POST(request: Request) {
 
     if (result.imported > 0) {
         revalidateTransportPaths([
+            "/dashboard",
             "/dashboard/timesheet",
             "/dashboard/timesheet/all",
             "/dashboard/payroll",

@@ -19,6 +19,10 @@ vi.mock("@/lib/db", () => ({
     db: mocks.db,
 }));
 
+vi.mock("@/services/payroll/guided-monthly-workflow-activity", () => ({
+    recordGuidedMonthlyWorkflowStepCompletion: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { settleDraftPayrolls } from "@/services/payroll/settle-draft-payrolls";
 
 describe("payroll command services / settleDraftPayrolls", () => {

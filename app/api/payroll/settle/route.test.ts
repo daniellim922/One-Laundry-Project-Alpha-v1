@@ -70,6 +70,7 @@ describe("POST /api/payroll/settle", () => {
             `/dashboard/payroll/${PAYROLL_A}/summary`,
             `/dashboard/payroll/${PAYROLL_B}/breakdown`,
             `/dashboard/payroll/${PAYROLL_B}/summary`,
+            "/dashboard",
             "/dashboard/payroll",
             "/dashboard/payroll/all",
             "/dashboard/advance",

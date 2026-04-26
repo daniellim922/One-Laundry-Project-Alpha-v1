@@ -95,6 +95,7 @@ describe("POST /api/timesheets/import", () => {
             ],
         });
         expect(mocks.revalidateTransportPaths).toHaveBeenCalledWith([
+            "/dashboard",
             "/dashboard/timesheet",
             "/dashboard/timesheet/all",
             "/dashboard/payroll",

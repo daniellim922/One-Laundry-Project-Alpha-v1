@@ -24,9 +24,11 @@ describe("getGuidedMonthlyWorkflowSnapshot", () => {
             "Import timesheets",
             "Generate payroll",
             "Download payrolls",
+            "Settle draft payrolls",
         ]);
         expect(snapshot.steps.map((step) => step.status)).toEqual([
             "current",
+            "up_next",
             "up_next",
             "up_next",
             "up_next",
@@ -36,6 +38,7 @@ describe("getGuidedMonthlyWorkflowSnapshot", () => {
             "/dashboard/timesheet/import",
             "/dashboard/payroll/new",
             "/dashboard/payroll/download-payrolls",
+            "/dashboard/payroll/settle-drafts",
         ]);
         expect(getGuidedMonthlyWorkflowCompletedStepIds).toHaveBeenCalledWith({
             monthKey: "2026-04",
@@ -54,6 +57,7 @@ describe("getGuidedMonthlyWorkflowSnapshot", () => {
         expect(snapshot.steps.map((step) => step.status)).toEqual([
             "done",
             "current",
+            "up_next",
             "up_next",
             "up_next",
         ]);
@@ -76,15 +80,17 @@ describe("getGuidedMonthlyWorkflowSnapshot", () => {
             "done",
             "done",
             "current",
+            "up_next",
         ]);
     });
 
-    it("marks the final download step done when payroll download activity exists", async () => {
+    it("marks the final step done when all workflow activity exists for the month", async () => {
         getGuidedMonthlyWorkflowCompletedStepIds.mockResolvedValue([
             "minimum_hours_bulk_update",
             "timesheet_import",
             "payroll_creation",
             "payroll_download",
+            "payroll_settlement",
         ]);
 
         const snapshot = await getGuidedMonthlyWorkflowSnapshot({
@@ -92,6 +98,7 @@ describe("getGuidedMonthlyWorkflowSnapshot", () => {
         });
 
         expect(snapshot.steps.map((step) => step.status)).toEqual([
+            "done",
             "done",
             "done",
             "done",
@@ -110,9 +117,13 @@ describe("getGuidedMonthlyWorkflowSnapshot", () => {
             now: new Date("2026-04-20T03:30:00.000Z"),
         });
 
-        expect(snapshot.steps.at(-1)).toMatchObject({
+        expect(snapshot.steps[3]).toMatchObject({
             id: "payroll_download",
             status: "current",
+        });
+        expect(snapshot.steps[4]).toMatchObject({
+            id: "payroll_settlement",
+            status: "up_next",
         });
     });
 
@@ -130,6 +141,7 @@ describe("getGuidedMonthlyWorkflowSnapshot", () => {
             "current",
             "done",
             "done",
+            "up_next",
             "up_next",
         ]);
     });

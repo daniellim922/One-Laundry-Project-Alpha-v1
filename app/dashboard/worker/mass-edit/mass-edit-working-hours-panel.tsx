@@ -386,7 +386,7 @@ export function MassEditWorkingHoursPanel({
                         </p>
                     </div>
 
-                    <div className="max-h-[min(70vh,720px)] min-h-0 min-w-0 overflow-x-auto overflow-y-auto">
+                    <div className="min-h-0 min-w-0 overflow-x-auto">
                         <DataTable
                             columns={columns}
                             data={filteredWorkers}

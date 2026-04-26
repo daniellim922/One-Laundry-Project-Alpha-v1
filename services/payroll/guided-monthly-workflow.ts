@@ -1,7 +1,12 @@
 export type GuidedMonthlyWorkflowStepStatus = "done" | "current" | "up_next";
 
 export type GuidedMonthlyWorkflowStep = {
-    id: "minimum_hours_bulk_update" | "timesheet_import" | "payroll_creation" | "payroll_download";
+    id:
+        | "minimum_hours_bulk_update"
+        | "timesheet_import"
+        | "payroll_creation"
+        | "payroll_download"
+        | "payroll_settlement";
     label: string;
     href: string;
     status: GuidedMonthlyWorkflowStepStatus;
@@ -36,6 +41,11 @@ const ORDERED_STEPS = [
         id: "payroll_download" as const,
         label: "Download payrolls",
         href: "/dashboard/payroll/download-payrolls",
+    },
+    {
+        id: "payroll_settlement" as const,
+        label: "Settle draft payrolls",
+        href: "/dashboard/payroll/settle-drafts",
     },
 ];
 

@@ -44,7 +44,7 @@ export function GuidedMonthlyWorkflowCard({
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <ol className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <ol className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                     {snapshot.steps.map((step, index) => (
                         <li key={step.id}>
                             <Link
@@ -52,7 +52,7 @@ export function GuidedMonthlyWorkflowCard({
                                 className={cn(
                                     "group flex h-full items-center gap-3 rounded-lg border px-3 py-3 transition-colors hover:bg-accent/50",
                                     step.status === "current" &&
-                                        "border-primary/40 bg-primary/5",
+                                        "border-blue-500 bg-primary/5",
                                 )}>
                                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold">
                                     {index + 1}

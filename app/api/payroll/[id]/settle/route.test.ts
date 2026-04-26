@@ -59,6 +59,7 @@ describe("POST /api/payroll/[id]/settle", () => {
         expect(mocks.revalidateTransportPaths).toHaveBeenCalledWith([
             "/dashboard/payroll/payroll-1/breakdown",
             "/dashboard/payroll/payroll-1/summary",
+            "/dashboard",
             "/dashboard/payroll",
             "/dashboard/payroll/all",
             "/dashboard/advance",

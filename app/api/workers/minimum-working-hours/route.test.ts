@@ -79,6 +79,7 @@ describe("PATCH /api/workers/minimum-working-hours", () => {
         expect(mocks.revalidateTransportPaths).toHaveBeenCalledWith([
             "/dashboard",
             "/dashboard/worker",
+            "/dashboard/worker/mass-edit",
             "/dashboard/worker/all",
             "/dashboard/payroll",
             "/dashboard/payroll/all",

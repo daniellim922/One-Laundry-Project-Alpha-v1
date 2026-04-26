@@ -177,7 +177,7 @@ export function DownloadPayrollsPanel() {
                     Select the payrolls you want to download as a ZIP of PDF
                     summaries.
                 </p>
-                <div className="max-h-[min(75vh,64rem)] min-h-0 overflow-auto">
+                <div className="min-h-0 min-w-0">
                     <DataTable
                         columns={selectableColumns}
                         data={payrolls}

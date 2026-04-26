@@ -5,6 +5,7 @@ import { eq, inArray } from "drizzle-orm";
 
 import { requireCurrentApiUser } from "@/app/api/_shared/auth";
 import { getRequestOrigin } from "@/app/api/_shared/origin";
+import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
 import { apiError } from "@/app/api/_shared/responses";
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payrollTable";
@@ -102,6 +103,7 @@ async function recordPayrollDownloadWorkflowCompletion() {
         await recordGuidedMonthlyWorkflowStepCompletion({
             stepId: "payroll_download",
         });
+        revalidateTransportPaths(["/dashboard"]);
     } catch (error) {
         console.warn(
             "Failed to record guided monthly workflow completion for payroll download",

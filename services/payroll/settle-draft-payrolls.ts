@@ -2,6 +2,7 @@ import { inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payrollTable";
+import { recordGuidedMonthlyWorkflowStepCompletion } from "@/services/payroll/guided-monthly-workflow-activity";
 import { settlePayrollInTx } from "./payroll-command-shared";
 
 export type SettleDraftPayrollsResult =
@@ -65,6 +66,19 @@ export async function settleDraftPayrolls(input: {
 
             return sorted.map((payroll) => payroll.id);
         });
+
+        if (settledPayrollIds.length > 0) {
+            try {
+                await recordGuidedMonthlyWorkflowStepCompletion({
+                    stepId: "payroll_settlement",
+                });
+            } catch (error) {
+                console.error(
+                    "Failed to record guided monthly workflow completion for payroll settlement",
+                    error,
+                );
+            }
+        }
 
         return {
             success: true,

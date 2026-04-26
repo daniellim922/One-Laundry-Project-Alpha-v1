@@ -37,6 +37,7 @@ export async function PATCH(request: Request) {
         revalidateTransportPaths([
             "/dashboard",
             "/dashboard/worker",
+            "/dashboard/worker/mass-edit",
             "/dashboard/worker/all",
             "/dashboard/payroll",
             "/dashboard/payroll/all",

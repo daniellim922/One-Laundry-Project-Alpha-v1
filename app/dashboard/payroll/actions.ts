@@ -32,6 +32,7 @@ export async function createPayroll(formData: FormData) {
         return result;
     }
 
+    revalidatePath("/dashboard");
     revalidatePath("/dashboard/payroll");
     revalidatePath("/dashboard/payroll/all");
     return result;
@@ -51,6 +52,7 @@ export async function createPayrolls(formData: FormData) {
     }
 
     if (result.created > 0) {
+        revalidatePath("/dashboard");
         revalidatePath("/dashboard/payroll");
         revalidatePath("/dashboard/payroll/all");
     }

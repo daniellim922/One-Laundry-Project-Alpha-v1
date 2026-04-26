@@ -36,6 +36,12 @@ describe("GuidedMonthlyWorkflowCard", () => {
                             id: "payroll_download",
                             label: "Download payrolls",
                             href: "/dashboard/payroll/download-payrolls",
+                            status: "up_next",
+                        },
+                        {
+                            id: "payroll_settlement",
+                            label: "Settle draft payrolls",
+                            href: "/dashboard/payroll/settle-drafts",
                             status: "done",
                         },
                     ],
@@ -52,12 +58,14 @@ describe("GuidedMonthlyWorkflowCard", () => {
             "/dashboard/timesheet/import",
             "/dashboard/payroll/new",
             "/dashboard/payroll/download-payrolls",
+            "/dashboard/payroll/settle-drafts",
         ]);
         expect(links.map((link) => link.textContent)).toEqual([
             "1Mass edit working hoursCurrent",
             "2Import timesheetsUp next",
             "3Generate payrollUp next",
-            "4Download payrollsDone",
+            "4Download payrollsUp next",
+            "5Settle draft payrollsDone",
         ]);
     });
 });

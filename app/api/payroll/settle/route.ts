@@ -53,6 +53,7 @@ export async function POST(request: Request) {
             `/dashboard/payroll/${payrollId}/breakdown`,
             `/dashboard/payroll/${payrollId}/summary`,
         ]),
+        "/dashboard",
         "/dashboard/payroll",
         "/dashboard/payroll/all",
         "/dashboard/advance",

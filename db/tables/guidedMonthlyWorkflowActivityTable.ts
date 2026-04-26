@@ -5,6 +5,7 @@ export const guidedMonthlyWorkflowStepIds = [
     "timesheet_import",
     "payroll_creation",
     "payroll_download",
+    "payroll_settlement",
 ] as const;
 
 export type GuidedMonthlyWorkflowStepId =

@@ -71,3 +71,8 @@ Voucher numbers must be sequential within each calendar year (e.g., `2025-0042`)
 
 **Status:** Resolved  
 The no-overlap rule for pay periods per worker must be enforced by a Postgres exclusion constraint, not just application code. It should be declared in the Drizzle schema (or a tracked raw SQL migration) so it is recreated on `db:migrate`.
+
+### Guided monthly payroll workflow is a calendar-month checklist
+
+**Status:** Resolved  
+The dashboard “Guided monthly payroll workflow” is **not** bound to a specific pay period, payroll month, or payroll date. It keys completion off the **current business month** in `Asia/Singapore` and tracks whether the operator performed each action (mass minimum-hours update, timesheet import, draft payroll generation, payroll ZIP download, draft payroll settlement) at least once in that month. A new business month **resets** the visible checklist. Which historical periods payrolls or timesheets refer to is irrelevant to the guide.

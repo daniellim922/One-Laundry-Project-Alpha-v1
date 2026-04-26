@@ -31,6 +31,7 @@ export async function POST(
     revalidateTransportPaths([
         `/dashboard/payroll/${id}/breakdown`,
         `/dashboard/payroll/${id}/summary`,
+        "/dashboard",
         "/dashboard/payroll",
         "/dashboard/payroll/all",
         "/dashboard/advance",
