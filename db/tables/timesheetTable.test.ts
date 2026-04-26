@@ -1,15 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { config as loadDotenv } from "dotenv";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { eq, sql } from "drizzle-orm";
 import postgres from "postgres";
 
 import { applyCustomSchemaArtifacts } from "@/db/apply-custom-schema";
+import { configureDestructiveTestDatabase } from "@/db/destructive-test-env";
 import { employmentTable } from "@/db/tables/employmentTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { workerTable } from "@/db/tables/workerTable";
 
-loadDotenv({ override: true });
+configureDestructiveTestDatabase();
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {

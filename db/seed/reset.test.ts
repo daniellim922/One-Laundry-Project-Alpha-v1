@@ -1,18 +1,14 @@
 import { execFileSync } from "node:child_process";
 
-import { config } from "dotenv";
 import { beforeAll, describe, expect, it } from "vitest";
 
-config({ override: true });
+import { configureDestructiveTestDatabase } from "@/db/destructive-test-env";
 
-const hasRealDatabase =
-    process.env.DATABASE_URL &&
-    !process.env.DATABASE_URL.includes("vitest_placeholder");
+configureDestructiveTestDatabase();
 
 const RESET_TIMEOUT_MS = 120_000;
 
-if (hasRealDatabase) {
-    describe("db:reset integration", () => {
+describe("db:reset integration", () => {
         let db: typeof import("@/lib/db").db;
         let schema: typeof import("@/db/schema");
         let publicHolidays: typeof import("./public-holidays").publicHolidays;
@@ -73,7 +69,9 @@ if (hasRealDatabase) {
                 payrollRows.some((row) => row.periodStart.startsWith("2026-")),
             ).toBe(false);
             expect(
-                payrollVoucherRows.some((row) => row.voucherNumber.startsWith("2026-")),
+                payrollVoucherRows.some((row) =>
+                    row.voucherNumber?.startsWith("2026-"),
+                ),
             ).toBe(false);
         });
 
@@ -110,13 +108,13 @@ if (hasRealDatabase) {
                 advanceRequestRows.some((row) => row.requestDate.startsWith("2026-03")),
             ).toBe(false);
             expect(
-                advanceRows.some((row) => row.repaymentDate.startsWith("2026-01")),
+                advanceRows.some((row) => row.repaymentDate?.startsWith("2026-01")),
             ).toBe(false);
             expect(
-                advanceRows.some((row) => row.repaymentDate.startsWith("2026-02")),
+                advanceRows.some((row) => row.repaymentDate?.startsWith("2026-02")),
             ).toBe(false);
             expect(
-                advanceRows.some((row) => row.repaymentDate.startsWith("2026-03")),
+                advanceRows.some((row) => row.repaymentDate?.startsWith("2026-03")),
             ).toBe(false);
         });
 
@@ -136,5 +134,4 @@ if (hasRealDatabase) {
                     .map((row) => row.date),
             );
         });
-    });
-}
+});

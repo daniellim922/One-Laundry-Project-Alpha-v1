@@ -1,13 +1,22 @@
 import path from "path";
 import { defineConfig } from "vitest/config";
 
+const destructiveDbTestFiles = [
+    "db/seed/reset.test.ts",
+    "db/seed/workers-only.test.ts",
+    "db/tables/payrollTable.test.ts",
+    "db/tables/timesheetTable.test.ts",
+    "services/payroll/public-holiday-calendar.integration.test.ts",
+    "services/payroll/generate-voucher-number.test.ts",
+];
+
 export default defineConfig({
     test: {
         environment: "node",
         include: [
             "{app,components,utils,lib,db,services,scripts,test/userflow}/**/*.test.{ts,tsx}",
         ],
-        exclude: ["node_modules", ".next", "test/e2e"],
+        exclude: ["node_modules", ".next", "test/e2e", ...destructiveDbTestFiles],
         // `lib/db` throws if unset; unit tests import modules that transitively load `db`.
         // Tests do not require a live Postgres instance unless they execute queries.
         env: {
