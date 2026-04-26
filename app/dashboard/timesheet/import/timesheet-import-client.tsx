@@ -223,12 +223,16 @@ function editableRowsToAttendRecord(
         attendanceDate: AttendRecordOutput["attendanceDate"];
         tablingDate: string;
     },
+    resolvedWorkerNamesByImportedName: Map<string, string>,
 ): AttendRecordOutput {
     const workersMap = new Map<string, FlatRow[]>();
     for (const row of editableRows) {
-        const list = workersMap.get(row.workerName) ?? [];
+        const workerName =
+            resolvedWorkerNamesByImportedName.get(row.workerName) ??
+            row.workerName;
+        const list = workersMap.get(workerName) ?? [];
         list.push(row);
-        workersMap.set(row.workerName, list);
+        workersMap.set(workerName, list);
     }
     const workers = Array.from(workersMap.entries()).map(([name, rows]) => ({
         userId: "",
@@ -263,10 +267,14 @@ export function TimesheetImportClient({
         errors?: string[];
     } | null>(null);
     const [pending, setPending] = React.useState(false);
+    const [manualWorkerMatches, setManualWorkerMatches] = React.useState<
+        Record<string, string>
+    >({});
 
     const handleParse = React.useCallback(async (file: File) => {
         setError(null);
         setSubmitResult(null);
+        setManualWorkerMatches({});
         try {
             const data = await file.arrayBuffer();
             const workbook = XLSX.read(data, {
@@ -327,29 +335,33 @@ export function TimesheetImportClient({
         [],
     );
 
-    const updateWorkerNameForGroup = React.useCallback(
-        (groupWorkerName: string, nextWorkerName: string) => {
-            setEditableRows((prev) =>
-                prev.map((r) =>
-                    r.workerName === groupWorkerName
-                        ? { ...r, workerName: nextWorkerName }
-                        : r,
-                ),
-            );
-        },
-        [],
-    );
-
     const handleSubmit = React.useCallback(async () => {
         if (!parsedData || editableRows.length === 0) return;
         setError(null);
         setSubmitResult(null);
         setPending(true);
         try {
-            const dataToImport = editableRowsToAttendRecord(editableRows, {
-                attendanceDate: parsedData.attendanceDate,
-                tablingDate: parsedData.tablingDate,
+            const workerMatchResult = resolveTimesheetImportWorkerMatches({
+                rows: editableRows,
+                workers,
+                manualMatchesByImportedName: manualWorkerMatches,
             });
+            const resolvedWorkerNamesByImportedName = new Map(
+                workerMatchResult.groups
+                    .filter((group) => group.resolvedWorker != null)
+                    .map((group) => [
+                        group.importedName,
+                        group.resolvedWorker!.name,
+                    ]),
+            );
+            const dataToImport = editableRowsToAttendRecord(
+                editableRows,
+                {
+                    attendanceDate: parsedData.attendanceDate,
+                    tablingDate: parsedData.tablingDate,
+                },
+                resolvedWorkerNamesByImportedName,
+            );
             const result = await importAttendRecordTimesheet(dataToImport);
             if ("error" in result) {
                 setError(result.error);
@@ -366,7 +378,7 @@ export function TimesheetImportClient({
         } finally {
             setPending(false);
         }
-    }, [parsedData, editableRows]);
+    }, [parsedData, editableRows, workers, manualWorkerMatches]);
 
     const onDrop = React.useCallback(
         (e: React.DragEvent) => {
@@ -411,6 +423,7 @@ export function TimesheetImportClient({
         setEditableRows([]);
         setError(null);
         setSubmitResult(null);
+        setManualWorkerMatches({});
     }, []);
 
     const totalEntries = editableRows.length;
@@ -419,25 +432,25 @@ export function TimesheetImportClient({
             resolveTimesheetImportWorkerMatches({
                 rows: editableRows,
                 workers,
+                manualMatchesByImportedName: manualWorkerMatches,
             }),
-        [editableRows, workers],
+        [editableRows, workers, manualWorkerMatches],
+    );
+    const workerMatchGroupsByImportedName = React.useMemo(
+        () =>
+            new Map(
+                workerMatchResult.groups.map((group) => [
+                    group.importedName,
+                    group,
+                ]),
+            ),
+        [workerMatchResult.groups],
     );
     const hasUnresolvedWorkerMatches =
         workerMatchResult.unresolvedNames.length > 0;
     const activeWorkers = React.useMemo(
         () => workers.filter((worker) => worker.status === "Active"),
         [workers],
-    );
-
-    /** Resolve workerName to worker id for SelectSearch value (match by name, case-insensitive) */
-    const workerIdForName = React.useCallback(
-        (workerName: string) =>
-            activeWorkers.find(
-                (w) =>
-                    w.name.toLowerCase().trim() ===
-                    workerName.toLowerCase().trim(),
-            )?.id ?? "",
-        [activeWorkers],
     );
 
     return (
@@ -586,33 +599,48 @@ export function TimesheetImportClient({
                                                                 "pl-8",
                                                         )}>
                                                         {isFirstInGroup ? (
-                                                            <SelectSearch
-                                                                options={activeWorkers.map(
-                                                                    (w) => ({
-                                                                        value: w.id,
-                                                                        label: w.name,
-                                                                    }),
-                                                                )}
-                                                                value={workerIdForName(
-                                                                    row.workerName,
-                                                                )}
-                                                                onChange={(
-                                                                    _id,
-                                                                    name,
-                                                                ) =>
-                                                                    updateWorkerNameForGroup(
-                                                                        row.workerName,
-                                                                        name,
-                                                                    )
-                                                                }
-                                                                name={`worker-${i}`}
-                                                                placeholder={
-                                                                    row.workerName ||
-                                                                    "Select worker"
-                                                                }
-                                                                searchPlaceholder="Search workers…"
-                                                                emptyText="No workers found."
-                                                            />
+                                                            <div className="space-y-1">
+                                                                <SelectSearch
+                                                                    options={activeWorkers.map(
+                                                                        (w) => ({
+                                                                            value: w.id,
+                                                                            label: w.name,
+                                                                        }),
+                                                                    )}
+                                                                    value={
+                                                                        workerMatchGroupsByImportedName.get(
+                                                                            row.workerName,
+                                                                        )
+                                                                            ?.resolvedWorker
+                                                                            ?.id ??
+                                                                        ""
+                                                                    }
+                                                                    onChange={(
+                                                                        id,
+                                                                    ) =>
+                                                                        setManualWorkerMatches(
+                                                                            (prev) => ({
+                                                                                ...prev,
+                                                                                [row.workerName]:
+                                                                                    id,
+                                                                            }),
+                                                                        )
+                                                                    }
+                                                                    name={`worker-${i}`}
+                                                                    placeholder={
+                                                                        row.workerName ||
+                                                                        "Select worker"
+                                                                    }
+                                                                    searchPlaceholder="Search workers…"
+                                                                    emptyText="No workers found."
+                                                                />
+                                                                <p className="text-muted-foreground text-xs">
+                                                                    Source:{" "}
+                                                                    {
+                                                                        row.workerName
+                                                                    }
+                                                                </p>
+                                                            </div>
                                                         ) : (
                                                             <span className="text-muted-foreground/50">
                                                                 └

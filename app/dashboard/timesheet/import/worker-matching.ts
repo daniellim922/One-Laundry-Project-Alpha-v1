@@ -28,15 +28,19 @@ function normalizeWorkerName(name: string): string {
 export function resolveTimesheetImportWorkerMatches({
     rows,
     workers,
+    manualMatchesByImportedName = {},
 }: {
     rows: TimesheetImportWorkerRow[];
     workers: TimesheetImportWorker[];
+    manualMatchesByImportedName?: Record<string, string>;
 }): TimesheetImportWorkerMatchResult {
     const activeWorkersByName = new Map<string, TimesheetImportWorker[]>();
+    const activeWorkersById = new Map<string, TimesheetImportWorker>();
 
     for (const worker of workers) {
         if (worker.status !== "Active") continue;
 
+        activeWorkersById.set(worker.id, worker);
         const normalizedName = normalizeWorkerName(worker.name);
         const matchingWorkers = activeWorkersByName.get(normalizedName) ?? [];
         matchingWorkers.push(worker);
@@ -64,9 +68,15 @@ export function resolveTimesheetImportWorkerMatches({
 
     const groups = Array.from(groupsByName.entries()).map(
         ([normalizedName, group]) => {
+            const manualWorkerId =
+                manualMatchesByImportedName[group.importedName];
+            const manualWorker = manualWorkerId
+                ? activeWorkersById.get(manualWorkerId)
+                : null;
             const exactMatches = activeWorkersByName.get(normalizedName) ?? [];
             const resolvedWorker =
-                exactMatches.length === 1 ? exactMatches[0]! : null;
+                manualWorker ??
+                (exactMatches.length === 1 ? exactMatches[0]! : null);
 
             return {
                 importedName: group.importedName,

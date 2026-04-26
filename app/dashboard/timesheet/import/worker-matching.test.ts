@@ -73,4 +73,45 @@ describe("resolveTimesheetImportWorkerMatches", () => {
             },
         ]);
     });
+
+    it("uses a manual active worker match for every row with the same imported name", () => {
+        const result = resolveTimesheetImportWorkerMatches({
+            rows: [
+                { workerName: "Alicia Tan" },
+                { workerName: "Alicia Tan" },
+            ],
+            workers,
+            manualMatchesByImportedName: {
+                "Alicia Tan": "worker-1",
+            },
+        });
+
+        expect(result.unresolvedNames).toEqual([]);
+        expect(result.groups).toEqual([
+            {
+                importedName: "Alicia Tan",
+                rowCount: 2,
+                resolvedWorker: workers[0],
+            },
+        ]);
+    });
+
+    it("does not resolve manual matches to inactive workers", () => {
+        const result = resolveTimesheetImportWorkerMatches({
+            rows: [{ workerName: "Wei Chen" }],
+            workers,
+            manualMatchesByImportedName: {
+                "Wei Chen": "worker-3",
+            },
+        });
+
+        expect(result.unresolvedNames).toEqual(["Wei Chen"]);
+        expect(result.groups).toEqual([
+            {
+                importedName: "Wei Chen",
+                rowCount: 1,
+                resolvedWorker: null,
+            },
+        ]);
+    });
 });
