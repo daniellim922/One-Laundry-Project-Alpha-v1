@@ -1,0 +1,76 @@
+import { describe, expect, it } from "vitest";
+
+import { resolveTimesheetImportWorkerMatches } from "./worker-matching";
+
+const workers = [
+    { id: "worker-1", name: "Alice Tan", status: "Active" as const },
+    { id: "worker-2", name: "Bob Lim", status: "Active" as const },
+    { id: "worker-3", name: "Chen Wei", status: "Inactive" as const },
+];
+
+describe("resolveTimesheetImportWorkerMatches", () => {
+    it("automatically resolves imported worker names by trimmed, case-insensitive exact active worker matches", () => {
+        const result = resolveTimesheetImportWorkerMatches({
+            rows: [
+                { workerName: "  alice tan " },
+                { workerName: "BOB LIM" },
+            ],
+            workers,
+        });
+
+        expect(result.unresolvedNames).toEqual([]);
+        expect(result.groups).toEqual([
+            {
+                importedName: "  alice tan ",
+                rowCount: 1,
+                resolvedWorker: workers[0],
+            },
+            {
+                importedName: "BOB LIM",
+                rowCount: 1,
+                resolvedWorker: workers[1],
+            },
+        ]);
+    });
+
+    it("reports imported worker names that do not match an active worker as unresolved", () => {
+        const result = resolveTimesheetImportWorkerMatches({
+            rows: [
+                { workerName: "Alice Tan" },
+                { workerName: "Unknown Worker" },
+                { workerName: "Unknown Worker" },
+            ],
+            workers,
+        });
+
+        expect(result.unresolvedNames).toEqual(["Unknown Worker"]);
+        expect(result.groups).toEqual([
+            {
+                importedName: "Alice Tan",
+                rowCount: 1,
+                resolvedWorker: workers[0],
+            },
+            {
+                importedName: "Unknown Worker",
+                rowCount: 2,
+                resolvedWorker: null,
+            },
+        ]);
+    });
+
+    it("does not resolve imported names against inactive workers", () => {
+        const result = resolveTimesheetImportWorkerMatches({
+            rows: [{ workerName: "Chen Wei" }],
+            workers,
+        });
+
+        expect(result.unresolvedNames).toEqual(["Chen Wei"]);
+        expect(result.groups).toEqual([
+            {
+                importedName: "Chen Wei",
+                rowCount: 1,
+                resolvedWorker: null,
+            },
+        ]);
+    });
+});

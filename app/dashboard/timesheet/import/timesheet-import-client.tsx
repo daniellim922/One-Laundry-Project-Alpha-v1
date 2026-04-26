@@ -26,6 +26,10 @@ import {
 import { Trash2, Upload } from "lucide-react";
 import { parseAttendRecord } from "@/utils/payroll/parse-attendrecord";
 import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
+import {
+    resolveTimesheetImportWorkerMatches,
+    type TimesheetImportWorker,
+} from "./worker-matching";
 
 const ACCEPTED_TYPES = [
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -243,9 +247,11 @@ function editableRowsToAttendRecord(
     };
 }
 
-type Worker = { id: string; name: string };
-
-export function TimesheetImportClient({ workers }: { workers: Worker[] }) {
+export function TimesheetImportClient({
+    workers,
+}: {
+    workers: TimesheetImportWorker[];
+}) {
     const [isDragging, setIsDragging] = React.useState(false);
     const [file, setFile] = React.useState<File | null>(null);
     const [parsedData, setParsedData] =
@@ -408,16 +414,30 @@ export function TimesheetImportClient({ workers }: { workers: Worker[] }) {
     }, []);
 
     const totalEntries = editableRows.length;
+    const workerMatchResult = React.useMemo(
+        () =>
+            resolveTimesheetImportWorkerMatches({
+                rows: editableRows,
+                workers,
+            }),
+        [editableRows, workers],
+    );
+    const hasUnresolvedWorkerMatches =
+        workerMatchResult.unresolvedNames.length > 0;
+    const activeWorkers = React.useMemo(
+        () => workers.filter((worker) => worker.status === "Active"),
+        [workers],
+    );
 
     /** Resolve workerName to worker id for SelectSearch value (match by name, case-insensitive) */
     const workerIdForName = React.useCallback(
         (workerName: string) =>
-            workers.find(
+            activeWorkers.find(
                 (w) =>
                     w.name.toLowerCase().trim() ===
                     workerName.toLowerCase().trim(),
             )?.id ?? "",
-        [workers],
+        [activeWorkers],
     );
 
     return (
@@ -493,6 +513,35 @@ export function TimesheetImportClient({ workers }: { workers: Worker[] }) {
                                     {totalEntries !== 1 ? "ies" : "y"} total
                                 </p>
                             </div>
+                            {hasUnresolvedWorkerMatches && (
+                                <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+                                    <p className="font-medium">
+                                        Unresolved worker matches
+                                    </p>
+                                    <p className="mt-1">
+                                        {
+                                            workerMatchResult.unresolvedNames
+                                                .length
+                                        }{" "}
+                                        worker{" "}
+                                        {workerMatchResult.unresolvedNames
+                                            .length !== 1
+                                            ? "names"
+                                            : "name"}{" "}
+                                        must match an active Worker before
+                                        upload.
+                                    </p>
+                                    <ul className="mt-2 list-inside list-disc">
+                                        {workerMatchResult.unresolvedNames.map(
+                                            (workerName) => (
+                                                <li key={workerName}>
+                                                    {workerName}
+                                                </li>
+                                            ),
+                                        )}
+                                    </ul>
+                                </div>
+                            )}
                             <div className="rounded-md border overflow-x-auto max-h-[70vh] overflow-y-auto">
                                 <Table>
                                     <TableHeader>
@@ -538,7 +587,7 @@ export function TimesheetImportClient({ workers }: { workers: Worker[] }) {
                                                         )}>
                                                         {isFirstInGroup ? (
                                                             <SelectSearch
-                                                                options={workers.map(
+                                                                options={activeWorkers.map(
                                                                     (w) => ({
                                                                         value: w.id,
                                                                         label: w.name,
@@ -890,6 +939,7 @@ export function TimesheetImportClient({ workers }: { workers: Worker[] }) {
                                 !parsedData ||
                                 totalEntries === 0 ||
                                 pending ||
+                                hasUnresolvedWorkerMatches ||
                                 editableRows.some(hasRowError)
                             }
                             onClick={handleSubmit}>
