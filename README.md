@@ -12,6 +12,9 @@ Development uses a **hosted** Supabase project for Auth and Postgres (no local S
 `npm run db:reset` wipes, pushes schema, and seeds the database so the deterministic historical payroll dataset is ready for app use and test flows. Seed only writes Postgres data; it does not create Supabase Auth users.
 
 The app, `drizzle-kit push`, wipe, and seed all use **`DATABASE_URL`**.
+Destructive DB integration tests do not use the normal app `DATABASE_URL`; run
+them only with `npm run test:db:destructive` and set
+`ONE_LAUNDRY_DESTRUCTIVE_TEST_DATABASE_URL` to a dedicated test database.
 
 Runtime sign-in uses Supabase email and password. Typical variables:
 
@@ -47,6 +50,19 @@ npm run test:e2e:worker
 ```
 
 `test:e2e:worker` is deterministic and assumes seeded data/users are present. Run `npm run db:reset` first.
+
+## Destructive DB Tests
+
+Routine verification through `npm run test` and `npm run test:unit` excludes DB
+tests that call `wipeDb`, `TRUNCATE`, schema reset, or destructive seed setup.
+Run those tests only against a disposable database:
+
+```bash
+ONE_LAUNDRY_ALLOW_DESTRUCTIVE_DB=true \
+ONE_LAUNDRY_DESTRUCTIVE_DB_ACTION=test \
+ONE_LAUNDRY_DESTRUCTIVE_TEST_DATABASE_URL=<dedicated-test-database-url> \
+npm run test:db:destructive
+```
 
 ## Learn More
 

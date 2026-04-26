@@ -1,4 +1,8 @@
-export type DestructiveDatabaseAction = "reset" | "seed-workers" | "wipe";
+export type DestructiveDatabaseAction =
+    | "reset"
+    | "seed-workers"
+    | "test"
+    | "wipe";
 
 type DestructiveGuardEnv = Record<string, string | undefined>;
 

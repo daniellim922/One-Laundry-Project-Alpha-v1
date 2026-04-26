@@ -16,6 +16,7 @@
         "db:reset": "npx tsx db/reset.ts",
         "test": "npm run test:unit && npm run test:e2e",
         "test:unit": "vitest run",
+        "test:db:destructive": "vitest run -c vitest.db-destructive.config.ts",
         "test:unit:watch": "vitest",
         "test:unit:worker": "vitest run app/dashboard/worker services/worker app/api/workers",
         "test:e2e": "playwright test",

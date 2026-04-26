@@ -1,16 +1,10 @@
 import { describe, expect, it, beforeAll, afterAll } from "vitest";
-import { config } from "dotenv";
 
-// Override vitest's placeholder DATABASE_URL with the real .env value
-// BEFORE any module imports lib/db.ts.
-config({ override: true });
+import { configureDestructiveTestDatabase } from "@/db/destructive-test-env";
 
-const hasRealDatabase =
-    process.env.DATABASE_URL &&
-    !process.env.DATABASE_URL.includes("vitest_placeholder");
+configureDestructiveTestDatabase();
 
-if (hasRealDatabase) {
-    describe("seedWorkersAndHolidays integration", () => {
+describe("seedWorkersAndHolidays integration", () => {
         let db: typeof import("@/lib/db").db;
         let seedWorkersAndHolidays: typeof import("./seed").seedWorkersAndHolidays;
         let workers: typeof import("./workers").workers;
@@ -103,5 +97,4 @@ if (hasRealDatabase) {
             expect(advanceRows).toHaveLength(0);
             expect(requestRows).toHaveLength(0);
         });
-    });
-}
+});

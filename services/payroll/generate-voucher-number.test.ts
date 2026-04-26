@@ -1,12 +1,14 @@
-import "dotenv/config";
-
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { sql } from "drizzle-orm";
 
-import { db } from "@/lib/db";
-import { generateVoucherNumber } from "@/services/payroll/generate-voucher-number";
+import { configureDestructiveTestDatabase } from "@/db/destructive-test-env";
+
+configureDestructiveTestDatabase();
 
 const COUNTER_TABLE_NAME = "payroll_voucher_counter";
+
+let db: typeof import("@/lib/db").db;
+let generateVoucherNumber: typeof import("@/services/payroll/generate-voucher-number").generateVoucherNumber;
 
 async function ensureVoucherCounterTable() {
     // Keep the DB-backed test self-contained when the local test DB has not been
@@ -27,6 +29,14 @@ async function resetVoucherCounterTable() {
 
 describe("generateVoucherNumber", () => {
     beforeAll(async () => {
+        const dbModule = await import("@/lib/db");
+        db = dbModule.db;
+
+        const voucherNumberModule = await import(
+            "@/services/payroll/generate-voucher-number"
+        );
+        generateVoucherNumber = voucherNumberModule.generateVoucherNumber;
+
         await ensureVoucherCounterTable();
     });
 
