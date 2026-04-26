@@ -114,4 +114,51 @@ describe("resolveTimesheetImportWorkerMatches", () => {
             },
         ]);
     });
+
+    it("allows multiple imported worker names to resolve to the same active worker", () => {
+        const result = resolveTimesheetImportWorkerMatches({
+            rows: [
+                { workerName: "Alicia Tan" },
+                { workerName: "Alice T." },
+            ],
+            workers,
+            manualMatchesByImportedName: {
+                "Alicia Tan": "worker-1",
+                "Alice T.": "worker-1",
+            },
+        });
+
+        expect(result.unresolvedNames).toEqual([]);
+        expect(result.groups).toEqual([
+            {
+                importedName: "Alicia Tan",
+                rowCount: 1,
+                resolvedWorker: workers[0],
+            },
+            {
+                importedName: "Alice T.",
+                rowCount: 1,
+                resolvedWorker: workers[0],
+            },
+        ]);
+    });
+
+    it("does not keep an unresolved blocker for an imported name with no remaining rows", () => {
+        const result = resolveTimesheetImportWorkerMatches({
+            rows: [{ workerName: "Alice Tan" }],
+            workers,
+            manualMatchesByImportedName: {
+                "Unknown Worker": "worker-1",
+            },
+        });
+
+        expect(result.unresolvedNames).toEqual([]);
+        expect(result.groups).toEqual([
+            {
+                importedName: "Alice Tan",
+                rowCount: 1,
+                resolvedWorker: workers[0],
+            },
+        ]);
+    });
 });
