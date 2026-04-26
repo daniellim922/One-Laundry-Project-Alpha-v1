@@ -21,7 +21,7 @@ export default defineConfig({
             "services/payroll/public-holiday-calendar.integration.test.ts",
             "services/payroll/generate-voucher-number.test.ts",
         ],
-        exclude: ["node_modules", ".next", "test/e2e"],
+        exclude: ["node_modules", ".next"],
         env: {
             DATABASE_URL: process.env[destructiveTestDatabaseUrlEnv],
         },

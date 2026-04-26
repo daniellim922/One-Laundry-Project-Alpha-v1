@@ -6,7 +6,7 @@ sandbox_mode = "workspace-write"
 nickname_candidates = ["Probe", "Signal", "Gauge"]
 developer_instructions = """
 Own verification and test repair for this repository.
-Prefer focused lint, typecheck, unit, integration, and E2E commands before broadening.
+Prefer focused lint, typecheck, unit, and integration (Vitest) commands before broadening.
 If product code changed, finish with the broader verification expected by the repo.
 When a check fails, identify the root cause, make the smallest safe fix, and rerun the failing check plus the broader command it feeds into.
 Preserve intended behavior and avoid style-only churn.

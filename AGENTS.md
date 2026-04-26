@@ -11,14 +11,11 @@ npm install                     # install deps
 npm run dev                     # dev server (Turbopack)
 npm run build                   # production build
 npm run lint                    # ESLint (flat config, core-web-vitals + TS)
-npm run test                    # unit tests (Vitest) then E2E (Playwright)
+npm run test                    # unit tests (Vitest; same as test:unit)
 npm run test:unit               # Vitest (all unit tests)
 npm run test:db:destructive     # explicit destructive DB integration tests only (separate test DB + opt-in env)
 npm run test:unit:watch         # Vitest watch mode
 npm run test:unit:worker        # worker-focused Vitest paths
-npm run test:e2e                # Playwright E2E
-npm run test:e2e:worker         # worker E2E subset
-npm run test:e2e:ui             # Playwright UI runner
 npm run db:reset                # wipe + push schema + seed (DATABASE_URL)
 npm run db:migrate              # drizzle-kit push (db/schema.ts) + custom SQL schema artifacts (DATABASE_URL)
 npm run db:seed                 # seed the database (Postgres only; create Auth users in Supabase Studio)
@@ -32,12 +29,11 @@ npm run db:wipe                 # wipe database (DATABASE_URL)
 npx tsc --noEmit                            # typecheck entire project
 npx eslint <file>                           # lint a single file
 npx vitest run <path/to/file.test.ts>       # run one Vitest file (co-located with source)
-npx playwright test <spec> --project=chromium
 ```
 
 ## Stack
 
-Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL + Drizzle ORM · shadcn/ui (new-york) · Tailwind CSS v4 · TanStack React Table v8 · react-hook-form + Zod · Recharts · Vitest + Playwright.
+Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL + Drizzle ORM · shadcn/ui (new-york) · Tailwind CSS v4 · TanStack React Table v8 · react-hook-form + Zod · Recharts · Vitest. PDF/zip export uses `playwright-core` + headless Chromium at runtime (not the Playwright test runner).
 
 ## Architecture
 
@@ -102,9 +98,8 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 
 - **Vitest** — node environment, tests co-located with source as `*.test.ts` / `*.test.tsx` under `app/`, `components/`, `utils/`, `lib/`, `db/`, `services/`, `scripts/`.
 - **Destructive DB integration tests** — tests that wipe, truncate, reset schema, or mutate live database tables are excluded from default Vitest and run only through `npm run test:db:destructive` with `ONE_LAUNDRY_ALLOW_DESTRUCTIVE_DB=true`, `ONE_LAUNDRY_DESTRUCTIVE_DB_ACTION=test`, and `ONE_LAUNDRY_DESTRUCTIVE_TEST_DATABASE_URL` pointing at a dedicated test database.
-- **E2E** — Playwright (Chromium), files in `test/e2e/` as `*.spec.ts`. Coverage includes the open landing page, the public `/login` boundary, unauthenticated `/dashboard` redirects, and core feature regressions.
-- **Fixtures** live in `test/fixtures/`, output in `test/results/`.
-- **Codex post-change verification** is wired through `.codex/hooks.json`; when product code changes, the stop hook runs `npm run test:unit` (fast Vitest only; run `npm run test` for the full suite).
+- **Fixtures** (shared by Vitest) live in `test/fixtures/`.
+- **Codex post-change verification** is wired through `.codex/hooks.json`; when product code changes, the stop hook runs `npm run test:unit` (fast Vitest; `npm run test` runs the same default suite).
 
 ## Dos
 

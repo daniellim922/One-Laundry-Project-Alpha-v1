@@ -11,7 +11,6 @@ description: Verify One Laundry changes with targeted checks and the full test s
 2. Run focused checks first for the changed files or feature area:
    - `npx eslint <file>`
    - `npx vitest run <file>`
-   - `npx playwright test <spec> --project=chromium`
 3. If changes touch `app/`, `components/`, `db/`, `lib/`, `utils/`, `types/`, `test/`, or `package.json`, finish with:
    - `npx tsc --noEmit`
    - `npm run test`

@@ -46,10 +46,7 @@ To verify the flow end to end:
 
 ```bash
 npm run test:unit:worker
-npm run test:e2e:worker
 ```
-
-`test:e2e:worker` is deterministic and assumes seeded data/users are present. Run `npm run db:reset` first.
 
 ## Destructive DB Tests
 

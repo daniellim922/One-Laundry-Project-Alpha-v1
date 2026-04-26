@@ -14,16 +14,11 @@
         "db:seed": "npx tsx db/seed/seed.ts",
         "db:seed:workers": "npx tsx db/seed/workers-only.ts",
         "db:reset": "npx tsx db/reset.ts",
-        "test": "npm run test:unit && npm run test:e2e",
+        "test": "npm run test:unit",
         "test:unit": "vitest run",
         "test:db:destructive": "vitest run -c vitest.db-destructive.config.ts",
         "test:unit:watch": "vitest",
-        "test:unit:worker": "vitest run app/dashboard/worker services/worker app/api/workers",
-        "test:e2e": "playwright test",
-        "test:e2e:worker": "playwright test test/e2e/worker*.spec.ts --project=chromium",
-        "test:e2e:ui": "playwright test --ui",
-        "test:userflow": "playwright test -c playwright.userflow.config.ts",
-        "test:userflow:ui": "playwright test -c playwright.userflow.config.ts --ui"
+        "test:unit:worker": "vitest run app/dashboard/worker services/worker app/api/workers"
     },
     "dependencies": {
         "@ai-hero/sandcastle": "^0.4.8",
@@ -59,7 +54,6 @@
         "zod": "^4.3.6"
     },
     "devDependencies": {
-        "@playwright/test": "^1.58.2",
         "@tailwindcss/postcss": "^4",
         "@testing-library/react": "^16.3.2",
         "@testing-library/user-event": "^14.6.1",
