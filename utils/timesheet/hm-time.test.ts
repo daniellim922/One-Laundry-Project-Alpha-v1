@@ -1,11 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import {
-    isHmTimeStrict,
-    normalizeHmTime,
-} from "@/app/dashboard/timesheet/timesheet-time-utils";
+import { isHmTimeStrict, normalizeHmTime } from "./hm-time";
 
-describe("timesheet-time-utils", () => {
+describe("hm-time", () => {
     it("accepts strict HH:MM format", () => {
         expect(isHmTimeStrict("00:00")).toBe(true);
         expect(isHmTimeStrict("23:59")).toBe(true);

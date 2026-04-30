@@ -8,7 +8,7 @@ import {
     InputGroupAddon,
 } from "@/components/ui/input-group";
 import { Clock2Icon } from "lucide-react";
-import { normalizeHmTime } from "./timesheet-time-utils";
+import { normalizeHmTime } from "@/utils/timesheet/hm-time";
 
 type TimesheetTimeFieldProps = {
     id: string;

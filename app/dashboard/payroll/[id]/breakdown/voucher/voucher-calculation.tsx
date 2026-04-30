@@ -5,10 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { SelectPayrollVoucher } from "@/db/tables/payrollVoucherTable";
 import type { AdvanceForPayrollPeriod } from "@/utils/advance/queries";
-import {
-    formatPayrollAdvanceDate,
-    payrollAdvanceStatusBadgeClass,
-} from "../payroll-advance-display";
+import { installmentToneClassName } from "@/types/badge-tones";
 import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 import type { PayrollApplicablePublicHoliday } from "@/services/payroll/public-holiday-payroll";
 import { formatMoney, isZeroish } from "./format-money";
@@ -248,9 +245,7 @@ export function VoucherCalculation({
                         <>
                             <span>
                                 {voucher.publicHolidays}{" "}
-                                {voucher.publicHolidays === 1
-                                    ? "day"
-                                    : "days"}
+                                {voucher.publicHolidays === 1 ? "day" : "days"}
                             </span>
                             <span className="text-sm text-muted-foreground">
                                 {" "}
@@ -269,22 +264,21 @@ export function VoucherCalculation({
                 <Line
                     label="Hours Not Met"
                     subtext={
-                        voucher.hoursNotMet == null
-                            ? undefined
-                            : voucher.hourlyRate != null ? (
-                                  <span className="flex flex-wrap items-center gap-2">
-                                      <span>
-                                          {`${Math.abs(
-                                              voucher.hoursNotMet,
-                                          )} hrs short`}
-                                      </span>
-                                      <span className="text-sm text-muted-foreground">
-                                          × ${voucher.hourlyRate}/hr
-                                      </span>
-                                  </span>
-                              ) : (
-                                  `${Math.abs(voucher.hoursNotMet)} hrs short`
-                              )
+                        voucher.hoursNotMet ==
+                        null ? undefined : voucher.hourlyRate != null ? (
+                            <span className="flex flex-wrap items-center gap-2">
+                                <span>
+                                    {`${Math.abs(
+                                        voucher.hoursNotMet,
+                                    )} hrs short`}
+                                </span>
+                                <span className="text-sm text-muted-foreground">
+                                    × ${voucher.hourlyRate}/hr
+                                </span>
+                            </span>
+                        ) : (
+                            `${Math.abs(voucher.hoursNotMet)} hrs short`
+                        )
                     }
                     sign="-"
                     amount={Math.abs(voucher.hoursNotMetDeduction ?? 0)}
@@ -316,7 +310,7 @@ export function VoucherCalculation({
                                 <span className="flex items-center gap-2">
                                     <span>
                                         {adv.repaymentDate
-                                            ? formatPayrollAdvanceDate(
+                                            ? formatEnGbDmyNumericFromCalendar(
                                                   adv.repaymentDate,
                                               )
                                             : "–"}
@@ -324,7 +318,7 @@ export function VoucherCalculation({
                                     <span
                                         className={cn(
                                             "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
-                                            payrollAdvanceStatusBadgeClass[
+                                            installmentToneClassName[
                                                 adv.status
                                             ] ?? "",
                                         )}>

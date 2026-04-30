@@ -18,7 +18,7 @@ import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
 import type { TimesheetPaymentStatus } from "@/types/status";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { TimesheetTimeField } from "./timesheet-time-field";
-import { normalizeHmTime } from "./timesheet-time-utils";
+import { normalizeHmTime } from "@/utils/timesheet/hm-time";
 
 type Worker = { id: string; name: string };
 
