@@ -16,12 +16,14 @@ export default defineConfig({
             "{app,components,utils,lib,db,services,scripts}/**/*.test.{ts,tsx}",
         ],
         exclude: ["node_modules", ".next", ...postgresIntegrationTestFiles],
-        // `lib/db` throws if unset; unit tests import modules that transitively load `db`.
+        // `lib/env` + `lib/db` require these; unit tests import modules that transitively load `db`.
         // Tests do not require a live Postgres instance unless they execute queries.
         env: {
-            DATABASE_URL:
-                process.env.DATABASE_URL ??
-                "postgresql://127.0.0.1:5432/vitest_placeholder",
+            NODE_ENV: "test",
+            DATABASE_URL: "postgresql://127.0.0.1:5432",
+            NEXT_PUBLIC_SUPABASE_URL: "http://localhost:54321",
+            NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
+                "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test-placeholder",
         },
         testTimeout: 15_000,
         coverage: {
