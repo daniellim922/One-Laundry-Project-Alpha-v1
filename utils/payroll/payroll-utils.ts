@@ -6,13 +6,6 @@ import {
 /**
  * Parse time string (HH:MM or HH:MM:SS) to decimal hours since midnight.
  */
-function timeToHours(timeStr: string): number {
-    const parts = String(timeStr).split(":").map(Number);
-    const hours = parts[0] ?? 0;
-    const minutes = (parts[1] ?? 0) / 60;
-    const seconds = (parts[2] ?? 0) / 3600;
-    return hours + minutes + seconds;
-}
 
 /**
  * Parse date string (YYYY-MM-DD or DD/MM/YYYY) to local calendar Date.
@@ -119,7 +112,7 @@ export function isClockOutAfterClockIn(
  * Handles cross-day and multi-day shifts.
  * Returns 0 when invalid.
  */
-export function calculateHoursFromDateTimes(
+function calculateHoursFromDateTimes(
     dateIn: string,
     timeIn: string,
     dateOut: string,
@@ -128,21 +121,13 @@ export function calculateHoursFromDateTimes(
     const diffMs = clockIntervalDurationMs(dateIn, timeIn, dateOut, timeOut);
     if (diffMs == null || diffMs < 0) return 0;
     const totalMinutes = diffMs / (60 * 1000);
-    return Math.round(totalMinutes / 60 * 100) / 100;
+    return Math.round((totalMinutes / 60) * 100) / 100;
 }
 
 /**
  * Calculate hours worked from time_in and time_out.
  * Handles overnight (time_out < time_in) by assuming next day.
  */
-export function calculateHoursFromTimes(timeIn: string, timeOut: string): number {
-    const inHours = timeToHours(timeIn);
-    let outHours = timeToHours(timeOut);
-    if (outHours < inHours) {
-        outHours += 24; // overnight shift
-    }
-    return Math.round((outHours - inHours) * 100) / 100;
-}
 
 export interface PayCalcInput {
     employmentType: "Full Time" | "Part Time";

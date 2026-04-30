@@ -20,7 +20,10 @@ function lastDayOfMonth(year: number, month: number): number {
     return createUtcDate(year, month + 1, 0).getUTCDate();
 }
 
-function nextMonth(year: number, month: number): { year: number; month: number } {
+function nextMonth(
+    year: number,
+    month: number,
+): { year: number; month: number } {
     if (month === 12) {
         return { year: year + 1, month: 1 };
     }
@@ -43,9 +46,15 @@ function generateMonthlySeedPeriods(input: {
         year < input.endYear ||
         (year === input.endYear && month <= input.endMonth)
     ) {
-        const { year: payrollYear, month: payrollMonth } = nextMonth(year, month);
+        const { year: payrollYear, month: payrollMonth } = nextMonth(
+            year,
+            month,
+        );
         const lastDay = lastDayOfMonth(year, month);
-        const payrollDateDay = Math.min(5, lastDayOfMonth(payrollYear, payrollMonth));
+        const payrollDateDay = Math.min(
+            5,
+            lastDayOfMonth(payrollYear, payrollMonth),
+        );
 
         periods.push({
             key: `${year}-${pad(month)}`,
@@ -71,7 +80,7 @@ export const settledHistoricalPayrollSeedPeriods = generateMonthlySeedPeriods({
     endMonth: 12,
 });
 
-export const openTimesheetSeedPeriods = generateMonthlySeedPeriods({
+const openTimesheetSeedPeriods = generateMonthlySeedPeriods({
     startYear: 2026,
     startMonth: 1,
     endYear: 2026,
@@ -82,5 +91,3 @@ export const timesheetSeedPeriods = [
     ...settledHistoricalPayrollSeedPeriods,
     ...openTimesheetSeedPeriods,
 ];
-
-export const seedPeriods = settledHistoricalPayrollSeedPeriods;

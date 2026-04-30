@@ -1,0 +1,14 @@
+{
+    "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+    "ignorePatterns": [
+        "**/*.generated.ts",
+        "**/*.d.ts",
+        "app/globals.css",
+        "components/ui/*"
+    ],
+    "rules": {
+        "unresolved-imports": "error",
+        "unlisted-dependencies": "error",
+        "unused-exports": "warn"
+    }
+}

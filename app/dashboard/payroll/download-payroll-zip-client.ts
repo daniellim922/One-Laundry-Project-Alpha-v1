@@ -43,17 +43,14 @@ export async function streamPayrollZipFromApi(
     onProgress: (event: PayrollZipStreamProgressEvent) => void,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
     try {
-        const res = await fetch(
-            "/api/payroll/download-zip?progress=1",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Accept: "application/x-ndjson",
-                },
-                body: JSON.stringify({ payrollIds }),
+        const res = await fetch("/api/payroll/download-zip?progress=1", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/x-ndjson",
             },
-        );
+            body: JSON.stringify({ payrollIds }),
+        });
 
         if (!res.ok) {
             return {
@@ -71,7 +68,9 @@ export async function streamPayrollZipFromApi(
         let buffer = "";
         const zipChunks: BlobPart[] = [];
 
-        function handleNdjsonLine(line: string):
+        function handleNdjsonLine(
+            line: string,
+        ):
             | { outcome: "continue" }
             | { outcome: "success" }
             | { outcome: "fail"; error: string } {
@@ -92,7 +91,10 @@ export async function streamPayrollZipFromApi(
             if (t === "meta") {
                 const n = parsed.n;
                 if (typeof n !== "number") {
-                    return { outcome: "fail", error: "Invalid progress stream" };
+                    return {
+                        outcome: "fail",
+                        error: "Invalid progress stream",
+                    };
                 }
                 onProgress({ type: "meta", n });
                 return { outcome: "continue" };
@@ -106,7 +108,10 @@ export async function streamPayrollZipFromApi(
                     typeof n !== "number" ||
                     typeof workerName !== "string"
                 ) {
-                    return { outcome: "fail", error: "Invalid progress stream" };
+                    return {
+                        outcome: "fail",
+                        error: "Invalid progress stream",
+                    };
                 }
                 onProgress({
                     type: "progress",
@@ -123,7 +128,10 @@ export async function streamPayrollZipFromApi(
                     typeof filename !== "string" ||
                     typeof failed !== "number"
                 ) {
-                    return { outcome: "fail", error: "Invalid progress stream" };
+                    return {
+                        outcome: "fail",
+                        error: "Invalid progress stream",
+                    };
                 }
                 onProgress({
                     type: "done",
@@ -148,7 +156,10 @@ export async function streamPayrollZipFromApi(
             if (t === "error") {
                 const message = parsed.message;
                 if (typeof message !== "string") {
-                    return { outcome: "fail", error: "Invalid progress stream" };
+                    return {
+                        outcome: "fail",
+                        error: "Invalid progress stream",
+                    };
                 }
                 onProgress({ type: "error", message });
                 return { outcome: "fail", error: message };
@@ -180,66 +191,6 @@ export async function streamPayrollZipFromApi(
         }
 
         return { ok: false, error: "ZIP download ended unexpectedly" };
-    } catch (e) {
-        console.error(e);
-        return { ok: false, error: "Failed to download payroll PDFs" };
-    }
-}
-
-export function getDownloadFilenameFromContentDisposition(
-    header: string | null,
-): string | null {
-    if (!header) return null;
-
-    const star = header.match(/filename\*\s*=\s*([^;]+)/i);
-    if (star?.[1]) {
-        const raw = star[1].trim();
-        const unquoted = raw.replace(/^"(.*)"$/, "$1");
-        const parts = unquoted.split("''");
-        const encoded = parts.length === 2 ? parts[1] : unquoted;
-        try {
-            return decodeURIComponent(encoded);
-        } catch {
-            return encoded;
-        }
-    }
-
-    const plain = header.match(/filename\s*=\s*([^;]+)/i);
-    if (plain?.[1]) {
-        return plain[1].trim().replace(/^"(.*)"$/, "$1");
-    }
-
-    return null;
-}
-
-export async function downloadPayrollZipFromApi(payrollIds: string[]): Promise<
-    { ok: true } | { ok: false; error: string }
-> {
-    try {
-        const res = await fetch("/api/payroll/download-zip", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ payrollIds }),
-        });
-        if (!res.ok) {
-            return {
-                ok: false,
-                error: `ZIP download failed (${res.status})`,
-            };
-        }
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download =
-            getDownloadFilenameFromContentDisposition(
-                res.headers.get("content-disposition"),
-            ) ?? `payrolls-${new Date().toISOString().slice(0, 10)}.zip`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-        return { ok: true };
     } catch (e) {
         console.error(e);
         return { ok: false, error: "Failed to download payroll PDFs" };

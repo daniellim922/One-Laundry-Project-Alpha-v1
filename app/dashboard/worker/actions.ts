@@ -15,11 +15,6 @@ import {
 import { workerTable, type InsertWorker } from "@/db/tables/workerTable";
 import { db } from "@/lib/db";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
-import {
-    massUpdateWorkerMinimumWorkingHours as massUpdateWorkerMinimumWorkingHoursService,
-    type WorkerHoursBulkUpdateInput,
-    type WorkerHoursBulkUpdateResult,
-} from "@/services/worker/mass-update-minimum-working-hours";
 
 function isUniqueViolation(error: unknown): boolean {
     if (!error || typeof error !== "object") return false;
@@ -223,23 +218,4 @@ export async function updateWorker(
         console.error("Error updating worker", error);
         return { success: false, error: "Failed to update worker" };
     }
-}
-
-export async function massUpdateWorkerMinimumWorkingHours(
-    input: WorkerHoursBulkUpdateInput,
-): Promise<WorkerHoursBulkUpdateResult> {
-    await requireCurrentDashboardUser();
-
-    const result = await massUpdateWorkerMinimumWorkingHoursService(input);
-
-    if (result.updatedCount > 0) {
-        revalidatePath("/dashboard/worker");
-        revalidatePath("/dashboard/worker/all");
-        revalidatePath("/dashboard/payroll");
-        revalidatePath("/dashboard/payroll/all");
-        revalidatePath("/dashboard/payroll/[id]/summary", "page");
-        revalidatePath("/dashboard/payroll/[id]/breakdown", "page");
-    }
-
-    return result;
 }

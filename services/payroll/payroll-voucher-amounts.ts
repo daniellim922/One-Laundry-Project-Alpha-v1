@@ -6,7 +6,7 @@ export function clampHoursNotMet(hoursNotMet: number): number {
     return hoursNotMet > 0 ? 0 : hoursNotMet;
 }
 
-export function calcHoursNotMetDeduction(args: {
+function calcHoursNotMetDeduction(args: {
     hoursNotMet: number | null;
     hourlyRate: number | null;
 }): number {
