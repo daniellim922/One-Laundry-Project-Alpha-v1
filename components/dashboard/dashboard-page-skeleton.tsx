@@ -42,7 +42,7 @@ export function DashboardPageSkeleton() {
     );
 }
 
-export function DashboardStatCardsSkeleton({
+function DashboardStatCardsSkeleton({
     columns = 4,
     count = 4,
 }: {

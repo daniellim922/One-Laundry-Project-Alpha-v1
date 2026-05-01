@@ -1,10 +1,17 @@
 {
     "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
     "entry": ["src/workers/*.ts", "scripts/*.ts"],
-    "ignorePatterns": ["**/*.generated.ts"],
+    "ignorePatterns": [
+        "**/*.generated.ts",
+        "app/globals.css",
+        "components/ui/*"
+    ],
     "rules": {
         "unused-files": "error",
         "unused-exports": "warn",
-        "unused-types": "off"
+        "unused-types": "warn",
+        "unused-dependencies": "off",
+        "unused-dev-dependencies": "off",
+        "unused-optional-dependencies": "off"
     }
 }

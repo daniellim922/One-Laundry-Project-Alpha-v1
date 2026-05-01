@@ -11,20 +11,20 @@ import {
 } from "./settlement-state";
 import { workers } from "./workers";
 
-export const ADVANCE_COHORT_SIZE = 5;
-export const QUARTERLY_ADVANCE_AMOUNT = 300;
-export const QUARTERLY_ADVANCE_INSTALLMENT_AMOUNT =
+const ADVANCE_COHORT_SIZE = 5;
+const QUARTERLY_ADVANCE_AMOUNT = 300;
+const QUARTERLY_ADVANCE_INSTALLMENT_AMOUNT =
     QUARTERLY_ADVANCE_AMOUNT / 3;
-export const advanceSeedPeriods = settledHistoricalPayrollSeedPeriods;
+const advanceSeedPeriods = settledHistoricalPayrollSeedPeriods;
 
-export const ADVANCE_PURPOSE_BY_QUARTER = [
+const ADVANCE_PURPOSE_BY_QUARTER = [
     "Family support expenses",
     "Housing deposit support",
     "Renewal fee buffer",
     "School fee support",
 ] as const;
 
-export const quarterlyAdvanceCohortWorkerIndexes = workers
+const quarterlyAdvanceCohortWorkerIndexes = workers
     .map((worker, workerIndex) => ({ worker, workerIndex }))
     .filter(({ worker }) => isForeignFullTimeWorker(worker))
     .slice(0, ADVANCE_COHORT_SIZE)

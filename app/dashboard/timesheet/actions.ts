@@ -3,17 +3,11 @@
 import { revalidatePath } from "next/cache";
 
 import { requireCurrentDashboardUser } from "@/app/dashboard/_shared/auth";
-import { timesheetTable } from "@/db/tables/timesheetTable";
-import { workerTable } from "@/db/tables/workerTable";
-import { db } from "@/lib/db";
-import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
+
 import {
     createTimesheetEntryRecord,
     updateTimesheetEntryRecord,
 } from "@/services/timesheet/save-timesheet-entry";
-import { deleteTimesheetEntry as deleteTimesheetEntryRecord } from "@/services/timesheet/delete-timesheet-entry";
-import { importAttendRecordTimesheet as importAttendRecordTimesheetRecord } from "@/services/timesheet/import-attend-record-timesheet";
-import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
 
 function toTimeString(val: string): string {
     const s = String(val).trim();
@@ -97,114 +91,4 @@ export async function updateTimesheetEntry(id: string, formData: FormData) {
     revalidatePath("/dashboard/payroll");
     revalidatePath("/dashboard/payroll/all");
     return { success: true };
-}
-
-export async function deleteTimesheetEntry(id: string) {
-    await requireCurrentDashboardUser();
-
-    const result = await deleteTimesheetEntryRecord({ id });
-    if (!result.success) {
-        return { error: result.error };
-    }
-
-    revalidatePath("/dashboard/timesheet");
-    revalidatePath("/dashboard/timesheet/all");
-    revalidatePath("/dashboard/payroll");
-    revalidatePath("/dashboard/payroll/all");
-    return { success: true };
-}
-
-type ImportRow = Record<string, unknown>;
-
-export async function importTimesheetEntries(rows: ImportRow[]) {
-    await requireCurrentDashboardUser();
-
-    const workerNames = await db
-        .select({ id: workerTable.id, name: workerTable.name })
-        .from(workerTable);
-    const nameToId = new Map(
-        workerNames.map((w) => [w.name.toLowerCase().trim(), w.id]),
-    );
-
-    const toInsert: {
-        workerId: string;
-        dateIn: string;
-        timeIn: string;
-        dateOut: string;
-        timeOut: string;
-        createdAt: Date;
-        updatedAt: Date;
-    }[] = [];
-    const errors: string[] = [];
-
-    for (let i = 0; i < rows.length; i++) {
-        const row = rows[i]!;
-        const workerName = String(
-            row.worker_name ?? row.name ?? row.workerName ?? "",
-        );
-        const workerId = nameToId.get(workerName.toLowerCase().trim());
-        if (!workerId) {
-            errors.push(`Row ${i + 1}: Unknown worker "${workerName}"`);
-            continue;
-        }
-        const date = toDateString((row.date ?? "") as string | number);
-        const timeIn = toTimeString(
-            String(row.time_in ?? row.timeIn ?? "09:00"),
-        );
-        const timeOut = toTimeString(
-            String(row.time_out ?? row.timeOut ?? "17:00"),
-        );
-        if (!date || date === "Invalid Date") {
-            errors.push(`Row ${i + 1}: Invalid date`);
-            continue;
-        }
-        toInsert.push({
-            workerId,
-            dateIn: date,
-            timeIn,
-            dateOut: date,
-            timeOut,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        });
-    }
-
-    if (toInsert.length > 0) {
-        await db.insert(timesheetTable).values(toInsert);
-
-        const affectedWorkerIds = [...new Set(toInsert.map((r) => r.workerId))];
-        for (const wid of affectedWorkerIds) {
-            const sync = await synchronizeWorkerDraftPayrolls({
-                workerId: wid,
-            });
-            if ("error" in sync) {
-                return {
-                    imported: toInsert.length,
-                    errors: [...errors, sync.error],
-                };
-            }
-        }
-    }
-
-    revalidatePath("/dashboard/timesheet");
-    revalidatePath("/dashboard/timesheet/all");
-    revalidatePath("/dashboard/payroll");
-    revalidatePath("/dashboard/payroll/all");
-
-    return {
-        imported: toInsert.length,
-        errors: errors.length > 0 ? errors : undefined,
-    };
-}
-
-export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
-    await requireCurrentDashboardUser();
-
-    const result = await importAttendRecordTimesheetRecord(data);
-
-    revalidatePath("/dashboard/timesheet");
-    revalidatePath("/dashboard/timesheet/all");
-    revalidatePath("/dashboard/payroll");
-    revalidatePath("/dashboard/payroll/all");
-    return result;
 }

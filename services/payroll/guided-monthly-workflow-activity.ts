@@ -23,7 +23,7 @@ function resolveBusinessMonthParts(now: Date): { year: string; month: string } {
     return { year, month };
 }
 
-export function resolveBusinessMonthKey(now: Date = new Date()): string {
+function resolveBusinessMonthKey(now: Date = new Date()): string {
     const { year, month } = resolveBusinessMonthParts(now);
     return `${year}-${month}`;
 }

@@ -19,25 +19,6 @@ function toDateString(val: string): string {
     return d.toISOString().slice(0, 10);
 }
 
-export async function createPayroll(formData: FormData) {
-    await requireCurrentDashboardUser();
-
-    const result = await createPayrollRecord({
-        workerId: (formData.get("workerId") as string) ?? "",
-        periodStart: toDateString(formData.get("periodStart") as string),
-        periodEnd: toDateString(formData.get("periodEnd") as string),
-        payrollDate: toDateString(formData.get("payrollDate") as string),
-    });
-    if ("error" in result) {
-        return result;
-    }
-
-    revalidatePath("/dashboard");
-    revalidatePath("/dashboard/payroll");
-    revalidatePath("/dashboard/payroll/all");
-    return result;
-}
-
 export async function createPayrolls(formData: FormData) {
     await requireCurrentDashboardUser();
 
@@ -79,7 +60,4 @@ export async function updatePayroll(payrollId: string, formData: FormData) {
     return result;
 }
 
-export {
-    synchronizeWorkerDraftPayrolls,
-    synchronizeWorkerDraftPayrollsInTx,
-};
+export { synchronizeWorkerDraftPayrolls, synchronizeWorkerDraftPayrollsInTx };

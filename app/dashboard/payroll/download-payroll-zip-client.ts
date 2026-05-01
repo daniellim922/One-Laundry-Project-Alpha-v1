@@ -186,7 +186,7 @@ export async function streamPayrollZipFromApi(
     }
 }
 
-export function getDownloadFilenameFromContentDisposition(
+function getDownloadFilenameFromContentDisposition(
     header: string | null,
 ): string | null {
     if (!header) return null;
@@ -212,7 +212,7 @@ export function getDownloadFilenameFromContentDisposition(
     return null;
 }
 
-export async function downloadPayrollZipFromApi(payrollIds: string[]): Promise<
+async function downloadPayrollZipFromApi(payrollIds: string[]): Promise<
     { ok: true } | { ok: false; error: string }
 > {
     try {

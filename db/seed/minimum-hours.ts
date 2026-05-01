@@ -1,8 +1,8 @@
 import type { SeedPeriod } from "./periods";
 
-export const FOREIGN_FULL_TIME_LIVE_MINIMUM_HOURS = 260;
+const FOREIGN_FULL_TIME_LIVE_MINIMUM_HOURS = 260;
 
-export const FOREIGN_FULL_TIME_OVERTIME_BAND = {
+const FOREIGN_FULL_TIME_OVERTIME_BAND = {
     min: 2,
     max: 8,
 } as const;
@@ -23,7 +23,7 @@ const FOREIGN_FULL_TIME_OVERTIME_STEPS = [
     8,
 ] as const;
 
-export const FOREIGN_FULL_TIME_MISS_MONTHS = new Map<string, number>([
+const FOREIGN_FULL_TIME_MISS_MONTHS = new Map<string, number>([
     ["1:2025-06", 4],
     ["6:2025-11", 5],
     ["12:2025-12", 6],

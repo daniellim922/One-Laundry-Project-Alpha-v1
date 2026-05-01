@@ -17,7 +17,7 @@ import { Progress } from "@/components/ui/progress";
 
 export type PayrollZipProgressPhase = "settling" | "generating";
 
-export function formatMmSs(totalSeconds: number): string {
+function formatMmSs(totalSeconds: number): string {
     if (totalSeconds >= 3600) {
         const h = Math.floor(totalSeconds / 3600);
         const m = Math.floor((totalSeconds % 3600) / 60);

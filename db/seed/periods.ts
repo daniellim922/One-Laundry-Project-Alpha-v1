@@ -71,7 +71,7 @@ export const settledHistoricalPayrollSeedPeriods = generateMonthlySeedPeriods({
     endMonth: 12,
 });
 
-export const openTimesheetSeedPeriods = generateMonthlySeedPeriods({
+const openTimesheetSeedPeriods = generateMonthlySeedPeriods({
     startYear: 2026,
     startMonth: 1,
     endYear: 2026,
@@ -83,4 +83,4 @@ export const timesheetSeedPeriods = [
     ...openTimesheetSeedPeriods,
 ];
 
-export const seedPeriods = settledHistoricalPayrollSeedPeriods;
+const seedPeriods = settledHistoricalPayrollSeedPeriods;
