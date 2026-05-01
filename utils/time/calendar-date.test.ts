@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
     clampIsoDateToRange,
-    compareIsoDate,
-    dateToIso,
     dateToLocalIsoYmd,
     formatDmyInput,
     isIsoDateStrict,
@@ -39,13 +37,6 @@ describe("calendar-date", () => {
         const parsed = parseIsoToDateStrict("2026-04-06");
         expect(parsed).not.toBeNull();
         expect(dateToLocalIsoYmd(parsed!)).toBe("2026-04-06");
-        expect(dateToIso(parsed!)).toBe("2026-04-06");
-    });
-
-    it("compares ISO dates", () => {
-        expect(compareIsoDate("2026-01-01", "2026-01-02")).toBeLessThan(0);
-        expect(compareIsoDate("2026-01-02", "2026-01-01")).toBeGreaterThan(0);
-        expect(compareIsoDate("2026-01-01", "2026-01-01")).toBe(0);
     });
 
     it("clamps ISO date to min/max", () => {

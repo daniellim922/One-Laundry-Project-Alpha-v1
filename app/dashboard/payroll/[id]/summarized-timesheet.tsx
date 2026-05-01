@@ -7,7 +7,7 @@ import {
     formatEnGbDayMonthLongYear,
     formatEnGbDayMonthShort,
 } from "@/utils/time/intl-en-gb";
-import { localTimeHm } from "@/utils/time/local-time";
+import { localTimeHm } from "@/utils/time/hm-time";
 import {
     Table,
     TableHeader,

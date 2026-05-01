@@ -5,10 +5,11 @@ import { advanceTable } from "@/db/tables/advanceTable";
 import { workerTable } from "@/db/tables/workerTable";
 import type { AdvanceLoanStatus, InstallmentStatus } from "@/types/status";
 import { db } from "@/lib/db";
+import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
 
 function normalizePgDate(value: string | Date): string {
     if (value instanceof Date) {
-        return value.toISOString().slice(0, 10);
+        return dateToLocalIsoYmd(value);
     }
     return value;
 }

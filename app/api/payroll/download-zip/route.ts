@@ -13,6 +13,7 @@ import { payrollTable } from "@/db/tables/payrollTable";
 import { workerTable } from "@/db/tables/workerTable";
 import { recordGuidedMonthlyWorkflowStepCompletion } from "@/services/payroll/guided-monthly-workflow-activity";
 import { generatePdf } from "@/services/pdf/generate-pdf";
+import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -315,11 +316,11 @@ export async function POST(req: NextRequest) {
     const periodStartForZip =
         starts.length > 0
             ? starts.slice().sort()[0]!
-            : new Date().toISOString().slice(0, 10);
+            : dateToLocalIsoYmd();
     const periodEndForZip =
         ends.length > 0
             ? ends.slice().sort().at(-1)!
-            : new Date().toISOString().slice(0, 10);
+            : dateToLocalIsoYmd();
 
     const periodStartForZipLabel = isoToDdmmyyyy(periodStartForZip);
     const periodEndForZipLabel = isoToDdmmyyyy(periodEndForZip);

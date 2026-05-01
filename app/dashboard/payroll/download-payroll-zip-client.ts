@@ -1,5 +1,7 @@
 "use client";
 
+import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
+
 export type PayrollZipStreamProgressEvent =
     | { type: "meta"; n: number }
     | { type: "progress"; i: number; n: number; workerName: string }
@@ -138,7 +140,7 @@ export async function streamPayrollZipFromApi(
                 a.href = url;
                 a.download =
                     filename ||
-                    `payrolls-${new Date().toISOString().slice(0, 10)}.zip`;
+                    `payrolls-${dateToLocalIsoYmd()}.zip`;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
@@ -234,7 +236,7 @@ async function downloadPayrollZipFromApi(payrollIds: string[]): Promise<
         a.download =
             getDownloadFilenameFromContentDisposition(
                 res.headers.get("content-disposition"),
-            ) ?? `payrolls-${new Date().toISOString().slice(0, 10)}.zip`;
+            ) ?? `payrolls-${dateToLocalIsoYmd()}.zip`;
         document.body.appendChild(a);
         a.click();
         a.remove();

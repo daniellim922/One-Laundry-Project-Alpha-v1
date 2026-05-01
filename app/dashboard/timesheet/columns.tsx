@@ -24,7 +24,7 @@ import { deleteTimesheetEntry } from "./delete-timesheet-entry";
 import type { TimesheetPaymentStatus } from "@/types/status";
 import { timesheetPaymentStatusBadgeTone } from "@/types/badge-tones";
 import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
-import { localTimeHm } from "@/utils/time/local-time";
+import { localTimeHm } from "@/utils/time/hm-time";
 import {
     createBadgeCell,
     createSortableHeader,

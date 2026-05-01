@@ -9,27 +9,18 @@ import {
     updateTimesheetEntryRecord,
 } from "@/services/timesheet/save-timesheet-entry";
 
-function toTimeString(val: string): string {
-    const s = String(val).trim();
-    if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) {
-        const parts = s.split(":");
-        const h = parts[0]!.padStart(2, "0");
-        const m = parts[1]!.padStart(2, "0");
-        const sec = parts[2] ?? "00";
-        return `${h}:${m}:${sec}`;
-    }
-    return s;
-}
+import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
+import { toTimesheetWireTimeHms } from "@/utils/time/hm-time";
 
 function toDateString(val: string | number): string {
     const v = val;
     if (typeof v === "number" && v > 0) {
         const d = new Date((v - 25569) * 86400 * 1000);
-        return d.toISOString().slice(0, 10);
+        return dateToLocalIsoYmd(d);
     }
     const d = new Date(String(v));
     if (Number.isNaN(d.getTime())) return "";
-    return d.toISOString().slice(0, 10);
+    return dateToLocalIsoYmd(d);
 }
 
 function formDate(formData: FormData, key: string): string {
@@ -46,8 +37,8 @@ export async function createTimesheetEntry(formData: FormData) {
     const date = dateRaw != null ? toDateString(dateRaw as string) : "";
     const dateIn = formDate(formData, "dateIn") || date;
     const dateOut = formDate(formData, "dateOut") || dateIn;
-    const timeIn = toTimeString(formData.get("timeIn") as string);
-    const timeOut = toTimeString(formData.get("timeOut") as string);
+    const timeIn = toTimesheetWireTimeHms(formData.get("timeIn") as string);
+    const timeOut = toTimesheetWireTimeHms(formData.get("timeOut") as string);
     const result = await createTimesheetEntryRecord({
         workerId,
         dateIn,
@@ -72,8 +63,8 @@ export async function updateTimesheetEntry(id: string, formData: FormData) {
     const workerId = formData.get("workerId") as string;
     const dateIn = formDate(formData, "dateIn");
     const dateOut = formDate(formData, "dateOut");
-    const timeIn = toTimeString(formData.get("timeIn") as string);
-    const timeOut = toTimeString(formData.get("timeOut") as string);
+    const timeIn = toTimesheetWireTimeHms(formData.get("timeIn") as string);
+    const timeOut = toTimesheetWireTimeHms(formData.get("timeOut") as string);
     const result = await updateTimesheetEntryRecord({
         id,
         workerId,

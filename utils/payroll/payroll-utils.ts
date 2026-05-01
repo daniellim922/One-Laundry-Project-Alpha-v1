@@ -4,17 +4,6 @@ import {
 } from "@/utils/time/calendar-date";
 
 /**
- * Parse time string (HH:MM or HH:MM:SS) to decimal hours since midnight.
- */
-function timeToHours(timeStr: string): number {
-    const parts = String(timeStr).split(":").map(Number);
-    const hours = parts[0] ?? 0;
-    const minutes = (parts[1] ?? 0) / 60;
-    const seconds = (parts[2] ?? 0) / 3600;
-    return hours + minutes + seconds;
-}
-
-/**
  * Parse date string (YYYY-MM-DD or DD/MM/YYYY) to local calendar Date.
  * Delegates to strict `calendar-date` parsers when the string matches UI/form
  * formats; keeps a narrow lenient branch for single-digit segments (e.g. imports).
@@ -117,7 +106,18 @@ export function formatDurationHm(durationMs: number): string {
     return `${hours}h ${minutes}m`;
 }
 
-/** True when clock-out is strictly after clock-in (matches {@link calculateHoursFromDateTimes} positive duration). */
+export function formatClockIntervalHm(
+    dateIn: string,
+    timeIn: string,
+    dateOut: string,
+    timeOut: string,
+): string {
+    return formatDurationHm(
+        clockIntervalDurationMs(dateIn, timeIn, dateOut, timeOut) ?? 0,
+    );
+}
+
+/** True when clock-out is strictly after clock-in (positive {@link clockIntervalDurationMs}). */
 export function isClockOutAfterClockIn(
     dateIn: string,
     timeIn: string,
@@ -127,28 +127,6 @@ export function isClockOutAfterClockIn(
     const diffMs = clockIntervalDurationMs(dateIn, timeIn, dateOut, timeOut);
     return diffMs != null && diffMs > 0;
 }
-
-/**
- * Calculate decimal hours worked from full date+time.
- * Handles cross-day and multi-day shifts.
- * Returns 0 when invalid.
- */
-function calculateHoursFromDateTimes(
-    dateIn: string,
-    timeIn: string,
-    dateOut: string,
-    timeOut: string,
-): number {
-    const diffMs = clockIntervalDurationMs(dateIn, timeIn, dateOut, timeOut);
-    if (diffMs == null || diffMs < 0) return 0;
-    const totalMinutes = diffMs / (60 * 1000);
-    return Math.round((totalMinutes / 60) * 100) / 100;
-}
-
-/**
- * Calculate hours worked from time_in and time_out.
- * Handles overnight (time_out < time_in) by assuming next day.
- */
 
 export interface PayCalcInput {
     employmentType: "Full Time" | "Part Time";

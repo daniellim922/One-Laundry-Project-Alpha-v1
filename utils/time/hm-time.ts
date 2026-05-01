@@ -17,3 +17,25 @@ export function normalizeHmTime(value: string): string {
     if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return "";
     return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
+
+/** Local time display as HH:MM (null-safe; normalizes via {@link normalizeHmTime}). */
+export function localTimeHm(t: string | null | undefined): string {
+    const s = String(t ?? "").trim();
+    if (!s) return "";
+    return normalizeHmTime(s);
+}
+
+/**
+ * Normalizes loose H:M(:S) to strict Postgres-style `HH:MM:SS` for timesheet persistence.
+ */
+export function toTimesheetWireTimeHms(val: string): string {
+    const s = String(val).trim();
+    if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) {
+        const parts = s.split(":");
+        const h = parts[0]!.padStart(2, "0");
+        const m = parts[1]!.padStart(2, "0");
+        const sec = parts[2] ?? "00";
+        return `${h}:${m}:${sec}`;
+    }
+    return s;
+}

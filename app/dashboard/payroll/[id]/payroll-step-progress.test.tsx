@@ -36,7 +36,7 @@ vi.mock("@/app/dashboard/payroll/read-api", () => ({
 
 import { PayrollStepProgress } from "@/app/dashboard/payroll/[id]/payroll-step-progress";
 import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
-import { localTimeHm } from "@/utils/time/local-time";
+import { localTimeHm } from "@/utils/time/hm-time";
 
 function createDeferred<T>() {
     let resolve!: (value: T | PromiseLike<T>) => void;

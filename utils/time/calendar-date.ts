@@ -63,13 +63,8 @@ export function dateToLocalIsoYmd(d: Date = new Date()): string {
     return `${yyyy}-${mm}-${dd}`;
 }
 
-/** Local calendar YYYY-MM-DD from a calendar Date (same encoding as {@link dateToLocalIsoYmd}). */
-export function dateToIso(date: Date): string {
-    return dateToLocalIsoYmd(date);
-}
-
 /** Compare two ISO YYYY-MM-DD strings (inclusive calendar order). */
-export function compareIsoDate(a: string, b: string): number {
+function compareIsoDate(a: string, b: string): number {
     if (a === b) return 0;
     return a < b ? -1 : 1;
 }
