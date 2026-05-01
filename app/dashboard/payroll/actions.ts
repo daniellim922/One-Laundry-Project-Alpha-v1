@@ -4,11 +4,6 @@ import { revalidatePath } from "next/cache";
 
 import { requireCurrentDashboardUser } from "@/app/dashboard/_shared/auth";
 import {
-    synchronizeWorkerDraftPayrolls,
-    synchronizeWorkerDraftPayrollsInTx,
-} from "@/services/payroll/synchronize-worker-draft-payrolls";
-import {
-    createPayrollRecord,
     createPayrollRecords,
     updatePayrollRecord,
 } from "@/services/payroll/save-payroll";
@@ -59,5 +54,3 @@ export async function updatePayroll(payrollId: string, formData: FormData) {
     revalidatePath("/dashboard/payroll/all");
     return result;
 }
-
-export { synchronizeWorkerDraftPayrolls, synchronizeWorkerDraftPayrollsInTx };

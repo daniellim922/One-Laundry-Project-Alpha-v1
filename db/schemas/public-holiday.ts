@@ -72,7 +72,6 @@ export const publicHolidayYearInputSchema = z
     });
 
 export type PublicHolidayYearInput = z.infer<typeof publicHolidayYearInputSchema>;
-export type PublicHolidayRowInput = PublicHolidayYearInput["holidays"][number];
 
 export function formatPublicHolidayZodError(error: z.ZodError): string {
     return error.issues[0]?.message ?? "Invalid input";

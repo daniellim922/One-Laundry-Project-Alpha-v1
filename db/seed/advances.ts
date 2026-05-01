@@ -13,8 +13,7 @@ import { workers } from "./workers";
 
 const ADVANCE_COHORT_SIZE = 5;
 const QUARTERLY_ADVANCE_AMOUNT = 300;
-const QUARTERLY_ADVANCE_INSTALLMENT_AMOUNT =
-    QUARTERLY_ADVANCE_AMOUNT / 3;
+const QUARTERLY_ADVANCE_INSTALLMENT_AMOUNT = QUARTERLY_ADVANCE_AMOUNT / 3;
 const advanceSeedPeriods = settledHistoricalPayrollSeedPeriods;
 
 const ADVANCE_PURPOSE_BY_QUARTER = [
@@ -30,13 +29,13 @@ const quarterlyAdvanceCohortWorkerIndexes = workers
     .slice(0, ADVANCE_COHORT_SIZE)
     .map(({ workerIndex }) => workerIndex);
 
-export type SeedAdvanceInstallment = {
+type SeedAdvanceInstallment = {
     installmentAmt: number;
     installmentDate: string;
     status: "Installment Loan" | "Installment Paid";
 };
 
-export type SeedAdvanceRequest = {
+type SeedAdvanceRequest = {
     workerIndex: number;
     workerName: string;
     amount: number;
@@ -54,11 +53,7 @@ type Quarter = {
 function chunkPeriodsIntoQuarters(): Quarter[] {
     const quarters: Quarter[] = [];
 
-    for (
-        let index = 0;
-        index < advanceSeedPeriods.length;
-        index += 3
-    ) {
+    for (let index = 0; index < advanceSeedPeriods.length; index += 3) {
         quarters.push({
             periods: advanceSeedPeriods.slice(index, index + 3),
             quarterIndex: index / 3,

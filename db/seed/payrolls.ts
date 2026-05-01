@@ -21,7 +21,7 @@ function roundMoney(n: number): number {
     return Math.round(n * 100) / 100;
 }
 
-export type VoucherEntry = {
+type VoucherEntry = {
     voucherNumber: string;
     employmentType: string | null;
     employmentArrangement: string | null;
@@ -47,7 +47,7 @@ export type VoucherEntry = {
     bankAccountNumber: string | null;
 };
 
-export type PayrollEntry = {
+type PayrollEntry = {
     workerIndex: number;
     periodStart: string;
     periodEnd: string;
@@ -56,17 +56,24 @@ export type PayrollEntry = {
     voucher: VoucherEntry;
 };
 
-function countWorkingDaysInPeriod(periodStart: string, periodEnd: string): number {
-    const start = new Date(Date.UTC(
-        Number(periodStart.slice(0, 4)),
-        Number(periodStart.slice(5, 7)) - 1,
-        Number(periodStart.slice(8, 10)),
-    ));
-    const end = new Date(Date.UTC(
-        Number(periodEnd.slice(0, 4)),
-        Number(periodEnd.slice(5, 7)) - 1,
-        Number(periodEnd.slice(8, 10)),
-    ));
+function countWorkingDaysInPeriod(
+    periodStart: string,
+    periodEnd: string,
+): number {
+    const start = new Date(
+        Date.UTC(
+            Number(periodStart.slice(0, 4)),
+            Number(periodStart.slice(5, 7)) - 1,
+            Number(periodStart.slice(8, 10)),
+        ),
+    );
+    const end = new Date(
+        Date.UTC(
+            Number(periodEnd.slice(0, 4)),
+            Number(periodEnd.slice(5, 7)) - 1,
+            Number(periodEnd.slice(8, 10)),
+        ),
+    );
     let count = 0;
     const cursor = new Date(start);
     while (cursor <= end) {
@@ -99,7 +106,11 @@ function generatePayrolls(): PayrollEntry[] {
     for (const period of settledHistoricalPayrollSeedPeriods) {
         const status = getSeedPayrollStatus(period);
 
-        for (let workerIndex = 0; workerIndex < workers.length; workerIndex += 1) {
+        for (
+            let workerIndex = 0;
+            workerIndex < workers.length;
+            workerIndex += 1
+        ) {
             const worker = workers[workerIndex];
             const totalHoursWorked =
                 Math.round(
@@ -109,20 +120,22 @@ function generatePayrolls(): PayrollEntry[] {
             const minimumWorkingHours = isForeignFullTimeWorker(worker)
                 ? getVoucherMinimumWorkingHours(period)
                 : "minimumWorkingHours" in worker
-                  ? worker.minimumWorkingHours ?? null
+                  ? (worker.minimumWorkingHours ?? null)
                   : null;
             const overtimeHours =
                 minimumWorkingHours != null
                     ? Math.max(
                           0,
-                          Math.round((totalHoursWorked - minimumWorkingHours) * 100) /
-                              100,
+                          Math.round(
+                              (totalHoursWorked - minimumWorkingHours) * 100,
+                          ) / 100,
                       )
                     : 0;
             const rawHoursNotMet =
                 minimumWorkingHours != null
-                    ? Math.round((totalHoursWorked - minimumWorkingHours) * 100) /
-                      100
+                    ? Math.round(
+                          (totalHoursWorked - minimumWorkingHours) * 100,
+                      ) / 100
                     : null;
             const hoursNotMet =
                 rawHoursNotMet == null
@@ -132,11 +145,11 @@ function generatePayrolls(): PayrollEntry[] {
                       : rawHoursNotMet;
 
             const hourlyRate =
-                "hourlyRate" in worker ? worker.hourlyRate ?? null : null;
+                "hourlyRate" in worker ? (worker.hourlyRate ?? null) : null;
             const monthlyPay =
-                "monthlyPay" in worker ? worker.monthlyPay ?? null : null;
+                "monthlyPay" in worker ? (worker.monthlyPay ?? null) : null;
             const restDayRate =
-                "restDayRate" in worker ? worker.restDayRate ?? null : null;
+                "restDayRate" in worker ? (worker.restDayRate ?? null) : null;
             const isPartTime = worker.employmentType === "Part Time";
             const restDays = computeRestDaysForPayrollPeriod({
                 periodStart: period.periodStart,
@@ -148,7 +161,8 @@ function generatePayrolls(): PayrollEntry[] {
             });
 
             const phDatesInPeriod = publicHolidayDates.filter(
-                (date) => date >= period.periodStart && date <= period.periodEnd,
+                (date) =>
+                    date >= period.periodStart && date <= period.periodEnd,
             );
             const hasTimesheets = presentDateInKeysByWorkerPeriod.has(
                 `${workerIndex}:${period.key}`,
@@ -177,7 +191,8 @@ function generatePayrolls(): PayrollEntry[] {
                     period.periodEnd,
                 );
                 publicHolidayPay = roundMoney(
-                    ((monthlyPay ?? 0) / periodWorkingDays) * publicHolidaysCount,
+                    ((monthlyPay ?? 0) / periodWorkingDays) *
+                        publicHolidaysCount,
                 );
             } else {
                 publicHolidayPay = roundMoney(
@@ -204,7 +219,7 @@ function generatePayrolls(): PayrollEntry[] {
                 );
             }
 
-            const cpf = "cpf" in worker ? worker.cpf ?? 0 : 0;
+            const cpf = "cpf" in worker ? (worker.cpf ?? 0) : 0;
             const advance = getAdvanceDeductionForWorkerPeriod(
                 workerIndex,
                 period.periodStart,
@@ -247,8 +262,8 @@ function generatePayrolls(): PayrollEntry[] {
                     grandTotal,
                     paymentMethod: worker.paymentMethod ?? null,
                     payNowPhone:
-                        (worker as { payNowPhone?: string | null }).payNowPhone ??
-                        null,
+                        (worker as { payNowPhone?: string | null })
+                            .payNowPhone ?? null,
                     bankAccountNumber:
                         (worker as { bankAccountNumber?: string | null })
                             .bankAccountNumber ?? null,

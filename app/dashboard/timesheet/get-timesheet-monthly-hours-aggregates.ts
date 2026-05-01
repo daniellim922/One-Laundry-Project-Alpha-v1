@@ -9,11 +9,6 @@ import type {
     TimesheetMonthlyHoursAggregatesPayload,
 } from "@/types/timesheet-monthly-hours-aggregates";
 
-export type {
-    TimesheetMonthlyHoursAggregateRow,
-    TimesheetMonthlyHoursAggregatesPayload,
-};
-
 export async function getTimesheetMonthlyHoursAggregates(): Promise<TimesheetMonthlyHoursAggregatesPayload> {
     const maxYear = new Date().getFullYear();
     const minYear = maxYear - 4;

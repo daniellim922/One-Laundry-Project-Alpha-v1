@@ -7,7 +7,7 @@ import {
     type MonthlyWorkerStackedAmountCopy,
 } from "@/components/dashboard/monthly-worker-stacked-amount-overview-card";
 
-import type { AdvanceMonthlyRepaymentAggregateRow } from "@/types/advance-monthly-repayment-aggregates";
+import type { MonthlyWorkerAmountRow as AdvanceMonthlyRepaymentAggregateRow } from "@/types/monthly-worker-amount-aggregates";
 
 const ADVANCE_MONTHLY_REPAYMENT_COPY = {
     title: "Monthly advance repayments",

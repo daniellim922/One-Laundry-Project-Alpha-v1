@@ -66,8 +66,6 @@ import {
 import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 import { createWorker, updateWorker } from "./actions";
 
-export type { WorkerWithEmployment };
-
 function optionalNumberString(n: number | null | undefined): string {
     if (n == null || Number.isNaN(n)) return "";
     return String(n);

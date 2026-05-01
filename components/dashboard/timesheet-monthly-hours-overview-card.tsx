@@ -37,9 +37,6 @@ const TIMESHEET_MONTHLY_HOURS_COPY = {
     yAxisWidth: 44,
 } satisfies MonthlyWorkerStackedAmountCopy;
 
-/** Same as `TimesheetMonthlyHoursAggregateRow` (kept for existing imports). */
-export type TimesheetMonthlyHoursOverviewRow = TimesheetMonthlyHoursAggregateRow;
-
 export function TimesheetMonthlyHoursOverviewCard({
     rows,
     defaultYear,

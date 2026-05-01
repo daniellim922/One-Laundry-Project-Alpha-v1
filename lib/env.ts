@@ -44,5 +44,3 @@ export const env = {
     isProduction: data.NODE_ENV === "production",
     isTest: data.NODE_ENV === "test",
 } as const;
-
-export type Env = typeof env;
