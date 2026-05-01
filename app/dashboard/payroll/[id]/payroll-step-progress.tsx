@@ -43,11 +43,123 @@ import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 import { localTimeHm } from "@/utils/time/local-time";
 import { fetchRevertPreview } from "../read-api";
 
+const statusToneMap: Record<string, string> = {
+    ...payrollStatusBadgeTone,
+    ...timesheetPaymentStatusBadgeTone,
+    ...installmentToneClassName,
+    ...advanceLoanToneClassName,
+};
+
 interface PayrollStepProgressProps {
     className?: string;
     payrollId: string;
     payrollStatus: string;
     activeStep: 1 | 2 | 3;
+}
+
+function StatusBadgePair({
+    currentStatus,
+    futureStatus,
+}: {
+    currentStatus: string;
+    futureStatus: string;
+}) {
+    return (
+        <>
+            <TableCell>
+                <Badge
+                    variant="secondary"
+                    className={cn(statusToneMap[currentStatus])}>
+                    {currentStatus}
+                </Badge>
+            </TableCell>
+            <TableCell>
+                <Badge
+                    variant="secondary"
+                    className={cn(statusToneMap[futureStatus])}>
+                    {futureStatus}
+                </Badge>
+            </TableCell>
+        </>
+    );
+}
+
+function ConfirmActionDialog({
+    open,
+    onOpenChange,
+    trigger,
+    title,
+    description,
+    warning,
+    children,
+    error,
+    pending,
+    onConfirm,
+    confirmVariant,
+    confirmLabel,
+    confirmPendingLabel,
+    dialogContentClassName,
+}: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    trigger: React.ReactElement;
+    title: string;
+    description: string;
+    warning: React.ReactNode;
+    children?: React.ReactNode;
+    error: string | null;
+    pending: boolean;
+    onConfirm: () => void;
+    confirmVariant: "default" | "destructive";
+    confirmLabel: string;
+    confirmPendingLabel: string;
+    dialogContentClassName?: string;
+}) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogTrigger asChild>{trigger}</DialogTrigger>
+            <DialogContent
+                className={cn(
+                    "[&_button]:cursor-pointer flex flex-col gap-4",
+                    dialogContentClassName,
+                )}>
+                <DialogHeader className="shrink-0">
+                    <DialogTitle>{title}</DialogTitle>
+                    <DialogDescription>{description}</DialogDescription>
+                </DialogHeader>
+                <div
+                    role="alert"
+                    className="shrink-0 flex gap-2 rounded-md border border-destructive/60 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    <AlertTriangle
+                        className="mt-0.5 size-4 shrink-0"
+                        aria-hidden
+                    />
+                    <div>{warning}</div>
+                </div>
+                {children}
+                {error ? (
+                    <p className="shrink-0 text-sm text-destructive">{error}</p>
+                ) : null}
+                <DialogFooter className="shrink-0">
+                    <DialogClose asChild>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            disabled={pending}>
+                            Cancel
+                        </Button>
+                    </DialogClose>
+                    <Button
+                        type="button"
+                        variant={confirmVariant}
+                        disabled={pending}
+                        onClick={onConfirm}>
+                        {pending ? confirmPendingLabel : confirmLabel}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 export function PayrollStepProgress({
@@ -165,13 +277,13 @@ export function PayrollStepProgress({
     }
 
     const finalAction = isSettled ? (
-        <Dialog
+        <ConfirmActionDialog
             open={revertOpen}
             onOpenChange={(nextOpen) => {
                 setRevertOpen(nextOpen);
                 if (!nextOpen) setRevertError(null);
-            }}>
-            <DialogTrigger asChild>
+            }}
+            trigger={
                 <Button
                     type="button"
                     variant="destructive"
@@ -180,82 +292,53 @@ export function PayrollStepProgress({
                     className="cursor-pointer">
                     Revert
                 </Button>
-            </DialogTrigger>
-            <DialogContent className="[&_button]:cursor-pointer flex max-h-[min(95vh,1100px)] flex-col gap-4 sm:max-w-6xl">
-                <DialogHeader className="shrink-0">
-                    <DialogTitle>Confirm revert</DialogTitle>
-                    <DialogDescription>
-                        The following changes will be applied:
-                    </DialogDescription>
-                </DialogHeader>
-                <div
-                    role="alert"
-                    className="shrink-0 flex gap-2 rounded-md border border-destructive/60 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                    <AlertTriangle
-                        className="mt-0.5 size-4 shrink-0"
-                        aria-hidden
-                    />
-                    <p>
-                        <span className="font-semibold">Warning: </span>
-                        Reverting may break or desynchronize information that
-                        depends on this payroll being settled
-                        <br />
-                        (for example reports, exports, or linked timesheet or
-                        payment records).
-                        <br />
-                        <span className="font-bold">
-                            ONLY CONTINUE IF YOU UNDERSTAND THE IMPACT.
+            }
+            title="Confirm revert"
+            description="The following changes will be applied:"
+            warning={
+                <p>
+                    <span className="font-semibold">Warning: </span>
+                    Reverting may break or desynchronize information that depends
+                    on this payroll being settled
+                    <br />
+                    (for example reports, exports, or linked timesheet or
+                    payment records).
+                    <br />
+                    <span className="font-bold">
+                        ONLY CONTINUE IF YOU UNDERSTAND THE IMPACT.
+                    </span>
+                </p>
+            }
+            dialogContentClassName="max-h-[min(95vh,1100px)] sm:max-w-6xl"
+            error={revertError}
+            pending={revertPending}
+            onConfirm={handleRevert}
+            confirmVariant="destructive"
+            confirmLabel="Yes, revert"
+            confirmPendingLabel="Reverting...">
+            <div className="min-h-0 flex-1 overflow-y-auto">
+                {previewLoading ? (
+                    <div className="flex items-center gap-2 py-4">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-sm text-muted-foreground">
+                            Loading preview...
                         </span>
-                    </p>
-                </div>
-                <div className="min-h-0 flex-1 overflow-y-auto">
-                    {previewLoading ? (
-                        <div className="flex items-center gap-2 py-4">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span className="text-sm text-muted-foreground">
-                                Loading preview...
-                            </span>
-                        </div>
-                    ) : previewError ? (
-                        <p className="text-sm text-destructive">
-                            {previewError}
-                        </p>
-                    ) : previewData ? (
-                        <RevertPreviewTable rows={previewData} />
-                    ) : null}
-                </div>
-                {revertError ? (
-                    <p className="shrink-0 text-sm text-destructive">
-                        {revertError}
-                    </p>
+                    </div>
+                ) : previewError ? (
+                    <p className="text-sm text-destructive">{previewError}</p>
+                ) : previewData ? (
+                    <RevertPreviewTable rows={previewData} />
                 ) : null}
-                <DialogFooter className="shrink-0">
-                    <DialogClose asChild>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            disabled={revertPending}>
-                            Cancel
-                        </Button>
-                    </DialogClose>
-                    <Button
-                        type="button"
-                        variant="destructive"
-                        disabled={revertPending}
-                        onClick={handleRevert}>
-                        {revertPending ? "Reverting..." : "Yes, revert"}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            </div>
+        </ConfirmActionDialog>
     ) : (
-        <Dialog
+        <ConfirmActionDialog
             open={open}
             onOpenChange={(nextOpen) => {
                 setOpen(nextOpen);
                 if (!nextOpen) setError(null);
-            }}>
-            <DialogTrigger asChild>
+            }}
+            trigger={
                 <Button
                     type="button"
                     variant="default"
@@ -264,50 +347,24 @@ export function PayrollStepProgress({
                     className="cursor-pointer">
                     Settle
                 </Button>
-            </DialogTrigger>
-            <DialogContent className="[&_button]:cursor-pointer">
-                <DialogHeader>
-                    <DialogTitle>Confirm settlement</DialogTitle>
-                    <DialogDescription>
-                        Are you sure you want to settle this payroll?
-                    </DialogDescription>
-                </DialogHeader>
-                <div
-                    role="alert"
-                    className="flex gap-2 rounded-md border border-destructive/60 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                    <AlertTriangle
-                        className="mt-0.5 size-4 shrink-0"
-                        aria-hidden
-                    />
-                    <p>
-                        <span className="font-semibold">Warning: </span>
-                        Only settle after workers have been paid and at least
-                        <span className="font-bold"> TWO WEEKS </span> have
-                        passed since payment.
-                    </p>
-                </div>
-                {error ? (
-                    <p className="text-sm text-destructive">{error}</p>
-                ) : null}
-                <DialogFooter>
-                    <DialogClose asChild>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            disabled={pending}>
-                            Cancel
-                        </Button>
-                    </DialogClose>
-                    <Button
-                        type="button"
-                        variant="default"
-                        disabled={pending}
-                        onClick={handleSettle}>
-                        {pending ? "Settling..." : "Yes, settle"}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            }
+            title="Confirm settlement"
+            description="Are you sure you want to settle this payroll?"
+            warning={
+                <p>
+                    <span className="font-semibold">Warning: </span>
+                    Only settle after workers have been paid and at least
+                    <span className="font-bold"> TWO WEEKS </span> have passed
+                    since payment.
+                </p>
+            }
+            error={error}
+            pending={pending}
+            onConfirm={handleSettle}
+            confirmVariant="default"
+            confirmLabel="Yes, settle"
+            confirmPendingLabel="Settling..."
+        />
     );
 
     return (
@@ -319,13 +376,6 @@ export function PayrollStepProgress({
         />
     );
 }
-
-const statusToneMap: Record<string, string> = {
-    ...payrollStatusBadgeTone,
-    ...timesheetPaymentStatusBadgeTone,
-    ...installmentToneClassName,
-    ...advanceLoanToneClassName,
-};
 
 function revertPreviewRowIsExpandable(row: RevertPreviewRow): boolean {
     return (
@@ -353,24 +403,10 @@ function RevertPreviewExpandedLines({ row }: { row: RevertPreviewRow }) {
                 <TableBody>
                     {row.timesheetLines.map((line) => (
                         <TableRow key={line.id}>
-                            <TableCell>
-                                <Badge
-                                    variant="secondary"
-                                    className={cn(
-                                        statusToneMap[row.currentStatus],
-                                    )}>
-                                    {row.currentStatus}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                <Badge
-                                    variant="secondary"
-                                    className={cn(
-                                        statusToneMap[row.futureStatus],
-                                    )}>
-                                    {row.futureStatus}
-                                </Badge>
-                            </TableCell>
+                            <StatusBadgePair
+                                currentStatus={row.currentStatus}
+                                futureStatus={row.futureStatus}
+                            />
                             <TableCell>
                                 {formatEnGbDmyNumericFromCalendar(line.dateIn)}
                             </TableCell>
@@ -417,24 +453,10 @@ function RevertPreviewExpandedLines({ row }: { row: RevertPreviewRow }) {
                 <TableBody>
                     {row.advanceInstallmentLines.map((line) => (
                         <TableRow key={line.id}>
-                            <TableCell>
-                                <Badge
-                                    variant="secondary"
-                                    className={cn(
-                                        statusToneMap[row.currentStatus],
-                                    )}>
-                                    {row.currentStatus}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                <Badge
-                                    variant="secondary"
-                                    className={cn(
-                                        statusToneMap[row.futureStatus],
-                                    )}>
-                                    {row.futureStatus}
-                                </Badge>
-                            </TableCell>
+                            <StatusBadgePair
+                                currentStatus={row.currentStatus}
+                                futureStatus={row.futureStatus}
+                            />
                             <TableCell>
                                 {line.repaymentDate
                                     ? formatEnGbDmyNumericFromCalendar(
@@ -489,29 +511,6 @@ function RevertPreviewTable({ rows }: { rows: RevertPreviewRow[] }) {
             </TableHeader>
             <TableBody>
                 {rows.map((row) => {
-                    const badges = (
-                        <>
-                            <TableCell>
-                                <Badge
-                                    variant="secondary"
-                                    className={cn(
-                                        statusToneMap[row.currentStatus],
-                                    )}>
-                                    {row.currentStatus}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                <Badge
-                                    variant="secondary"
-                                    className={cn(
-                                        statusToneMap[row.futureStatus],
-                                    )}>
-                                    {row.futureStatus}
-                                </Badge>
-                            </TableCell>
-                        </>
-                    );
-
                     if (revertPreviewRowIsExpandable(row)) {
                         const expanded = !!expandedRowNames[row.name];
                         return (
@@ -534,26 +533,10 @@ function RevertPreviewTable({ rows }: { rows: RevertPreviewRow[] }) {
                                             <span>{row.name}</span>
                                         </button>
                                     </TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            variant="secondary"
-                                            className={cn(
-                                                statusToneMap[
-                                                    row.currentStatus
-                                                ],
-                                            )}>
-                                            {row.currentStatus}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            variant="secondary"
-                                            className={cn(
-                                                statusToneMap[row.futureStatus],
-                                            )}>
-                                            {row.futureStatus}
-                                        </Badge>
-                                    </TableCell>
+                                    <StatusBadgePair
+                                        currentStatus={row.currentStatus}
+                                        futureStatus={row.futureStatus}
+                                    />
                                 </TableRow>
                                 {expanded ? (
                                     <TableRow className="hover:bg-transparent">
@@ -575,7 +558,10 @@ function RevertPreviewTable({ rows }: { rows: RevertPreviewRow[] }) {
                             <TableCell className="font-medium">
                                 {row.name}
                             </TableCell>
-                            {badges}
+                            <StatusBadgePair
+                                currentStatus={row.currentStatus}
+                                futureStatus={row.futureStatus}
+                            />
                         </TableRow>
                     );
                 })}
