@@ -5,11 +5,8 @@ import {
     Bar,
     BarChart,
     CartesianGrid,
-    Layer,
     XAxis,
     YAxis,
-    useXAxisScale,
-    useYAxisScale,
 } from "recharts";
 
 import {
@@ -42,6 +39,13 @@ import {
     MonthMultiSelectFilter,
     allMonthsSet,
 } from "@/components/dashboard/month-multi-select-filter";
+import {
+    MONTH_SHORT,
+    STACKED_AXIS_TICK,
+    STACKED_BAR_CHART_COLORS,
+    StackedBarMonthTotalLabels,
+    type StackedMonthTotalsRow,
+} from "@/components/dashboard/stacked-month-bar-chart";
 import {
     WORKER_EMPLOYMENT_ARRANGEMENTS,
     WORKER_EMPLOYMENT_TYPES,
@@ -125,31 +129,6 @@ const SHORT_GROUP_LABEL: Record<ComboKey, string> = {
     "pt-local": "PT · Local",
 };
 
-const MONTH_SHORT = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-] as const;
-
-const AXIS_TICK = { fontSize: 12 } as const;
-
-const CHART_COLORS = [
-    "var(--chart-1)",
-    "var(--chart-2)",
-    "var(--chart-3)",
-    "var(--chart-4)",
-    "var(--chart-5)",
-] as const;
-
 const currencyCompactFmt = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
@@ -175,55 +154,9 @@ function workersKey(workers: WorkerMeta[]): string {
         .join("\0");
 }
 
-type MonthChartPoint = {
-    month: string;
-    monthTotal: number;
+type MonthChartPoint = StackedMonthTotalsRow & {
     [workerSeriesKey: string]: string | number;
 };
-
-function StackedBarMonthTotalLabels({
-    data,
-    formatValue,
-}: {
-    data: MonthChartPoint[];
-    formatValue: (n: number) => string;
-}) {
-    const xScale = useXAxisScale(0);
-    const yScale = useYAxisScale(0);
-    if (!xScale || !yScale) {
-        return null;
-    }
-    return (
-        <Layer className="recharts-month-total-labels">
-            {data.map((row) => {
-                if (row.monthTotal <= 0) {
-                    return null;
-                }
-                const x = xScale(row.month, { position: "middle" });
-                const y = yScale(row.monthTotal);
-                if (
-                    x == null ||
-                    y == null ||
-                    !Number.isFinite(x) ||
-                    !Number.isFinite(y)
-                ) {
-                    return null;
-                }
-                return (
-                    <text
-                        key={row.month}
-                        x={x}
-                        y={y - 8}
-                        textAnchor="middle"
-                        fill="currentColor"
-                        className="text-foreground text-xs font-medium tabular-nums">
-                        {formatValue(row.monthTotal)}
-                    </text>
-                );
-            })}
-        </Layer>
-    );
-}
 
 export function MonthlyWorkerStackedAmountOverviewCard<
     T extends MonthlyWorkerStackedChartRow,
@@ -429,7 +362,7 @@ export function MonthlyWorkerStackedAmountOverviewCard<
             const key = workerSeriesKey(w.id);
             cfg[key] = {
                 label: w.name,
-                color: CHART_COLORS[i % CHART_COLORS.length],
+                color: STACKED_BAR_CHART_COLORS[i % STACKED_BAR_CHART_COLORS.length],
             };
         });
         return cfg;
@@ -651,7 +584,7 @@ export function MonthlyWorkerStackedAmountOverviewCard<
                                         dataKey="month"
                                         tickLine={false}
                                         axisLine={false}
-                                        tick={AXIS_TICK}
+                                        tick={STACKED_AXIS_TICK}
                                         tickMargin={8}
                                     />
                                     <YAxis
@@ -659,7 +592,7 @@ export function MonthlyWorkerStackedAmountOverviewCard<
                                         tickLine={false}
                                         axisLine={false}
                                         width={yAxisW}
-                                        tick={AXIS_TICK}
+                                        tick={STACKED_AXIS_TICK}
                                         tickFormatter={(v) =>
                                             typeof v === "number"
                                                 ? copy.formatValue(Math.ceil(v))

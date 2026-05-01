@@ -1,10 +1,15 @@
-import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { employmentTable } from "@/db/tables/employmentTable";
 import { payrollTable } from "@/db/tables/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { workerTable } from "@/db/tables/workerTable";
+import {
+    payrollDashboardYearWindow,
+    payrollPeriodEndYearMonthExtract,
+    settledPayrollOverlappingYearsWhere,
+} from "@/services/payroll/monthly-dashboard-aggregation";
 import { DASHBOARD_PAYROLL_NAMED_WORKER_NAMES_NORMALIZED } from "@/types/monthly-payroll-category-aggregates";
 import type { MonthlyPayrollCategoryAggregatesPayload } from "@/types/monthly-payroll-category-aggregates";
 
@@ -20,12 +25,8 @@ const workerNameNormalized = sql<string>`lower(trim(${workerTable.name}))`;
 const isNamedWorker = sql`${workerNameNormalized} in (${namedListSql})`;
 
 export async function getPayrollMonthlyCategoryAggregates(): Promise<MonthlyPayrollCategoryAggregatesPayload> {
-    const maxYear = new Date().getFullYear();
-    const minYear = maxYear - 4;
-    const yearOptions = Array.from({ length: 5 }, (_, i) => maxYear - i);
-
-    const yearExpr = sql<number>`extract(year from ${payrollTable.periodEnd})::int`;
-    const monthExpr = sql<number>`extract(month from ${payrollTable.periodEnd})::int`;
+    const { maxYear, minYear, yearOptions } = payrollDashboardYearWindow();
+    const { yearExpr, monthExpr } = payrollPeriodEndYearMonthExtract();
 
     const raw = await db
         .select({
@@ -68,11 +69,7 @@ export async function getPayrollMonthlyCategoryAggregates(): Promise<MonthlyPayr
             eq(workerTable.employmentId, employmentTable.id),
         )
         .where(
-            and(
-                eq(payrollTable.status, "Settled"),
-                gte(payrollTable.periodEnd, `${minYear}-01-01`),
-                lte(payrollTable.periodStart, `${maxYear}-12-31`),
-            ),
+            settledPayrollOverlappingYearsWhere(minYear, maxYear),
         )
         .groupBy(yearExpr, monthExpr);
 

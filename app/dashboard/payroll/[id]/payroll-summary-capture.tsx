@@ -1,13 +1,8 @@
 "use client";
 
 import { SummaryCapture } from "@/components/ui/summary-capture";
-
-function isoToDdmmyyyy(iso: string): string {
-    const s = String(iso).slice(0, 10);
-    const [y, m, d] = s.split("-");
-    if (!y || !m || !d) return s;
-    return `${d}_${m}_${y}`;
-}
+import { downloadBlobResponse } from "@/lib/client/download-blob";
+import { isoToDdmmyyyy } from "@/lib/pdf-filename-parts";
 
 export function PayrollSummaryCapture(props: {
     payrollId: string;
@@ -23,16 +18,10 @@ export function PayrollSummaryCapture(props: {
             method: "GET",
             cache: "no-store",
         });
-        if (!res.ok) throw new Error(`PDF download failed (${res.status})`);
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${workerName} - ${isoToDdmmyyyy(periodStart)}-${isoToDdmmyyyy(periodEnd)}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
+        await downloadBlobResponse(
+            res,
+            `${workerName} - ${isoToDdmmyyyy(periodStart)}-${isoToDdmmyyyy(periodEnd)}.pdf`,
+        );
     }
 
     return (

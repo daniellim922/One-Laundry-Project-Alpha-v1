@@ -2,6 +2,12 @@ import { NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
 
 import { requireCurrentApiUser } from "@/app/api/_shared/auth";
+import {
+    isoDate,
+    isoToDdmmyyyy,
+    pdfAttachmentResponse,
+    safeFilenamePart,
+} from "@/app/api/_shared/pdf-filenames";
 import { getRequestOrigin } from "@/app/api/_shared/origin";
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payrollTable";
@@ -10,22 +16,6 @@ import { generatePdf } from "@/services/pdf/generate-pdf";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-function safeFilenamePart(s: string): string {
-    return String(s).replace(/[/\\:*?"<>|]/g, "-").trim();
-}
-
-function isoDate(val: unknown): string {
-    if (val instanceof Date) return val.toISOString().slice(0, 10);
-    return String(val).slice(0, 10);
-}
-
-function isoToDdmmyyyy(iso: string): string {
-    const s = String(iso).slice(0, 10);
-    const [y, m, d] = s.split("-");
-    if (!y || !m || !d) return s;
-    return `${d}_${m}_${y}`;
-}
 
 export async function GET(
     req: NextRequest,
@@ -69,11 +59,5 @@ export async function GET(
         `${workerName} - ${periodStart}-${periodEnd}${suffix}.pdf`,
     );
 
-    return new Response(new Uint8Array(pdf), {
-        headers: {
-            "Content-Type": "application/pdf",
-            "Content-Disposition": `attachment; filename="${filename}"`,
-            "Cache-Control": "no-store",
-        },
-    });
+    return pdfAttachmentResponse(pdf, filename);
 }

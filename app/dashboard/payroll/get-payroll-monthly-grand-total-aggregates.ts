@@ -1,19 +1,20 @@
-import { and, eq, gte, lte, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { employmentTable } from "@/db/tables/employmentTable";
 import { payrollTable } from "@/db/tables/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { workerTable } from "@/db/tables/workerTable";
+import {
+    payrollDashboardYearWindow,
+    payrollPeriodEndYearMonthExtract,
+    settledPayrollOverlappingYearsWhere,
+} from "@/services/payroll/monthly-dashboard-aggregation";
 import type { MonthlyWorkerAmountAggregatesPayload } from "@/types/monthly-worker-amount-aggregates";
 
 export async function getPayrollMonthlyGrandTotalAggregates(): Promise<MonthlyWorkerAmountAggregatesPayload> {
-    const maxYear = new Date().getFullYear();
-    const minYear = maxYear - 4;
-    const yearOptions = Array.from({ length: 5 }, (_, i) => maxYear - i);
-
-    const yearExpr = sql<number>`extract(year from ${payrollTable.periodEnd})::int`;
-    const monthExpr = sql<number>`extract(month from ${payrollTable.periodEnd})::int`;
+    const { maxYear, minYear, yearOptions } = payrollDashboardYearWindow();
+    const { yearExpr, monthExpr } = payrollPeriodEndYearMonthExtract();
 
     const raw = await db
         .select({
@@ -37,11 +38,7 @@ export async function getPayrollMonthlyGrandTotalAggregates(): Promise<MonthlyWo
             eq(workerTable.employmentId, employmentTable.id),
         )
         .where(
-            and(
-                eq(payrollTable.status, "Settled"),
-                gte(payrollTable.periodEnd, `${minYear}-01-01`),
-                lte(payrollTable.periodStart, `${maxYear}-12-31`),
-            ),
+            settledPayrollOverlappingYearsWhere(minYear, maxYear),
         )
         .groupBy(
             payrollTable.workerId,

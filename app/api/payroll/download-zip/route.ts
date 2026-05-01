@@ -4,6 +4,7 @@ import { Readable } from "node:stream";
 import { eq, inArray } from "drizzle-orm";
 
 import { requireCurrentApiUser } from "@/app/api/_shared/auth";
+import { isoDate, isoToDdmmyyyy, safeFilenamePart } from "@/app/api/_shared/pdf-filenames";
 import { getRequestOrigin } from "@/app/api/_shared/origin";
 import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
 import { apiError } from "@/app/api/_shared/responses";
@@ -26,22 +27,6 @@ type PayrollMetaRow = {
     periodEnd: unknown;
     workerName: string;
 };
-
-function safeFilenamePart(s: string): string {
-    return String(s).replace(/[/\\:*?"<>|]/g, "-").trim();
-}
-
-function isoDate(val: unknown): string {
-    if (val instanceof Date) return val.toISOString().slice(0, 10);
-    return String(val).slice(0, 10);
-}
-
-function isoToDdmmyyyy(iso: string): string {
-    const s = String(iso).slice(0, 10);
-    const [y, m, d] = s.split("-");
-    if (!y || !m || !d) return s;
-    return `${d}_${m}_${y}`;
-}
 
 export function dedupeStringsPreserveOrder(values: string[]): string[] {
     return Array.from(new Set(values));

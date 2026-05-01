@@ -17,21 +17,20 @@ vi.mock("@/services/payroll/list-payrolls-for-download", () => ({
 
 import { GET } from "@/app/api/payroll/download-selection/route";
 
+import {
+    resolvedSupabaseNoSessionUser,
+    resolvedSupabaseSignedInMissingEmail,
+    resolvedSupabaseSignedInUser,
+    ROUTE_TEST_OPERATOR_EMAIL,
+    unauthorizedRouteJsonEnvelope,
+} from "@/test/_support/supabase-server-route-mock";
+
 describe("GET /api/payroll/download-selection", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.createClient.mockResolvedValue({
-            auth: {
-                getUser: vi.fn().mockResolvedValue({
-                    data: {
-                        user: {
-                            email: "operator@example.com",
-                        },
-                    },
-                    error: null,
-                }),
-            },
-        });
+        mocks.createClient.mockResolvedValue(
+            resolvedSupabaseSignedInUser(ROUTE_TEST_OPERATOR_EMAIL),
+        );
     });
 
     it("returns download selection rows", async () => {
@@ -91,52 +90,26 @@ describe("GET /api/payroll/download-selection", () => {
     });
 
     it("returns 401 when there is no authenticated session", async () => {
-        mocks.createClient.mockResolvedValue({
-            auth: {
-                getUser: vi.fn().mockResolvedValue({
-                    data: { user: null },
-                    error: null,
-                }),
-            },
-        });
+        mocks.createClient.mockResolvedValue(resolvedSupabaseNoSessionUser());
 
         const response = await GET();
 
         expect(response.status).toBe(401);
-        await expect(response.json()).resolves.toEqual({
-            ok: false,
-            error: {
-                code: "UNAUTHORIZED",
-                message: "Authentication required",
-            },
-        });
+        await expect(response.json()).resolves.toEqual(
+            unauthorizedRouteJsonEnvelope(),
+        );
         expect(mocks.listPayrollsForDownload).not.toHaveBeenCalled();
     });
 
     it("returns 401 when the authenticated user has no email", async () => {
-        mocks.createClient.mockResolvedValue({
-            auth: {
-                getUser: vi.fn().mockResolvedValue({
-                    data: {
-                        user: {
-                            email: null,
-                        },
-                    },
-                    error: null,
-                }),
-            },
-        });
+        mocks.createClient.mockResolvedValue(resolvedSupabaseSignedInMissingEmail());
 
         const response = await GET();
 
         expect(response.status).toBe(401);
-        await expect(response.json()).resolves.toEqual({
-            ok: false,
-            error: {
-                code: "UNAUTHORIZED",
-                message: "Authentication required",
-            },
-        });
+        await expect(response.json()).resolves.toEqual(
+            unauthorizedRouteJsonEnvelope(),
+        );
         expect(mocks.listPayrollsForDownload).not.toHaveBeenCalled();
     });
 });

@@ -2,6 +2,12 @@ import { NextRequest } from "next/server";
 import { eq } from "drizzle-orm";
 
 import { requireCurrentApiUser } from "@/app/api/_shared/auth";
+import {
+    isoDate,
+    isoToDdmmyyyy,
+    pdfAttachmentResponse,
+    safeFilenamePart,
+} from "@/app/api/_shared/pdf-filenames";
 import { getRequestOrigin } from "@/app/api/_shared/origin";
 import { db } from "@/lib/db";
 import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
@@ -10,17 +16,6 @@ import { generatePdf } from "@/services/pdf/generate-pdf";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-function safeFilenamePart(s: string): string {
-    return String(s).replace(/[/\\:*?"<>|]/g, "-").trim();
-}
-
-function isoToDdmmyyyy(val: unknown): string {
-    const s = String(val instanceof Date ? val.toISOString() : val).slice(0, 10);
-    const [y, m, d] = s.split("-");
-    if (!y || !m || !d) return s;
-    return `${d}_${m}_${y}`;
-}
 
 export async function GET(
     req: NextRequest,
@@ -54,16 +49,10 @@ export async function GET(
 
     const workerName = meta?.workerName ?? `advance-${id}`;
     const amount = meta?.amountRequested ?? 0;
-    const requestDate = isoToDdmmyyyy(meta?.requestDate ?? "");
+    const requestDate = isoToDdmmyyyy(isoDate(meta?.requestDate ?? ""));
     const filename = safeFilenamePart(
         `${workerName} - Advance - $${amount} - ${requestDate}.pdf`,
     );
 
-    return new Response(new Uint8Array(pdf), {
-        headers: {
-            "Content-Type": "application/pdf",
-            "Content-Disposition": `attachment; filename="${filename}"`,
-            "Cache-Control": "no-store",
-        },
-    });
+    return pdfAttachmentResponse(pdf, filename);
 }

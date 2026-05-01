@@ -5,11 +5,8 @@ import {
     Bar,
     BarChart,
     CartesianGrid,
-    Layer,
     XAxis,
     YAxis,
-    useXAxisScale,
-    useYAxisScale,
 } from "recharts";
 
 import {
@@ -49,6 +46,13 @@ import {
     formatStackedChartCurrency,
     formatStackedChartYAxisTick,
 } from "@/components/dashboard/monthly-worker-stacked-amount-overview-card";
+import {
+    MONTH_SHORT,
+    STACKED_AXIS_TICK,
+    STACKED_BAR_CHART_COLORS,
+    StackedBarMonthTotalLabels,
+    type StackedMonthTotalsRow,
+} from "@/components/dashboard/stacked-month-bar-chart";
 
 const CATEGORY_LABEL: Record<PayrollChartCategoryKey, string> = {
     ptForeignSubtotal: "Sub Total paid to PT foreign workers",
@@ -56,30 +60,6 @@ const CATEGORY_LABEL: Record<PayrollChartCategoryKey, string> = {
     namedWorkersSubtotal: "Subtotal paid to Alvis Ong and Ong Chong Wee",
     ftLocalCpf: "CPF paid to FT local worker",
 };
-
-const MONTH_SHORT = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-] as const;
-
-const AXIS_TICK = { fontSize: 12 } as const;
-
-const CHART_COLORS = [
-    "var(--chart-1)",
-    "var(--chart-2)",
-    "var(--chart-3)",
-    "var(--chart-4)",
-] as const;
 
 function categorySeriesKey(k: PayrollChartCategoryKey): string {
     return `c_${k}`;
@@ -92,55 +72,9 @@ function categoryIsIncluded(
     return checked[k] !== false;
 }
 
-type MonthChartPoint = {
-    month: string;
-    monthTotal: number;
+type MonthChartPoint = StackedMonthTotalsRow & {
     [seriesKey: string]: string | number;
 };
-
-function StackedBarMonthTotalLabels({
-    data,
-    formatValue,
-}: {
-    data: MonthChartPoint[];
-    formatValue: (n: number) => string;
-}) {
-    const xScale = useXAxisScale(0);
-    const yScale = useYAxisScale(0);
-    if (!xScale || !yScale) {
-        return null;
-    }
-    return (
-        <Layer className="recharts-month-total-labels">
-            {data.map((row) => {
-                if (row.monthTotal <= 0) {
-                    return null;
-                }
-                const x = xScale(row.month, { position: "middle" });
-                const y = yScale(row.monthTotal);
-                if (
-                    x == null ||
-                    y == null ||
-                    !Number.isFinite(x) ||
-                    !Number.isFinite(y)
-                ) {
-                    return null;
-                }
-                return (
-                    <text
-                        key={row.month}
-                        x={x}
-                        y={y - 8}
-                        textAnchor="middle"
-                        fill="currentColor"
-                        className="text-foreground text-xs font-medium tabular-nums">
-                        {formatValue(row.monthTotal)}
-                    </text>
-                );
-            })}
-        </Layer>
-    );
-}
 
 const EMPTY_ROW: Pick<
     MonthlyPayrollCategoryMonthRow,
@@ -259,7 +193,7 @@ export function MonthlyPayrollCategoryStackedOverviewCard({
         PAYROLL_CHART_CATEGORY_KEYS.forEach((k, i) => {
             cfg[categorySeriesKey(k)] = {
                 label: CATEGORY_LABEL[k],
-                color: CHART_COLORS[i % CHART_COLORS.length],
+                color: STACKED_BAR_CHART_COLORS[i % STACKED_BAR_CHART_COLORS.length],
             };
         });
         return cfg;
@@ -386,7 +320,7 @@ export function MonthlyPayrollCategoryStackedOverviewCard({
                                         dataKey="month"
                                         tickLine={false}
                                         axisLine={false}
-                                        tick={AXIS_TICK}
+                                        tick={STACKED_AXIS_TICK}
                                         tickMargin={8}
                                     />
                                     <YAxis
@@ -394,7 +328,7 @@ export function MonthlyPayrollCategoryStackedOverviewCard({
                                         tickLine={false}
                                         axisLine={false}
                                         width={yAxisW}
-                                        tick={AXIS_TICK}
+                                        tick={STACKED_AXIS_TICK}
                                         tickFormatter={(v) =>
                                             typeof v === "number"
                                                 ? formatStackedChartYAxisTick(v)

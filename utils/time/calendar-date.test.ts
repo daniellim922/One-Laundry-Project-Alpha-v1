@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
     clampIsoDateToRange,
     compareIsoDate,
+    dateToIso,
     dateToLocalIsoYmd,
     formatDmyInput,
     isIsoDateStrict,
+    isoToDmy,
     parseDmyToIsoStrict,
     parseIsoToDateStrict,
 } from "@/utils/time/calendar-date";
@@ -29,10 +31,15 @@ describe("calendar-date", () => {
         expect(isIsoDateStrict("2026-02-31")).toBe(false);
     });
 
+    it("formats ISO to DD/MM/YYYY", () => {
+        expect(isoToDmy("2026-04-06")).toBe("06/04/2026");
+    });
+
     it("parses strict ISO date and serializes Date back to ISO", () => {
         const parsed = parseIsoToDateStrict("2026-04-06");
         expect(parsed).not.toBeNull();
         expect(dateToLocalIsoYmd(parsed!)).toBe("2026-04-06");
+        expect(dateToIso(parsed!)).toBe("2026-04-06");
     });
 
     it("compares ISO dates", () => {
