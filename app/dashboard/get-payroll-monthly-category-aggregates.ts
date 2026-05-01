@@ -1,15 +1,9 @@
-import { eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
-import { db } from "@/lib/db";
 import { employmentTable } from "@/db/tables/employmentTable";
-import { payrollTable } from "@/db/tables/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { workerTable } from "@/db/tables/workerTable";
-import {
-    payrollDashboardYearWindow,
-    payrollPeriodEndYearMonthExtract,
-    settledPayrollOverlappingYearsWhere,
-} from "@/services/payroll/monthly-dashboard-aggregation";
+import { payrollSettledAggregateQueryBuilder } from "@/app/dashboard/_shared/payroll-aggregate-base";
 import { DASHBOARD_PAYROLL_NAMED_WORKER_NAMES_NORMALIZED } from "@/types/monthly-payroll-category-aggregates";
 import type { MonthlyPayrollCategoryAggregatesPayload } from "@/types/monthly-payroll-category-aggregates";
 
@@ -25,11 +19,8 @@ const workerNameNormalized = sql<string>`lower(trim(${workerTable.name}))`;
 const isNamedWorker = sql`${workerNameNormalized} in (${namedListSql})`;
 
 export async function getPayrollMonthlyCategoryAggregates(): Promise<MonthlyPayrollCategoryAggregatesPayload> {
-    const { maxYear, minYear, yearOptions } = payrollDashboardYearWindow();
-    const { yearExpr, monthExpr } = payrollPeriodEndYearMonthExtract();
-
-    const raw = await db
-        .select({
+    const { query, maxYear, yearOptions, yearExpr, monthExpr } =
+        payrollSettledAggregateQueryBuilder(({ yearExpr, monthExpr }) => ({
             year: yearExpr,
             month: monthExpr,
             ptForeignSubtotal: sql<number>`coalesce(sum(case
@@ -57,21 +48,9 @@ export async function getPayrollMonthlyCategoryAggregates(): Promise<MonthlyPayr
                 then ${payrollVoucherTable.cpf}
                 else 0
             end), 0)::double precision`,
-        })
-        .from(payrollTable)
-        .innerJoin(
-            payrollVoucherTable,
-            eq(payrollTable.payrollVoucherId, payrollVoucherTable.id),
-        )
-        .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id))
-        .innerJoin(
-            employmentTable,
-            eq(workerTable.employmentId, employmentTable.id),
-        )
-        .where(
-            settledPayrollOverlappingYearsWhere(minYear, maxYear),
-        )
-        .groupBy(yearExpr, monthExpr);
+        }));
+
+    const raw = await query.groupBy(yearExpr, monthExpr);
 
     return {
         defaultYear: maxYear,

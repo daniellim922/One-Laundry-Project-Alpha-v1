@@ -139,6 +139,128 @@ function placeCaretAtEnd(el: HTMLElement) {
     sel?.addRange(range);
 }
 
+function AmberCallout({
+    title,
+    children,
+}: {
+    title: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+            <p className="font-medium">{title}</p>
+            {children}
+        </div>
+    );
+}
+
+function ContentEditableDateCell(props: {
+    rowIndex: number;
+    field: "dateIn" | "dateOut";
+    value: string;
+    invalid: boolean;
+    onCommit: (
+        rowIndex: number,
+        field: "dateIn" | "dateOut",
+        value: string,
+    ) => void;
+}) {
+    const { rowIndex, field, value, invalid, onCommit } = props;
+    return (
+        <div
+            contentEditable
+            suppressContentEditableWarning
+            onInput={(e) => {
+                const el = e.currentTarget;
+                const formatted = formatDateInput(el.textContent ?? "");
+                if (el.textContent !== formatted) {
+                    el.textContent = formatted;
+                    placeCaretAtEnd(el);
+                }
+            }}
+            onBlur={(e) =>
+                onCommit(
+                    rowIndex,
+                    field,
+                    e.currentTarget.textContent ?? "",
+                )
+            }
+            onPaste={(e) => {
+                e.preventDefault();
+                const text = e.clipboardData.getData("text/plain");
+                const formatted = formatDateInput(text.replace(/\D/g, ""));
+                document.execCommand("insertText", false, formatted);
+            }}
+            className={`min-w-28 rounded px-2 py-1.5 outline-none focus:ring-2 focus:ring-ring focus:ring-inset ${invalid ? "text-destructive" : ""}`}>
+            {value}
+        </div>
+    );
+}
+
+function ContentEditableTimeCell(props: {
+    rowIndex: number;
+    field: "timeIn" | "timeOut";
+    displayText: string;
+    invalid: boolean;
+    onCommit: (
+        rowIndex: number,
+        field: "timeIn" | "timeOut",
+        value: string,
+    ) => void;
+    /** Time-out column: em dash placeholder and blur normalization. */
+    emptyPlaceholderEmDash?: boolean;
+}) {
+    const {
+        rowIndex,
+        field,
+        displayText,
+        invalid,
+        onCommit,
+        emptyPlaceholderEmDash = false,
+    } = props;
+
+    return (
+        <div
+            contentEditable
+            suppressContentEditableWarning
+            onInput={(e) => {
+                const el = e.currentTarget;
+                if (emptyPlaceholderEmDash) {
+                    const raw = (el.textContent ?? "").replace(/—/g, "");
+                    const formatted =
+                        raw === "" ? "" : formatTimeInput(raw);
+                    if (el.textContent !== formatted) {
+                        el.textContent = formatted || "—";
+                        if (formatted) placeCaretAtEnd(el);
+                    }
+                } else {
+                    const formatted = formatTimeInput(el.textContent ?? "");
+                    if (el.textContent !== formatted) {
+                        el.textContent = formatted;
+                        placeCaretAtEnd(el);
+                    }
+                }
+            }}
+            onBlur={(e) => {
+                const v = (e.currentTarget.textContent ?? "").trim();
+                if (emptyPlaceholderEmDash) {
+                    onCommit(rowIndex, field, v === "—" ? "" : v);
+                } else {
+                    onCommit(rowIndex, field, v);
+                }
+            }}
+            onPaste={(e) => {
+                e.preventDefault();
+                const text = e.clipboardData.getData("text/plain");
+                const formatted = formatTimeInput(text.replace(/\D/g, ""));
+                document.execCommand("insertText", false, formatted);
+            }}
+            className={`min-w-20 rounded px-2 py-1.5 outline-none focus:ring-2 focus:ring-ring focus:ring-inset ${invalid ? "text-destructive" : ""}`}>
+            {displayText}
+        </div>
+    );
+}
+
 /** Group rows by worker name for display, preserving flat index for updates */
 function groupRowsByWorker(
     rows: FlatRow[],
@@ -507,10 +629,7 @@ export function TimesheetImportClient({
                                 </p>
                             </div>
                             {hasUnresolvedWorkerMatches && (
-                                <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
-                                    <p className="font-medium">
-                                        Unresolved worker matches
-                                    </p>
+                                <AmberCallout title="Unresolved worker matches">
                                     <p className="mt-1">
                                         {
                                             workerMatchResult.unresolvedNames
@@ -533,13 +652,10 @@ export function TimesheetImportClient({
                                             ),
                                         )}
                                     </ul>
-                                </div>
+                                </AmberCallout>
                             )}
                             {overlapResult != null && overlapResult.length > 0 && (
-                                <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
-                                    <p className="font-medium">
-                                        Overlapping timesheet dates
-                                    </p>
+                                <AmberCallout title="Overlapping timesheet dates">
                                     <p className="mt-1">
                                         {overlapResult.reduce(
                                             (sum, o) => sum + o.existingCount,
@@ -600,7 +716,7 @@ export function TimesheetImportClient({
                                             Import all anyway
                                         </Button>
                                     </div>
-                                </div>
+                                </AmberCallout>
                             )}
                             <div className="rounded-md border overflow-x-auto max-h-[70vh] overflow-y-auto">
                                 <Table>
@@ -695,245 +811,70 @@ export function TimesheetImportClient({
                                                         )}
                                                     </TableCell>
                                                     <TableCell className="p-1">
-                                                        <div
-                                                            contentEditable
-                                                            suppressContentEditableWarning
-                                                            onInput={(e) => {
-                                                                const el =
-                                                                    e.currentTarget;
-                                                                const formatted =
-                                                                    formatDateInput(
-                                                                        el.textContent ??
-                                                                            "",
-                                                                    );
-                                                                if (
-                                                                    el.textContent !==
-                                                                    formatted
-                                                                ) {
-                                                                    el.textContent =
-                                                                        formatted;
-                                                                    placeCaretAtEnd(
-                                                                        el,
-                                                                    );
-                                                                }
-                                                            }}
-                                                            onBlur={(e) =>
-                                                                updateEditableRow(
-                                                                    i,
-                                                                    "dateIn",
-                                                                    e
-                                                                        .currentTarget
-                                                                        .textContent ??
-                                                                        "",
-                                                                )
+                                                        <ContentEditableDateCell
+                                                            rowIndex={i}
+                                                            field="dateIn"
+                                                            value={row.dateIn}
+                                                            invalid={
+                                                                parseDate(
+                                                                    row.dateIn,
+                                                                ) == null
                                                             }
-                                                            onPaste={(e) => {
-                                                                e.preventDefault();
-                                                                const text =
-                                                                    e.clipboardData.getData(
-                                                                        "text/plain",
-                                                                    );
-                                                                const formatted =
-                                                                    formatDateInput(
-                                                                        text.replace(
-                                                                            /\D/g,
-                                                                            "",
-                                                                        ),
-                                                                    );
-                                                                document.execCommand(
-                                                                    "insertText",
-                                                                    false,
-                                                                    formatted,
-                                                                );
-                                                            }}
-                                                            className={`min-w-28 rounded px-2 py-1.5 outline-none focus:ring-2 focus:ring-ring focus:ring-inset ${parseDate(row.dateIn) == null ? "text-destructive" : ""}`}>
-                                                            {row.dateIn}
-                                                        </div>
+                                                            onCommit={
+                                                                updateEditableRow
+                                                            }
+                                                        />
                                                     </TableCell>
                                                     <TableCell className="p-1">
-                                                        <div
-                                                            contentEditable
-                                                            suppressContentEditableWarning
-                                                            onInput={(e) => {
-                                                                const el =
-                                                                    e.currentTarget;
-                                                                const formatted =
-                                                                    formatTimeInput(
-                                                                        el.textContent ??
-                                                                            "",
-                                                                    );
-                                                                if (
-                                                                    el.textContent !==
-                                                                    formatted
-                                                                ) {
-                                                                    el.textContent =
-                                                                        formatted;
-                                                                    placeCaretAtEnd(
-                                                                        el,
-                                                                    );
-                                                                }
-                                                            }}
-                                                            onBlur={(e) =>
-                                                                updateEditableRow(
-                                                                    i,
-                                                                    "timeIn",
-                                                                    e
-                                                                        .currentTarget
-                                                                        .textContent ??
-                                                                        "",
-                                                                )
+                                                        <ContentEditableTimeCell
+                                                            rowIndex={i}
+                                                            field="timeIn"
+                                                            displayText={
+                                                                row.timeIn
                                                             }
-                                                            onPaste={(e) => {
-                                                                e.preventDefault();
-                                                                const text =
-                                                                    e.clipboardData.getData(
-                                                                        "text/plain",
-                                                                    );
-                                                                const formatted =
-                                                                    formatTimeInput(
-                                                                        text.replace(
-                                                                            /\D/g,
-                                                                            "",
-                                                                        ),
-                                                                    );
-                                                                document.execCommand(
-                                                                    "insertText",
-                                                                    false,
-                                                                    formatted,
-                                                                );
-                                                            }}
-                                                            className={`min-w-20 rounded px-2 py-1.5 outline-none focus:ring-2 focus:ring-ring focus:ring-inset ${parseTimeForHours(row.timeIn) == null ? "text-destructive" : ""}`}>
-                                                            {row.timeIn}
-                                                        </div>
+                                                            invalid={
+                                                                parseTimeForHours(
+                                                                    row.timeIn,
+                                                                ) == null
+                                                            }
+                                                            onCommit={
+                                                                updateEditableRow
+                                                            }
+                                                        />
                                                     </TableCell>
                                                     <TableCell className="p-1">
-                                                        <div
-                                                            contentEditable
-                                                            suppressContentEditableWarning
-                                                            onInput={(e) => {
-                                                                const el =
-                                                                    e.currentTarget;
-                                                                const formatted =
-                                                                    formatDateInput(
-                                                                        el.textContent ??
-                                                                            "",
-                                                                    );
-                                                                if (
-                                                                    el.textContent !==
-                                                                    formatted
-                                                                ) {
-                                                                    el.textContent =
-                                                                        formatted;
-                                                                    placeCaretAtEnd(
-                                                                        el,
-                                                                    );
-                                                                }
-                                                            }}
-                                                            onBlur={(e) =>
-                                                                updateEditableRow(
-                                                                    i,
-                                                                    "dateOut",
-                                                                    e
-                                                                        .currentTarget
-                                                                        .textContent ??
-                                                                        "",
-                                                                )
+                                                        <ContentEditableDateCell
+                                                            rowIndex={i}
+                                                            field="dateOut"
+                                                            value={row.dateOut}
+                                                            invalid={
+                                                                parseDate(
+                                                                    row.dateOut,
+                                                                ) == null
                                                             }
-                                                            onPaste={(e) => {
-                                                                e.preventDefault();
-                                                                const text =
-                                                                    e.clipboardData.getData(
-                                                                        "text/plain",
-                                                                    );
-                                                                const formatted =
-                                                                    formatDateInput(
-                                                                        text.replace(
-                                                                            /\D/g,
-                                                                            "",
-                                                                        ),
-                                                                    );
-                                                                document.execCommand(
-                                                                    "insertText",
-                                                                    false,
-                                                                    formatted,
-                                                                );
-                                                            }}
-                                                            className={`min-w-28 rounded px-2 py-1.5 outline-none focus:ring-2 focus:ring-ring focus:ring-inset ${parseDate(row.dateOut) == null ? "text-destructive" : ""}`}>
-                                                            {row.dateOut}
-                                                        </div>
+                                                            onCommit={
+                                                                updateEditableRow
+                                                            }
+                                                        />
                                                     </TableCell>
                                                     <TableCell className="p-1">
-                                                        <div
-                                                            contentEditable
-                                                            suppressContentEditableWarning
-                                                            onInput={(e) => {
-                                                                const el =
-                                                                    e.currentTarget;
-                                                                const raw = (
-                                                                    el.textContent ??
-                                                                    ""
-                                                                ).replace(
-                                                                    /—/g,
-                                                                    "",
-                                                                );
-                                                                const formatted =
-                                                                    raw === ""
-                                                                        ? ""
-                                                                        : formatTimeInput(
-                                                                              raw,
-                                                                          );
-                                                                if (
-                                                                    el.textContent !==
-                                                                    formatted
-                                                                ) {
-                                                                    el.textContent =
-                                                                        formatted ||
-                                                                        "—";
-                                                                    if (
-                                                                        formatted
-                                                                    )
-                                                                        placeCaretAtEnd(
-                                                                            el,
-                                                                        );
-                                                                }
-                                                            }}
-                                                            onBlur={(e) => {
-                                                                const v = (
-                                                                    e
-                                                                        .currentTarget
-                                                                        .textContent ??
-                                                                    ""
-                                                                ).trim();
-                                                                updateEditableRow(
-                                                                    i,
-                                                                    "timeOut",
-                                                                    v === "—"
-                                                                        ? ""
-                                                                        : v,
-                                                                );
-                                                            }}
-                                                            onPaste={(e) => {
-                                                                e.preventDefault();
-                                                                const text =
-                                                                    e.clipboardData.getData(
-                                                                        "text/plain",
-                                                                    );
-                                                                const formatted =
-                                                                    formatTimeInput(
-                                                                        text.replace(
-                                                                            /\D/g,
-                                                                            "",
-                                                                        ),
-                                                                    );
-                                                                document.execCommand(
-                                                                    "insertText",
-                                                                    false,
-                                                                    formatted,
-                                                                );
-                                                            }}
-                                                            className={`min-w-20 rounded px-2 py-1.5 outline-none focus:ring-2 focus:ring-ring focus:ring-inset ${parseTimeForHours(row.timeOut) == null ? "text-destructive" : ""}`}>
-                                                            {row.timeOut || "—"}
-                                                        </div>
+                                                        <ContentEditableTimeCell
+                                                            rowIndex={i}
+                                                            field="timeOut"
+                                                            displayText={
+                                                                row.timeOut ||
+                                                                "—"
+                                                            }
+                                                            invalid={
+                                                                parseTimeForHours(
+                                                                    row.timeOut,
+                                                                ) == null
+                                                            }
+                                                            onCommit={
+                                                                updateEditableRow
+                                                            }
+                                                            emptyPlaceholderEmDash
+                                                        />
                                                     </TableCell>
                                                     {(() => {
                                                         const hours =

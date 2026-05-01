@@ -1,15 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
 
-import { db } from "@/lib/db";
-import { timesheetTable } from "@/db/tables/timesheetTable";
-import { workerTable } from "@/db/tables/workerTable";
 import { Button } from "@/components/ui/button";
 import { EntityStatusBadge } from "@/components/ui/entity-status-badge";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { Pencil } from "lucide-react";
 import { TimesheetEntryForm } from "../../timesheet-entry-form";
+import {
+    loadTimesheetEntryById,
+    loadWorkersForTimesheetForm,
+} from "../_shared/load-timesheet";
 
 interface PageProps {
     params: Promise<{
@@ -20,26 +20,11 @@ interface PageProps {
 export default async function ViewTimesheetEntryPage({ params }: PageProps) {
     const { id } = await params;
 
-    const [entry] = await db
-        .select({
-            id: timesheetTable.id,
-            workerId: timesheetTable.workerId,
-            dateIn: timesheetTable.dateIn,
-            dateOut: timesheetTable.dateOut,
-            timeIn: timesheetTable.timeIn,
-            timeOut: timesheetTable.timeOut,
-            status: timesheetTable.status,
-        })
-        .from(timesheetTable)
-        .where(eq(timesheetTable.id, id))
-        .limit(1);
+    const entry = await loadTimesheetEntryById(id);
 
     if (!entry) notFound();
 
-    const workers = await db
-        .select({ id: workerTable.id, name: workerTable.name })
-        .from(workerTable)
-        .orderBy(workerTable.name);
+    const workers = await loadWorkersForTimesheetForm();
 
     return (
         <FormPageLayout

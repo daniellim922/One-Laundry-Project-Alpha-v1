@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 import {
@@ -19,6 +19,27 @@ type Props = {
     payrollStatus: string;
     voucher: SelectPayrollVoucher;
 };
+
+function VoucherDetailSection({
+    title,
+    gridClassName,
+    children,
+}: {
+    title: string;
+    gridClassName: string;
+    children: ReactNode;
+}) {
+    return (
+        <Card className="border bg-muted/10 gap-2 py-3">
+            <CardHeader className="px-4 pb-0">
+                <CardTitle className="text-sm font-semibold">{title}</CardTitle>
+            </CardHeader>
+            <CardContent className="px-4 pt-1">
+                <div className={gridClassName}>{children}</div>
+            </CardContent>
+        </Card>
+    );
+}
 
 export function VoucherDetails({
     payrollId,
@@ -45,14 +66,9 @@ export function VoucherDetails({
                 </button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4 pt-4">
-                <Card className="border bg-muted/10 gap-2 py-3">
-                    <CardHeader className="px-4 pb-0">
-                        <CardTitle className="text-sm font-semibold">
-                            Employment & Payment
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-4 pt-1">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                <VoucherDetailSection
+                    title="Employment & Payment"
+                    gridClassName="grid grid-cols-1 gap-4 md:grid-cols-4">
                             <Field
                                 label="Employment Type"
                                 value={voucher.employmentType}
@@ -84,18 +100,11 @@ export function VoucherDetails({
                                             voucher.bankAccountNumber)
                                 }
                             />
-                        </div>
-                    </CardContent>
-                </Card>
+                </VoucherDetailSection>
 
-                <Card className="border bg-muted/10 gap-2 py-3">
-                    <CardHeader className="px-4 pb-0">
-                        <CardTitle className="text-sm font-semibold">
-                            Pay Rates
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-4 pt-1">
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+                <VoucherDetailSection
+                    title="Pay Rates"
+                    gridClassName="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
                             <VoucherEditableMoney
                                 payrollId={payrollId}
                                 voucherId={voucher.id}
@@ -123,18 +132,10 @@ export function VoucherDetails({
                                 fullWidth
                                 readOnly={partTimeLocked}
                             />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="border bg-muted/10 gap-2 py-3">
-                    <CardHeader className="px-4 pb-0">
-                        <CardTitle className="text-sm font-semibold">
-                            Minimum Hours, Rest Days and Public Holidays
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="px-4 pt-1">
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+                </VoucherDetailSection>
+                <VoucherDetailSection
+                    title="Minimum Hours, Rest Days and Public Holidays"
+                    gridClassName="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
                             <VoucherEditableMoney
                                 payrollId={payrollId}
                                 voucherId={voucher.id}
@@ -165,9 +166,7 @@ export function VoucherDetails({
                                 fullWidth
                                 readOnly={partTimeLocked}
                             />
-                        </div>
-                    </CardContent>
-                </Card>
+                </VoucherDetailSection>
             </CollapsibleContent>
         </Collapsible>
     );

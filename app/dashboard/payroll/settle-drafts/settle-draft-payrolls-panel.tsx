@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import type { ColumnDef } from "@tanstack/react-table";
 import type { RowSelectionState } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
@@ -14,81 +13,26 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { createRowSelectionColumn } from "@/components/data-table/column-builders";
 import { DataTable } from "@/components/data-table/data-table";
 import { settleDraftPayrolls } from "@/app/dashboard/payroll/command-api";
-import {
-    computeZipEtaSec,
-    streamPayrollZipFromApi,
-} from "@/app/dashboard/payroll/download-payroll-zip-client";
-import {
-    PayrollBulkZipProgressDialog,
-    type PayrollBulkZipProgressState,
-    type PayrollZipProgressPhase,
-} from "@/app/dashboard/payroll/payroll-bulk-zip-progress-dialog";
 import { fetchSettlementCandidates } from "@/app/dashboard/payroll/read-api";
-import {
-    columns as baseColumns,
-    type PayrollWithWorker,
-} from "@/app/dashboard/payroll/columns";
-
-const selectableColumns: ColumnDef<PayrollWithWorker>[] = [
-    createRowSelectionColumn<PayrollWithWorker>({
-        ariaLabelForRow: (p) => `Select ${p.workerName}`,
-    }),
-    ...baseColumns,
-];
+import { selectableColumns } from "@/app/dashboard/payroll/_shared/selectable-columns";
+import type { PayrollWithWorker } from "@/app/dashboard/payroll/columns";
 
 export function SettleDraftPayrollsPanel() {
     const router = useRouter();
     const [error, setError] = React.useState<string | null>(null);
     const [loadingDrafts, setLoadingDrafts] = React.useState(true);
+    const [settling, setSettling] = React.useState(false);
     const [drafts, setDrafts] = React.useState<PayrollWithWorker[]>([]);
     const [rowSelection, setRowSelection] = React.useState<RowSelectionState>(
         {},
     );
-    const [zipDialogOpen, setZipDialogOpen] = React.useState(false);
-    const [zipPhase, setZipPhase] =
-        React.useState<PayrollZipProgressPhase>("settling");
-    const [zipError, setZipError] = React.useState<string | null>(null);
-    const [zipProgress, setZipProgress] =
-        React.useState<PayrollBulkZipProgressState | null>(null);
-    const [zipTick, setZipTick] = React.useState(0);
-    const zipStartedAtRef = React.useRef<number | null>(null);
-    const lastProgressAtRef = React.useRef<number | null>(null);
-    const durationsRef = React.useRef<number[]>([]);
 
     const draftCount = drafts.length;
     const selectedCount = Object.keys(rowSelection).filter(
         (k) => rowSelection[k],
     ).length;
-
-    const resetUi = React.useCallback(() => {
-        setError(null);
-    }, []);
-
-    const zipBusy = zipDialogOpen && zipError === null;
-
-    React.useEffect(() => {
-        if (!zipDialogOpen) return;
-        const id = window.setInterval(() => {
-            setZipTick((t) => t + 1);
-        }, 250);
-        return () => window.clearInterval(id);
-    }, [zipDialogOpen]);
-
-    const zipEtaSec = React.useMemo(() => {
-        if (!zipProgress) return undefined;
-        const elapsedSec = zipStartedAtRef.current
-            ? Math.floor((Date.now() - zipStartedAtRef.current) / 1000)
-            : 0;
-        return computeZipEtaSec({
-            n: zipProgress.n,
-            i: zipProgress.i,
-            elapsedSec,
-            recentDurationsSec: durationsRef.current,
-        });
-    }, [zipProgress, zipTick]);
 
     React.useEffect(() => {
         let cancelled = false;
@@ -118,12 +62,6 @@ export function SettleDraftPayrollsPanel() {
         };
     }, []);
 
-    function dismissZipDialog() {
-        setZipDialogOpen(false);
-        setZipError(null);
-        setZipProgress(null);
-    }
-
     async function handleSettleSelected() {
         const selectedIds = Object.keys(rowSelection).filter(
             (k) => rowSelection[k],
@@ -131,79 +69,21 @@ export function SettleDraftPayrollsPanel() {
         if (selectedIds.length === 0) return;
 
         setError(null);
-        setZipError(null);
-        setZipProgress(null);
-        setZipPhase("settling");
-        setZipDialogOpen(true);
+        setSettling(true);
 
         const result = await settleDraftPayrolls(selectedIds);
 
         if ("error" in result) {
-            setZipError(result.error);
+            setError(result.error);
+            setSettling(false);
             return;
         }
 
-        const ids = result.settledPayrollIds;
-        if (ids.length === 0) {
-            setZipDialogOpen(false);
-            setZipProgress(null);
-            resetUi();
-            router.refresh();
-            return;
-        }
-
-        setZipPhase("generating");
-        zipStartedAtRef.current = Date.now();
-        lastProgressAtRef.current = null;
-        durationsRef.current = [];
-        setZipProgress(null);
-
-        const zipResult = await streamPayrollZipFromApi(ids, (evt) => {
-            if (evt.type === "meta") {
-                setZipProgress({ i: 0, n: evt.n });
-                lastProgressAtRef.current = Date.now();
-                durationsRef.current = [];
-            }
-            if (evt.type === "progress") {
-                const now = Date.now();
-                if (lastProgressAtRef.current !== null) {
-                    const dt = (now - lastProgressAtRef.current) / 1000;
-                    if (dt >= 0) {
-                        durationsRef.current = [
-                            ...durationsRef.current.slice(-4),
-                            dt,
-                        ];
-                    }
-                }
-                lastProgressAtRef.current = now;
-                setZipProgress({
-                    i: evt.i,
-                    n: evt.n,
-                    currentName: evt.workerName,
-                });
-            }
-        });
-        if (!zipResult.ok) {
-            setZipError(zipResult.error);
-            return;
-        }
-
-        setZipDialogOpen(false);
-        setZipProgress(null);
-        resetUi();
         router.push("/dashboard/payroll/all");
     }
 
     return (
         <Card>
-            <PayrollBulkZipProgressDialog
-                open={zipDialogOpen}
-                phase={zipPhase}
-                error={zipError}
-                onDismiss={dismissZipDialog}
-                progress={zipProgress}
-                etaSec={zipEtaSec}
-            />
             <CardHeader>
                 <CardTitle>Confirm settlement</CardTitle>
                 <CardDescription>
@@ -249,15 +129,11 @@ export function SettleDraftPayrollsPanel() {
                         type="button"
                         variant="destructive"
                         disabled={
-                            zipDialogOpen ||
-                            loadingDrafts ||
-                            selectedCount === 0
+                            settling || loadingDrafts || selectedCount === 0
                         }
                         onClick={handleSettleSelected}>
-                        {zipBusy
-                            ? zipPhase === "settling"
-                                ? "Settling..."
-                                : "Preparing ZIP..."
+                        {settling
+                            ? "Settling..."
                             : `Settle selected (${selectedCount})`}
                     </Button>
                 </div>
