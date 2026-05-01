@@ -1,35 +1,19 @@
 "use client";
 
 import * as React from "react";
-import type { ColumnDef } from "@tanstack/react-table";
 import type { RowSelectionState } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DataTable } from "@/components/data-table/data-table";
-import { createRowSelectionColumn } from "@/components/data-table/column-builders";
-import {
-    columns as baseColumns,
-    type PayrollWithWorker,
-} from "@/app/dashboard/payroll/columns";
-import {
-    computeZipEtaSec,
-    streamPayrollZipFromApi,
-} from "@/app/dashboard/payroll/download-payroll-zip-client";
 import {
     PayrollBulkZipProgressDialog,
-    type PayrollBulkZipProgressState,
-    type PayrollZipProgressPhase,
 } from "@/app/dashboard/payroll/payroll-bulk-zip-progress-dialog";
 import { fetchPayrollDownloadSelection } from "@/app/dashboard/payroll/read-api";
-
-const selectableColumns: ColumnDef<PayrollWithWorker>[] = [
-    createRowSelectionColumn<PayrollWithWorker>({
-        ariaLabelForRow: (p) => `Select ${p.workerName}`,
-    }),
-    ...baseColumns,
-];
+import { selectableColumns } from "@/app/dashboard/payroll/_shared/selectable-columns";
+import { usePayrollZipProgress } from "@/app/dashboard/payroll/_shared/use-payroll-zip-progress";
+import type { PayrollWithWorker } from "@/app/dashboard/payroll/columns";
 
 export function DownloadPayrollsPanel() {
     const router = useRouter();
@@ -39,43 +23,26 @@ export function DownloadPayrollsPanel() {
     const [rowSelection, setRowSelection] = React.useState<RowSelectionState>(
         {},
     );
-    const [zipDialogOpen, setZipDialogOpen] = React.useState(false);
-    const [zipPhase, setZipPhase] =
-        React.useState<PayrollZipProgressPhase>("generating");
-    const [zipError, setZipError] = React.useState<string | null>(null);
-    const [zipProgress, setZipProgress] =
-        React.useState<PayrollBulkZipProgressState | null>(null);
-    const [zipTick, setZipTick] = React.useState(0);
-    const zipStartedAtRef = React.useRef<number | null>(null);
-    const lastProgressAtRef = React.useRef<number | null>(null);
-    const durationsRef = React.useRef<number[]>([]);
+
+    const {
+        zipDialogOpen,
+        setZipDialogOpen,
+        zipPhase,
+        setZipPhase,
+        zipError,
+        setZipError,
+        zipProgress,
+        setZipProgress,
+        zipEtaSec,
+        zipBusy,
+        dismissZipDialog,
+        prepareZipStreamTiming,
+        streamWithProgress,
+    } = usePayrollZipProgress();
 
     const selectedCount = Object.keys(rowSelection).filter(
         (k) => rowSelection[k],
     ).length;
-
-    const zipBusy = zipDialogOpen && zipError === null;
-
-    React.useEffect(() => {
-        if (!zipDialogOpen) return;
-        const id = window.setInterval(() => {
-            setZipTick((t) => t + 1);
-        }, 250);
-        return () => window.clearInterval(id);
-    }, [zipDialogOpen]);
-
-    const zipEtaSec = React.useMemo(() => {
-        if (!zipProgress) return undefined;
-        const elapsedSec = zipStartedAtRef.current
-            ? Math.floor((Date.now() - zipStartedAtRef.current) / 1000)
-            : 0;
-        return computeZipEtaSec({
-            n: zipProgress.n,
-            i: zipProgress.i,
-            elapsedSec,
-            recentDurationsSec: durationsRef.current,
-        });
-    }, [zipProgress, zipTick]);
 
     React.useEffect(() => {
         let cancelled = false;
@@ -102,12 +69,6 @@ export function DownloadPayrollsPanel() {
         };
     }, []);
 
-    function dismissZipDialog() {
-        setZipDialogOpen(false);
-        setZipError(null);
-        setZipProgress(null);
-    }
-
     async function handleDownload() {
         const selectedIds = Object.keys(rowSelection).filter(
             (k) => rowSelection[k],
@@ -117,41 +78,11 @@ export function DownloadPayrollsPanel() {
         setError(null);
         setZipError(null);
         setZipProgress(null);
-        zipStartedAtRef.current = Date.now();
-        lastProgressAtRef.current = null;
-        durationsRef.current = [];
+        prepareZipStreamTiming();
         setZipPhase("generating");
         setZipDialogOpen(true);
 
-        const result = await streamPayrollZipFromApi(
-            selectedIds,
-            (evt) => {
-                if (evt.type === "meta") {
-                    setZipProgress({ i: 0, n: evt.n });
-                    lastProgressAtRef.current = Date.now();
-                    durationsRef.current = [];
-                }
-                if (evt.type === "progress") {
-                    const now = Date.now();
-                    if (lastProgressAtRef.current !== null) {
-                        const dt =
-                            (now - lastProgressAtRef.current) / 1000;
-                        if (dt >= 0) {
-                            durationsRef.current = [
-                                ...durationsRef.current.slice(-4),
-                                dt,
-                            ];
-                        }
-                    }
-                    lastProgressAtRef.current = now;
-                    setZipProgress({
-                        i: evt.i,
-                        n: evt.n,
-                        currentName: evt.workerName,
-                    });
-                }
-            },
-        );
+        const result = await streamWithProgress(selectedIds);
         if (!result.ok) {
             setZipError(result.error);
             return;
