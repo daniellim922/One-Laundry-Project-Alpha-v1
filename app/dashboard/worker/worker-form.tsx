@@ -2,7 +2,14 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import {
+    Controller,
+    useForm,
+    useWatch,
+    type Control,
+    type FieldPath,
+    type FieldValues,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
     Banknote,
@@ -91,6 +98,66 @@ function bindTextNumericField(field: {
             field.onChange(e.target.value);
         },
     };
+}
+
+function NumericControllerField<T extends FieldValues>({
+    control,
+    name,
+    formId,
+    label,
+    icon: Icon,
+    required = false,
+    inputMode = "decimal",
+    visible = true,
+    disabled = false,
+}: {
+    control: Control<T>;
+    name: FieldPath<T>;
+    formId: string;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    required?: boolean;
+    inputMode?: "decimal" | "numeric";
+    visible?: boolean;
+    disabled?: boolean;
+}) {
+    if (!visible) return null;
+
+    const id = `${formId}-${String(name)}`;
+
+    return (
+        <Controller
+            name={name}
+            control={control}
+            render={({ field, fieldState }) => (
+                <Field
+                    data-invalid={fieldState.invalid}
+                    className="space-y-2">
+                    <FieldLabel htmlFor={id}>
+                        {label}
+                        {required ? <RequiredMark /> : null}
+                    </FieldLabel>
+                    <InputGroup>
+                        <InputGroupInput
+                            {...bindTextNumericField(field)}
+                            id={id}
+                            type="text"
+                            inputMode={inputMode}
+                            aria-invalid={fieldState.invalid}
+                            aria-required={required ? true : undefined}
+                            disabled={disabled}
+                        />
+                        <InputGroupAddon>
+                            <Icon className="size-4 text-muted-foreground" />
+                        </InputGroupAddon>
+                    </InputGroup>
+                    {fieldState.invalid && (
+                        <FieldError errors={[fieldState.error]} />
+                    )}
+                </Field>
+            )}
+        />
+    );
 }
 
 type WorkerFormValues = WorkerUpsertFormInput;
@@ -620,201 +687,60 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-5">
-                            {isFullTime && (
-                                <Controller
-                                    name="monthlyPay"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                            className="space-y-2">
-                                            <FieldLabel
-                                                htmlFor={`${formId}-monthlyPay`}>
-                                                Monthly Pay
-                                                <RequiredMark />
-                                            </FieldLabel>
-                                            <InputGroup>
-                                                <InputGroupInput
-                                                    {...bindTextNumericField(
-                                                        field,
-                                                    )}
-                                                    id={`${formId}-monthlyPay`}
-                                                    type="text"
-                                                    inputMode="decimal"
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    aria-required
-                                                    disabled={disabled}
-                                                />
-                                                <InputGroupAddon>
-                                                    <Banknote className="size-4 text-muted-foreground" />
-                                                </InputGroupAddon>
-                                            </InputGroup>
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
-                                            )}
-                                        </Field>
-                                    )}
-                                />
-                            )}
-                            <Controller
-                                name="hourlyRate"
+                            <NumericControllerField
                                 control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <Field
-                                        data-invalid={fieldState.invalid}
-                                        className="space-y-2">
-                                        <FieldLabel
-                                            htmlFor={`${formId}-hourlyRate`}>
-                                            Hourly Rate
-                                            <RequiredMark />
-                                        </FieldLabel>
-                                        <InputGroup>
-                                            <InputGroupInput
-                                                {...bindTextNumericField(
-                                                    field,
-                                                )}
-                                                id={`${formId}-hourlyRate`}
-                                                type="text"
-                                                inputMode="decimal"
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
-                                                aria-required
-                                                disabled={disabled}
-                                            />
-                                            <InputGroupAddon>
-                                                <Banknote className="size-4 text-muted-foreground" />
-                                            </InputGroupAddon>
-                                        </InputGroup>
-                                        {fieldState.invalid && (
-                                            <FieldError
-                                                errors={[fieldState.error]}
-                                            />
-                                        )}
-                                    </Field>
-                                )}
+                                name="monthlyPay"
+                                formId={formId}
+                                label="Monthly Pay"
+                                icon={Banknote}
+                                required
+                                inputMode="decimal"
+                                visible={isFullTime}
+                                disabled={disabled}
                             />
-
-                            {isFullTime && (
-                                <Controller
-                                    name="restDayRate"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                            className="space-y-2">
-                                            <FieldLabel
-                                                htmlFor={`${formId}-restDayRate`}>
-                                                Rest Day Rate
-                                                <RequiredMark />
-                                            </FieldLabel>
-                                            <InputGroup>
-                                                <InputGroupInput
-                                                    {...bindTextNumericField(
-                                                        field,
-                                                    )}
-                                                    id={`${formId}-restDayRate`}
-                                                    type="text"
-                                                    inputMode="decimal"
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    aria-required
-                                                    disabled={disabled}
-                                                />
-                                                <InputGroupAddon>
-                                                    <Banknote className="size-4 text-muted-foreground" />
-                                                </InputGroupAddon>
-                                            </InputGroup>
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
-                                            )}
-                                        </Field>
-                                    )}
-                                />
-                            )}
-                            {isFullTime && (
-                                <Controller
-                                    name="minimumWorkingHours"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                            className="space-y-2">
-                                            <FieldLabel
-                                                htmlFor={`${formId}-minimumWorkingHours`}>
-                                                Minimum Working Hours
-                                            </FieldLabel>
-                                            <InputGroup>
-                                                <InputGroupInput
-                                                    {...bindTextNumericField(
-                                                        field,
-                                                    )}
-                                                    id={`${formId}-minimumWorkingHours`}
-                                                    type="text"
-                                                    inputMode="numeric"
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    disabled={disabled}
-                                                />
-                                                <InputGroupAddon>
-                                                    <Clock className="size-4 text-muted-foreground" />
-                                                </InputGroupAddon>
-                                            </InputGroup>
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
-                                            )}
-                                        </Field>
-                                    )}
-                                />
-                            )}
-                            {employmentArrangement === "Local Worker" && (
-                                <Controller
-                                    name="cpf"
-                                    control={form.control}
-                                    render={({ field, fieldState }) => (
-                                        <Field
-                                            data-invalid={fieldState.invalid}
-                                            className="space-y-2">
-                                            <FieldLabel
-                                                htmlFor={`${formId}-cpf`}>
-                                                CPF
-                                            </FieldLabel>
-                                            <InputGroup>
-                                                <InputGroupInput
-                                                    {...bindTextNumericField(
-                                                        field,
-                                                    )}
-                                                    id={`${formId}-cpf`}
-                                                    type="text"
-                                                    inputMode="decimal"
-                                                    aria-invalid={
-                                                        fieldState.invalid
-                                                    }
-                                                    disabled={disabled}
-                                                />
-                                                <InputGroupAddon>
-                                                    <Banknote className="size-4 text-muted-foreground" />
-                                                </InputGroupAddon>
-                                            </InputGroup>
-                                            {fieldState.invalid && (
-                                                <FieldError
-                                                    errors={[fieldState.error]}
-                                                />
-                                            )}
-                                        </Field>
-                                    )}
-                                />
-                            )}
+                            <NumericControllerField
+                                control={form.control}
+                                name="hourlyRate"
+                                formId={formId}
+                                label="Hourly Rate"
+                                icon={Banknote}
+                                required
+                                inputMode="decimal"
+                                disabled={disabled}
+                            />
+                            <NumericControllerField
+                                control={form.control}
+                                name="restDayRate"
+                                formId={formId}
+                                label="Rest Day Rate"
+                                icon={Banknote}
+                                required
+                                inputMode="decimal"
+                                visible={isFullTime}
+                                disabled={disabled}
+                            />
+                            <NumericControllerField
+                                control={form.control}
+                                name="minimumWorkingHours"
+                                formId={formId}
+                                label="Minimum Working Hours"
+                                icon={Clock}
+                                inputMode="numeric"
+                                visible={isFullTime}
+                                disabled={disabled}
+                            />
+                            <NumericControllerField
+                                control={form.control}
+                                name="cpf"
+                                formId={formId}
+                                label="CPF"
+                                icon={Banknote}
+                                inputMode="decimal"
+                                visible={
+                                    employmentArrangement === "Local Worker"
+                                }
+                                disabled={disabled}
+                            />
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-2">
