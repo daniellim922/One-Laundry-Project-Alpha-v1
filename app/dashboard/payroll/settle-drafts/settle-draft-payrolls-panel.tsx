@@ -15,47 +15,24 @@ import {
 } from "@/components/ui/card";
 import { DataTable } from "@/components/data-table/data-table";
 import { settleDraftPayrolls } from "@/app/dashboard/payroll/command-api";
-import {
-    PayrollBulkZipProgressDialog,
-} from "@/app/dashboard/payroll/payroll-bulk-zip-progress-dialog";
 import { fetchSettlementCandidates } from "@/app/dashboard/payroll/read-api";
 import { selectableColumns } from "@/app/dashboard/payroll/_shared/selectable-columns";
-import { usePayrollZipProgress } from "@/app/dashboard/payroll/_shared/use-payroll-zip-progress";
 import type { PayrollWithWorker } from "@/app/dashboard/payroll/columns";
 
 export function SettleDraftPayrollsPanel() {
     const router = useRouter();
     const [error, setError] = React.useState<string | null>(null);
     const [loadingDrafts, setLoadingDrafts] = React.useState(true);
+    const [settling, setSettling] = React.useState(false);
     const [drafts, setDrafts] = React.useState<PayrollWithWorker[]>([]);
     const [rowSelection, setRowSelection] = React.useState<RowSelectionState>(
         {},
     );
 
-    const {
-        zipDialogOpen,
-        setZipDialogOpen,
-        zipPhase,
-        setZipPhase,
-        zipError,
-        setZipError,
-        zipProgress,
-        setZipProgress,
-        zipEtaSec,
-        zipBusy,
-        dismissZipDialog,
-        prepareZipStreamTiming,
-        streamWithProgress,
-    } = usePayrollZipProgress();
-
     const draftCount = drafts.length;
     const selectedCount = Object.keys(rowSelection).filter(
         (k) => rowSelection[k],
     ).length;
-
-    const resetUi = React.useCallback(() => {
-        setError(null);
-    }, []);
 
     React.useEffect(() => {
         let cancelled = false;
@@ -92,53 +69,21 @@ export function SettleDraftPayrollsPanel() {
         if (selectedIds.length === 0) return;
 
         setError(null);
-        setZipError(null);
-        setZipProgress(null);
-        setZipPhase("settling");
-        setZipDialogOpen(true);
+        setSettling(true);
 
         const result = await settleDraftPayrolls(selectedIds);
 
         if ("error" in result) {
-            setZipError(result.error);
+            setError(result.error);
+            setSettling(false);
             return;
         }
 
-        const ids = result.settledPayrollIds;
-        if (ids.length === 0) {
-            setZipDialogOpen(false);
-            setZipProgress(null);
-            resetUi();
-            router.refresh();
-            return;
-        }
-
-        setZipPhase("generating");
-        prepareZipStreamTiming();
-        setZipProgress(null);
-
-        const zipResult = await streamWithProgress(ids);
-        if (!zipResult.ok) {
-            setZipError(zipResult.error);
-            return;
-        }
-
-        setZipDialogOpen(false);
-        setZipProgress(null);
-        resetUi();
         router.push("/dashboard/payroll/all");
     }
 
     return (
         <Card>
-            <PayrollBulkZipProgressDialog
-                open={zipDialogOpen}
-                phase={zipPhase}
-                error={zipError}
-                onDismiss={dismissZipDialog}
-                progress={zipProgress}
-                etaSec={zipEtaSec}
-            />
             <CardHeader>
                 <CardTitle>Confirm settlement</CardTitle>
                 <CardDescription>
@@ -184,15 +129,11 @@ export function SettleDraftPayrollsPanel() {
                         type="button"
                         variant="destructive"
                         disabled={
-                            zipDialogOpen ||
-                            loadingDrafts ||
-                            selectedCount === 0
+                            settling || loadingDrafts || selectedCount === 0
                         }
                         onClick={handleSettleSelected}>
-                        {zipBusy
-                            ? zipPhase === "settling"
-                                ? "Settling..."
-                                : "Preparing ZIP..."
+                        {settling
+                            ? "Settling..."
                             : `Settle selected (${selectedCount})`}
                     </Button>
                 </div>
