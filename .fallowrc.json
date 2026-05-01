@@ -6,6 +6,14 @@
         "app/globals.css",
         "components/ui/*"
     ],
+    "duplicates": {
+        "ignore": [
+            "**/*.test.ts",
+            "**/*.test.tsx",
+            "**/*.client.test.ts",
+            "**/*.integration.test.ts"
+        ]
+    },
     "rules": {
         "unused-files": "error",
         "unused-exports": "warn",
