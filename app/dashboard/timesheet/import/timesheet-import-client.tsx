@@ -4,6 +4,7 @@ import * as React from "react";
 import * as XLSX from "xlsx";
 
 import { importAttendRecordTimesheet } from "./import-attend-record-timesheet";
+import type { OverlapEntry } from "@/services/timesheet/import-attend-record-timesheet";
 import { SelectSearch } from "@/components/ui/SelectSearch";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,11 @@ import {
 } from "@/components/ui/table";
 import { Trash2, Upload } from "lucide-react";
 import { parseAttendRecord } from "@/utils/payroll/parse-attendrecord";
+import {
+    clockIntervalDurationMs,
+    formatDurationHm,
+    parseTimeForHours,
+} from "@/utils/payroll/payroll-utils";
 import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
 import {
     resolveTimesheetImportWorkerMatches,
@@ -58,8 +64,8 @@ function hasMissingData(row: FlatRow): boolean {
     return (
         parseDate(row.dateIn) == null ||
         parseDate(row.dateOut) == null ||
-        parseTime(row.timeIn) == null ||
-        parseTime(row.timeOut) == null
+        parseTimeForHours(row.timeIn) == null ||
+        parseTimeForHours(row.timeOut) == null
     );
 }
 
@@ -117,52 +123,15 @@ function parseDate(dateStr: string): Date | null {
     return d;
 }
 
-/** Parse "HH:MM" to { h, m }. Returns null if invalid. */
-function parseTime(time: string): { h: number; m: number } | null {
-    const trimmed = time.trim();
-    if (!trimmed) return null;
-    const match = trimmed.match(/^(\d{1,2}):(\d{2})$/);
-    if (!match) return null;
-    const h = parseInt(match[1]!, 10);
-    const m = parseInt(match[2]!, 10);
-    if (h < 0 || h > 23 || m < 0 || m > 59) return null;
-    return { h, m };
-}
-
-/** Calculate working hours from dateIn+timeIn to dateOut+timeOut. Uses same validation as hasMissingData (parseDate/parseTime). Returns "Xh Ym" or "0h" when invalid. */
 function calcWorkingHours(
     dateIn: string,
     timeIn: string,
     dateOut: string,
     timeOut: string,
 ): string {
-    const dIn = parseDate(dateIn);
-    const dOut = parseDate(dateOut);
-    const tIn = parseTime(timeIn);
-    const tOut = parseTime(timeOut);
-    if (!dIn || !dOut || !tIn || !tOut) return "0h";
-    const start = new Date(
-        dIn.getFullYear(),
-        dIn.getMonth(),
-        dIn.getDate(),
-        tIn.h,
-        tIn.m,
+    return formatDurationHm(
+        clockIntervalDurationMs(dateIn, timeIn, dateOut, timeOut) ?? 0,
     );
-    const end = new Date(
-        dOut.getFullYear(),
-        dOut.getMonth(),
-        dOut.getDate(),
-        tOut.h,
-        tOut.m,
-    );
-    const diffMs = end.getTime() - start.getTime();
-    if (diffMs < 0) return "0h";
-    const totalMinutes = Math.floor(diffMs / (60 * 1000));
-    const h = Math.floor(totalMinutes / 60);
-    const m = totalMinutes % 60;
-    if (h > 0 && m > 0) return `${h}h ${m}m`;
-    if (h > 0) return `${h}h`;
-    return `${m}m`;
 }
 
 /** Enforce DD/MM/YYYY format as user types - digits only, auto-insert slashes */
@@ -264,8 +233,12 @@ export function TimesheetImportClient({
     const [error, setError] = React.useState<string | null>(null);
     const [submitResult, setSubmitResult] = React.useState<{
         imported?: number;
+        skipped?: number;
         errors?: string[];
     } | null>(null);
+    const [overlapResult, setOverlapResult] = React.useState<OverlapEntry[] | null>(
+        null,
+    );
     const [pending, setPending] = React.useState(false);
     const [manualWorkerMatches, setManualWorkerMatches] = React.useState<
         Record<string, string>
@@ -274,6 +247,7 @@ export function TimesheetImportClient({
     const handleParse = React.useCallback(async (file: File) => {
         setError(null);
         setSubmitResult(null);
+        setOverlapResult(null);
         setManualWorkerMatches({});
         try {
             const data = await file.arrayBuffer();
@@ -335,50 +309,67 @@ export function TimesheetImportClient({
         [],
     );
 
-    const handleSubmit = React.useCallback(async () => {
-        if (!parsedData || editableRows.length === 0) return;
-        setError(null);
-        setSubmitResult(null);
-        setPending(true);
-        try {
-            const workerMatchResult = resolveTimesheetImportWorkerMatches({
-                rows: editableRows,
-                workers,
-                manualMatchesByImportedName: manualWorkerMatches,
-            });
-            const resolvedWorkerNamesByImportedName = new Map(
-                workerMatchResult.groups
-                    .filter((group) => group.resolvedWorker != null)
-                    .map((group) => [
-                        group.importedName,
-                        group.resolvedWorker!.name,
-                    ]),
-            );
-            const dataToImport = editableRowsToAttendRecord(
-                editableRows,
-                {
-                    attendanceDate: parsedData.attendanceDate,
-                    tablingDate: parsedData.tablingDate,
-                },
-                resolvedWorkerNamesByImportedName,
-            );
-            const result = await importAttendRecordTimesheet(dataToImport);
-            if ("error" in result) {
-                setError(result.error);
-                return;
+    const handleSubmit = React.useCallback(
+        async (mode?: "skip" | "force") => {
+            if (!parsedData || editableRows.length === 0) return;
+            setError(null);
+            if (mode == null) {
+                setSubmitResult(null);
             }
-            setSubmitResult(result);
-            if (result.imported && result.imported > 0) {
-                setFile(null);
-                setParsedData(null);
-                setEditableRows([]);
+            setPending(true);
+            try {
+                const workerMatchResult = resolveTimesheetImportWorkerMatches({
+                    rows: editableRows,
+                    workers,
+                    manualMatchesByImportedName: manualWorkerMatches,
+                });
+                const resolvedWorkerNamesByImportedName = new Map(
+                    workerMatchResult.groups
+                        .filter((group) => group.resolvedWorker != null)
+                        .map((group) => [
+                            group.importedName,
+                            group.resolvedWorker!.name,
+                        ]),
+                );
+                const dataToImport = editableRowsToAttendRecord(
+                    editableRows,
+                    {
+                        attendanceDate: parsedData.attendanceDate,
+                        tablingDate: parsedData.tablingDate,
+                    },
+                    resolvedWorkerNamesByImportedName,
+                );
+                const result = await importAttendRecordTimesheet(
+                    dataToImport,
+                    mode,
+                );
+                if ("error" in result) {
+                    setError(result.error);
+                    return;
+                }
+                if (result.status === "confirmation_required") {
+                    setOverlapResult(result.overlaps);
+                    return;
+                }
+                setOverlapResult(null);
+                setSubmitResult({
+                    imported: result.imported,
+                    skipped: result.skipped,
+                    errors: result.errors,
+                });
+                if (result.imported > 0) {
+                    setFile(null);
+                    setParsedData(null);
+                    setEditableRows([]);
+                }
+            } catch (err) {
+                setError(err instanceof Error ? err.message : "Import failed");
+            } finally {
+                setPending(false);
             }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Import failed");
-        } finally {
-            setPending(false);
-        }
-    }, [parsedData, editableRows, workers, manualWorkerMatches]);
+        },
+        [parsedData, editableRows, workers, manualWorkerMatches],
+    );
 
     const onDrop = React.useCallback(
         (e: React.DragEvent) => {
@@ -423,6 +414,7 @@ export function TimesheetImportClient({
         setEditableRows([]);
         setError(null);
         setSubmitResult(null);
+        setOverlapResult(null);
         setManualWorkerMatches({});
     }, []);
 
@@ -553,6 +545,73 @@ export function TimesheetImportClient({
                                             ),
                                         )}
                                     </ul>
+                                </div>
+                            )}
+                            {overlapResult != null && overlapResult.length > 0 && (
+                                <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+                                    <p className="font-medium">
+                                        Overlapping timesheet dates
+                                    </p>
+                                    <p className="mt-1">
+                                        {overlapResult.reduce(
+                                            (sum, o) => sum + o.existingCount,
+                                            0,
+                                        )}{" "}
+                                        entr
+                                        {overlapResult.reduce(
+                                            (sum, o) => sum + o.existingCount,
+                                            0,
+                                        ) !== 1
+                                            ? "ies"
+                                            : "y"}{" "}
+                                        already exist for{" "}
+                                        {
+                                            new Set(
+                                                overlapResult.map(
+                                                    (o) => o.workerName,
+                                                ),
+                                            ).size
+                                        }{" "}
+                                        worker
+                                        {new Set(
+                                            overlapResult.map(
+                                                (o) => o.workerName,
+                                            ),
+                                        ).size !== 1
+                                            ? "s"
+                                            : ""}{" "}
+                                        on the selected dates. Choose how to
+                                        proceed.
+                                    </p>
+                                    <ul className="mt-2 max-h-32 list-inside list-disc overflow-y-auto">
+                                        {overlapResult.map((o, idx) => (
+                                            <li key={`${o.workerName}-${o.dateIn}-${idx}`}>
+                                                {o.workerName} — {o.dateIn}{" "}
+                                                ({o.existingCount} existing)
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            disabled={pending}
+                                            onClick={() => {
+                                                void handleSubmit("skip");
+                                            }}>
+                                            Skip duplicates
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            disabled={pending}
+                                            onClick={() => {
+                                                void handleSubmit("force");
+                                            }}>
+                                            Import all anyway
+                                        </Button>
+                                    </div>
                                 </div>
                             )}
                             <div className="rounded-md border overflow-x-auto max-h-[70vh] overflow-y-auto">
@@ -755,7 +814,7 @@ export function TimesheetImportClient({
                                                                     formatted,
                                                                 );
                                                             }}
-                                                            className={`min-w-20 rounded px-2 py-1.5 outline-none focus:ring-2 focus:ring-ring focus:ring-inset ${parseTime(row.timeIn) == null ? "text-destructive" : ""}`}>
+                                                            className={`min-w-20 rounded px-2 py-1.5 outline-none focus:ring-2 focus:ring-ring focus:ring-inset ${parseTimeForHours(row.timeIn) == null ? "text-destructive" : ""}`}>
                                                             {row.timeIn}
                                                         </div>
                                                     </TableCell>
@@ -884,7 +943,7 @@ export function TimesheetImportClient({
                                                                     formatted,
                                                                 );
                                                             }}
-                                                            className={`min-w-20 rounded px-2 py-1.5 outline-none focus:ring-2 focus:ring-ring focus:ring-inset ${parseTime(row.timeOut) == null ? "text-destructive" : ""}`}>
+                                                            className={`min-w-20 rounded px-2 py-1.5 outline-none focus:ring-2 focus:ring-ring focus:ring-inset ${parseTimeForHours(row.timeOut) == null ? "text-destructive" : ""}`}>
                                                             {row.timeOut || "—"}
                                                         </div>
                                                     </TableCell>
@@ -939,6 +998,22 @@ export function TimesheetImportClient({
                                     <p className="text-emerald-600 dark:text-emerald-400">
                                         Imported {submitResult.imported}{" "}
                                         entries.
+                                        {submitResult.skipped != null &&
+                                            submitResult.skipped > 0 && (
+                                                <>
+                                                    {" "}
+                                                    Skipped{" "}
+                                                    {submitResult.skipped}{" "}
+                                                    duplicates.
+                                                </>
+                                            )}
+                                    </p>
+                                )}
+                            {submitResult.imported === 0 &&
+                                (submitResult.skipped ?? 0) > 0 && (
+                                    <p className="text-amber-600 dark:text-amber-400">
+                                        No new entries imported. Skipped{" "}
+                                        {submitResult.skipped} duplicates.
                                     </p>
                                 )}
                             {submitResult.errors &&
@@ -968,9 +1043,12 @@ export function TimesheetImportClient({
                                 totalEntries === 0 ||
                                 pending ||
                                 hasUnresolvedWorkerMatches ||
-                                editableRows.some(hasRowError)
+                                editableRows.some(hasRowError) ||
+                                overlapResult != null
                             }
-                            onClick={handleSubmit}>
+                            onClick={() => {
+                                void handleSubmit();
+                            }}>
                             {pending ? "Importing..." : "Upload Timesheet"}
                         </Button>
                     </div>

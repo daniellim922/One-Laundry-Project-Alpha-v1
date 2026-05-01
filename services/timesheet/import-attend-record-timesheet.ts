@@ -1,3 +1,5 @@
+import { and, eq, or } from "drizzle-orm";
+
 import { timesheetEntryFormSchema } from "@/db/schemas/timesheet-entry";
 import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/workerTable";
@@ -6,6 +8,26 @@ import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-w
 import { recordGuidedMonthlyWorkflowStepCompletion } from "@/services/payroll/guided-monthly-workflow-activity";
 import { assertWorkerEligibleForTimesheet } from "@/services/worker/assert-worker-eligible-for-timesheet";
 import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
+
+export type ImportAttendRecordMode = "skip" | "force";
+
+export type OverlapEntry = {
+    workerName: string;
+    dateIn: string;
+    existingCount: number;
+};
+
+export type ImportAttendRecordResult =
+    | {
+          status: "success";
+          imported: number;
+          skipped: number;
+          errors?: string[];
+      }
+    | {
+          status: "confirmation_required";
+          overlaps: OverlapEntry[];
+      };
 
 function toTimeString(val: string): string {
     const s = String(val).trim();
@@ -30,7 +52,22 @@ function ddMmYyyyToIso(val: string): string {
     return Number.isNaN(parsed.getTime()) ? "" : date;
 }
 
-export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
+function pairsWhereClause(
+    pairs: { workerId: string; dateIn: string }[],
+) {
+    if (pairs.length === 0) {
+        return undefined;
+    }
+    const clauses = pairs.map((p) =>
+        and(eq(timesheetTable.workerId, p.workerId), eq(timesheetTable.dateIn, p.dateIn)),
+    );
+    return clauses.length === 1 ? clauses[0]! : or(...clauses);
+}
+
+export async function importAttendRecordTimesheet(
+    data: AttendRecordOutput,
+    options?: { mode?: ImportAttendRecordMode },
+): Promise<ImportAttendRecordResult> {
     const workerNames = await db
         .select({
             id: workerTable.id,
@@ -111,9 +148,103 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
         }
     }
 
-    if (toInsert.length > 0) {
-        await db.insert(timesheetTable).values(toInsert);
+    if (toInsert.length === 0) {
+        return {
+            status: "success",
+            imported: 0,
+            skipped: 0,
+            errors: errors.length > 0 ? errors : undefined,
+        };
+    }
 
+    const pairKey = (workerId: string, dateIn: string) => `${workerId}|${dateIn}`;
+    const uniquePairsMap = new Map<string, { workerId: string; dateIn: string }>();
+    for (const row of toInsert) {
+        const key = pairKey(row.workerId, row.dateIn);
+        if (!uniquePairsMap.has(key)) {
+            uniquePairsMap.set(key, { workerId: row.workerId, dateIn: row.dateIn });
+        }
+    }
+    const uniquePairs = [...uniquePairsMap.values()];
+
+    const pairsClause = pairsWhereClause(uniquePairs);
+    const existing = pairsClause
+        ? await db
+              .select({
+                  workerId: timesheetTable.workerId,
+                  dateIn: timesheetTable.dateIn,
+                  timeIn: timesheetTable.timeIn,
+              })
+              .from(timesheetTable)
+              .where(pairsClause)
+        : [];
+
+    if (existing.length > 0 && options?.mode == null) {
+        const counts = new Map<string, number>();
+        for (const row of existing) {
+            const key = pairKey(row.workerId, String(row.dateIn));
+            counts.set(key, (counts.get(key) ?? 0) + 1);
+        }
+        const overlaps: OverlapEntry[] = [];
+        for (const [key, existingCount] of counts) {
+            const [workerId, dateIn] = key.split("|");
+            const worker = workerNames.find((w) => w.id === workerId);
+            overlaps.push({
+                workerName: worker?.name ?? workerId,
+                dateIn,
+                existingCount,
+            });
+        }
+        overlaps.sort((a, b) => {
+            const byName = a.workerName.localeCompare(b.workerName);
+            if (byName !== 0) return byName;
+            return a.dateIn.localeCompare(b.dateIn);
+        });
+        return {
+            status: "confirmation_required",
+            overlaps,
+        };
+    }
+
+    const overlappingPairKeys = new Set(
+        existing.map((row) => pairKey(row.workerId, String(row.dateIn))),
+    );
+    const rowsToInsert =
+        options?.mode === "skip"
+            ? toInsert.filter((row) => !overlappingPairKeys.has(pairKey(row.workerId, row.dateIn)))
+            : toInsert;
+
+    const pairFilteredSkipped = toInsert.length - rowsToInsert.length;
+
+    if (rowsToInsert.length === 0) {
+        return {
+            status: "success",
+            imported: 0,
+            skipped: pairFilteredSkipped,
+            errors: errors.length > 0 ? errors : undefined,
+        };
+    }
+
+    const insertedRows = await db
+        .insert(timesheetTable)
+        .values(rowsToInsert)
+        .onConflictDoNothing({
+            target: [
+                timesheetTable.workerId,
+                timesheetTable.dateIn,
+                timesheetTable.timeIn,
+            ],
+        })
+        .returning({
+            id: timesheetTable.id,
+            workerId: timesheetTable.workerId,
+        });
+
+    const imported = insertedRows.length;
+    const dbLevelSkipped = rowsToInsert.length - imported;
+    const skipped = pairFilteredSkipped + dbLevelSkipped;
+
+    if (imported > 0) {
         try {
             await recordGuidedMonthlyWorkflowStepCompletion({
                 stepId: "timesheet_import",
@@ -125,12 +256,16 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
             );
         }
 
-        const affectedWorkerIds = [...new Set(toInsert.map((row) => row.workerId))];
+        const affectedWorkerIds = [
+            ...new Set(insertedRows.map((row) => row.workerId)),
+        ];
         for (const workerId of affectedWorkerIds) {
             const sync = await synchronizeWorkerDraftPayrolls({ workerId });
             if ("error" in sync) {
                 return {
-                    imported: toInsert.length,
+                    status: "success",
+                    imported,
+                    skipped,
                     errors: [...errors, sync.error],
                 };
             }
@@ -138,7 +273,9 @@ export async function importAttendRecordTimesheet(data: AttendRecordOutput) {
     }
 
     return {
-        imported: toInsert.length,
+        status: "success",
+        imported,
+        skipped,
         errors: errors.length > 0 ? errors : undefined,
     };
 }

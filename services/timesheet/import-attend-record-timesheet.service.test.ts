@@ -24,31 +24,89 @@ vi.mock("@/services/payroll/guided-monthly-workflow-activity", () => ({
 
 import { importAttendRecordTimesheet } from "@/services/timesheet/import-attend-record-timesheet";
 import { timesheetTable } from "@/db/tables/timesheetTable";
+import { workerTable } from "@/db/tables/workerTable";
 import {
     deepCloneJson,
     makeAttendRecordPayload,
     makeImportOperationalState,
 } from "@/test/factories/attendrecord";
 
+function makeInsertChainResult(rows: { workerId: string }[]) {
+    return {
+        onConflictDoNothing: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue(
+                rows.map((row, i) => ({
+                    id: `inserted-${i}`,
+                    workerId: row.workerId,
+                })),
+            ),
+        }),
+    };
+}
+
+function configureDefaultWorkersSelect() {
+    mocks.db.select.mockImplementation(() => ({
+        from: vi.fn((table: unknown) => {
+            if (table === timesheetTable) {
+                return {
+                    where: vi.fn().mockResolvedValue([]),
+                };
+            }
+            if (table === workerTable) {
+                return Promise.resolve([
+                    { id: "worker-1", name: "Worker One", status: "Active" },
+                    { id: "worker-2", name: "Worker Two", status: "Active" },
+                ]);
+            }
+            throw new Error("Unexpected table in select mock");
+        }),
+    }));
+}
+
 function configureStatefulImportDatabase(
     state: ReturnType<typeof makeImportOperationalState>,
 ) {
-    mocks.db.select.mockReturnValue({
-        from: vi.fn().mockResolvedValue(state.workers),
-    });
+    mocks.db.select.mockImplementation(() => ({
+        from: vi.fn((table: unknown) => {
+            if (table === timesheetTable) {
+                return {
+                    where: vi.fn().mockResolvedValue([]),
+                };
+            }
+            if (table === workerTable) {
+                return Promise.resolve(state.workers);
+            }
+            throw new Error("Unexpected table in select mock");
+        }),
+    }));
     mocks.db.insert.mockImplementation((table) => {
         if (table !== timesheetTable) {
             throw new Error("Timesheet import should only insert timesheet rows");
         }
 
         return {
-            values: vi.fn().mockImplementation(async (rows) => {
-                state.timesheets.push(
-                    ...rows.map((row: Record<string, unknown>, index: number) => ({
-                        id: `imported-timesheet-${index + 1}`,
-                        ...row,
-                    })),
-                );
+            values: vi.fn().mockImplementation((rows: Record<string, unknown>[]) => {
+                const baseLen = state.timesheets.length;
+                const inserted = rows.map((row, index: number) => ({
+                    id: `imported-timesheet-${baseLen + index + 1}`,
+                    workerId: row.workerId as string,
+                    dateIn: row.dateIn as string,
+                    timeIn: row.timeIn as string,
+                    dateOut: row.dateOut as string,
+                    timeOut: row.timeOut as string,
+                    status: "Timesheet Unpaid",
+                }));
+                return {
+                    onConflictDoNothing: vi.fn().mockReturnValue({
+                        returning: vi.fn().mockImplementation(async () => {
+                            state.timesheets.push(...inserted);
+                            return inserted.map((r) => ({
+                                id: r.id as string,
+                                workerId: r.workerId as string,
+                            }));
+                        }),
+                    }),
+                };
             }),
         };
     });
@@ -57,15 +115,12 @@ function configureStatefulImportDatabase(
 describe("services/timesheet/import-attend-record-timesheet", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        mocks.db.select.mockReturnValue({
-            from: vi.fn().mockResolvedValue([
-                { id: "worker-1", name: "Worker One", status: "Active" },
-                { id: "worker-2", name: "Worker Two", status: "Active" },
-            ]),
-        });
-        mocks.db.insert.mockReturnValue({
-            values: vi.fn().mockResolvedValue(undefined),
-        });
+        configureDefaultWorkersSelect();
+        mocks.db.insert.mockImplementation(() => ({
+            values: vi.fn().mockImplementation((rows: { workerId: string }[]) =>
+                makeInsertChainResult(rows),
+            ),
+        }));
         mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({ success: true });
     });
 
@@ -73,7 +128,9 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
         await expect(
             importAttendRecordTimesheet(makeAttendRecordPayload()),
         ).resolves.toEqual({
+            status: "success",
             imported: 3,
+            skipped: 0,
             errors: undefined,
         });
 
@@ -108,23 +165,37 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
         await expect(
             importAttendRecordTimesheet(makeAttendRecordPayload()),
         ).resolves.toEqual({
+            status: "success",
             imported: 3,
+            skipped: 0,
             errors: ["Failed to synchronize Draft payrolls"],
         });
     });
 
     it("returns a clear error when the import includes an inactive worker", async () => {
-        mocks.db.select.mockReturnValue({
-            from: vi.fn().mockResolvedValue([
-                { id: "worker-1", name: "Worker One", status: "Inactive" },
-                { id: "worker-2", name: "Worker Two", status: "Active" },
-            ]),
-        });
+        mocks.db.select.mockImplementation(() => ({
+            from: vi.fn((table: unknown) => {
+                if (table === timesheetTable) {
+                    return {
+                        where: vi.fn().mockResolvedValue([]),
+                    };
+                }
+                if (table === workerTable) {
+                    return Promise.resolve([
+                        { id: "worker-1", name: "Worker One", status: "Inactive" },
+                        { id: "worker-2", name: "Worker Two", status: "Active" },
+                    ]);
+                }
+                throw new Error("Unexpected table in select mock");
+            }),
+        }));
 
         await expect(
             importAttendRecordTimesheet(makeAttendRecordPayload()),
         ).resolves.toEqual({
+            status: "success",
             imported: 1,
+            skipped: 0,
             errors: [
                 "Cannot import timesheet for Worker One because worker status is Inactive",
             ],
@@ -170,7 +241,9 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
                 ],
             }),
         ).resolves.toEqual({
+            status: "success",
             imported: 1,
+            skipped: 0,
             errors: undefined,
         });
 
@@ -229,7 +302,9 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
                 ],
             }),
         ).resolves.toEqual({
+            status: "success",
             imported: 0,
+            skipped: 0,
             errors: [
                 'Unknown worker "Unknown Worker"',
                 "Invalid date for Worker One: not-a-date",
@@ -239,5 +314,126 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
         expect(state).toEqual(preserved);
         expect(mocks.recordGuidedMonthlyWorkflowStepCompletion).not.toHaveBeenCalled();
         expect(mocks.synchronizeWorkerDraftPayrolls).not.toHaveBeenCalled();
+    });
+
+    it("returns confirmation_required when timesheets already exist for imported worker/date pairs", async () => {
+        mocks.db.select.mockImplementation(() => ({
+            from: vi.fn((table: unknown) => {
+                if (table === timesheetTable) {
+                    return {
+                        where: vi.fn().mockResolvedValue([
+                            {
+                                workerId: "worker-1",
+                                dateIn: "2026-01-01",
+                                timeIn: "08:00:00",
+                            },
+                        ]),
+                    };
+                }
+                if (table === workerTable) {
+                    return Promise.resolve([
+                        { id: "worker-1", name: "Worker One", status: "Active" },
+                    ]);
+                }
+                throw new Error("Unexpected table in select mock");
+            }),
+        }));
+
+        await expect(
+            importAttendRecordTimesheet({
+                attendanceDate: {
+                    startDate: "01/01/2026",
+                    endDate: "01/01/2026",
+                },
+                tablingDate: "01/01/2026 17:10:10",
+                workers: [
+                    {
+                        userId: "",
+                        name: "Worker One",
+                        dates: [
+                            {
+                                dateIn: "01/01/2026",
+                                timeIn: "09:00",
+                                dateOut: "01/01/2026",
+                                timeOut: "17:00",
+                            },
+                        ],
+                    },
+                ],
+            }),
+        ).resolves.toEqual({
+            status: "confirmation_required",
+            overlaps: [
+                {
+                    workerName: "Worker One",
+                    dateIn: "2026-01-01",
+                    existingCount: 1,
+                },
+            ],
+        });
+
+        expect(mocks.db.insert).not.toHaveBeenCalled();
+    });
+
+    it("skips overlapping worker/date rows when mode is skip", async () => {
+        mocks.db.select.mockImplementation(() => ({
+            from: vi.fn((table: unknown) => {
+                if (table === timesheetTable) {
+                    return {
+                        where: vi.fn().mockResolvedValue([
+                            {
+                                workerId: "worker-1",
+                                dateIn: "2026-01-01",
+                                timeIn: "08:00:00",
+                            },
+                        ]),
+                    };
+                }
+                if (table === workerTable) {
+                    return Promise.resolve([
+                        { id: "worker-1", name: "Worker One", status: "Active" },
+                    ]);
+                }
+                throw new Error("Unexpected table in select mock");
+            }),
+        }));
+
+        await expect(
+            importAttendRecordTimesheet(
+                {
+                    attendanceDate: {
+                        startDate: "01/01/2026",
+                        endDate: "02/01/2026",
+                    },
+                    tablingDate: "02/01/2026 17:10:10",
+                    workers: [
+                        {
+                            userId: "",
+                            name: "Worker One",
+                            dates: [
+                                {
+                                    dateIn: "01/01/2026",
+                                    timeIn: "09:00",
+                                    dateOut: "01/01/2026",
+                                    timeOut: "17:00",
+                                },
+                                {
+                                    dateIn: "02/01/2026",
+                                    timeIn: "09:00",
+                                    dateOut: "02/01/2026",
+                                    timeOut: "17:00",
+                                },
+                            ],
+                        },
+                    ],
+                },
+                { mode: "skip" },
+            ),
+        ).resolves.toEqual({
+            status: "success",
+            imported: 1,
+            skipped: 1,
+            errors: undefined,
+        });
     });
 });

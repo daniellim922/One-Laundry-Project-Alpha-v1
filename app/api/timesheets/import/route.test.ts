@@ -56,7 +56,9 @@ describe("POST /api/timesheets/import", () => {
         };
 
         mocks.importAttendRecordTimesheet.mockResolvedValue({
+            status: "success",
             imported: 1,
+            skipped: 0,
         });
 
         const response = await POST(
@@ -73,27 +75,33 @@ describe("POST /api/timesheets/import", () => {
         await expect(response.json()).resolves.toEqual({
             ok: true,
             data: {
+                status: "success",
                 imported: 1,
+                skipped: 0,
             },
         });
-        expect(mocks.importAttendRecordTimesheet).toHaveBeenCalledWith({
-            attendanceDate: payload.attendanceDate,
-            tablingDate: payload.tablingDate,
-            workers: [
-                {
-                    userId: "",
-                    name: "Worker One",
-                    dates: [
-                        {
-                            dateIn: "01/01/2026",
-                            timeIn: "09:00",
-                            dateOut: "01/01/2026",
-                            timeOut: "17:00",
-                        },
-                    ],
-                },
-            ],
-        });
+
+        expect(mocks.importAttendRecordTimesheet).toHaveBeenCalledWith(
+            {
+                attendanceDate: payload.attendanceDate,
+                tablingDate: payload.tablingDate,
+                workers: [
+                    {
+                        userId: "",
+                        name: "Worker One",
+                        dates: [
+                            {
+                                dateIn: "01/01/2026",
+                                timeIn: "09:00",
+                                dateOut: "01/01/2026",
+                                timeOut: "17:00",
+                            },
+                        ],
+                    },
+                ],
+            },
+            undefined,
+        );
         expect(mocks.revalidateTransportPaths).toHaveBeenCalledWith([
             "/dashboard",
             "/dashboard/timesheet",
@@ -109,6 +117,40 @@ describe("POST /api/timesheets/import", () => {
                 type: "page",
             },
         ]);
+    });
+
+    it("passes skip mode from the query string into the import service", async () => {
+        const payload = {
+            attendanceDate: {
+                startDate: "01/01/2026",
+                endDate: "28/01/2026",
+            },
+            tablingDate: "28/01/2026 17:10:10",
+            workers: [],
+        };
+
+        mocks.importAttendRecordTimesheet.mockResolvedValue({
+            status: "success",
+            imported: 0,
+            skipped: 0,
+        });
+
+        await POST(
+            new Request(
+                "http://localhost/api/timesheets/import?mode=skip",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                },
+            ) as never,
+        );
+
+        expect(mocks.importAttendRecordTimesheet).toHaveBeenCalledWith(payload, {
+            mode: "skip",
+        });
     });
 
     it("returns 400 for invalid JSON", async () => {

@@ -42,13 +42,17 @@ describe("importAttendRecordTimesheet", () => {
             mockFetchJsonResponse({
                 ok: true,
                 data: {
+                    status: "success",
                     imported: 1,
+                    skipped: 0,
                 },
             }),
         );
 
         await expect(importAttendRecordTimesheet(payload)).resolves.toEqual({
+            status: "success",
             imported: 1,
+            skipped: 0,
         });
 
         expect(fetchMock).toHaveBeenCalledWith("/api/timesheets/import", {
@@ -88,7 +92,9 @@ describe("importAttendRecordTimesheet", () => {
             mockFetchJsonResponse({
                 ok: true,
                 data: {
+                    status: "success",
                     imported: 1,
+                    skipped: 0,
                 },
             }),
         );
@@ -146,6 +152,38 @@ describe("importAttendRecordTimesheet", () => {
             }),
         ).resolves.toEqual({
             error: "Forbidden",
+        });
+    });
+
+    it("appends mode to the import URL when provided", async () => {
+        fetchMock.mockResolvedValue(
+            mockFetchJsonResponse({
+                ok: true,
+                data: {
+                    status: "success",
+                    imported: 0,
+                    skipped: 2,
+                },
+            }),
+        );
+
+        const payload = {
+            attendanceDate: {
+                startDate: "01/01/2026",
+                endDate: "28/01/2026",
+            },
+            tablingDate: "28/01/2026 17:10:10",
+            workers: [],
+        };
+
+        await importAttendRecordTimesheet(payload, "skip");
+
+        expect(fetchMock).toHaveBeenCalledWith("/api/timesheets/import?mode=skip", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
         });
     });
 });
