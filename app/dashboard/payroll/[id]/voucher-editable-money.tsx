@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { requestUpdateVoucherPayRate } from "../command-api";
-import { Input } from "@/components/ui/input";
+import { useMemo } from "react";
+
 import { cn } from "@/lib/utils";
+import { requestUpdateVoucherPayRate } from "../command-api";
+import { VoucherEditableField } from "./voucher-editable-field";
 import type { VoucherPayRateField } from "@/services/payroll/update-voucher-pay-rates";
 
 type Props = {
@@ -46,124 +46,47 @@ export function VoucherEditableMoney({
     format = "currency",
     fullWidth = false,
 }: Props) {
-    const router = useRouter();
     const isLg = size === "lg";
-    const initial = useMemo(() => formatInitial(value), [value]);
-    const [text, setText] = useState(initial);
-    const [isPending, startTransition] = useTransition();
-    const [error, setError] = useState<string | null>(null);
+    const committedDisplay = useMemo(() => formatInitial(value), [value]);
 
-    useEffect(() => {
-        setText(formatInitial(value));
-    }, [value]);
-
-    const commit = () => {
-        if (readOnly) return;
-        const parsed = parseAmount(text, format);
-        const numeric =
-            field === "minimumWorkingHours" ? parsed : (parsed ?? 0);
-        if (numeric !== null && numeric < 0) {
-            setError("Must be ≥ 0");
-            return;
-        }
-
-        setError(null);
-        startTransition(async () => {
-            const res = await requestUpdateVoucherPayRate({
-                payrollId,
-                voucherId,
-                field,
-                value: numeric,
-            });
-
-            if (res && "error" in res && res.error) {
-                setError(res.error);
-                return;
-            }
-            router.refresh();
-        });
-    };
+    const prefixSlot =
+        format === "currency" ? (
+            <span
+                className={cn(
+                    "pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground",
+                    isLg ? "text-base" : "text-sm",
+                )}
+                aria-hidden>
+                $
+            </span>
+        ) : undefined;
 
     return (
-        <div
-            className={cn(
-                "space-y-1",
-                fullWidth && "w-full",
-                (readOnly || isPending) && "cursor-not-allowed",
-            )}>
-            <p
-                className={cn(
-                    "text-muted-foreground",
-                    isLg ? "text-base" : "text-sm",
-                )}>
-                {label}
-            </p>
-            <div
-                className={cn(
-                    "flex items-baseline gap-2",
-                    fullWidth && "w-full min-w-0",
-                )}>
-                <div
-                    className={cn(
-                        "relative",
-                        fullWidth && "min-w-0 flex-1",
-                    )}>
-                    {format === "currency" ? (
-                        <span
-                            className={cn(
-                                "pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground",
-                                isLg ? "text-base" : "text-sm",
-                            )}
-                            aria-hidden>
-                            $
-                        </span>
-                    ) : null}
-                    <Input
-                        aria-label={label}
-                        inputMode="decimal"
-                        value={text}
-                        readOnly={readOnly}
-                        disabled={readOnly || isPending}
-                        className={cn(
-                            "text-left font-medium tabular-nums",
-                            format === "currency" ? "pl-5" : "pl-2.5",
-                            isLg ? "h-9 text-base" : "h-8 text-sm",
-                            fullWidth
-                                ? "w-full"
-                                : isLg
-                                  ? "w-28"
-                                  : "w-24",
-                        )}
-                        onChange={(e) => setText(e.currentTarget.value)}
-                        onBlur={commit}
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                                e.preventDefault();
-                                (e.currentTarget as HTMLInputElement).blur();
-                            }
-                            if (e.key === "Escape") {
-                                e.preventDefault();
-                                setText(initial);
-                                (e.currentTarget as HTMLInputElement).blur();
-                            }
-                        }}
-                    />
-                </div>
-                {isPending && (
-                    <span
-                        className={cn(
-                            "text-muted-foreground",
-                            isLg ? "text-sm" : "text-xs",
-                        )}>
-                        Saving…
-                    </span>
-                )}
-            </div>
-            {error && (
-                <p className={cn("text-red-600", isLg ? "text-sm" : "text-xs")}>
-                    {error}
-                </p>
-            )}
-        </div>
+        <VoucherEditableField
+            label={label}
+            readOnly={readOnly}
+            size={size}
+            fullWidth={fullWidth}
+            align="left"
+            prefixSlot={prefixSlot}
+            committedDisplay={committedDisplay}
+            parseForCommit={(text) => {
+                const parsed = parseAmount(text, format);
+                const numeric =
+                    field === "minimumWorkingHours" ? parsed : (parsed ?? 0);
+                if (numeric !== null && numeric < 0) {
+                    return { ok: false, error: "Must be ≥ 0" };
+                }
+                return { ok: true, value: numeric };
+            }}
+            commit={(numeric) =>
+                requestUpdateVoucherPayRate({
+                    payrollId,
+                    voucherId,
+                    field,
+                    value: numeric,
+                })
+            }
+        />
     );
 }
