@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateVoucherPayRate } from "../command-api";
+import { requestUpdateVoucherPayRate } from "../command-api";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { VoucherPayRateField } from "@/services/payroll/update-voucher-pay-rates";
@@ -69,7 +69,7 @@ export function VoucherEditableMoney({
 
         setError(null);
         startTransition(async () => {
-            const res = await updateVoucherPayRate({
+            const res = await requestUpdateVoucherPayRate({
                 payrollId,
                 voucherId,
                 field,

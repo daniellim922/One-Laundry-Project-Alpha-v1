@@ -96,7 +96,7 @@ export function updateVoucherDays(input: {
     });
 }
 
-export function updateVoucherPayRate(input: {
+export function requestUpdateVoucherPayRate(input: {
     payrollId: string;
     voucherId: string;
     field:
