@@ -2,8 +2,11 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { employmentTable } from "@/db/tables/employmentTable";
-import { payrollTable } from "@/db/tables/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
+import {
+    assertDraftPayrollVoucher,
+    persistDraftPayrollVoucherUpdate,
+} from "@/services/payroll/_shared/voucher-update-pipeline";
 import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll-voucher-values";
 
 export type VoucherPayRateField =
@@ -74,35 +77,13 @@ export async function updateVoucherPayRate(input: {
         };
     }
 
-    const [payrollRow] = await db
-        .select({
-            status: payrollTable.status,
-            payrollVoucherId: payrollTable.payrollVoucherId,
-        })
-        .from(payrollTable)
-        .where(eq(payrollTable.id, payrollId))
-        .limit(1);
-
-    if (!payrollRow) {
-        return {
-            success: false,
-            code: "NOT_FOUND",
-            error: "Payroll not found",
-        };
-    }
-    if (payrollRow.payrollVoucherId !== voucherId) {
-        return {
-            success: false,
-            code: "CONFLICT",
-            error: "Voucher does not belong to this payroll",
-        };
-    }
-    if (payrollRow.status !== "Draft") {
-        return {
-            success: false,
-            code: "CONFLICT",
-            error: "Only Draft payrolls can edit voucher pay rates",
-        };
+    const guard = await assertDraftPayrollVoucher(
+        payrollId,
+        voucherId,
+        "Only Draft payrolls can edit voucher pay rates",
+    );
+    if (!guard.ok) {
+        return guard.result;
     }
 
     const [voucher] = await db
@@ -195,21 +176,14 @@ export async function updateVoucherPayRate(input: {
         advanceTotal: Number(voucher.advance ?? 0),
     });
 
-    try {
-        await db
-            .update(payrollVoucherTable)
-            .set({
-                ...voucherValues,
-                updatedAt: new Date(),
-            })
-            .where(eq(payrollVoucherTable.id, voucherId));
-    } catch (error) {
-        console.error("Error updating voucher pay rate", error);
-        return {
-            success: false,
-            code: "INTERNAL_ERROR",
-            error: "Failed to update voucher pay rate",
-        };
+    const persist = await persistDraftPayrollVoucherUpdate({
+        voucherId,
+        voucherValues,
+        logLabel: "Error updating voucher pay rate",
+        userFacingError: "Failed to update voucher pay rate",
+    });
+    if (!persist.ok) {
+        return persist.result;
     }
 
     return {

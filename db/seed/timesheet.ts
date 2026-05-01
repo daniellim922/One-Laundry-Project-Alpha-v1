@@ -51,6 +51,30 @@ function formatDate(year: number, month: number, day: number): string {
     return `${year}-${pad(month)}-${pad(day)}`;
 }
 
+function pushSameDayTimesheetEntry(
+    entries: TimesheetEntry[],
+    args: {
+        workerIndex: number;
+        year: number;
+        month: number;
+        day: number;
+        clockIn: { h: number; m: number };
+        clockOut: { h: number; m: number };
+        hours: number;
+        status: TimesheetPaymentStatus;
+    },
+) {
+    entries.push({
+        workerIndex: args.workerIndex,
+        dateIn: formatDate(args.year, args.month, args.day),
+        timeIn: formatTime(args.clockIn.h, args.clockIn.m),
+        dateOut: formatDate(args.year, args.month, args.day),
+        timeOut: formatTime(args.clockOut.h, args.clockOut.m),
+        hours: args.hours,
+        status: args.status,
+    });
+}
+
 function distributeHours(totalHours: number, dayCount: number): number[] {
     const totalQuarterHours = Math.round(totalHours * 4);
     const baseQuarterHours = Math.floor(totalQuarterHours / dayCount);
@@ -109,12 +133,13 @@ function generateTimesheets(): TimesheetEntry[] {
                         m: outMin % 60,
                     };
 
-                    entries.push({
+                    pushSameDayTimesheetEntry(entries, {
                         workerIndex,
-                        dateIn: formatDate(period.year, period.month, day),
-                        timeIn: formatTime(clockIn.h, clockIn.m),
-                        dateOut: formatDate(period.year, period.month, day),
-                        timeOut: formatTime(clockOut.h, clockOut.m),
+                        year: period.year,
+                        month: period.month,
+                        day,
+                        clockIn,
+                        clockOut,
                         hours: (duration.h * 60 + duration.m) / 60,
                         status,
                     });
@@ -137,12 +162,13 @@ function generateTimesheets(): TimesheetEntry[] {
                         clockIn.h * 60 + clockIn.m + durationMinutes;
                     const clockOut = { h: Math.floor(outMin / 60), m: outMin % 60 };
 
-                    entries.push({
+                    pushSameDayTimesheetEntry(entries, {
                         workerIndex,
-                        dateIn: formatDate(period.year, period.month, day),
-                        timeIn: formatTime(clockIn.h, clockIn.m),
-                        dateOut: formatDate(period.year, period.month, day),
-                        timeOut: formatTime(clockOut.h, clockOut.m),
+                        year: period.year,
+                        month: period.month,
+                        day,
+                        clockIn,
+                        clockOut,
                         hours: dailyHours[dayIndex]!,
                         status,
                     });
@@ -171,12 +197,13 @@ function generateTimesheets(): TimesheetEntry[] {
                     clockIn.h * 60 + clockIn.m + duration.h * 60 + duration.m;
                 const clockOut = { h: Math.floor(outMin / 60), m: outMin % 60 };
 
-                entries.push({
+                pushSameDayTimesheetEntry(entries, {
                     workerIndex,
-                    dateIn: formatDate(period.year, period.month, day),
-                    timeIn: formatTime(clockIn.h, clockIn.m),
-                    dateOut: formatDate(period.year, period.month, day),
-                    timeOut: formatTime(clockOut.h, clockOut.m),
+                    year: period.year,
+                    month: period.month,
+                    day,
+                    clockIn,
+                    clockOut,
                     hours: (duration.h * 60 + duration.m) / 60,
                     status,
                 });

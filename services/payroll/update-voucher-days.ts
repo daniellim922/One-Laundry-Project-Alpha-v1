@@ -1,8 +1,11 @@
 import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { payrollTable } from "@/db/tables/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
+import {
+    assertDraftPayrollVoucher,
+    persistDraftPayrollVoucherUpdate,
+} from "@/services/payroll/_shared/voucher-update-pipeline";
 import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll-voucher-values";
 
 export type UpdateVoucherDaysResult =
@@ -51,35 +54,13 @@ export async function updateVoucherDays(input: {
         };
     }
 
-    const [payrollRow] = await db
-        .select({
-            status: payrollTable.status,
-            payrollVoucherId: payrollTable.payrollVoucherId,
-        })
-        .from(payrollTable)
-        .where(eq(payrollTable.id, payrollId))
-        .limit(1);
-
-    if (!payrollRow) {
-        return {
-            success: false,
-            code: "NOT_FOUND",
-            error: "Payroll not found",
-        };
-    }
-    if (payrollRow.payrollVoucherId !== voucherId) {
-        return {
-            success: false,
-            code: "CONFLICT",
-            error: "Voucher does not belong to this payroll",
-        };
-    }
-    if (payrollRow.status !== "Draft") {
-        return {
-            success: false,
-            code: "CONFLICT",
-            error: "Only Draft payrolls can edit voucher days",
-        };
+    const guard = await assertDraftPayrollVoucher(
+        payrollId,
+        voucherId,
+        "Only Draft payrolls can edit voucher days",
+    );
+    if (!guard.ok) {
+        return guard.result;
     }
 
     const [voucher] = await db
@@ -136,21 +117,14 @@ export async function updateVoucherDays(input: {
         advanceTotal: voucher.advance ?? 0,
     });
 
-    try {
-        await db
-            .update(payrollVoucherTable)
-            .set({
-                ...voucherValues,
-                updatedAt: new Date(),
-            })
-            .where(eq(payrollVoucherTable.id, voucherId));
-    } catch (error) {
-        console.error("Error updating voucher days", error);
-        return {
-            success: false,
-            code: "INTERNAL_ERROR",
-            error: "Failed to update voucher days",
-        };
+    const persist = await persistDraftPayrollVoucherUpdate({
+        voucherId,
+        voucherValues,
+        logLabel: "Error updating voucher days",
+        userFacingError: "Failed to update voucher days",
+    });
+    if (!persist.ok) {
+        return persist.result;
     }
 
     return {
