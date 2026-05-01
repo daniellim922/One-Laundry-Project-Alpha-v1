@@ -54,9 +54,17 @@ export async function POST(request: Request) {
         });
     }
 
-    const result = await importAttendRecordTimesheet(parsedBody.data);
+    const url = new URL(request.url);
+    const modeParam = url.searchParams.get("mode");
+    const mode =
+        modeParam === "skip" || modeParam === "force" ? modeParam : undefined;
 
-    if (result.imported > 0) {
+    const result = await importAttendRecordTimesheet(
+        parsedBody.data,
+        mode ? { mode } : undefined,
+    );
+
+    if (result.status === "success" && result.imported > 0) {
         revalidateTransportPaths([
             "/dashboard",
             "/dashboard/timesheet",

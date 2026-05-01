@@ -151,7 +151,11 @@ describe("TimesheetImportClient", () => {
         };
 
         parseAttendRecordMock.mockReturnValue(parsedAttendRecord);
-        importAttendRecordTimesheetMock.mockResolvedValue({ imported: 2 });
+        importAttendRecordTimesheetMock.mockResolvedValue({
+            status: "success",
+            imported: 2,
+            skipped: 0,
+        });
 
         render(
             <TimesheetImportClient
@@ -200,30 +204,33 @@ describe("TimesheetImportClient", () => {
 
         await user.click(uploadButton);
 
-        expect(importAttendRecordTimesheetMock).toHaveBeenCalledWith({
-            attendanceDate: parsedAttendRecord.attendanceDate,
-            tablingDate: parsedAttendRecord.tablingDate,
-            workers: [
-                {
-                    userId: "",
-                    name: "Alice Tan",
-                    dates: [
-                        {
-                            dateIn: "01/01/2026",
-                            timeIn: "09:00",
-                            dateOut: "01/01/2026",
-                            timeOut: "17:00",
-                        },
-                        {
-                            dateIn: "02/01/2026",
-                            timeIn: "09:00",
-                            dateOut: "02/01/2026",
-                            timeOut: "17:00",
-                        },
-                    ],
-                },
-            ],
-        });
+        expect(importAttendRecordTimesheetMock).toHaveBeenCalledWith(
+            {
+                attendanceDate: parsedAttendRecord.attendanceDate,
+                tablingDate: parsedAttendRecord.tablingDate,
+                workers: [
+                    {
+                        userId: "",
+                        name: "Alice Tan",
+                        dates: [
+                            {
+                                dateIn: "01/01/2026",
+                                timeIn: "09:00",
+                                dateOut: "01/01/2026",
+                                timeOut: "17:00",
+                            },
+                            {
+                                dateIn: "02/01/2026",
+                                timeIn: "09:00",
+                                dateOut: "02/01/2026",
+                                timeOut: "17:00",
+                            },
+                        ],
+                    },
+                ],
+            },
+            undefined,
+        );
         expect(await screen.findByText("Imported 2 entries.")).toBeDefined();
         expect(screen.queryByText("attend-record.xls")).toBeNull();
     });
@@ -254,7 +261,9 @@ describe("TimesheetImportClient", () => {
 
         parseAttendRecordMock.mockReturnValue(parsedAttendRecord);
         importAttendRecordTimesheetMock.mockResolvedValue({
+            status: "success",
             imported: 0,
+            skipped: 0,
             errors: ["Unknown worker: Alice Tan"],
         });
 
@@ -381,6 +390,112 @@ describe("TimesheetImportClient", () => {
                 ),
         ).toBe(true);
         expect((uploadButton as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    it("shows overlapping dates prompt and re-submits with skip mode", async () => {
+        const user = userEvent.setup();
+        const parsedAttendRecord: AttendRecordOutput = {
+            attendanceDate: {
+                startDate: "01/01/2026",
+                endDate: "01/01/2026",
+            },
+            tablingDate: "01/01/2026 17:00:00",
+            workers: [
+                {
+                    userId: "",
+                    name: "Alice Tan",
+                    dates: [
+                        {
+                            dateIn: "01/01/2026",
+                            timeIn: "09:00",
+                            dateOut: "01/01/2026",
+                            timeOut: "17:00",
+                        },
+                    ],
+                },
+            ],
+        };
+
+        parseAttendRecordMock.mockReturnValue(parsedAttendRecord);
+        importAttendRecordTimesheetMock
+            .mockResolvedValueOnce({
+                status: "confirmation_required",
+                overlaps: [
+                    {
+                        workerName: "Alice Tan",
+                        dateIn: "2026-01-01",
+                        existingCount: 1,
+                    },
+                ],
+            })
+            .mockResolvedValueOnce({
+                status: "success",
+                imported: 0,
+                skipped: 1,
+            });
+
+        render(
+            <TimesheetImportClient
+                workers={[
+                    {
+                        id: "worker-1",
+                        name: "Alice Tan",
+                        status: "Active",
+                    },
+                ]}
+            />,
+        );
+
+        await user.upload(
+            screen.getByLabelText(/Drag and drop or click to upload/i),
+            new File(["legacy attend record"], "attend-record.xls", {
+                type: "application/vnd.ms-excel",
+            }),
+        );
+
+        const uploadButton = await screen.findByRole("button", {
+            name: "Upload Timesheet",
+        });
+        await user.click(uploadButton);
+
+        expect(
+            await screen.findByText("Overlapping timesheet dates"),
+        ).toBeDefined();
+        expect((uploadButton as HTMLButtonElement).disabled).toBe(true);
+
+        await user.click(screen.getByRole("button", { name: "Skip duplicates" }));
+
+        const expectedPayload = {
+            attendanceDate: parsedAttendRecord.attendanceDate,
+            tablingDate: parsedAttendRecord.tablingDate,
+            workers: [
+                {
+                    userId: "",
+                    name: "Alice Tan",
+                    dates: [
+                        {
+                            dateIn: "01/01/2026",
+                            timeIn: "09:00",
+                            dateOut: "01/01/2026",
+                            timeOut: "17:00",
+                        },
+                    ],
+                },
+            ],
+        };
+        expect(importAttendRecordTimesheetMock).toHaveBeenNthCalledWith(
+            1,
+            expectedPayload,
+            undefined,
+        );
+        expect(importAttendRecordTimesheetMock).toHaveBeenNthCalledWith(
+            2,
+            expectedPayload,
+            "skip",
+        );
+        expect(
+            await screen.findByText(/No new entries imported. Skipped 1 duplicates/),
+        ).toBeDefined();
     });
 
     it("clears manual worker matches when uploading a different file", async () => {

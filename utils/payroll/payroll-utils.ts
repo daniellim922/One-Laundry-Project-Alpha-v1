@@ -64,7 +64,7 @@ function parseDateForHours(dateStr: string): Date | null {
 }
 
 /** Parse time string (HH:MM or HH:MM:SS) to { h, m }. Returns null if invalid. */
-function parseTimeForHours(timeStr: string): { h: number; m: number } | null {
+export function parseTimeForHours(timeStr: string): { h: number; m: number } | null {
     const trimmed = String(timeStr).trim();
     if (!trimmed) return null;
     const match = trimmed.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
@@ -75,7 +75,7 @@ function parseTimeForHours(timeStr: string): { h: number; m: number } | null {
     return { h, m };
 }
 
-function clockIntervalDurationMs(
+export function clockIntervalDurationMs(
     dateIn: string,
     timeIn: string,
     dateOut: string,
@@ -101,6 +101,20 @@ function clockIntervalDurationMs(
         tOut.m,
     );
     return end.getTime() - start.getTime();
+}
+
+/** Formats a millisecond duration as whole hours, or hours + minutes (e.g. `8h`, `7h 30m`). */
+export function formatDurationHm(durationMs: number): string {
+    if (!Number.isFinite(durationMs) || durationMs <= 0) {
+        return "0h";
+    }
+    const totalMinutes = Math.floor(durationMs / (60 * 1000));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (minutes === 0) {
+        return `${hours}h`;
+    }
+    return `${hours}h ${minutes}m`;
 }
 
 /** True when clock-out is strictly after clock-in (matches {@link calculateHoursFromDateTimes} positive duration). */

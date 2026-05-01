@@ -1,12 +1,13 @@
+import type {
+    ImportAttendRecordResult,
+    ImportAttendRecordMode,
+} from "@/services/timesheet/import-attend-record-timesheet";
 import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
 
 type ImportAttendRecordTimesheetResponse =
     | {
           ok: true;
-          data: {
-              imported: number;
-              errors?: string[];
-          };
+          data: ImportAttendRecordResult;
       }
     | {
           ok: false;
@@ -37,10 +38,12 @@ function stripHoursFromAttendRecordPayload(
 
 export async function importAttendRecordTimesheet(
     data: AttendRecordOutput,
-): Promise<{ imported: number; errors?: string[] } | { error: string }> {
+    mode?: ImportAttendRecordMode,
+): Promise<ImportAttendRecordResult | { error: string }> {
     try {
         const sanitizedData = stripHoursFromAttendRecordPayload(data);
-        const response = await fetch("/api/timesheets/import", {
+        const qs = mode != null ? `?mode=${encodeURIComponent(mode)}` : "";
+        const response = await fetch(`/api/timesheets/import${qs}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
