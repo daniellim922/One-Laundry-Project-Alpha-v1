@@ -1,14 +1,4 @@
-import { dateToLocalIsoYmd, parseIsoToDateStrict } from "./calendar-date";
-
-/** Strict ISO YYYY-MM-DD to local calendar midnight. */
-function isoYmdToLocalDate(iso: string): Date | null {
-    return parseIsoToDateStrict(iso);
-}
-
-/**
- * Best-effort parse for display/filter: YYYY-MM-DD prefix uses strict calendar
- * rules; otherwise local midnight from plain date strings.
- */
+import { dateToLocalIsoYmd } from "./calendar-date";
 
 /**
  * Normalize timesheet `dateIn` (or any calendar-ish value) to YYYY-MM-DD for

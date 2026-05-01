@@ -24,7 +24,7 @@ import {
     formatEnGbDmyNumeric,
     formatEnGbDmyNumericFromCalendar,
 } from "@/utils/time/intl-en-gb";
-import { localTimeHm } from "@/utils/time/local-time";
+import { localTimeHm } from "@/utils/time/hm-time";
 import { getPayrollDetailData } from "../payroll-detail-data";
 import { PayrollHeader } from "../payroll-header";
 import { PayrollStepProgress } from "../payroll-step-progress";

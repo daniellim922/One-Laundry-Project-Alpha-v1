@@ -14,9 +14,10 @@ import { SelectSearch } from "@/components/ui/SelectSearch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
+import { clockIntervalDurationMs } from "@/utils/payroll/payroll-utils";
 import type { TimesheetPaymentStatus } from "@/types/status";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
+import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
 import { TimesheetTimeField } from "./timesheet-time-field";
 import { normalizeHmTime } from "./timesheet-time-utils";
 
@@ -74,10 +75,13 @@ export function TimesheetEntryForm({
 
     const totalHours = React.useMemo(() => {
         if (!dateIn || !dateOut || !timeIn || !timeOut) return null;
-        const start = new Date(`${dateIn}T${timeIn}:00`);
-        const end = new Date(`${dateOut}T${timeOut}:00`);
-        const diffMs = end.getTime() - start.getTime();
-        if (diffMs < 0 || Number.isNaN(diffMs)) return null;
+        const diffMs = clockIntervalDurationMs(
+            dateIn,
+            timeIn,
+            dateOut,
+            timeOut,
+        );
+        if (diffMs == null || diffMs < 0) return null;
         return (diffMs / 3_600_000).toFixed(2);
     }, [dateIn, dateOut, timeIn, timeOut]);
 

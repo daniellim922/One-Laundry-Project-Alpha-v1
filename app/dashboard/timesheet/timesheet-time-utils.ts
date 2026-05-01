@@ -1,1 +1,1 @@
-export { isHmTimeStrict, normalizeHmTime } from "@/utils/timesheet/hm-time";
+export { isHmTimeStrict, normalizeHmTime } from "@/utils/time/hm-time";

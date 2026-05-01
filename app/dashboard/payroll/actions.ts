@@ -7,11 +7,12 @@ import {
     createPayrollRecords,
     updatePayrollRecord,
 } from "@/services/payroll/save-payroll";
+import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
 
 function toDateString(val: string): string {
     const d = new Date(val);
     if (Number.isNaN(d.getTime())) return "";
-    return d.toISOString().slice(0, 10);
+    return dateToLocalIsoYmd(d);
 }
 
 export async function createPayrolls(formData: FormData) {

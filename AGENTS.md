@@ -79,7 +79,7 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 | Data table components | `components/data-table/` |
 | Form page shell | `components/form-page-layout.tsx` |
 | Third-party integrations (DB, Tailwind `cn`) | `lib/db.ts`, `lib/utils.ts` |
-| App utilities and domain helpers | `utils/` grouped: `nav/` (`nav-config.ts`, `dashboard-nav-features.ts`), `time/` (`calendar-date.ts`, `intl-en-gb.ts`, `iso-local-midnight.ts`, `local-time.ts`), `payroll/` (`payroll-utils.ts`, `parse-attendrecord.ts`, `payroll-period-conflicts.ts`), `advance/` (`queries.ts`) |
+| App utilities and domain helpers | `utils/` grouped: `nav/` (`nav-config.ts`, `dashboard-nav-features.ts`), `time/` (`calendar-date.ts`, `hm-time.ts`, `intl-en-gb.ts`, `iso-local-midnight.ts`), `payroll/` (`payroll-utils.ts`, `parse-attendrecord.ts`, `payroll-period-conflicts.ts`), `advance/` (`queries.ts`) |
 | All Drizzle table schemas | `db/tables/` (re-exported via `db/schema.ts`) |
 | Drizzle-derived Zod (forms + aligned API bodies) | `db/schemas/` (`worker-employment.ts`, `payroll-period.ts`, `timesheet-entry.ts`, `advance-request.ts`, `api.ts`, …) |
 | Domain status enums + badge tones | `types/status.ts`, `types/badge-tones.ts` |

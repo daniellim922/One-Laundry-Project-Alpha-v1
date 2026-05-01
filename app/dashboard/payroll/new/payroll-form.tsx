@@ -31,7 +31,10 @@ import {
     FieldLabel,
 } from "@/components/ui/field";
 import { columns, type WorkerForPayrollSelection as Worker } from "./columns";
-import { parseIsoToDateStrict } from "@/utils/time/calendar-date";
+import {
+    dateToLocalIsoYmd,
+    parseIsoToDateStrict,
+} from "@/utils/time/calendar-date";
 import { formatEnGbDmyNumeric } from "@/utils/time/intl-en-gb";
 
 type FormValues = PayrollPeriodFormValues;
@@ -69,7 +72,7 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
         defaultValues: {
             periodStart: "",
             periodEnd: "",
-            payrollDate: new Date().toISOString().slice(0, 10),
+            payrollDate: dateToLocalIsoYmd(),
         },
     });
 

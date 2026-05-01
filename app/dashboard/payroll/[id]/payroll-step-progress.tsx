@@ -40,7 +40,7 @@ import {
     advanceLoanToneClassName,
 } from "@/types/badge-tones";
 import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
-import { localTimeHm } from "@/utils/time/local-time";
+import { localTimeHm } from "@/utils/time/hm-time";
 import { fetchRevertPreview } from "../read-api";
 
 const statusToneMap: Record<string, string> = {

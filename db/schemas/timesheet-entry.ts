@@ -5,7 +5,7 @@ import * as z from "zod";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { isClockOutAfterClockIn } from "@/utils/payroll/payroll-utils";
 import { isIsoDateStrict } from "@/utils/time/calendar-date";
-import { isTimesheetWireTimeStrict } from "@/utils/timesheet/hm-time";
+import { isTimesheetWireTimeStrict } from "@/utils/time/hm-time";
 
 /** Payload for create/update timesheet entry (no generated columns). */
 export const timesheetEntryFormSchema = createInsertSchema(timesheetTable, {

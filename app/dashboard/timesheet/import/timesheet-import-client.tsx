@@ -27,8 +27,7 @@ import {
 import { Trash2, Upload } from "lucide-react";
 import { parseAttendRecord } from "@/utils/payroll/parse-attendrecord";
 import {
-    clockIntervalDurationMs,
-    formatDurationHm,
+    formatClockIntervalHm,
     parseTimeForHours,
 } from "@/utils/payroll/payroll-utils";
 import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
@@ -72,7 +71,7 @@ function hasMissingData(row: FlatRow): boolean {
 /** True if row has invalid inputs or hours calculate to 0h (bad dates/times or end before start). */
 function hasRowError(row: FlatRow): boolean {
     if (hasMissingData(row)) return true;
-    const hours = calcWorkingHours(
+    const hours = formatClockIntervalHm(
         row.dateIn,
         row.timeIn,
         row.dateOut,
@@ -121,17 +120,6 @@ function parseDate(dateStr: string): Date | null {
     )
         return null;
     return d;
-}
-
-function calcWorkingHours(
-    dateIn: string,
-    timeIn: string,
-    dateOut: string,
-    timeOut: string,
-): string {
-    return formatDurationHm(
-        clockIntervalDurationMs(dateIn, timeIn, dateOut, timeOut) ?? 0,
-    );
 }
 
 /** Enforce DD/MM/YYYY format as user types - digits only, auto-insert slashes */
@@ -890,7 +878,7 @@ export function TimesheetImportClient({
                                                     </TableCell>
                                                     {(() => {
                                                         const hours =
-                                                            calcWorkingHours(
+                                                            formatClockIntervalHm(
                                                                 row.dateIn,
                                                                 row.timeIn,
                                                                 row.dateOut,
