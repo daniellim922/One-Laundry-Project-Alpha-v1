@@ -1,13 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-    Bar,
-    BarChart,
-    CartesianGrid,
-    XAxis,
-    YAxis,
-} from "recharts";
+import { Bar } from "recharts";
 
 import {
     Card,
@@ -26,13 +20,9 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import {
-    ChartContainer,
-    ChartTooltip,
-    ChartTooltipContent,
-    type ChartConfig,
-} from "@/components/ui/chart";
+import { type ChartConfig } from "@/components/ui/chart";
 import { cn } from "@/lib/utils";
+import { StackedBarChartPanel } from "@/components/dashboard/stacked-bar-chart-shell";
 import { EmploymentArrangementBulkSelect } from "@/components/dashboard/employment-arrangement-bulk-select";
 import { EmploymentTypeBulkSelect } from "@/components/dashboard/employment-type-bulk-select";
 import {
@@ -41,9 +31,7 @@ import {
 } from "@/components/dashboard/month-multi-select-filter";
 import {
     MONTH_SHORT,
-    STACKED_AXIS_TICK,
     STACKED_BAR_CHART_COLORS,
-    StackedBarMonthTotalLabels,
     type StackedMonthTotalsRow,
 } from "@/components/dashboard/stacked-month-bar-chart";
 import {
@@ -129,19 +117,10 @@ const SHORT_GROUP_LABEL: Record<ComboKey, string> = {
     "pt-local": "PT · Local",
 };
 
-const currencyCompactFmt = new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-});
-
-export function formatStackedChartCurrency(n: number): string {
-    return `$${currencyCompactFmt.format(n)}`;
-}
-
-/** Y-axis ticks: whole dollars, rounded up (no fractional display). */
-export function formatStackedChartYAxisTick(n: number): string {
-    return formatStackedChartCurrency(Math.ceil(n));
-}
+export {
+    formatStackedChartCurrency,
+    formatStackedChartYAxisTick,
+} from "@/components/dashboard/stacked-bar-chart-shell";
 
 function workerSeriesKey(workerId: string): string {
     return `w_${workerId}`;
@@ -567,63 +546,37 @@ export function MonthlyWorkerStackedAmountOverviewCard<
                                 {copy.emptyChartSelection}
                             </div>
                         ) : (
-                            <ChartContainer
-                                config={chartConfig}
-                                className="aspect-auto h-[95%] min-h-48 w-full min-w-0 shrink-0 self-stretch **:data-[slot=chart]:h-full">
-                                <BarChart
-                                    accessibilityLayer
-                                    data={chartData}
-                                    margin={{
-                                        top: 44,
-                                        right: 20,
-                                        left: 4,
-                                        bottom: 8,
-                                    }}>
-                                    <CartesianGrid vertical={false} />
-                                    <XAxis
-                                        dataKey="month"
-                                        tickLine={false}
-                                        axisLine={false}
-                                        tick={STACKED_AXIS_TICK}
-                                        tickMargin={8}
-                                    />
-                                    <YAxis
-                                        domain={[0, yAxisDomainUpper]}
-                                        tickLine={false}
-                                        axisLine={false}
-                                        width={yAxisW}
-                                        tick={STACKED_AXIS_TICK}
-                                        tickFormatter={(v) =>
-                                            typeof v === "number"
-                                                ? copy.formatValue(Math.ceil(v))
-                                                : String(v)
-                                        }
-                                    />
-                                    <ChartTooltip
-                                        content={<ChartTooltipContent />}
-                                    />
-                                    {chartWorkers.map((w, i) => (
-                                        <Bar
-                                            key={w.id}
-                                            dataKey={workerSeriesKey(w.id)}
-                                            stackId={rechartsStackId}
-                                            isAnimationActive
-                                            animationDuration={300}
-                                            animationEasing="ease-in-out"
-                                            fill={`var(--color-${workerSeriesKey(w.id)})`}
-                                            radius={
-                                                i === chartWorkers.length - 1
-                                                    ? [4, 4, 0, 0]
-                                                    : [0, 0, 0, 0]
-                                            }
-                                        />
-                                    ))}
-                                    <StackedBarMonthTotalLabels
-                                        data={chartData}
-                                        formatValue={copy.formatValue}
-                                    />
-                                </BarChart>
-                            </ChartContainer>
+                            <StackedBarChartPanel
+                                chartConfig={chartConfig}
+                                chartData={chartData}
+                                yAxisDomainUpper={yAxisDomainUpper}
+                                yAxisWidth={yAxisW}
+                                tickFormatter={(v) =>
+                                    copy.formatValue(Math.ceil(v))
+                                }
+                                formatMonthTotal={copy.formatValue}
+                                barLayers={
+                                    <>
+                                        {chartWorkers.map((w, i) => (
+                                            <Bar
+                                                key={w.id}
+                                                dataKey={workerSeriesKey(w.id)}
+                                                stackId={rechartsStackId}
+                                                isAnimationActive
+                                                animationDuration={300}
+                                                animationEasing="ease-in-out"
+                                                fill={`var(--color-${workerSeriesKey(w.id)})`}
+                                                radius={
+                                                    i ===
+                                                    chartWorkers.length - 1
+                                                        ? [4, 4, 0, 0]
+                                                        : [0, 0, 0, 0]
+                                                }
+                                            />
+                                        ))}
+                                    </>
+                                }
+                            />
                         )}
                     </div>
                 </div>
