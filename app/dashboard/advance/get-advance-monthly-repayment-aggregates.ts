@@ -5,15 +5,17 @@ import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
 import { advanceTable } from "@/db/tables/advanceTable";
 import { employmentTable } from "@/db/tables/employmentTable";
 import { workerTable } from "@/db/tables/workerTable";
+import {
+    dashboardYearWindow,
+    yearMonthSqlFromColumn,
+} from "@/app/dashboard/_shared/dashboard-year-window";
 import type { MonthlyWorkerAmountAggregatesPayload } from "@/types/monthly-worker-amount-aggregates";
 
 export async function getAdvanceMonthlyRepaymentAggregates(): Promise<MonthlyWorkerAmountAggregatesPayload> {
-    const maxYear = new Date().getFullYear();
-    const minYear = maxYear - 4;
-    const yearOptions = Array.from({ length: 5 }, (_, i) => maxYear - i);
-
-    const yearExpr = sql<number>`extract(year from ${advanceTable.repaymentDate})::int`;
-    const monthExpr = sql<number>`extract(month from ${advanceTable.repaymentDate})::int`;
+    const { maxYear, minYear, yearOptions } = dashboardYearWindow();
+    const { yearExpr, monthExpr } = yearMonthSqlFromColumn(
+        advanceTable.repaymentDate,
+    );
 
     const raw = await db
         .select({
