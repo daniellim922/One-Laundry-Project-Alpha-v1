@@ -72,6 +72,45 @@ import {
 } from "@/types/status";
 import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 import { createWorker, updateWorker } from "./actions";
+import { SegmentedTwoChoiceField } from "./segmented-two-choice-field";
+
+const EMPLOYMENT_TYPE_SEGMENT_OPTIONS = [
+    {
+        value: "Full Time" as const,
+        label: "Full Time",
+        activeClassName:
+            "border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/50",
+        inactiveHoverClassName:
+            "hover:border-emerald-300 hover:bg-emerald-50/50 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10",
+    },
+    {
+        value: "Part Time" as const,
+        label: "Part Time",
+        activeClassName:
+            "border-sky-500 bg-sky-50 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-500/50",
+        inactiveHoverClassName:
+            "hover:border-sky-300 hover:bg-sky-50/50 dark:hover:border-sky-500/30 dark:hover:bg-sky-500/10",
+    },
+] as const;
+
+const EMPLOYMENT_ARRANGEMENT_SEGMENT_OPTIONS = [
+    {
+        value: "Foreign Worker" as const,
+        label: "Foreign Worker",
+        activeClassName:
+            "border-blue-500 bg-blue-50 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/50",
+        inactiveHoverClassName:
+            "hover:border-blue-300 hover:bg-blue-50/50 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10",
+    },
+    {
+        value: "Local Worker" as const,
+        label: "Local Worker",
+        activeClassName:
+            "border-amber-500 bg-amber-50 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/50",
+        inactiveHoverClassName:
+            "hover:border-amber-300 hover:bg-amber-50/50 dark:hover:border-amber-500/30 dark:hover:bg-amber-500/10",
+    },
+] as const;
 
 function optionalNumberString(n: number | null | undefined): string {
     if (n == null || Number.isNaN(n)) return "";
@@ -548,141 +587,25 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-2">
-                            <Controller
+                            <SegmentedTwoChoiceField
+                                control={form.control}
                                 name="employmentType"
-                                control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <Field
-                                        data-invalid={fieldState.invalid}
-                                        className="space-y-2">
-                                        <FieldLabel>
-                                            <span className="flex items-center gap-2">
-                                                <Briefcase className="size-4" />
-                                                Employment Type
-                                            </span>
-                                        </FieldLabel>
-                                        <div
-                                            role="group"
-                                            aria-label="Employment type"
-                                            className="flex gap-2">
-                                            <button
-                                                type="button"
-                                                disabled={disabled}
-                                                aria-pressed={
-                                                    field.value === "Full Time"
-                                                }
-                                                onClick={() =>
-                                                    field.onChange("Full Time")
-                                                }
-                                                className={cn(
-                                                    "flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors",
-                                                    field.value === "Full Time"
-                                                        ? "border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/50"
-                                                        : "border-input bg-muted/50 text-muted-foreground hover:border-emerald-300 hover:bg-emerald-50/50 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10",
-                                                    disabled &&
-                                                        "cursor-not-allowed opacity-50",
-                                                )}>
-                                                Full Time
-                                            </button>
-                                            <button
-                                                type="button"
-                                                disabled={disabled}
-                                                aria-pressed={
-                                                    field.value === "Part Time"
-                                                }
-                                                onClick={() =>
-                                                    field.onChange("Part Time")
-                                                }
-                                                className={cn(
-                                                    "flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors",
-                                                    field.value === "Part Time"
-                                                        ? "border-sky-500 bg-sky-50 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300 dark:border-sky-500/50"
-                                                        : "border-input bg-muted/50 text-muted-foreground hover:border-sky-300 hover:bg-sky-50/50 dark:hover:border-sky-500/30 dark:hover:bg-sky-500/10",
-                                                    disabled &&
-                                                        "cursor-not-allowed opacity-50",
-                                                )}>
-                                                Part Time
-                                            </button>
-                                        </div>
-                                        {fieldState.invalid && (
-                                            <FieldError
-                                                errors={[fieldState.error]}
-                                            />
-                                        )}
-                                    </Field>
-                                )}
+                                label="Employment Type"
+                                icon={<Briefcase className="size-4" />}
+                                disabled={disabled}
+                                options={EMPLOYMENT_TYPE_SEGMENT_OPTIONS}
+                                ariaLabel="Employment type"
                             />
-                            <Controller
-                                name="employmentArrangement"
+                            <SegmentedTwoChoiceField
                                 control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <Field
-                                        data-invalid={fieldState.invalid}
-                                        className="space-y-2">
-                                        <FieldLabel>
-                                            <span className="flex items-center gap-2">
-                                                <Users className="size-4" />
-                                                Employment Arrangement
-                                            </span>
-                                        </FieldLabel>
-                                        <div
-                                            role="group"
-                                            aria-label="Employment arrangement"
-                                            className="flex gap-2">
-                                            <button
-                                                type="button"
-                                                disabled={disabled}
-                                                aria-pressed={
-                                                    field.value ===
-                                                    "Foreign Worker"
-                                                }
-                                                onClick={() =>
-                                                    field.onChange(
-                                                        "Foreign Worker",
-                                                    )
-                                                }
-                                                className={cn(
-                                                    "flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors",
-                                                    field.value ===
-                                                        "Foreign Worker"
-                                                        ? "border-blue-500 bg-blue-50 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/50"
-                                                        : "border-input bg-muted/50 text-muted-foreground hover:border-blue-300 hover:bg-blue-50/50 dark:hover:border-blue-500/30 dark:hover:bg-blue-500/10",
-                                                    disabled &&
-                                                        "cursor-not-allowed opacity-50",
-                                                )}>
-                                                Foreign Worker
-                                            </button>
-                                            <button
-                                                type="button"
-                                                disabled={disabled}
-                                                aria-pressed={
-                                                    field.value ===
-                                                    "Local Worker"
-                                                }
-                                                onClick={() =>
-                                                    field.onChange(
-                                                        "Local Worker",
-                                                    )
-                                                }
-                                                className={cn(
-                                                    "flex-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors",
-                                                    field.value ===
-                                                        "Local Worker"
-                                                        ? "border-amber-500 bg-amber-50 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/50"
-                                                        : "border-input bg-muted/50 text-muted-foreground hover:border-amber-300 hover:bg-amber-50/50 dark:hover:border-amber-500/30 dark:hover:bg-amber-500/10",
-                                                    disabled &&
-                                                        "cursor-not-allowed opacity-50",
-                                                )}>
-                                                Local Worker
-                                            </button>
-                                        </div>
-                                        {fieldState.invalid && (
-                                            <FieldError
-                                                errors={[fieldState.error]}
-                                            />
-                                        )}
-                                    </Field>
-                                )}
+                                name="employmentArrangement"
+                                label="Employment Arrangement"
+                                icon={<Users className="size-4" />}
+                                disabled={disabled}
+                                options={
+                                    EMPLOYMENT_ARRANGEMENT_SEGMENT_OPTIONS
+                                }
+                                ariaLabel="Employment arrangement"
                             />
                         </div>
 

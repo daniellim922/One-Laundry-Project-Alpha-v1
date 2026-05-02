@@ -4,25 +4,14 @@ import { db } from "@/lib/db";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import {
     assertDraftPayrollVoucher,
+    normalizeEmploymentTypeForVoucher,
     persistDraftPayrollVoucherUpdate,
+    validatePayrollAndVoucherIds,
+    type VoucherMutationResult,
 } from "@/services/payroll/_shared/voucher-update-pipeline";
 import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll-voucher-values";
 
-export type UpdateVoucherDaysResult =
-    | {
-          success: true;
-          payrollId: string;
-          voucherId: string;
-      }
-    | {
-          success: false;
-          code:
-              | "VALIDATION_ERROR"
-              | "NOT_FOUND"
-              | "CONFLICT"
-              | "INTERNAL_ERROR";
-          error: string;
-      };
+export type UpdateVoucherDaysResult = VoucherMutationResult;
 
 export async function updateVoucherDays(input: {
     payrollId: string;
@@ -30,15 +19,15 @@ export async function updateVoucherDays(input: {
     restDays: number;
     publicHolidays: number;
 }): Promise<UpdateVoucherDaysResult> {
-    const { payrollId, voucherId, restDays, publicHolidays } = input;
-
-    if (!voucherId || !payrollId) {
-        return {
-            success: false,
-            code: "VALIDATION_ERROR",
-            error: "Missing voucherId or payrollId",
-        };
+    const identifiers = validatePayrollAndVoucherIds(
+        input.payrollId,
+        input.voucherId,
+    );
+    if (!identifiers.ok) {
+        return identifiers.result;
     }
+    const { payrollId, voucherId } = identifiers;
+    const { restDays, publicHolidays } = input;
     if (!Number.isFinite(restDays) || restDays < 0) {
         return {
             success: false,
@@ -94,10 +83,9 @@ export async function updateVoucherDays(input: {
 
     const voucherValues = buildDraftPayrollVoucherValues({
         employment: {
-            employmentType:
-                voucher.employmentType === "Part Time"
-                    ? "Part Time"
-                    : "Full Time",
+            employmentType: normalizeEmploymentTypeForVoucher(
+                voucher.employmentType,
+            ),
             employmentArrangement: "Local Worker",
             minimumWorkingHours,
             monthlyPay:

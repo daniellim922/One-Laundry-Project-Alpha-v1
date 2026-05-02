@@ -4,18 +4,17 @@ import { db } from "@/lib/db";
 import { employmentTable } from "@/db/tables/employmentTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { workerTable } from "@/db/tables/workerTable";
-import type {
-    TimesheetMonthlyHoursAggregateRow,
-    TimesheetMonthlyHoursAggregatesPayload,
-} from "@/types/timesheet-monthly-hours-aggregates";
+import {
+    dashboardYearWindow,
+    yearMonthSqlFromColumn,
+} from "@/app/dashboard/_shared/dashboard-year-window";
+import type { TimesheetMonthlyHoursAggregatesPayload } from "@/types/timesheet-monthly-hours-aggregates";
 
 export async function getTimesheetMonthlyHoursAggregates(): Promise<TimesheetMonthlyHoursAggregatesPayload> {
-    const maxYear = new Date().getFullYear();
-    const minYear = maxYear - 4;
-    const yearOptions = Array.from({ length: 5 }, (_, i) => maxYear - i);
-
-    const yearExpr = sql<number>`extract(year from ${timesheetTable.dateIn})::int`;
-    const monthExpr = sql<number>`extract(month from ${timesheetTable.dateIn})::int`;
+    const { maxYear, minYear, yearOptions } = dashboardYearWindow();
+    const { yearExpr, monthExpr } = yearMonthSqlFromColumn(
+        timesheetTable.dateIn,
+    );
 
     const raw = await db
         .select({

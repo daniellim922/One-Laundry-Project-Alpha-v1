@@ -5,7 +5,10 @@ import { employmentTable } from "@/db/tables/employmentTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import {
     assertDraftPayrollVoucher,
+    normalizeEmploymentTypeForVoucher,
     persistDraftPayrollVoucherUpdate,
+    validatePayrollAndVoucherIds,
+    type VoucherMutationResult,
 } from "@/services/payroll/_shared/voucher-update-pipeline";
 import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll-voucher-values";
 
@@ -15,21 +18,7 @@ export type VoucherPayRateField =
     | "restDayRate"
     | "minimumWorkingHours";
 
-export type UpdateVoucherPayRateResult =
-    | {
-          success: true;
-          payrollId: string;
-          voucherId: string;
-      }
-    | {
-          success: false;
-          code:
-              | "VALIDATION_ERROR"
-              | "NOT_FOUND"
-              | "CONFLICT"
-              | "INTERNAL_ERROR";
-          error: string;
-      };
+export type UpdateVoucherPayRateResult = VoucherMutationResult;
 
 export async function updateVoucherPayRate(input: {
     payrollId: string;
@@ -37,15 +26,15 @@ export async function updateVoucherPayRate(input: {
     field: VoucherPayRateField;
     value: number | null;
 }): Promise<UpdateVoucherPayRateResult> {
-    const { payrollId, voucherId, field, value } = input;
-
-    if (!voucherId || !payrollId) {
-        return {
-            success: false,
-            code: "VALIDATION_ERROR",
-            error: "Missing voucherId or payrollId",
-        };
+    const identifiers = validatePayrollAndVoucherIds(
+        input.payrollId,
+        input.voucherId,
+    );
+    if (!identifiers.ok) {
+        return identifiers.result;
     }
+    const { payrollId, voucherId } = identifiers;
+    const { field, value } = input;
     if (
         !["monthlyPay", "hourlyRate", "restDayRate", "minimumWorkingHours"].includes(
             field,
@@ -153,10 +142,9 @@ export async function updateVoucherPayRate(input: {
 
     const voucherValues = buildDraftPayrollVoucherValues({
         employment: {
-            employmentType:
-                voucher.employmentType === "Part Time"
-                    ? "Part Time"
-                    : "Full Time",
+            employmentType: normalizeEmploymentTypeForVoucher(
+                voucher.employmentType,
+            ),
             employmentArrangement: (voucher.employmentArrangement ??
                 "Local Worker") as Em["employmentArrangement"],
             minimumWorkingHours,

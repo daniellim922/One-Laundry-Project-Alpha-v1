@@ -6,14 +6,16 @@ import { payrollTable } from "@/db/tables/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { workerTable } from "@/db/tables/workerTable";
 import {
-    payrollDashboardYearWindow,
-    payrollPeriodEndYearMonthExtract,
-    settledPayrollOverlappingYearsWhere,
-} from "@/services/payroll/monthly-dashboard-aggregation";
+    dashboardYearWindow,
+    yearMonthSqlFromColumn,
+} from "@/app/dashboard/_shared/dashboard-year-window";
+import { settledPayrollOverlappingYearsWhere } from "@/services/payroll/monthly-dashboard-aggregation";
 
 export function payrollDashboardAggregateContext() {
-    const { maxYear, minYear, yearOptions } = payrollDashboardYearWindow();
-    const { yearExpr, monthExpr } = payrollPeriodEndYearMonthExtract();
+    const { maxYear, minYear, yearOptions } = dashboardYearWindow();
+    const { yearExpr, monthExpr } = yearMonthSqlFromColumn(
+        payrollTable.periodEnd,
+    );
     return { maxYear, minYear, yearOptions, yearExpr, monthExpr };
 }
 

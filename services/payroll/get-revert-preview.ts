@@ -5,6 +5,7 @@ import { payrollTable } from "@/db/tables/payrollTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { advanceTable } from "@/db/tables/advanceTable";
 import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
+import { advanceRepaymentInPayrollWindowWhere } from "@/services/payroll/_shared/advance-repayment-window";
 
 export type RevertPreviewTimesheetLine = {
     id: string;
@@ -110,13 +111,7 @@ export async function getPayrollRevertPreview(
             advanceRequestTable,
             eq(advanceTable.advanceRequestId, advanceRequestTable.id),
         )
-        .where(
-            and(
-                eq(advanceRequestTable.workerId, payroll.workerId),
-                gte(advanceTable.repaymentDate, payroll.periodStart),
-                lte(advanceTable.repaymentDate, payroll.periodEnd),
-            ),
-        );
+        .where(advanceRepaymentInPayrollWindowWhere(payroll));
 
     const installmentPaidInPeriod = advancesInPeriod
         .filter((advance) => advance.status === "Installment Paid")

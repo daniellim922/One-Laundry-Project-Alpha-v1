@@ -199,30 +199,33 @@ describe("Payroll selection panels", () => {
         expect(mocks.push).toHaveBeenCalledWith("/dashboard/payroll/all");
     });
 
-    it("shows settling then generating in the dialog when settling drafts", async () => {
+    it("disables the button and navigates after settling completes", async () => {
         const user = userEvent.setup();
         let resolveSettle!: (value: unknown) => void;
         const settlePromise = new Promise((resolve) => {
             resolveSettle = resolve;
         });
-        let resolveZip!: (value: { ok: true }) => void;
-        const zipPromise = new Promise<{ ok: true }>((resolve) => {
-            resolveZip = resolve;
-        });
         mocks.settleDraftPayrolls.mockImplementationOnce(() => settlePromise);
-        mocks.streamPayrollZipFromApi.mockImplementationOnce(() => zipPromise);
         mocks.fetchSettlementCandidates.mockResolvedValue([payrollRow]);
 
         render(<SettleDraftPayrollsPanel />);
 
         expect(await screen.findByText("Alice")).toBeTruthy();
-        const clickDone = user.click(
+        await user.click(
             screen.getByRole("button", { name: "Settle selected (1)" }),
         );
 
-        expect(
-            await screen.findByText("Settling payrolls…"),
-        ).toBeTruthy();
+        await waitFor(() => {
+            expect(mocks.settleDraftPayrolls).toHaveBeenCalledWith([
+                "payroll-1",
+            ]);
+        });
+
+        await waitFor(() => {
+            expect(
+                screen.getByRole("button", { name: "Settling..." }),
+            ).toBeTruthy();
+        });
 
         resolveSettle({
             success: true,
@@ -231,19 +234,9 @@ describe("Payroll selection panels", () => {
         });
 
         await waitFor(() => {
-            expect(
-                screen.getByText("Generating PDFs and building ZIP…"),
-            ).toBeTruthy();
+            expect(mocks.push).toHaveBeenCalledWith("/dashboard/payroll/all");
         });
-
-        resolveZip({ ok: true });
-        await clickDone;
-        await waitFor(() => {
-            expect(
-                screen.queryByRole("dialog", { name: "Preparing download" }),
-            ).toBeNull();
-        });
-        expect(mocks.push).toHaveBeenCalledWith("/dashboard/payroll/all");
+        expect(mocks.streamPayrollZipFromApi).not.toHaveBeenCalled();
     });
 
     it("shows determinate ZIP progress after stream progress events", async () => {
@@ -259,18 +252,14 @@ describe("Payroll selection panels", () => {
                 }) => void,
             ) =>
                 new Promise<{ ok: true }>((resolve) => {
-                    setTimeout(() => {
-                        onProgress({ type: "meta", n: 2 });
-                        setTimeout(() => {
-                            onProgress({
-                                type: "progress",
-                                i: 1,
-                                n: 2,
-                                workerName: "Alice",
-                            });
-                            setTimeout(() => resolve({ ok: true }), 0);
-                        }, 0);
-                    }, 0);
+                    onProgress({ type: "meta", n: 2 });
+                    onProgress({
+                        type: "progress",
+                        i: 1,
+                        n: 2,
+                        workerName: "Alice",
+                    });
+                    setTimeout(() => resolve({ ok: true }), 30);
                 }),
         );
         mocks.fetchPayrollDownloadSelection.mockResolvedValue([payrollRow]);
@@ -286,7 +275,7 @@ describe("Payroll selection panels", () => {
 
         await waitFor(() => {
             expect(
-                screen.getByText("1 of 2 files finished processing"),
+                screen.getByText(/1 of 2 files finished processing/),
             ).toBeTruthy();
         });
         await waitFor(() => {

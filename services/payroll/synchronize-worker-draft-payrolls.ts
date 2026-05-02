@@ -1,24 +1,22 @@
 import { and, eq, gte, lte } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
-import { advanceTable } from "@/db/tables/advanceTable";
 import { employmentTable } from "@/db/tables/employmentTable";
 import { payrollTable } from "@/db/tables/payrollTable";
-import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { workerTable } from "@/db/tables/workerTable";
 import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
-import { countPayrollPublicHolidays } from "@/services/payroll/public-holiday-payroll";
-import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll-voucher-values";
+import {
+    refreshDraftPayrollVoucher,
+    type DraftPayrollExecutor,
+} from "@/services/payroll/_shared/refresh-draft-payroll-voucher";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
-type PayrollSyncExecutor = Pick<typeof db, "select" | "update">;
 
 export type PayrollSyncResult = { success: true } | { error: string };
 
 async function synchronizeWorkerDraftPayrollsWithExecutor(
-    executor: PayrollSyncExecutor,
+    executor: DraftPayrollExecutor,
     input: {
         workerId: string;
     },
@@ -72,59 +70,19 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
                         lte(timesheetTable.dateOut, payroll.periodEnd),
                     ),
                 );
-            const totalHoursWorked = entryRows.reduce(
-                (sum, entry) => sum + Number(entry.hours),
-                0,
-            );
 
             const restDays = computeRestDaysForPayrollPeriod({
                 periodStart: payroll.periodStart,
                 periodEnd: payroll.periodEnd,
                 presentDateInKeys: entryRows.map((e) => e.dateIn),
             });
-            const publicHolidays = await countPayrollPublicHolidays(
-                {
-                    periodStart: payroll.periodStart,
-                    periodEnd: payroll.periodEnd,
-                    workedDateIns: entryRows.map((entry) => entry.dateIn),
-                },
-                executor,
-            );
 
-            const advanceRows = await executor
-                .select({
-                    amount: advanceTable.amount,
-                    status: advanceTable.status,
-                })
-                .from(advanceTable)
-                .innerJoin(
-                    advanceRequestTable,
-                    eq(advanceTable.advanceRequestId, advanceRequestTable.id),
-                )
-                .where(
-                    and(
-                        eq(advanceRequestTable.workerId, workerId),
-                        gte(advanceTable.repaymentDate, payroll.periodStart),
-                        lte(advanceTable.repaymentDate, payroll.periodEnd),
-                    ),
-                );
-            const advanceTotal = advanceRows
-                .filter((advance) => advance.status === "Installment Loan")
-                .reduce((sum, advance) => sum + advance.amount, 0);
-            const voucherValues = buildDraftPayrollVoucherValues({
+            await refreshDraftPayrollVoucher(executor, {
+                payroll,
                 employment,
-                totalHoursWorked,
                 restDays,
-                publicHolidays,
-                advanceTotal,
+                timesheetEntries: entryRows,
             });
-            await executor
-                .update(payrollVoucherTable)
-                .set({
-                    ...voucherValues,
-                    updatedAt: new Date(),
-                })
-                .where(eq(payrollVoucherTable.id, payroll.payrollVoucherId));
         }
 
         return { success: true };
@@ -147,7 +105,7 @@ export async function synchronizeWorkerDraftPayrollsInTx(
     },
 ): Promise<PayrollSyncResult> {
     return synchronizeWorkerDraftPayrollsWithExecutor(
-        tx as unknown as PayrollSyncExecutor,
+        tx as unknown as DraftPayrollExecutor,
         input,
     );
 }
