@@ -256,7 +256,7 @@ function AdvanceRequestReadOnlyBody({
                             <img
                                 src={managerSignature}
                                 alt=""
-                                className="max-h-28 max-w-full rounded-md border bg-white object-contain dark:bg-neutral-100"
+                                className="max-h-28 w-full rounded-md border bg-white object-contain dark:bg-neutral-100"
                             />
                         ) : (
                             <p className="text-muted-foreground text-sm">
@@ -278,7 +278,7 @@ function AdvanceRequestReadOnlyBody({
                             <img
                                 src={employeeSignature}
                                 alt=""
-                                className="max-h-28 max-w-full rounded-md border bg-white object-contain dark:bg-neutral-100"
+                                className="max-h-28 w-full rounded-md border bg-white object-contain dark:bg-neutral-100"
                             />
                         ) : (
                             <p className="text-muted-foreground text-sm">
