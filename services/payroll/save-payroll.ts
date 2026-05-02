@@ -91,35 +91,34 @@ function isPayrollOverlapConstraintError(error: unknown): boolean {
     return dbError.constraint === PAYROLL_PERIOD_OVERLAP_CONSTRAINT;
 }
 
-async function recordPayrollCreationWorkflowCompletion() {
-    try {
-        await recordGuidedMonthlyWorkflowStepCompletion({
-            stepId: "payroll_creation",
-        });
-    } catch (error) {
-        console.error(
-            "Failed to record guided monthly workflow completion for payroll creation",
-            error,
-        );
-    }
+type DraftVoucherInputsExecutor = Pick<typeof db, "select">;
+
+async function fetchWorkerWithEmployment(workerId: string) {
+    const [row] = await db
+        .select({
+            worker: workerTable,
+            employment: employmentTable,
+        })
+        .from(workerTable)
+        .innerJoin(
+            employmentTable,
+            eq(workerTable.employmentId, employmentTable.id),
+        )
+        .where(eq(workerTable.id, workerId))
+        .limit(1);
+    return row ?? null;
 }
 
-async function createPayrollForWorkerInExecutor(
-    executor: CreatePayrollExecutor,
+async function computeDraftVoucherInputs(
+    executor: DraftVoucherInputsExecutor,
     input: {
         workerId: string;
-        employment: typeof employmentTable.$inferSelect;
         periodStart: string;
         periodEnd: string;
-        payrollDate: string;
+        employment: typeof employmentTable.$inferSelect;
     },
 ) {
-    const { workerId, employment, periodStart, periodEnd, payrollDate } = input;
-    const voucherYear = Number.parseInt(payrollDate.slice(0, 4), 10);
-
-    if (Number.isNaN(voucherYear)) {
-        throw new Error(`Invalid payroll date for voucher numbering: ${payrollDate}`);
-    }
+    const { workerId, periodStart, periodEnd, employment } = input;
 
     const entries = await executor
         .select()
@@ -157,12 +156,51 @@ async function createPayrollForWorkerInExecutor(
     const advanceTotal = advances
         .filter((advance) => advance.status === "Installment Loan")
         .reduce((sum, advance) => sum + advance.amount, 0);
-    const voucherValues = buildDraftPayrollVoucherValues({
+
+    return buildDraftPayrollVoucherValues({
         employment,
         totalHoursWorked,
         restDays,
         publicHolidays,
         advanceTotal,
+    });
+}
+
+async function recordPayrollCreationWorkflowCompletion() {
+    try {
+        await recordGuidedMonthlyWorkflowStepCompletion({
+            stepId: "payroll_creation",
+        });
+    } catch (error) {
+        console.error(
+            "Failed to record guided monthly workflow completion for payroll creation",
+            error,
+        );
+    }
+}
+
+async function createPayrollForWorkerInExecutor(
+    executor: CreatePayrollExecutor,
+    input: {
+        workerId: string;
+        employment: typeof employmentTable.$inferSelect;
+        periodStart: string;
+        periodEnd: string;
+        payrollDate: string;
+    },
+) {
+    const { workerId, employment, periodStart, periodEnd, payrollDate } = input;
+    const voucherYear = Number.parseInt(payrollDate.slice(0, 4), 10);
+
+    if (Number.isNaN(voucherYear)) {
+        throw new Error(`Invalid payroll date for voucher numbering: ${payrollDate}`);
+    }
+
+    const voucherValues = await computeDraftVoucherInputs(executor, {
+        workerId,
+        periodStart,
+        periodEnd,
+        employment,
     });
     const [voucher] = await executor
         .insert(payrollVoucherTable)
@@ -210,18 +248,7 @@ export async function createPayrollRecord(input: {
         return { error: rangeValidation.error };
     }
 
-    const [row] = await db
-        .select({
-            worker: workerTable,
-            employment: employmentTable,
-        })
-        .from(workerTable)
-        .innerJoin(
-            employmentTable,
-            eq(workerTable.employmentId, employmentTable.id),
-        )
-        .where(eq(workerTable.id, workerId))
-        .limit(1);
+    const row = await fetchWorkerWithEmployment(workerId);
 
     if (!row) {
         return { error: "Worker not found" };
@@ -306,18 +333,7 @@ export async function createPayrollRecords(input: {
     const conflicts: PayrollPeriodConflict[] = [];
 
     for (const workerId of uniqueWorkerIds) {
-        const [row] = await db
-            .select({
-                worker: workerTable,
-                employment: employmentTable,
-            })
-            .from(workerTable)
-            .innerJoin(
-                employmentTable,
-                eq(workerTable.employmentId, employmentTable.id),
-            )
-            .where(eq(workerTable.id, workerId))
-            .limit(1);
+        const row = await fetchWorkerWithEmployment(workerId);
 
         if (!row) continue;
 
@@ -412,18 +428,7 @@ export async function updatePayrollRecord(input: {
         return { error: "Only Draft payrolls can be edited" };
     }
 
-    const [row] = await db
-        .select({
-            worker: workerTable,
-            employment: employmentTable,
-        })
-        .from(workerTable)
-        .innerJoin(
-            employmentTable,
-            eq(workerTable.employmentId, employmentTable.id),
-        )
-        .where(eq(workerTable.id, existing.workerId))
-        .limit(1);
+    const row = await fetchWorkerWithEmployment(existing.workerId);
 
     if (!row) return { error: "Worker not found" };
 
@@ -437,42 +442,11 @@ export async function updatePayrollRecord(input: {
         return buildPayrollOverlapErrorResult(preConflicts);
     }
 
-    const entries = await db
-        .select()
-        .from(timesheetTable)
-        .where(
-            and(
-                eq(timesheetTable.workerId, existing.workerId),
-                gte(timesheetTable.dateIn, periodStart),
-                lte(timesheetTable.dateOut, periodEnd),
-            ),
-        );
-
-    const totalHoursWorked = entries.reduce((sum, e) => sum + Number(e.hours), 0);
-    const restDays = computeRestDaysForPayrollPeriod({
+    const voucherValues = await computeDraftVoucherInputs(db, {
+        workerId: existing.workerId,
         periodStart,
         periodEnd,
-        presentDateInKeys: entries.map((e) => e.dateIn),
-    });
-    const publicHolidays = await countPayrollPublicHolidays({
-        periodStart,
-        periodEnd,
-        workedDateIns: entries.map((entry) => entry.dateIn),
-    });
-    const advances = await getAdvancesForPayrollPeriod(
-        existing.workerId,
-        periodStart,
-        periodEnd,
-    );
-    const advanceTotal = advances
-        .filter((a) => a.status === "Installment Loan")
-        .reduce((sum, a) => sum + a.amount, 0);
-    const voucherValues = buildDraftPayrollVoucherValues({
         employment: row.employment,
-        totalHoursWorked,
-        restDays,
-        publicHolidays,
-        advanceTotal,
     });
 
     try {

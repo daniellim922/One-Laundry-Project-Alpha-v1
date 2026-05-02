@@ -1,11 +1,8 @@
 import { and, eq, gte, lte } from "drizzle-orm";
 
 import { db } from "@/lib/db";
-import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
-import { advanceTable } from "@/db/tables/advanceTable";
 import { employmentTable } from "@/db/tables/employmentTable";
 import { payrollTable } from "@/db/tables/payrollTable";
-import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { workerTable } from "@/db/tables/workerTable";
 import {
@@ -13,16 +10,12 @@ import {
     countSundaysInPeriod,
     restDaysFromMissingDateCount,
 } from "@/utils/payroll/missing-timesheet-dates";
-import { countPayrollPublicHolidays } from "@/services/payroll/public-holiday-payroll";
-import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll-voucher-values";
+import {
+    refreshDraftPayrollVoucher,
+    type DraftPayrollExecutor,
+} from "@/services/payroll/_shared/refresh-draft-payroll-voucher";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
-type DraftPayrollRefreshExecutor = Pick<typeof db, "select" | "update">;
-
-type DraftPayrollRow = Pick<
-    typeof payrollTable.$inferSelect,
-    "id" | "workerId" | "payrollVoucherId" | "periodStart" | "periodEnd"
->;
 
 type DraftPayrollRefreshResult =
     | { success: true; affectedPayrollIds: string[] }
@@ -36,7 +29,7 @@ function yearRange(year: number) {
 }
 
 async function refreshAffectedDraftPayrollsForPublicHolidayYearWithExecutor(
-    executor: DraftPayrollRefreshExecutor,
+    executor: DraftPayrollExecutor,
     input: {
         year: number;
     },
@@ -90,12 +83,45 @@ async function refreshAffectedDraftPayrollsForPublicHolidayYearWithExecutor(
                 employmentByWorkerId.set(payroll.workerId, employment);
             }
 
-            await refreshDraftPayrollVoucher(executor, payroll, employment);
+            const entryRows = await executor
+                .select({
+                    hours: timesheetTable.hours,
+                    dateIn: timesheetTable.dateIn,
+                })
+                .from(timesheetTable)
+                .where(
+                    and(
+                        eq(timesheetTable.workerId, payroll.workerId),
+                        gte(timesheetTable.dateIn, payroll.periodStart),
+                        lte(timesheetTable.dateOut, payroll.periodEnd),
+                    ),
+                );
+
+            const missingCount = countMissingTimesheetDateIns({
+                periodStart: payroll.periodStart,
+                periodEnd: payroll.periodEnd,
+                presentDateInKeys: entryRows.map((entry) => entry.dateIn),
+            });
+            const sundayBudget = countSundaysInPeriod({
+                periodStart: payroll.periodStart,
+                periodEnd: payroll.periodEnd,
+            });
+            const restDays = restDaysFromMissingDateCount(
+                missingCount,
+                sundayBudget,
+            );
+
+            await refreshDraftPayrollVoucher(executor, {
+                payroll,
+                employment,
+                restDays,
+                timesheetEntries: entryRows,
+            });
         }
 
         return {
             success: true,
-            affectedPayrollIds: drafts.map((payroll) => payroll.id),
+            affectedPayrollIds: drafts.map((p) => p.id),
         };
     } catch (error) {
         console.error(
@@ -104,83 +130,6 @@ async function refreshAffectedDraftPayrollsForPublicHolidayYearWithExecutor(
         );
         return { error: "Failed to refresh affected Draft payrolls" };
     }
-}
-
-async function refreshDraftPayrollVoucher(
-    executor: DraftPayrollRefreshExecutor,
-    payroll: DraftPayrollRow,
-    employment: typeof employmentTable.$inferSelect,
-) {
-    const entryRows = await executor
-        .select({
-            hours: timesheetTable.hours,
-            dateIn: timesheetTable.dateIn,
-        })
-        .from(timesheetTable)
-        .where(
-            and(
-                eq(timesheetTable.workerId, payroll.workerId),
-                gte(timesheetTable.dateIn, payroll.periodStart),
-                lte(timesheetTable.dateOut, payroll.periodEnd),
-            ),
-        );
-
-    const totalHoursWorked = entryRows.reduce(
-        (sum, entry) => sum + Number(entry.hours),
-        0,
-    );
-    const missingCount = countMissingTimesheetDateIns({
-        periodStart: payroll.periodStart,
-        periodEnd: payroll.periodEnd,
-        presentDateInKeys: entryRows.map((entry) => entry.dateIn),
-    });
-    const sundayBudget = countSundaysInPeriod({
-        periodStart: payroll.periodStart,
-        periodEnd: payroll.periodEnd,
-    });
-    const restDays = restDaysFromMissingDateCount(missingCount, sundayBudget);
-    const publicHolidays = await countPayrollPublicHolidays(
-        {
-            periodStart: payroll.periodStart,
-            periodEnd: payroll.periodEnd,
-            workedDateIns: entryRows.map((entry) => entry.dateIn),
-        },
-        executor,
-    );
-    const advanceRows = await executor
-        .select({
-            amount: advanceTable.amount,
-            status: advanceTable.status,
-        })
-        .from(advanceTable)
-        .innerJoin(
-            advanceRequestTable,
-            eq(advanceTable.advanceRequestId, advanceRequestTable.id),
-        )
-        .where(
-            and(
-                eq(advanceRequestTable.workerId, payroll.workerId),
-                gte(advanceTable.repaymentDate, payroll.periodStart),
-                lte(advanceTable.repaymentDate, payroll.periodEnd),
-            ),
-        );
-    const advanceTotal = advanceRows
-        .filter((advance) => advance.status === "Installment Loan")
-        .reduce((sum, advance) => sum + advance.amount, 0);
-    const voucherValues = buildDraftPayrollVoucherValues({
-        employment,
-        totalHoursWorked,
-        restDays,
-        publicHolidays,
-        advanceTotal,
-    });
-    await executor
-        .update(payrollVoucherTable)
-        .set({
-            ...voucherValues,
-            updatedAt: new Date(),
-        })
-        .where(eq(payrollVoucherTable.id, payroll.payrollVoucherId));
 }
 
 export async function refreshAffectedDraftPayrollsForPublicHolidayYear(input: {
@@ -199,7 +148,7 @@ export async function refreshAffectedDraftPayrollsForPublicHolidayYearInTx(
     },
 ): Promise<DraftPayrollRefreshResult> {
     return refreshAffectedDraftPayrollsForPublicHolidayYearWithExecutor(
-        tx as unknown as DraftPayrollRefreshExecutor,
+        tx as unknown as DraftPayrollExecutor,
         input,
     );
 }

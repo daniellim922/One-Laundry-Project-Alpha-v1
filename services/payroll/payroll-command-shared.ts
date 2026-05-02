@@ -5,6 +5,7 @@ import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
 import { advanceTable } from "@/db/tables/advanceTable";
 import { payrollTable } from "@/db/tables/payrollTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
+import { advanceRepaymentInPayrollWindowWhere } from "@/services/payroll/_shared/advance-repayment-window";
 
 export type PayrollCommandTransaction = Parameters<
     Parameters<typeof db.transaction>[0]
@@ -21,7 +22,7 @@ type RequestAdvanceRow = {
     status: "Installment Loan" | "Installment Paid";
 };
 
-type PayrollTarget = {
+export type PayrollTarget = {
     id: string;
     workerId: string;
     periodStart: string;
@@ -88,6 +89,42 @@ async function updateAdvanceRequestStatuses(
     }
 }
 
+async function syncAdvanceRequestStatusesFromAdvances(
+    tx: PayrollCommandTransaction,
+    advances: Array<{ advanceRequestId: string }>,
+    now: Date,
+) {
+    const requestIds = Array.from(
+        new Set(advances.map((advance) => advance.advanceRequestId)),
+    );
+    await updateAdvanceRequestStatuses(tx, requestIds, now);
+}
+
+async function updateTimesheetsInPayrollPeriod(
+    tx: PayrollCommandTransaction,
+    payroll: PayrollTarget,
+    args: {
+        fromStatus: "Timesheet Paid" | "Timesheet Unpaid";
+        toStatus: "Timesheet Paid" | "Timesheet Unpaid";
+        now: Date;
+    },
+) {
+    await tx
+        .update(timesheetTable)
+        .set({
+            status: args.toStatus,
+            updatedAt: args.now,
+        })
+        .where(
+            and(
+                eq(timesheetTable.workerId, payroll.workerId),
+                gte(timesheetTable.dateIn, payroll.periodStart),
+                lte(timesheetTable.dateOut, payroll.periodEnd),
+                eq(timesheetTable.status, args.fromStatus),
+            ),
+        );
+}
+
 export async function settlePayrollInTx(
     tx: PayrollCommandTransaction,
     payroll: PayrollTarget,
@@ -112,13 +149,7 @@ export async function settlePayrollInTx(
             advanceRequestTable,
             eq(advanceTable.advanceRequestId, advanceRequestTable.id),
         )
-        .where(
-            and(
-                eq(advanceRequestTable.workerId, payroll.workerId),
-                gte(advanceTable.repaymentDate, payroll.periodStart),
-                lte(advanceTable.repaymentDate, payroll.periodEnd),
-            ),
-        );
+        .where(advanceRepaymentInPayrollWindowWhere(payroll));
 
     const installmentLoanIds = advancesInPeriod
         .filter((advance) => advance.status === "Installment Loan")
@@ -134,26 +165,13 @@ export async function settlePayrollInTx(
             .where(inArray(advanceTable.id, installmentLoanIds));
     }
 
-    const requestIds = Array.from(
-        new Set(advancesInPeriod.map((advance) => advance.advanceRequestId)),
-    );
+    await syncAdvanceRequestStatusesFromAdvances(tx, advancesInPeriod, now);
 
-    await updateAdvanceRequestStatuses(tx, requestIds, now);
-
-    await tx
-        .update(timesheetTable)
-        .set({
-            status: "Timesheet Paid",
-            updatedAt: now,
-        })
-        .where(
-            and(
-                eq(timesheetTable.workerId, payroll.workerId),
-                gte(timesheetTable.dateIn, payroll.periodStart),
-                lte(timesheetTable.dateOut, payroll.periodEnd),
-                eq(timesheetTable.status, "Timesheet Unpaid"),
-            ),
-        );
+    await updateTimesheetsInPayrollPeriod(tx, payroll, {
+        fromStatus: "Timesheet Unpaid",
+        toStatus: "Timesheet Paid",
+        now,
+    });
 }
 
 export async function revertPayrollInTx(
@@ -180,13 +198,7 @@ export async function revertPayrollInTx(
             advanceRequestTable,
             eq(advanceTable.advanceRequestId, advanceRequestTable.id),
         )
-        .where(
-            and(
-                eq(advanceRequestTable.workerId, payroll.workerId),
-                gte(advanceTable.repaymentDate, payroll.periodStart),
-                lte(advanceTable.repaymentDate, payroll.periodEnd),
-            ),
-        );
+        .where(advanceRepaymentInPayrollWindowWhere(payroll));
 
     const installmentPaidIds = advancesInPeriod
         .filter((advance) => advance.status === "Installment Paid")
@@ -202,24 +214,11 @@ export async function revertPayrollInTx(
             .where(inArray(advanceTable.id, installmentPaidIds));
     }
 
-    const requestIds = Array.from(
-        new Set(advancesInPeriod.map((advance) => advance.advanceRequestId)),
-    );
+    await syncAdvanceRequestStatusesFromAdvances(tx, advancesInPeriod, now);
 
-    await updateAdvanceRequestStatuses(tx, requestIds, now);
-
-    await tx
-        .update(timesheetTable)
-        .set({
-            status: "Timesheet Unpaid",
-            updatedAt: now,
-        })
-        .where(
-            and(
-                eq(timesheetTable.workerId, payroll.workerId),
-                gte(timesheetTable.dateIn, payroll.periodStart),
-                lte(timesheetTable.dateOut, payroll.periodEnd),
-                eq(timesheetTable.status, "Timesheet Paid"),
-            ),
-        );
+    await updateTimesheetsInPayrollPeriod(tx, payroll, {
+        fromStatus: "Timesheet Paid",
+        toStatus: "Timesheet Unpaid",
+        now,
+    });
 }
