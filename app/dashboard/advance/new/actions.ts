@@ -6,6 +6,7 @@ import { requireCurrentDashboardUser } from "@/app/dashboard/_shared/auth";
 import {
     createAdvanceRequestRecord,
     type SaveAdvanceRequestInput,
+    withAdvanceSignatureDates,
 } from "@/services/advance/save-advance-request";
 
 type ActionResult = { success: true } | { success: false; error: string };
@@ -17,7 +18,9 @@ export async function createAdvanceRequest(
 ): Promise<ActionResult> {
     await requireCurrentDashboardUser();
 
-    const result = await createAdvanceRequestRecord(input);
+    const result = await createAdvanceRequestRecord(
+        withAdvanceSignatureDates(input),
+    );
     if (!result.success) {
         return result;
     }

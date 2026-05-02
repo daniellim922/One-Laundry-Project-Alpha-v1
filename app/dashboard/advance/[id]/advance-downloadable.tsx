@@ -140,7 +140,14 @@ export function AdvanceDownloadVoucher({
                 receivedLabel="Advance received"
                 approverName="Alvis Ong Thai Ying"
                 receiverName={request.workerName}
-                approvedDate={formatDate(request.requestDate)}
+                approvedDate={formatDate(
+                    detail.managerSignatureDate ?? request.requestDate,
+                )}
+                receivedDate={formatDate(
+                    detail.employeeSignatureDate ?? request.requestDate,
+                )}
+                approverSignatureDataUrl={detail.managerSignature}
+                receiverSignatureDataUrl={detail.employeeSignature}
             />
         </DownloadDocumentShell>
     );

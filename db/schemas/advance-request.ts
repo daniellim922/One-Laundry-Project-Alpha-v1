@@ -16,6 +16,16 @@ const installmentRowSchema = createInsertSchema(advanceTable, {
     status: true,
 });
 
+const signatureDataUrlSchema = z
+    .string()
+    .trim()
+    .refine(
+        (s) =>
+            s.length === 0 ||
+            s.startsWith("data:image/png;base64,"),
+        "Signature must be a PNG data URL",
+    );
+
 const requestCore = createInsertSchema(advanceRequestTable, {
     workerId: z.string().min(1, "Select an employee"),
     requestDate: z
@@ -40,6 +50,8 @@ export const advanceRequestFormSchema = z
         requestDate: requestCore.shape.requestDate,
         amount: requestCore.shape.amountRequested,
         purpose: requestCore.shape.purpose,
+        employeeSignature: signatureDataUrlSchema,
+        managerSignature: signatureDataUrlSchema,
         installmentAmounts: z.array(installmentRowSchema),
     })
     .superRefine((values, ctx) => {
@@ -139,6 +151,21 @@ export const advanceRequestFormSchema = z
                     message: `Total of installments ($${totalInstallments}) must equal amount requested ($${amountRequested})`,
                 });
             }
+        }
+
+        if (!values.employeeSignature?.trim()) {
+            ctx.addIssue({
+                code: "custom",
+                path: ["employeeSignature"],
+                message: "Employee signature is required",
+            });
+        }
+        if (!values.managerSignature?.trim()) {
+            ctx.addIssue({
+                code: "custom",
+                path: ["managerSignature"],
+                message: "Manager signature is required",
+            });
         }
     });
 

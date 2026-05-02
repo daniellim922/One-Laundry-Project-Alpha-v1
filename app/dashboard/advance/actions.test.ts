@@ -21,15 +21,21 @@ vi.mock("@/lib/supabase/server", () => ({
         mocks.createClient(...args),
 }));
 
-vi.mock("@/services/advance/save-advance-request", () => ({
-    createAdvanceRequestRecord: (...args: unknown[]) =>
-        mocks.createAdvanceRequestRecord(...args),
-    updateAdvanceRequestRecord: (...args: unknown[]) =>
-        mocks.updateAdvanceRequestRecord(...args),
-}));
+vi.mock("@/services/advance/save-advance-request", async (importOriginal) => {
+    const actual =
+        await importOriginal<typeof import("@/services/advance/save-advance-request")>();
+    return {
+        ...actual,
+        createAdvanceRequestRecord: (...args: unknown[]) =>
+            mocks.createAdvanceRequestRecord(...args),
+        updateAdvanceRequestRecord: (...args: unknown[]) =>
+            mocks.updateAdvanceRequestRecord(...args),
+    };
+});
 
 import { createAdvanceRequest } from "@/app/dashboard/advance/new/actions";
 import { updateAdvanceRequest } from "@/app/dashboard/advance/[id]/edit/actions";
+import { withAdvanceSignatureDates } from "@/services/advance/save-advance-request";
 
 const baseInput = {
     workerId: "worker-1",
@@ -71,7 +77,9 @@ describe("advance actions", () => {
             success: true,
         });
 
-        expect(mocks.createAdvanceRequestRecord).toHaveBeenCalledWith(baseInput);
+        expect(mocks.createAdvanceRequestRecord).toHaveBeenCalledWith(
+            withAdvanceSignatureDates(baseInput),
+        );
         expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/advance");
         expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/advance/all");
         expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/payroll");
@@ -99,7 +107,19 @@ describe("advance actions", () => {
             success: true,
         });
 
-        expect(mocks.updateAdvanceRequestRecord).toHaveBeenCalled();
+        expect(mocks.updateAdvanceRequestRecord).toHaveBeenCalledWith(
+            "advance-request-1",
+            withAdvanceSignatureDates({
+                ...baseInput,
+                installmentAmounts: [
+                    {
+                        amount: 700,
+                        repaymentDate: "2026-04-25",
+                        status: "Installment Loan" as const,
+                    },
+                ],
+            }),
+        );
         expect(mocks.revalidatePath).toHaveBeenCalledWith(
             "/dashboard/advance/advance-request-1",
         );

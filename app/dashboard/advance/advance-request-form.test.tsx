@@ -27,6 +27,10 @@ vi.mock("@/app/dashboard/advance/[id]/edit/actions", () => ({
         mocks.updateAdvanceRequest(...args),
 }));
 
+vi.mock("@/components/ui/signature-pad", () => ({
+    SignaturePad: () => null,
+}));
+
 import { AdvanceRequestForm } from "@/app/dashboard/advance/advance-request-form";
 import type { AdvanceRequestDetail } from "@/utils/advance/queries";
 

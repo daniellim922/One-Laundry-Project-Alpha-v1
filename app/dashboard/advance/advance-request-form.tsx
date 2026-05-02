@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/field";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { Input } from "@/components/ui/input";
+import { SignaturePad } from "@/components/ui/signature-pad";
 import {
     InputGroup,
     InputGroupAddon,
@@ -75,6 +76,8 @@ function detailToDefaultValues(detail: AdvanceRequestDetail): FormValues {
         requestDate: request.requestDate,
         amount: request.amountRequested,
         purpose: purpose ?? "",
+        employeeSignature: detail.employeeSignature ?? "",
+        managerSignature: detail.managerSignature ?? "",
         installmentAmounts:
             advances.length > 0
                 ? advances.map((a) => ({
@@ -97,7 +100,15 @@ function AdvanceRequestReadOnlyBody({
 }: {
     detail: AdvanceRequestDetail;
 }) {
-    const { request, advances, purpose } = detail;
+    const {
+        request,
+        advances,
+        purpose,
+        employeeSignature,
+        managerSignature,
+        employeeSignatureDate,
+        managerSignatureDate,
+    } = detail;
 
     return (
         <FieldGroup className="gap-6">
@@ -224,8 +235,62 @@ function AdvanceRequestReadOnlyBody({
                                 <TableCell />
                                 <TableCell />
                             </TableRow>
-                        </TableFooter>
-                    </Table>
+                    </TableFooter>
+                </Table>
+            </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader className="border-b pb-4">
+                    <CardTitle className="text-sm font-semibold uppercase tracking-wide">
+                        Signatures
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-6 pt-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                        <p className="text-muted-foreground text-sm font-medium leading-none">
+                            Manager
+                        </p>
+                        {managerSignature ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- data URL from stored signature
+                            <img
+                                src={managerSignature}
+                                alt=""
+                                className="max-h-28 max-w-full rounded-md border bg-white object-contain dark:bg-neutral-100"
+                            />
+                        ) : (
+                            <p className="text-muted-foreground text-sm">
+                                Not signed
+                            </p>
+                        )}
+                        {managerSignatureDate ? (
+                            <p className="text-muted-foreground text-xs">
+                                {`Signed ${formatEnGbDmyNumericFromCalendar(managerSignatureDate)}`}
+                            </p>
+                        ) : null}
+                    </div>
+                    <div className="space-y-2">
+                        <p className="text-muted-foreground text-sm font-medium leading-none">
+                            Employee
+                        </p>
+                        {employeeSignature ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- data URL from stored signature
+                            <img
+                                src={employeeSignature}
+                                alt=""
+                                className="max-h-28 max-w-full rounded-md border bg-white object-contain dark:bg-neutral-100"
+                            />
+                        ) : (
+                            <p className="text-muted-foreground text-sm">
+                                Not signed
+                            </p>
+                        )}
+                        {employeeSignatureDate ? (
+                            <p className="text-muted-foreground text-xs">
+                                {`Signed ${formatEnGbDmyNumericFromCalendar(employeeSignatureDate)}`}
+                            </p>
+                        ) : null}
+                    </div>
                 </CardContent>
             </Card>
         </FieldGroup>
@@ -261,6 +326,8 @@ function AdvanceRequestFormEditable({
                   requestDate: dateToLocalIsoYmd(),
                   amount: undefined as unknown as number,
                   purpose: "",
+                  employeeSignature: "",
+                  managerSignature: "",
                   installmentAmounts: [
                       {
                           amount: undefined,
@@ -296,6 +363,8 @@ function AdvanceRequestFormEditable({
                       requestDate: data.requestDate,
                       amount: data.amount,
                       purpose: data.purpose,
+                      employeeSignature: data.employeeSignature,
+                      managerSignature: data.managerSignature,
                       installmentAmounts: data.installmentAmounts,
                   })
                 : await createAdvanceRequest({
@@ -303,6 +372,8 @@ function AdvanceRequestFormEditable({
                       requestDate: data.requestDate,
                       amount: data.amount,
                       purpose: data.purpose,
+                      employeeSignature: data.employeeSignature,
+                      managerSignature: data.managerSignature,
                       installmentAmounts: data.installmentAmounts,
                   });
         setPending(false);
@@ -786,6 +857,62 @@ function AdvanceRequestFormEditable({
                     </CardContent>
                 </Card>
 
+                <Card>
+                    <CardHeader className="border-b pb-4">
+                        <CardTitle className="text-sm font-semibold uppercase tracking-wide">
+                            Signatures
+                        </CardTitle>
+                        <p className="text-muted-foreground text-sm">
+                            Manager and employee must sign before submitting.
+                        </p>
+                    </CardHeader>
+                    <CardContent className="grid gap-6 pt-4 sm:grid-cols-2">
+                        <Controller
+                            name="managerSignature"
+                            control={form.control}
+                            render={({ field, fieldState }) => (
+                                <Field
+                                    data-invalid={fieldState.invalid}
+                                    className="min-w-0 space-y-2">
+                                    <FieldLabel>Manager</FieldLabel>
+                                    <SignaturePad
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        disabled={pending}
+                                        aria-label="Manager signature"
+                                    />
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
+                                        />
+                                    )}
+                                </Field>
+                            )}
+                        />
+                        <Controller
+                            name="employeeSignature"
+                            control={form.control}
+                            render={({ field, fieldState }) => (
+                                <Field
+                                    data-invalid={fieldState.invalid}
+                                    className="min-w-0 space-y-2">
+                                    <FieldLabel>Employee</FieldLabel>
+                                    <SignaturePad
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        disabled={pending}
+                                        aria-label="Employee signature"
+                                    />
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
+                                        />
+                                    )}
+                                </Field>
+                            )}
+                        />
+                    </CardContent>
+                </Card>
             </FieldGroup>
 
             <div className="flex flex-col items-end gap-3">

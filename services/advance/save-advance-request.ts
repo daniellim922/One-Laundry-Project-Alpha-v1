@@ -34,6 +34,20 @@ export type SaveAdvanceRequestInput = {
     managerSignatureDate?: string;
 };
 
+/** Server actions: stamp signature dates from request date when a PNG data URL is present. */
+export function withAdvanceSignatureDates(
+    input: SaveAdvanceRequestInput,
+): SaveAdvanceRequestInput {
+    const req = input.requestDate;
+    const emp = input.employeeSignature?.trim();
+    const mgr = input.managerSignature?.trim();
+    return {
+        ...input,
+        employeeSignatureDate: emp ? req : undefined,
+        managerSignatureDate: mgr ? req : undefined,
+    };
+}
+
 type ParsedInstallment = {
     repaymentDate: string;
     amount: number;
