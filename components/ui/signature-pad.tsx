@@ -1,9 +1,12 @@
 "use client";
 
 import * as React from "react";
+import { Maximize2 } from "lucide-react";
 import SignatureCanvas from "react-signature-canvas";
 
 import { Button } from "@/components/ui/button";
+import { FullscreenSignatureDialog } from "@/components/ui/fullscreen-signature-dialog";
+import { signaturePadPenDefaults } from "@/components/ui/signature-pen-defaults";
 import { cn } from "@/lib/utils";
 
 export function SignaturePad({
@@ -19,6 +22,9 @@ export function SignaturePad({
     "aria-label"?: string;
     className?: string;
 }) {
+    const dialogTitle = (ariaLabel ?? "Signature").trim() || "Signature";
+    const [fullscreenOpen, setFullscreenOpen] = React.useState(false);
+
     const sigRef = React.useRef<SignatureCanvas>(null);
     const lastAppliedValueRef = React.useRef<string | null>(null);
 
@@ -51,6 +57,13 @@ export function SignaturePad({
         onChange("");
     }, [onChange]);
 
+    const handleFullscreenCommit = React.useCallback(
+        (dataUrl: string) => {
+            onChange(dataUrl);
+        },
+        [onChange],
+    );
+
     return (
         <div
             className={cn("space-y-1.5", className)}
@@ -63,24 +76,45 @@ export function SignaturePad({
                 )}>
                 <SignatureCanvas
                     ref={sigRef}
+                    {...signaturePadPenDefaults}
                     canvasProps={{
-                        className: "w-full h-[120px] touch-none",
+                        className: "w-full h-[160px] touch-none",
                         "aria-label": ariaLabel,
                     }}
                     onEnd={handleEnd}
-                    penColor="black"
                     clearOnResize={false}
                 />
             </div>
-            <Button
-                type="button"
-                variant="ghost"
-                size="sm"
+            <div className="flex flex-wrap items-center gap-2">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={disabled}
+                    onClick={handleClear}
+                    className="h-7 text-xs">
+                    Clear
+                </Button>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={disabled}
+                    onClick={() => setFullscreenOpen(true)}
+                    className="h-7 gap-1 text-xs"
+                    aria-label={`${dialogTitle} — sign fullscreen`}>
+                    <Maximize2 className="size-3.5 shrink-0" aria-hidden />
+                    Full screen
+                </Button>
+            </div>
+            <FullscreenSignatureDialog
+                open={fullscreenOpen}
+                onOpenChange={setFullscreenOpen}
+                title={dialogTitle}
+                initialValue={value}
                 disabled={disabled}
-                onClick={handleClear}
-                className="h-7 text-xs">
-                Clear
-            </Button>
+                onCommit={handleFullscreenCommit}
+            />
         </div>
     );
 }
