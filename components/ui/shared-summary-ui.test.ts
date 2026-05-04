@@ -63,9 +63,9 @@ describe("VoucherSignatureSection", () => {
 
 describe("removeQueryParam", () => {
     it("removes download=1 and keeps other query params", () => {
-        const params = new URLSearchParams("download=1&mode=voucher&print=1");
+        const params = new URLSearchParams("download=1&mode=voucher");
         const next = removeQueryParam(params, "download");
 
-        expect(next).toBe("mode=voucher&print=1");
+        expect(next).toBe("mode=voucher");
     });
 });

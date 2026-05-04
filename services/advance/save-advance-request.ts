@@ -13,7 +13,7 @@ import {
 } from "@/db/tables/advanceTable";
 
 type ActionResult =
-    | { success: true; id?: string }
+    | { success: true; id: string }
     | { success: false; error: string };
 
 type InstallmentStatus = "Installment Loan" | "Installment Paid";

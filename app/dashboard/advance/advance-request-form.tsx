@@ -358,26 +358,37 @@ function AdvanceRequestFormEditable({
         setError(null);
         setPending(true);
 
-        const result =
-            isEditMode && advanceRequestId
-                ? await updateAdvanceRequest(advanceRequestId, {
-                      workerId: data.workerId,
-                      requestDate: data.requestDate,
-                      amount: data.amount,
-                      purpose: data.purpose,
-                      employeeSignature: data.employeeSignature,
-                      managerSignature: data.managerSignature,
-                      installmentAmounts: data.installmentAmounts,
-                  })
-                : await createAdvanceRequest({
-                      workerId: data.workerId,
-                      requestDate: data.requestDate,
-                      amount: data.amount,
-                      purpose: data.purpose,
-                      employeeSignature: data.employeeSignature,
-                      managerSignature: data.managerSignature,
-                      installmentAmounts: data.installmentAmounts,
-                  });
+        if (isEditMode && advanceRequestId) {
+            const result = await updateAdvanceRequest(advanceRequestId, {
+                workerId: data.workerId,
+                requestDate: data.requestDate,
+                amount: data.amount,
+                purpose: data.purpose,
+                employeeSignature: data.employeeSignature,
+                managerSignature: data.managerSignature,
+                installmentAmounts: data.installmentAmounts,
+            });
+            setPending(false);
+
+            if (!result.success) {
+                setError(result.error);
+                return;
+            }
+
+            router.push(`/dashboard/advance/${advanceRequestId}`);
+            router.refresh();
+            return;
+        }
+
+        const result = await createAdvanceRequest({
+            workerId: data.workerId,
+            requestDate: data.requestDate,
+            amount: data.amount,
+            purpose: data.purpose,
+            employeeSignature: data.employeeSignature,
+            managerSignature: data.managerSignature,
+            installmentAmounts: data.installmentAmounts,
+        });
         setPending(false);
 
         if (!result.success) {
@@ -385,22 +396,16 @@ function AdvanceRequestFormEditable({
             return;
         }
 
-        if (!isEditMode && "id" in result) {
-            setGeneratingPdf(true);
-            try {
-                await generateAndUploadAdvancePdf(result.id);
-            } catch {
-                // PDF generation is best-effort; the advance is already saved
-            } finally {
-                setGeneratingPdf(false);
-            }
+        setGeneratingPdf(true);
+        try {
+            await generateAndUploadAdvancePdf(result.id);
+        } catch {
+            // PDF generation is best-effort; the advance is already saved
+        } finally {
+            setGeneratingPdf(false);
         }
 
-        router.push(
-            isEditMode
-                ? `/dashboard/advance/${advanceRequestId}`
-                : "/dashboard/advance/all",
-        );
+        router.push("/dashboard/advance/all");
         router.refresh();
     }
 
