@@ -3,6 +3,7 @@ import {
     uuid,
     timestamp,
     date,
+    text,
 } from "drizzle-orm/pg-core";
 import { workerTable } from "./workerTable";
 import { payrollVoucherTable } from "./payrollVoucherTable";
@@ -22,6 +23,8 @@ export const payrollTable = pgTable("payroll", {
     payrollVoucherId: uuid("payroll_voucher_id")
         .references(() => payrollVoucherTable.id)
         .notNull(),
+
+    pdfStoragePath: text("pdf_storage_path"),
 
     createdAt: timestamp("created_at", { withTimezone: false }).notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: false }).notNull(),

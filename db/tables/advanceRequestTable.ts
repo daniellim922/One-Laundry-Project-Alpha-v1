@@ -24,6 +24,8 @@ export const advanceRequestTable = pgTable("advance_request", {
     managerSignature: text("manager_signature"),
     managerSignatureDate: date("manager_signature_date"),
 
+    pdfStoragePath: text("pdf_storage_path"),
+
     createdAt: timestamp("created_at", { withTimezone: false })
         .notNull()
         .defaultNow(),
