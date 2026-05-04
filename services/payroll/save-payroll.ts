@@ -35,6 +35,11 @@ export type CreatePayrollResult =
     | { error: string }
     | PayrollOverlapErrorResult;
 
+export type CreatedPayrollSummary = {
+    payrollId: string;
+    workerId: string;
+};
+
 export type CreatePayrollsResult =
     | { error: string }
     | {
@@ -42,6 +47,8 @@ export type CreatePayrollsResult =
           created: number;
           skipped: number;
           conflicts: PayrollPeriodConflict[];
+          /** New payroll rows in batch iteration order (for client PDF generation). */
+          createdPayrolls: CreatedPayrollSummary[];
       };
 
 export type UpdatePayrollResult =
@@ -188,7 +195,7 @@ async function createPayrollForWorkerInExecutor(
         periodEnd: string;
         payrollDate: string;
     },
-) {
+): Promise<string> {
     const { workerId, employment, periodStart, periodEnd, payrollDate } = input;
     const voucherYear = Number.parseInt(payrollDate.slice(0, 4), 10);
 
@@ -212,16 +219,21 @@ async function createPayrollForWorkerInExecutor(
         })
         .returning({ id: payrollVoucherTable.id });
 
-    await executor.insert(payrollTable).values({
-        workerId,
-        payrollVoucherId: voucher!.id,
-        periodStart,
-        periodEnd,
-        payrollDate,
-        status: "Draft",
-        createdAt: new Date(),
-        updatedAt: new Date(),
-    });
+    const [payroll] = await executor
+        .insert(payrollTable)
+        .values({
+            workerId,
+            payrollVoucherId: voucher!.id,
+            periodStart,
+            periodEnd,
+            payrollDate,
+            status: "Draft",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        })
+        .returning({ id: payrollTable.id });
+
+    return payroll!.id;
 }
 
 export async function createPayrollRecord(input: {
@@ -331,6 +343,7 @@ export async function createPayrollRecords(input: {
     let created = 0;
     let skipped = 0;
     const conflicts: PayrollPeriodConflict[] = [];
+    const createdPayrolls: CreatedPayrollSummary[] = [];
 
     for (const workerId of uniqueWorkerIds) {
         const row = await fetchWorkerWithEmployment(workerId);
@@ -354,15 +367,16 @@ export async function createPayrollRecords(input: {
         }
 
         try {
-            await db.transaction(async (tx) => {
-                await createPayrollForWorkerInExecutor(tx, {
+            const payrollId = await db.transaction(async (tx) =>
+                createPayrollForWorkerInExecutor(tx, {
                     workerId,
                     employment: row.employment,
                     periodStart,
                     periodEnd,
                     payrollDate,
-                });
-            });
+                }),
+            );
+            createdPayrolls.push({ payrollId, workerId });
             created++;
         } catch (error) {
             if (isPayrollOverlapConstraintError(error)) {
@@ -390,6 +404,7 @@ export async function createPayrollRecords(input: {
         created,
         skipped,
         conflicts: dedupePayrollPeriodConflicts(conflicts),
+        createdPayrolls,
     };
 }
 

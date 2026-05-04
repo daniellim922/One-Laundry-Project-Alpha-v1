@@ -6,6 +6,13 @@ import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import { computeZipEtaSec } from "@/app/dashboard/payroll/download-payroll-zip-client";
+import {
+    PayrollBulkZipProgressDialog,
+    type PayrollBulkZipProgressState,
+} from "@/app/dashboard/payroll/payroll-bulk-zip-progress-dialog";
+import { runPayrollCreationPdfZip } from "@/lib/client/run-payroll-creation-pdf-zip";
+
 import { createPayrolls } from "../actions";
 import {
     payrollPeriodFormSchema,
@@ -48,6 +55,15 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
     const router = useRouter();
     const [pending, setPending] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
+    const [pdfDialogOpen, setPdfDialogOpen] = React.useState(false);
+    const [pdfError, setPdfError] = React.useState<string | null>(null);
+    const [pdfProgress, setPdfProgress] =
+        React.useState<PayrollBulkZipProgressState | null>(null);
+    const [pdfElapsedSec, setPdfElapsedSec] = React.useState(0);
+    const [pdfRecentDurationsSec, setPdfRecentDurationsSec] = React.useState<
+        number[]
+    >([]);
+    const lastPdfProgressAtRef = React.useRef<number | null>(null);
     const [summary, setSummary] = React.useState<{
         created: string;
         skipped: string;
@@ -66,6 +82,39 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
     }, [rowSelection]);
 
     const selectedCount = selectedWorkerIds.length;
+
+    const pdfBusy = pdfDialogOpen && pdfError === null;
+
+    React.useEffect(() => {
+        if (!pdfDialogOpen || pdfError !== null) return;
+        const started = Date.now();
+        const id = window.setInterval(() => {
+            setPdfElapsedSec(Math.floor((Date.now() - started) / 1000));
+        }, 250);
+        return () => window.clearInterval(id);
+    }, [pdfDialogOpen, pdfError]);
+
+    const pdfEtaSec = React.useMemo(() => {
+        if (!pdfProgress || pdfError !== null) return undefined;
+        return computeZipEtaSec({
+            n: pdfProgress.n,
+            i: pdfProgress.i,
+            elapsedSec: pdfElapsedSec,
+            recentDurationsSec: pdfRecentDurationsSec,
+        });
+    }, [
+        pdfProgress,
+        pdfElapsedSec,
+        pdfRecentDurationsSec,
+        pdfError,
+    ]);
+
+    const dismissPdfDialog = React.useCallback(() => {
+        setPdfDialogOpen(false);
+        setPdfError(null);
+        setPdfProgress(null);
+        setPdfRecentDurationsSec([]);
+    }, []);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(payrollPeriodFormSchema),
@@ -95,12 +144,6 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
             return;
         }
 
-        if (result.created > 0 && result.skipped === 0) {
-            router.push("/dashboard/payroll/all");
-            router.refresh();
-            return;
-        }
-
         const uniqueConflicts = Array.from(
             new Map(
                 result.conflicts.map((conflict) => [
@@ -121,6 +164,56 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
             skipped: skippedLabel,
         });
         setConflicts(uniqueConflicts);
+
+        if (result.createdPayrolls.length > 0) {
+            setPdfError(null);
+            setPdfProgress(null);
+            setPdfElapsedSec(0);
+            setPdfRecentDurationsSec([]);
+            lastPdfProgressAtRef.current = null;
+            setPdfDialogOpen(true);
+
+            const wrapProgress = (state: PayrollBulkZipProgressState) => {
+                const now = Date.now();
+                setPdfRecentDurationsSec((recent) => {
+                    if (
+                        lastPdfProgressAtRef.current !== null &&
+                        state.i > 0
+                    ) {
+                        const dt =
+                            (now - lastPdfProgressAtRef.current) / 1000;
+                        if (dt >= 0) return [...recent.slice(-4), dt];
+                    }
+                    return recent;
+                });
+                lastPdfProgressAtRef.current = now;
+                setPdfProgress(state);
+            };
+
+            const zipResult = await runPayrollCreationPdfZip({
+                createdPayrolls: result.createdPayrolls,
+                resolveWorkerName: (workerId) =>
+                    workers.find((w) => w.id === workerId)?.name ?? workerId,
+                periodStart: values.periodStart,
+                periodEnd: values.periodEnd,
+                onProgress: wrapProgress,
+            });
+
+            if (!zipResult.ok) {
+                setPdfError(zipResult.error);
+            } else {
+                setPdfDialogOpen(false);
+                setPdfProgress(null);
+            }
+
+            router.refresh();
+
+            if (zipResult.ok && result.skipped === 0) {
+                router.push("/dashboard/payroll/all");
+            }
+            return;
+        }
+
         if (result.created > 0) {
             router.refresh();
         }
@@ -128,6 +221,16 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
 
     return (
         <Card className="w-full">
+            <PayrollBulkZipProgressDialog
+                open={pdfDialogOpen}
+                phase="generating"
+                error={pdfError}
+                onDismiss={dismissPdfDialog}
+                progress={pdfProgress}
+                etaSec={pdfEtaSec}
+                idleTitle="Generating payroll PDFs"
+                finalizingLabel="Building ZIP…"
+            />
             <CardHeader>
                 <CardTitle>New payroll</CardTitle>
                 <p className="text-muted-foreground text-sm">
@@ -137,7 +240,7 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
             </CardHeader>
             <CardContent>
                 <form
-                    onSubmit={form.handleSubmit(onSubmit)}
+                    onSubmit={form.handleSubmit(onSubmit)} // eslint-disable-line react-hooks/refs -- react-hook-form
                     className="space-y-4"
                     autoComplete="off">
                     <FieldGroup>
@@ -154,7 +257,7 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
                                             id="periodStart"
                                             value={field.value}
                                             onValueChange={field.onChange}
-                                            disabled={pending}
+                                            disabled={pending || pdfBusy}
                                             aria-invalid={fieldState.invalid}
                                             required
                                         />
@@ -178,7 +281,7 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
                                             id="periodEnd"
                                             value={field.value}
                                             onValueChange={field.onChange}
-                                            disabled={pending}
+                                            disabled={pending || pdfBusy}
                                             aria-invalid={fieldState.invalid}
                                             required
                                         />
@@ -204,7 +307,7 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
                                         id="payrollDate"
                                         value={field.value}
                                         onValueChange={field.onChange}
-                                        disabled={pending}
+                                        disabled={pending || pdfBusy}
                                         aria-invalid={fieldState.invalid}
                                         required
                                         suppressHydrationWarning
@@ -302,8 +405,14 @@ export function PayrollForm({ workers }: { workers: Worker[] }) {
                     <div className="flex gap-2">
                         <Button
                             type="submit"
-                            disabled={pending || selectedCount === 0}>
-                            {pending ? "Generating..." : "Generate"}
+                            disabled={
+                                pending || pdfBusy || selectedCount === 0
+                            }>
+                            {pending
+                                ? "Creating payrolls…"
+                                : pdfBusy
+                                  ? "Preparing PDFs…"
+                                  : "Generate"}
                         </Button>
                         <Button
                             type="button"

@@ -63,6 +63,7 @@ function mockSelectWithJoinLimitResolved(value: unknown) {
 
 function createPayrollInsertExecutor(insertedVoucherValues: unknown[]) {
     const counters = new Map<number, number>();
+    let payrollInsertSeq = 0;
 
     return vi.fn((table) => {
         if (table === payrollVoucherCounterTable) {
@@ -98,7 +99,11 @@ function createPayrollInsertExecutor(insertedVoucherValues: unknown[]) {
 
         if (table === payrollTable) {
             return {
-                values: vi.fn().mockResolvedValue(undefined),
+                values: vi.fn().mockReturnValue({
+                    returning: vi.fn().mockResolvedValue([
+                        { id: `payroll-mock-${++payrollInsertSeq}` },
+                    ]),
+                }),
             };
         }
 
@@ -241,6 +246,7 @@ describe("payroll overlap action handling", () => {
             created: 0,
             skipped: 1,
             conflicts: [conflict],
+            createdPayrolls: [],
         });
         expect(mocks.db.transaction).not.toHaveBeenCalled();
         expect(mocks.revalidatePath).not.toHaveBeenCalled();
@@ -389,6 +395,9 @@ describe("payroll overlap action handling", () => {
             created: 1,
             skipped: 0,
             conflicts: [],
+            createdPayrolls: [
+                { payrollId: "payroll-mock-1", workerId: "worker-1" },
+            ],
         });
         expect(
             mocks.recordGuidedMonthlyWorkflowStepCompletion,

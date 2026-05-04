@@ -61,6 +61,10 @@ describe("payroll form actions", () => {
             created: 2,
             skipped: 0,
             conflicts: [],
+            createdPayrolls: [
+                { payrollId: "payroll-a", workerId: "worker-1" },
+                { payrollId: "payroll-b", workerId: "worker-2" },
+            ],
         });
 
         const formData = new FormData();
@@ -75,6 +79,10 @@ describe("payroll form actions", () => {
             created: 2,
             skipped: 0,
             conflicts: [],
+            createdPayrolls: [
+                { payrollId: "payroll-a", workerId: "worker-1" },
+                { payrollId: "payroll-b", workerId: "worker-2" },
+            ],
         });
 
         expect(mocks.createPayrollRecords).toHaveBeenCalledWith({

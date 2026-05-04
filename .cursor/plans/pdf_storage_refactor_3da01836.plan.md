@@ -10,10 +10,10 @@ todos:
       status: completed
     - id: gen-upload-api
       content: "Phase 3: Create PDF data-fetching APIs, storage path update APIs, and client-side gen+upload utility"
-      status: pending
+      status: completed
     - id: payroll-creation
       content: "Phase 4: Update payroll creation flow with progress dialog and post-creation PDF gen + ZIP download"
-      status: pending
+      status: completed
     - id: download-migration
       content: "Phase 5: Migrate all download flows to use Supabase Storage"
       status: pending

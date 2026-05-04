@@ -52,6 +52,10 @@ export type PayrollBulkZipProgressDialogProps = {
     onDismiss: () => void;
     progress?: PayrollBulkZipProgressState | null;
     etaSec?: number;
+    /** Overrides default “Preparing download” title while work is in flight. */
+    idleTitle?: string;
+    /** Overrides “Finalizing ZIP…” after all PDF units finish. */
+    finalizingLabel?: string;
 };
 
 export function PayrollBulkZipProgressDialog({
@@ -61,6 +65,8 @@ export function PayrollBulkZipProgressDialog({
     onDismiss,
     progress,
     etaSec,
+    idleTitle,
+    finalizingLabel,
 }: PayrollBulkZipProgressDialogProps) {
     const [elapsedSec, setElapsedSec] = React.useState(0);
     const inFlight = open && error === null;
@@ -117,7 +123,9 @@ export function PayrollBulkZipProgressDialog({
                 className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>
-                        {error ? "Something went wrong" : "Preparing download"}
+                        {error
+                            ? "Something went wrong"
+                            : (idleTitle ?? "Preparing download")}
                     </DialogTitle>
                     {error ? (
                         <DialogDescription className="text-destructive">
@@ -140,7 +148,7 @@ export function PayrollBulkZipProgressDialog({
                                 {finalizing ? (
                                     <>
                                         <p className="text-foreground text-sm">
-                                            Finalizing ZIP…
+                                            {finalizingLabel ?? "Finalizing ZIP…"}
                                         </p>
                                         <Progress
                                             value={100}
