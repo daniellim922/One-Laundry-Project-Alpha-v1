@@ -128,15 +128,15 @@ Three document templates need to be built using `@react-pdf/renderer` primitives
 
 Barrel: `services/pdf/react-pdf/index.ts`.
 
-### Phase 3: Generation + Upload API
+### Phase 3: Generation + Upload API _(done)_
 
-10. **Create PDF data-fetching API route for payroll** -- Create `GET /api/payroll/[id]/pdf-data` that returns the voucher, timesheet entries, worker name, and payroll metadata as JSON. This gives the client everything it needs to render the React PDF without duplicating DB queries.
+10. **Create PDF data-fetching API route for payroll** — Done. `app/api/payroll/[id]/pdf-data/route.ts` (`GET`). Joins payroll + voucher + worker + timesheets, returns `PayrollPdfData` (pre-formatted period label and voucher date via `formatEnGbDmyNumericFromCalendar`).
 
-11. **Create PDF data-fetching API route for advance** -- Create `GET /api/advance/[id]/pdf-data` that returns the advance request detail (with repayment schedule, signatures, etc.) as JSON.
+11. **Create PDF data-fetching API route for advance** — Done. `app/api/advance/[id]/pdf-data/route.ts` (`GET`). Delegates to `getAdvanceRequestByIdWithWorker`, returns `AdvanceVoucherData`.
 
-12. **Create PDF storage path update API route** -- Create `PATCH /api/payroll/[id]/pdf-storage-path` and `PATCH /api/advance/[id]/pdf-storage-path` that accept `{ storagePath: string }` and update the `pdfStoragePath` column. Auth-gated.
+12. **Create PDF storage path update API routes** — Done. `app/api/payroll/[id]/pdf-storage-path/route.ts` and `app/api/advance/[id]/pdf-storage-path/route.ts` (`PATCH`). Accept `{ storagePath: string }`, update `pdfStoragePath` column. Auth-gated via `requireCurrentApiUser`.
 
-13. **Create client-side PDF generation + upload utility** -- Create `lib/client/generate-and-upload-pdf.ts` with functions that: (a) fetch PDF data from the API, (b) render React PDF to blob using `@react-pdf/renderer`, (c) upload to Supabase Storage, (d) call the storage path update API.
+13. **Create client-side PDF generation + upload utility** — Done. `lib/client/generate-and-upload-pdf.ts`. Exports `generateAndUploadPayrollPdf(payrollId)` and `generateAndUploadAdvancePdf(advanceRequestId)` — each fetches PDF data from the API, renders React PDF to blob via `pdf().toBlob()`, uploads to Supabase Storage, and persists the storage path. Returns `{ blob, storagePath }` for downstream use (e.g. client-side ZIP assembly).
 
 ### Phase 4: Payroll Creation Flow
 
