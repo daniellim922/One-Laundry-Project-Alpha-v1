@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 
 import { payrollTable, type SelectPayroll } from "@/db/tables/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
@@ -19,7 +19,11 @@ export type PayrollSelectionRow = SelectPayroll & {
     voucherNumber: string | null;
 };
 
-export async function queryPayrollSelectionRows(
+/**
+ * Payroll rows with worker / employment / voucher joins and the same ordering
+ * as the All payrolls dashboard table. Optional status narrows the set (e.g. Draft for settlement).
+ */
+export async function queryPayrollRowsWithWorkerForList(
     statusFilter?: PayrollStatus,
 ): Promise<PayrollSelectionRow[]> {
     const baseQuery = db
@@ -47,8 +51,11 @@ export async function queryPayrollSelectionRows(
             : baseQuery;
 
     const rows = await filtered.orderBy(
+        asc(payrollTable.status),
+        desc(payrollTable.payrollDate),
+        asc(employmentTable.employmentArrangement),
+        asc(employmentTable.employmentType),
         asc(workerTable.name),
-        asc(payrollTable.periodStart),
     );
 
     return rows.map((row) => ({
@@ -58,4 +65,10 @@ export async function queryPayrollSelectionRows(
         employmentArrangement: row.employmentArrangement,
         voucherNumber: row.voucherNumber,
     }));
+}
+
+export async function queryPayrollSelectionRows(
+    statusFilter?: PayrollStatus,
+): Promise<PayrollSelectionRow[]> {
+    return queryPayrollRowsWithWorkerForList(statusFilter);
 }
