@@ -27,6 +27,14 @@ vi.mock("@/app/dashboard/advance/[id]/edit/actions", () => ({
         mocks.updateAdvanceRequest(...args),
 }));
 
+vi.mock("@/lib/client/generate-and-upload-pdf", () => ({
+    generateAndUploadAdvancePdf: vi.fn().mockResolvedValue({
+        advanceRequestId: "advance-request-1",
+        blob: new Blob(),
+        storagePath: "advance/advance-request-1/voucher.pdf",
+    }),
+}));
+
 vi.mock("@/components/ui/signature-pad", () => ({
     SignaturePad: () => null,
 }));

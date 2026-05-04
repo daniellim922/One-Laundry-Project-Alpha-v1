@@ -9,7 +9,9 @@ import {
     withAdvanceSignatureDates,
 } from "@/services/advance/save-advance-request";
 
-type ActionResult = { success: true } | { success: false; error: string };
+type ActionResult =
+    | { success: true; id: string }
+    | { success: false; error: string };
 
 export type CreateAdvanceRequestInput = SaveAdvanceRequestInput;
 
@@ -30,5 +32,5 @@ export async function createAdvanceRequest(
     revalidatePath("/dashboard/payroll");
     revalidatePath("/dashboard/payroll/all");
 
-    return { success: true };
+    return { success: true, id: result.id };
 }

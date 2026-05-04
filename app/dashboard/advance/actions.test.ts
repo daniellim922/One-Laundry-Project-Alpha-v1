@@ -75,6 +75,7 @@ describe("advance actions", () => {
 
         await expect(createAdvanceRequest(baseInput)).resolves.toEqual({
             success: true,
+            id: "advance-request-1",
         });
 
         expect(mocks.createAdvanceRequestRecord).toHaveBeenCalledWith(

@@ -16,6 +16,7 @@ import {
 
 import { createAdvanceRequest } from "@/app/dashboard/advance/new/actions";
 import { updateAdvanceRequest } from "@/app/dashboard/advance/[id]/edit/actions";
+import { generateAndUploadAdvancePdf } from "@/lib/client/generate-and-upload-pdf";
 import {
     advanceRequestFormSchema,
     type AdvanceRequestFormValues,
@@ -312,6 +313,7 @@ function AdvanceRequestFormEditable({
 }: AdvanceRequestFormEditableProps) {
     const router = useRouter();
     const [pending, setPending] = React.useState(false);
+    const [generatingPdf, setGeneratingPdf] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const isEditMode = Boolean(initialData && advanceRequestId);
     const showInstallmentStatusColumn = isEditMode;
@@ -381,6 +383,17 @@ function AdvanceRequestFormEditable({
         if (!result.success) {
             setError(result.error);
             return;
+        }
+
+        if (!isEditMode && "id" in result) {
+            setGeneratingPdf(true);
+            try {
+                await generateAndUploadAdvancePdf(result.id);
+            } catch {
+                // PDF generation is best-effort; the advance is already saved
+            } finally {
+                setGeneratingPdf(false);
+            }
         }
 
         router.push(
@@ -925,15 +938,17 @@ function AdvanceRequestFormEditable({
                 )}
                 <Button
                     type="submit"
-                    disabled={pending || workers.length === 0}
+                    disabled={pending || generatingPdf || workers.length === 0}
                     data-testid="advance-request-submit">
-                    {pending
-                        ? isEditMode
-                            ? "Saving…"
-                            : "Submitting…"
-                        : isEditMode
-                          ? "Save changes"
-                          : "Submit request"}
+                    {generatingPdf
+                        ? "Generating PDF…"
+                        : pending
+                          ? isEditMode
+                              ? "Saving…"
+                              : "Submitting…"
+                          : isEditMode
+                            ? "Save changes"
+                            : "Submit request"}
                 </Button>
             </div>
         </form>
