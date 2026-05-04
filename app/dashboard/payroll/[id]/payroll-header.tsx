@@ -9,6 +9,7 @@ import { updatePayroll } from "../actions";
 import { Button } from "@/components/ui/button";
 import { DatePickerInput } from "@/components/ui/date-picker-input";
 import { Label } from "@/components/ui/label";
+import { generateAndUploadPayrollPdf } from "@/lib/client/generate-and-upload-pdf";
 import type { PayrollOverlapErrorResult } from "@/services/payroll/save-payroll";
 import { payrollStatusBadgeTone } from "@/types/badge-tones";
 import type { PayrollStatus } from "@/types/status";
@@ -62,6 +63,9 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
     const [conflictPayrollId, setConflictPayrollId] = React.useState<
         string | null
     >(null);
+    const [pdfStatus, setPdfStatus] = React.useState<
+        "idle" | "generating" | "done" | "failed"
+    >("idle");
     const [periodStart, setPeriodStart] = React.useState(payroll.periodStart);
     const [periodEnd, setPeriodEnd] = React.useState(payroll.periodEnd);
     const [payrollDate, setPayrollDate] = React.useState(payroll.payrollDate);
@@ -102,6 +106,17 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
         }
         setEditing(false);
         router.refresh();
+
+        setPdfStatus("generating");
+        generateAndUploadPayrollPdf(payroll.id)
+            .then(() => {
+                setPdfStatus("done");
+                setTimeout(() => setPdfStatus("idle"), 3000);
+            })
+            .catch(() => {
+                setPdfStatus("failed");
+                setTimeout(() => setPdfStatus("idle"), 5000);
+            });
     }
 
     return (
@@ -212,6 +227,21 @@ export function PayrollHeader({ payroll, workerName }: PayrollHeaderProps) {
                         Payroll date:{" "}
                         {formatEnGbDmyNumericFromCalendar(payroll.payrollDate)} |
                         Last updated: {formatLastUpdatedAt(payroll.updatedAt)}
+                        {pdfStatus === "generating" && (
+                            <span className="text-xs text-muted-foreground animate-pulse">
+                                | Regenerating PDF…
+                            </span>
+                        )}
+                        {pdfStatus === "done" && (
+                            <span className="text-xs text-green-600">
+                                | PDF updated
+                            </span>
+                        )}
+                        {pdfStatus === "failed" && (
+                            <span className="text-xs text-destructive">
+                                | PDF regeneration failed
+                            </span>
+                        )}
                         {isDraft && (
                             <Button
                                 variant="ghost"
