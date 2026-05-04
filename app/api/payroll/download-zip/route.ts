@@ -5,14 +5,14 @@ import { eq, inArray } from "drizzle-orm";
 
 import { requireCurrentApiUser } from "@/app/api/_shared/auth";
 import { isoDate, isoToDdmmyyyy, safeFilenamePart } from "@/app/api/_shared/pdf-filenames";
-import { getRequestOrigin } from "@/app/api/_shared/origin";
 import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
 import { apiError } from "@/app/api/_shared/responses";
 import { db } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
+import { downloadPdf } from "@/lib/supabase/storage";
 import { payrollTable } from "@/db/tables/payrollTable";
 import { workerTable } from "@/db/tables/workerTable";
 import { recordGuidedMonthlyWorkflowStepCompletion } from "@/services/payroll/guided-monthly-workflow-activity";
-import { generatePdf } from "@/services/pdf/generate-pdf";
 import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
 
 export const runtime = "nodejs";
@@ -27,6 +27,7 @@ type PayrollMetaRow = {
     periodStart: unknown;
     periodEnd: unknown;
     workerName: string;
+    pdfStoragePath: string | null;
 };
 
 export function dedupeStringsPreserveOrder(values: string[]): string[] {
@@ -65,7 +66,7 @@ export function formatDownloadErrorsReport(
     failures: PayrollPdfFailure[],
 ): string {
     const lines = [
-        "Some payroll PDFs failed to generate.",
+        "Some payroll PDFs failed to download.",
         "",
         ...failures.map((f) => `- ${f.payrollId}: ${f.reason}`),
         "",
@@ -78,9 +79,8 @@ export function createZipFilename(args: {
     periodEnd: string;
     partial: boolean;
 }): string {
-    const partialSuffix = args.partial ? "-partial" : "";
     return safeFilenamePart(
-        `payrolls-${args.periodStart}-${args.periodEnd}${partialSuffix}.zip`,
+        `payrolls-${args.periodStart}-${args.periodEnd}${args.partial ? "-partial" : ""}.zip`,
     );
 }
 
@@ -109,12 +109,11 @@ function enqueueNdjsonLine(
 async function collectPdfEntries(args: {
     payrollIds: string[];
     metaById: Map<string, PayrollMetaRow>;
-    cookie: string;
-    origin: string;
+    supabaseClient: Awaited<ReturnType<typeof createClient>>;
     failures: PayrollPdfFailure[];
     onProgress?: (i: number, n: number, workerName: string) => void;
 }): Promise<PayrollPdfEntry[]> {
-    const { payrollIds, metaById, cookie, origin, failures, onProgress } = args;
+    const { payrollIds, metaById, supabaseClient, failures, onProgress } = args;
     const n = payrollIds.length;
     const pdfEntries: PayrollPdfEntry[] = [];
     const seenNames = new Map<string, number>();
@@ -124,15 +123,20 @@ async function collectPdfEntries(args: {
         const meta = metaById.get(id);
         const workerNameForProgress = meta?.workerName ?? `payroll-${id}`;
         try {
-            const url = `${origin}/dashboard/payroll/${id}/summary?print=1`;
-            const pdf = await generatePdf({
-                url,
-                cookieHeader: cookie || undefined,
-            });
+            if (!meta?.pdfStoragePath) {
+                failures.push({
+                    payrollId: id,
+                    reason: "No stored PDF available",
+                });
+                onProgress?.(idx + 1, n, workerNameForProgress);
+                continue;
+            }
 
-            const workerName = meta?.workerName ?? `payroll-${id}`;
-            const periodStart = isoToDdmmyyyy(isoDate(meta?.periodStart ?? ""));
-            const periodEnd = isoToDdmmyyyy(isoDate(meta?.periodEnd ?? ""));
+            const blob = await downloadPdf(supabaseClient, meta.pdfStoragePath);
+
+            const workerName = meta.workerName ?? `payroll-${id}`;
+            const periodStart = isoToDdmmyyyy(isoDate(meta.periodStart ?? ""));
+            const periodEnd = isoToDdmmyyyy(isoDate(meta.periodEnd ?? ""));
             const baseName = createPayrollPdfBaseName({
                 workerName,
                 periodStart,
@@ -149,13 +153,13 @@ async function collectPdfEntries(args: {
 
             pdfEntries.push({
                 name: uniqueName,
-                buffer: pdf,
+                buffer: Buffer.from(await blob.arrayBuffer()),
             });
         } catch (error) {
             const reason =
                 error instanceof Error ? error.message : "Unknown error";
             failures.push({ payrollId: id, reason });
-            console.warn(`[payroll/download-zip] PDF processing error`, {
+            console.warn(`[payroll/download-zip] PDF download error`, {
                 payrollId: id,
                 reason,
             });
@@ -169,16 +173,14 @@ async function collectPdfEntries(args: {
 function createNdjsonZipResponseStream(args: {
     payrollIds: string[];
     metaById: Map<string, PayrollMetaRow>;
-    cookie: string;
-    origin: string;
+    supabaseClient: Awaited<ReturnType<typeof createClient>>;
     periodStartForZipLabel: string;
     periodEndForZipLabel: string;
 }): ReadableStream<Uint8Array> {
     const {
         payrollIds,
         metaById,
-        cookie,
-        origin,
+        supabaseClient,
         periodStartForZipLabel,
         periodEndForZipLabel,
     } = args;
@@ -196,8 +198,7 @@ function createNdjsonZipResponseStream(args: {
                 const pdfEntries = await collectPdfEntries({
                     payrollIds,
                     metaById,
-                    cookie,
-                    origin,
+                    supabaseClient,
                     failures,
                     onProgress: (i, n, workerName) => {
                         enqueueLine({ type: "progress", i, n, workerName });
@@ -304,6 +305,7 @@ export async function POST(req: NextRequest) {
             periodStart: payrollTable.periodStart,
             periodEnd: payrollTable.periodEnd,
             workerName: workerTable.name,
+            pdfStoragePath: payrollTable.pdfStoragePath,
         })
         .from(payrollTable)
         .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id))
@@ -325,8 +327,7 @@ export async function POST(req: NextRequest) {
     const periodStartForZipLabel = isoToDdmmyyyy(periodStartForZip);
     const periodEndForZipLabel = isoToDdmmyyyy(periodEndForZip);
 
-    const cookie = req.headers.get("cookie") ?? "";
-    const origin = getRequestOrigin(req);
+    const supabaseClient = await createClient();
     const progressNdjson =
         req.nextUrl.searchParams.get("progress") === "1";
 
@@ -334,8 +335,7 @@ export async function POST(req: NextRequest) {
         const stream = createNdjsonZipResponseStream({
             payrollIds,
             metaById,
-            cookie,
-            origin,
+            supabaseClient,
             periodStartForZipLabel,
             periodEndForZipLabel,
         });
@@ -352,8 +352,7 @@ export async function POST(req: NextRequest) {
     const pdfEntries = await collectPdfEntries({
         payrollIds,
         metaById,
-        cookie,
-        origin,
+        supabaseClient,
         failures,
     });
 

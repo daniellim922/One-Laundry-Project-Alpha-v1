@@ -73,7 +73,7 @@ describe("payroll download zip helpers", () => {
             { payrollId: "p-2", reason: "network timeout" },
         ]);
 
-        expect(report).toContain("Some payroll PDFs failed to generate.");
+        expect(report).toContain("Some payroll PDFs failed to download.");
         expect(report).toContain("- p-1: PDF failed (500)");
         expect(report).toContain("- p-2: network timeout");
     });

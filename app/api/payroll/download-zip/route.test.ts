@@ -11,7 +11,8 @@ const mocks = vi.hoisted(() => ({
     db: {
         select: vi.fn(),
     },
-    generatePdf: vi.fn(),
+    createClient: vi.fn(),
+    downloadPdf: vi.fn(),
 }));
 
 vi.mock("@/app/api/_shared/auth", () => ({
@@ -28,16 +29,27 @@ vi.mock("@/services/payroll/guided-monthly-workflow-activity", () => ({
         mocks.recordGuidedMonthlyWorkflowStepCompletion(...args),
 }));
 
-vi.mock("@/services/pdf/generate-pdf", () => ({
-    generatePdf: (...args: unknown[]) => mocks.generatePdf(...args),
+vi.mock("@/lib/supabase/server", () => ({
+    createClient: () => mocks.createClient(),
+}));
+
+vi.mock("@/lib/supabase/storage", () => ({
+    downloadPdf: (...args: unknown[]) => mocks.downloadPdf(...args),
 }));
 
 import { POST } from "@/app/api/payroll/download-zip/route";
 
 describe("POST /api/payroll/download-zip", () => {
+    const fakeSupabase = { storage: {} };
+
     beforeEach(() => {
         vi.clearAllMocks();
         mockAuthenticatedApiOperator(mocks);
+        mocks.createClient.mockResolvedValue(fakeSupabase);
+        mocks.downloadPdf.mockResolvedValue(
+            new Blob([Buffer.from([0x25, 0x50, 0x44, 0x46])]),
+        );
+
         mocks.db.select.mockReturnValue({
             from: vi.fn().mockReturnValue({
                 innerJoin: vi.fn().mockReturnValue({
@@ -47,14 +59,12 @@ describe("POST /api/payroll/download-zip", () => {
                             periodStart: "2026-01-01",
                             periodEnd: "2026-01-31",
                             workerName: "Alice",
+                            pdfStoragePath: "payroll/payroll-1/voucher.pdf",
                         },
                     ]),
                 }),
             }),
         });
-        mocks.generatePdf.mockResolvedValue(
-            Buffer.from([0x25, 0x50, 0x44, 0x46]),
-        );
     });
 
     it("returns INVALID_JSON for malformed payloads", async () => {
@@ -149,6 +159,11 @@ describe("POST /api/payroll/download-zip", () => {
         ).toHaveBeenCalledWith({
             stepId: "payroll_download",
         });
+
+        expect(mocks.downloadPdf).toHaveBeenCalledWith(
+            fakeSupabase,
+            "payroll/payroll-1/voucher.pdf",
+        );
     });
 
     it("records guided workflow completion after the standard ZIP stream completes", async () => {
@@ -173,7 +188,7 @@ describe("POST /api/payroll/download-zip", () => {
         });
     });
 
-    it("includes X-Skipped-Ids header and continues when one PDF fails", async () => {
+    it("skips payrolls without pdfStoragePath and includes them in X-Skipped-Ids", async () => {
         mocks.db.select.mockReturnValue({
             from: vi.fn().mockReturnValue({
                 innerJoin: vi.fn().mockReturnValue({
@@ -183,23 +198,18 @@ describe("POST /api/payroll/download-zip", () => {
                             periodStart: "2026-01-01",
                             periodEnd: "2026-01-31",
                             workerName: "Alice",
+                            pdfStoragePath: null,
                         },
                         {
                             id: "payroll-2",
                             periodStart: "2026-01-01",
                             periodEnd: "2026-01-31",
                             workerName: "Bob",
+                            pdfStoragePath: "payroll/payroll-2/voucher.pdf",
                         },
                     ]),
                 }),
             }),
-        });
-
-        mocks.generatePdf.mockImplementation(async ({ url }: { url: string }) => {
-            if (url.includes("payroll-1")) {
-                throw new Error("PDF generation failed");
-            }
-            return Buffer.from([0x25, 0x50, 0x44, 0x46]);
         });
 
         const response = await POST(
@@ -220,7 +230,59 @@ describe("POST /api/payroll/download-zip", () => {
         expect(zipBuffer[0]).toBe(0x50);
         expect(zipBuffer[1]).toBe(0x4b);
 
-        // Should have called generatePdf for both, even though first failed
-        expect(mocks.generatePdf).toHaveBeenCalledTimes(2);
+        expect(mocks.downloadPdf).toHaveBeenCalledTimes(1);
+        expect(mocks.downloadPdf).toHaveBeenCalledWith(
+            fakeSupabase,
+            "payroll/payroll-2/voucher.pdf",
+        );
+    });
+
+    it("handles storage download failure gracefully", async () => {
+        mocks.db.select.mockReturnValue({
+            from: vi.fn().mockReturnValue({
+                innerJoin: vi.fn().mockReturnValue({
+                    where: vi.fn().mockResolvedValue([
+                        {
+                            id: "payroll-1",
+                            periodStart: "2026-01-01",
+                            periodEnd: "2026-01-31",
+                            workerName: "Alice",
+                            pdfStoragePath: "payroll/payroll-1/voucher.pdf",
+                        },
+                        {
+                            id: "payroll-2",
+                            periodStart: "2026-01-01",
+                            periodEnd: "2026-01-31",
+                            workerName: "Bob",
+                            pdfStoragePath: "payroll/payroll-2/voucher.pdf",
+                        },
+                    ]),
+                }),
+            }),
+        });
+
+        mocks.downloadPdf.mockImplementation(
+            async (_client: unknown, path: string) => {
+                if (path.includes("payroll-1")) {
+                    throw new Error("Storage download failed");
+                }
+                return new Blob([Buffer.from([0x25, 0x50, 0x44, 0x46])]);
+            },
+        );
+
+        const response = await POST(
+            new NextRequest("http://localhost/api/payroll/download-zip", {
+                method: "POST",
+                body: JSON.stringify({
+                    payrollIds: ["payroll-1", "payroll-2"],
+                }),
+            }),
+        );
+
+        expect(response.status).toBe(200);
+        expect(response.headers.get("Content-Type")).toBe("application/zip");
+        expect(response.headers.get("X-Skipped-Ids")).toBe("payroll-1");
+
+        expect(mocks.downloadPdf).toHaveBeenCalledTimes(2);
     });
 });

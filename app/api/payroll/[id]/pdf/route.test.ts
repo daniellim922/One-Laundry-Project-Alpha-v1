@@ -9,8 +9,8 @@ const mocks = vi.hoisted(() => ({
     db: {
         select: vi.fn(),
     },
-    generatePdf: vi.fn(),
-    recordGuidedMonthlyWorkflowStepCompletion: vi.fn(),
+    createClient: vi.fn(),
+    downloadPdf: vi.fn(),
 }));
 
 vi.mock("drizzle-orm", () => ({
@@ -26,87 +26,109 @@ vi.mock("@/app/api/_shared/auth", () => ({
         mocks.requireCurrentApiUser(...args),
 }));
 
-vi.mock("@/services/payroll/guided-monthly-workflow-activity", () => ({
-    recordGuidedMonthlyWorkflowStepCompletion: (...args: unknown[]) =>
-        mocks.recordGuidedMonthlyWorkflowStepCompletion(...args),
+vi.mock("@/lib/supabase/server", () => ({
+    createClient: () => mocks.createClient(),
 }));
 
-vi.mock("@/services/pdf/generate-pdf", () => ({
-    generatePdf: (...args: unknown[]) => mocks.generatePdf(...args),
+vi.mock("@/lib/supabase/storage", () => ({
+    downloadPdf: (...args: unknown[]) => mocks.downloadPdf(...args),
 }));
 
 import { GET } from "@/app/api/payroll/[id]/pdf/route";
 
+function mockDbRow(row: object | null) {
+    mocks.db.select.mockReturnValue({
+        from: vi.fn().mockReturnValue({
+            innerJoin: vi.fn().mockReturnValue({
+                where: vi.fn().mockReturnValue({
+                    limit: vi.fn().mockResolvedValue(row ? [row] : []),
+                }),
+            }),
+        }),
+    });
+}
+
 describe("GET /api/payroll/[id]/pdf", () => {
+    const fakeSupabase = { storage: {} };
+
     beforeEach(() => {
         vi.clearAllMocks();
         mockAuthenticatedApiOperator(mocks);
+        mocks.createClient.mockResolvedValue(fakeSupabase);
+        mocks.downloadPdf.mockResolvedValue(new Blob(["payroll-pdf"]));
 
-        mocks.generatePdf.mockResolvedValue(Buffer.from("payroll-pdf"));
-
-        mocks.db.select.mockReturnValue({
-            from: vi.fn().mockReturnValue({
-                innerJoin: vi.fn().mockReturnValue({
-                    where: vi.fn().mockReturnValue({
-                        limit: vi.fn().mockResolvedValue([
-                            {
-                                workerName: 'Alex /:*?"<>| Tan',
-                                periodStart: "2026-01-01",
-                                periodEnd: "2026-01-31",
-                            },
-                        ]),
-                    }),
-                }),
-            }),
+        mockDbRow({
+            workerName: 'Alex /:*?"<>| Tan',
+            periodStart: "2026-01-01",
+            periodEnd: "2026-01-31",
+            pdfStoragePath: "payroll/payroll-1/voucher.pdf",
         });
     });
 
-    it("renders the voucher PDF and returns an attachment filename", async () => {
+    it("downloads the PDF from storage and returns an attachment", async () => {
         const response = await GET(
-            new NextRequest(
-                "http://localhost/api/payroll/payroll-1/pdf?mode=voucher",
-                {
-                    headers: { cookie: "sb-access-token=abc" },
-                },
-            ),
-            {
-                params: Promise.resolve({ id: "payroll-1" }),
-            },
+            new NextRequest("http://localhost/api/payroll/payroll-1/pdf"),
+            { params: Promise.resolve({ id: "payroll-1" }) },
         );
 
         expect(response.status).toBe(200);
         expect(response.headers.get("content-type")).toBe("application/pdf");
         expect(response.headers.get("cache-control")).toBe("no-store");
         expect(response.headers.get("content-disposition")).toBe(
-            'attachment; filename="Alex -------- Tan - 01_01_2026-31_01_2026 (voucher).pdf"',
+            'attachment; filename="Alex -------- Tan - 01_01_2026-31_01_2026.pdf"',
         );
 
-        expect(mocks.generatePdf).toHaveBeenCalledWith({
-            url: "http://localhost/dashboard/payroll/payroll-1/summary?mode=voucher&print=1",
-            cookieHeader: "sb-access-token=abc",
-        });
-        expect(
-            mocks.recordGuidedMonthlyWorkflowStepCompletion,
-        ).not.toHaveBeenCalled();
-        await expect(response.arrayBuffer()).resolves.toSatisfy((value) => {
-            return Buffer.from(value).toString("utf8") === "payroll-pdf";
-        });
+        expect(mocks.downloadPdf).toHaveBeenCalledWith(
+            fakeSupabase,
+            "payroll/payroll-1/voucher.pdf",
+        );
+
+        const text = await response.text();
+        expect(text).toBe("payroll-pdf");
     });
 
-    it("defaults to summary mode when no mode query param is provided", async () => {
+    it("returns 404 PDF_NOT_AVAILABLE when pdfStoragePath is null", async () => {
+        mockDbRow({
+            workerName: "Alex Tan",
+            periodStart: "2026-01-01",
+            periodEnd: "2026-01-31",
+            pdfStoragePath: null,
+        });
+
         const response = await GET(
-            new NextRequest(
-                "http://localhost/api/payroll/payroll-1/pdf",
-            ),
-            {
-                params: Promise.resolve({ id: "payroll-1" }),
-            },
+            new NextRequest("http://localhost/api/payroll/payroll-1/pdf"),
+            { params: Promise.resolve({ id: "payroll-1" }) },
         );
 
-        expect(response.status).toBe(200);
-        expect(mocks.generatePdf).toHaveBeenCalledWith({
-            url: "http://localhost/dashboard/payroll/payroll-1/summary?print=1",
-            cookieHeader: undefined,
-        });
+        expect(response.status).toBe(404);
+        const body = await response.json();
+        expect(body.error.code).toBe("PDF_NOT_AVAILABLE");
+        expect(mocks.downloadPdf).not.toHaveBeenCalled();
+    });
+
+    it("returns 404 NOT_FOUND when the payroll does not exist", async () => {
+        mockDbRow(null);
+
+        const response = await GET(
+            new NextRequest("http://localhost/api/payroll/missing/pdf"),
+            { params: Promise.resolve({ id: "missing" }) },
+        );
+
+        expect(response.status).toBe(404);
+        const body = await response.json();
+        expect(body.error.code).toBe("NOT_FOUND");
+    });
+
+    it("returns 502 STORAGE_ERROR when storage download fails", async () => {
+        mocks.downloadPdf.mockRejectedValue(new Error("Storage down"));
+
+        const response = await GET(
+            new NextRequest("http://localhost/api/payroll/payroll-1/pdf"),
+            { params: Promise.resolve({ id: "payroll-1" }) },
+        );
+
+        expect(response.status).toBe(502);
+        const body = await response.json();
+        expect(body.error.code).toBe("STORAGE_ERROR");
     });
 });
