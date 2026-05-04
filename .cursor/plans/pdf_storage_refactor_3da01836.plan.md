@@ -16,19 +16,19 @@ todos:
       status: completed
     - id: download-migration
       content: "Phase 5: Migrate all download flows to use Supabase Storage"
-      status: pending
+      status: completed
     - id: draft-edit-regen
       content: "Phase 6: Auto-regenerate payroll PDF on draft edit"
-      status: pending
+      status: completed
     - id: advance-creation
       content: "Phase 7: Generate advance PDF on creation"
-      status: pending
+      status: completed
     - id: cleanup
       content: "Phase 8: Remove Playwright code, update docs"
-      status: pending
+      status: completed
     - id: testing
       content: Write tests for React PDF templates, upload/download flows, and updated API routes
-      status: pending
+      status: completed
 isProject: false
 ---
 
