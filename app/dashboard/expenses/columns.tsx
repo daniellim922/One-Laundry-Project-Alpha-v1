@@ -3,40 +3,31 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import type { SelectExpense } from "@/db/tables/expensesTable";
 import { createSortableHeader } from "@/components/data-table/column-builders";
+import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 
 export const columns: ColumnDef<SelectExpense>[] = [
     {
-        accessorKey: "description",
-        header: createSortableHeader("Description"),
+        accessorKey: "name",
+        header: createSortableHeader("Name"),
         meta: { globalSearch: true },
     },
     {
-        accessorKey: "amount",
-        header: createSortableHeader("Amount"),
+        accessorKey: "grandTotalCents",
+        header: createSortableHeader("Grand total"),
         cell: ({ row }) =>
-            row.original.amount != null
-                ? `$${(row.original.amount / 100).toFixed(2)}`
+            row.original.grandTotalCents != null
+                ? `$${(row.original.grandTotalCents / 100).toFixed(2)}`
                 : "—",
     },
     {
-        accessorKey: "category",
-        header: createSortableHeader("Category"),
-        meta: { globalSearch: true },
-        cell: ({ row }) => row.original.category ?? "—",
+        accessorKey: "invoiceDate",
+        header: createSortableHeader("Invoice date"),
+        cell: ({ row }) =>
+            formatEnGbDmyNumericFromCalendar(row.original.invoiceDate) || "—",
     },
     {
-        accessorKey: "date",
-        header: createSortableHeader("Date"),
-        cell: ({ row }) => {
-            const d =
-                row.original.date instanceof Date
-                    ? row.original.date
-                    : new Date(row.original.date);
-            return d.toLocaleDateString("en-CA", {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-            });
-        },
+        accessorKey: "status",
+        header: createSortableHeader("Status"),
+        cell: ({ row }) => row.original.status,
     },
 ];

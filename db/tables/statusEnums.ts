@@ -20,3 +20,13 @@ export const timesheetPaymentStatusEnum = pgEnum("timesheet_payment_status", [
 ]);
 
 export const payrollStatusEnum = pgEnum("payroll_status", ["Draft", "Settled"]);
+
+export const expenseCategoryTypeEnum = pgEnum("expense_category_type", [
+    "Fixed",
+    "Variable",
+]);
+
+export const expenseStatusEnum = pgEnum("expense_status", [
+    "Expense Submitted",
+    "Expense Paid",
+]);

@@ -7,7 +7,7 @@ todos:
       status: completed
     - id: db-schema
       content: Create expenseCategoryTable + expenseSubcategoryTable, rewrite expensesTable (FKs to category + subcategory), add status enum, push schema
-      status: pending
+      status: in_progress
     - id: zod-schemas
       content: Create drizzle-zod schemas for expense-category, expense-subcategory, and expense forms
       status: pending

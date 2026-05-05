@@ -1,7 +1,8 @@
-import { count, sum } from "drizzle-orm";
+import { count, eq, sum } from "drizzle-orm";
 
 import { SimpleDonutChart } from "@/components/dashboard/simple-donut-chart";
 import { db } from "@/lib/db";
+import { expenseCategoryTable } from "@/db/tables/expenseCategoryTable";
 import { expensesTable } from "@/db/tables/expensesTable";
 import {
     Card,
@@ -11,11 +12,11 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { DashboardQuickActionsCard } from "@/components/dashboard/dashboard-quick-actions-card";
+import type { ExpenseCategoryType } from "@/types/status";
 import { DollarSign, List, Plus } from "lucide-react";
 
-function slugCategory(cat: string | null): string {
-    const base = (cat ?? "uncategorized").toLowerCase().replace(/\s+/g, "_");
-    return base.replace(/[^a-z0-9_]/g, "") || "uncategorized";
+function slugCategoryType(cat: ExpenseCategoryType): string {
+    return cat.toLowerCase();
 }
 
 export async function ExpensesOverviewLoader() {
@@ -23,16 +24,20 @@ export async function ExpensesOverviewLoader() {
         db
             .select({
                 count: count(),
-                total: sum(expensesTable.amount),
+                total: sum(expensesTable.grandTotalCents),
             })
             .from(expensesTable),
         db
             .select({
-                category: expensesTable.category,
+                categoryType: expenseCategoryTable.type,
                 cnt: count(),
             })
             .from(expensesTable)
-            .groupBy(expensesTable.category),
+            .innerJoin(
+                expenseCategoryTable,
+                eq(expensesTable.categoryId, expenseCategoryTable.id),
+            )
+            .groupBy(expenseCategoryTable.type),
     ]);
     const expensesCount = statsRow?.count ?? 0;
     const expensesTotal = Number(statsRow?.total ?? 0);
@@ -40,8 +45,8 @@ export async function ExpensesOverviewLoader() {
     const categorySegments = categoryRows
         .filter((r) => Number(r.cnt) > 0)
         .map((r, i) => ({
-            key: `${slugCategory(r.category)}_${i}`,
-            label: r.category?.trim() || "Uncategorized",
+            key: `${slugCategoryType(r.categoryType)}_${i}`,
+            label: r.categoryType,
             value: Number(r.cnt),
         }));
 
@@ -85,8 +90,10 @@ export async function ExpensesOverviewLoader() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>By category</CardTitle>
-                    <CardDescription>Expense count per category</CardDescription>
+                    <CardTitle>By category type</CardTitle>
+                    <CardDescription>
+                        Expense count per category type (Fixed / Variable)
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
                     {categorySegments.length > 0 ? (
