@@ -34,7 +34,6 @@
         "cmdk": "^1.1.1",
         "date-fns": "^4.1.0",
         "dotenv": "^17.3.1",
-        "dotenv-flow": "^4.1.0",
         "drizzle-orm": "^0.45.1",
         "drizzle-zod": "^0.8.3",
         "jszip": "^3.10.1",
