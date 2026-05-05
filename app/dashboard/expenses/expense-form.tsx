@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -46,12 +45,85 @@ function centsToDisplay(n: number) {
 }
 
 function parseMoneyToCents(raw: string): number | null {
-    const t = raw.trim();
-    if (!t) return null;
+    const t = raw.replace(/,/g, "").trim();
+    if (!t || t === ".") return null;
     const n = Number.parseFloat(t);
     if (!Number.isFinite(n) || n < 0) return null;
     return Math.round(n * 100);
 }
+
+const moneyTypingPattern = /^\d*\.?\d*$/;
+
+/** Money input: keeps free-form text while focused so users can type decimals without instant reformatting. */
+const CentsMoneyInput = React.forwardRef<
+    HTMLInputElement,
+    {
+        valueCents: number;
+        onValueChange: (cents: number) => void;
+    } & Omit<
+        React.ComponentProps<typeof InputGroupInput>,
+        "value" | "onChange" | "defaultValue" | "onBlur"
+    > & {
+        onBlur?: React.FocusEventHandler<HTMLInputElement>;
+    }
+>(function CentsMoneyInput(
+    {
+        valueCents,
+        onValueChange,
+        onBlur,
+        onFocus,
+        disabled,
+        ...rest
+    },
+    ref,
+) {
+    const [text, setText] = React.useState(() =>
+        centsToDisplay(valueCents),
+    );
+    const isFocused = React.useRef(false);
+
+    React.useEffect(() => {
+        if (!isFocused.current) {
+            setText(centsToDisplay(valueCents));
+        }
+    }, [valueCents]);
+
+    return (
+        <InputGroupInput
+            ref={ref}
+            {...rest}
+            disabled={disabled}
+            value={text}
+            onFocus={(e) => {
+                isFocused.current = true;
+                onFocus?.(e);
+            }}
+            onBlur={(e) => {
+                isFocused.current = false;
+                const cents = parseMoneyToCents(text);
+                const resolved = cents ?? 0;
+                onValueChange(resolved);
+                setText(centsToDisplay(resolved));
+                onBlur?.(e);
+            }}
+            onChange={(e) => {
+                const raw = e.target.value.replace(/,/g, "");
+                if (raw !== "" && !moneyTypingPattern.test(raw)) {
+                    return;
+                }
+                setText(raw);
+                if (raw === "" || raw === ".") {
+                    onValueChange(0);
+                    return;
+                }
+                const cents = parseMoneyToCents(raw);
+                if (cents !== null) {
+                    onValueChange(cents);
+                }
+            }}
+        />
+    );
+});
 
 function defaultSelections(
     categories: ExpenseCategoryWithSubcategories[],
@@ -100,7 +172,7 @@ function defaultSelections(
 type ExpenseFormProps = {
     categories: ExpenseCategoryWithSubcategories[];
     suppliers: SelectExpenseSupplier[];
-    mode: "create" | "edit";
+    mode: "create" | "edit" | "view";
     expenseId?: string;
     initial?: ExpenseListRow | null;
 };
@@ -169,6 +241,10 @@ export function ExpenseForm({
         control: form.control,
         name: "subtotalCents",
     });
+    const gstCents = useWatch({
+        control: form.control,
+        name: "gstCents",
+    });
 
     const selectedCategoryRow = categories.find((c) => c.name === categoryName);
 
@@ -199,7 +275,10 @@ export function ExpenseForm({
         [suppliers],
     );
 
+    const isViewOnly = mode === "view";
+
     React.useEffect(() => {
+        if (isViewOnly) return;
         if (!selectedCategoryRow) return;
         const ok = selectedCategoryRow.subcategories.some(
             (s) => s.name === subcategoryName,
@@ -208,18 +287,32 @@ export function ExpenseForm({
         if (!ok && firstName) {
             form.setValue("subcategoryName", firstName, { shouldValidate: true });
         }
-    }, [categoryName, form, selectedCategoryRow, subcategoryName]);
+    }, [
+        categoryName,
+        form,
+        isViewOnly,
+        selectedCategoryRow,
+        subcategoryName,
+    ]);
 
     React.useEffect(() => {
-        if (gstManual) return;
+        if (isViewOnly) return;
         const st =
             typeof subtotalCents === "number" && Number.isFinite(subtotalCents)
                 ? subtotalCents
                 : 0;
-        const gst = Math.round(st * SGP_GST_RATE);
-        form.setValue("gstCents", gst, { shouldValidate: true });
+        if (!gstManual) {
+            const gst = Math.round(st * SGP_GST_RATE);
+            form.setValue("gstCents", gst, { shouldValidate: true });
+            form.setValue("grandTotalCents", st + gst, { shouldValidate: true });
+            return;
+        }
+        const gst =
+            typeof gstCents === "number" && Number.isFinite(gstCents)
+                ? gstCents
+                : 0;
         form.setValue("grandTotalCents", st + gst, { shouldValidate: true });
-    }, [subtotalCents, gstManual, form]);
+    }, [subtotalCents, gstCents, gstManual, form, isViewOnly]);
 
     const schema = React.useMemo(
         () => buildExpenseFormSchema(categories, supplierNameList),
@@ -227,6 +320,9 @@ export function ExpenseForm({
     );
 
     const onSubmit = (values: ExpenseFormValues) => {
+        if (mode === "view") {
+            return;
+        }
         setSubmitError(null);
         startTransition(async () => {
             const parsed = schema.safeParse(values);
@@ -241,7 +337,7 @@ export function ExpenseForm({
                     setSubmitError(res.error);
                     return;
                 }
-                router.push(`/dashboard/expenses/${res.id}`);
+                router.push(`/dashboard/expenses/${res.id}/view`);
                 router.refresh();
                 return;
             }
@@ -256,15 +352,32 @@ export function ExpenseForm({
                 setSubmitError(res.error);
                 return;
             }
-            router.push(`/dashboard/expenses/${expenseId}`);
+            router.push(`/dashboard/expenses/${expenseId}/view`);
             router.refresh();
         });
     };
 
     const isPaidLocked = initial?.status === "Expense Paid";
+    const isLocked = isPaidLocked || isViewOnly;
+
+    const manualGstShownInView = React.useMemo(() => {
+        if (!initial) return false;
+        return (
+            Math.round(initial.subtotalCents * SGP_GST_RATE) !==
+            initial.gstCents
+        );
+    }, [initial]);
 
     return (
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form
+            onSubmit={
+                isViewOnly
+                    ? (e: React.FormEvent<HTMLFormElement>) => {
+                          e.preventDefault();
+                      }
+                    : form.handleSubmit(onSubmit)
+            }
+            className="space-y-6">
             <FieldGroup>
                 <div className="grid gap-4 md:grid-cols-2">
                     <Field>
@@ -278,7 +391,7 @@ export function ExpenseForm({
                                 })
                             }
                             disabled={
-                                isPaidLocked || categories.length === 0
+                                isLocked || categories.length === 0
                             }
                             placeholder="Choose category"
                             aria-invalid={
@@ -300,7 +413,7 @@ export function ExpenseForm({
                                 })
                             }
                             disabled={
-                                isPaidLocked || subcategoryOptions.length === 0
+                                isLocked || subcategoryOptions.length === 0
                             }
                             placeholder="Choose subcategory"
                             aria-invalid={
@@ -324,7 +437,7 @@ export function ExpenseForm({
                                     shouldValidate: true,
                                 })
                             }
-                            disabled={isPaidLocked || suppliers.length === 0}
+                            disabled={isLocked || suppliers.length === 0}
                             placeholder="Choose supplier"
                             aria-invalid={
                                 !!form.formState.errors.supplierName
@@ -338,7 +451,7 @@ export function ExpenseForm({
                         <FieldLabel>Description</FieldLabel>
                         <Input
                             {...form.register("description")}
-                            disabled={isPaidLocked}
+                            disabled={isLocked}
                         />
                         <FieldError
                             errors={[form.formState.errors.description]}
@@ -351,14 +464,14 @@ export function ExpenseForm({
                         <FieldLabel>Invoice number</FieldLabel>
                         <Input
                             {...form.register("invoiceNumber")}
-                            disabled={isPaidLocked}
+                            disabled={isLocked}
                         />
                     </Field>
                     <Field>
                         <FieldLabel>Supplier GST registration</FieldLabel>
                         <Input
                             {...form.register("supplierGstRegNumber")}
-                            disabled={isPaidLocked}
+                            disabled={isLocked}
                         />
                     </Field>
                 </div>
@@ -374,7 +487,7 @@ export function ExpenseForm({
                                     id="invoice-date"
                                     value={field.value}
                                     onValueChange={field.onChange}
-                                    disabled={isPaidLocked}
+                                    disabled={isLocked}
                                     aria-invalid={fieldState.invalid}
                                 />
                             )}
@@ -393,7 +506,7 @@ export function ExpenseForm({
                                     id="submission-date"
                                     value={field.value}
                                     onValueChange={field.onChange}
-                                    disabled={isPaidLocked}
+                                    disabled={isLocked}
                                     aria-invalid={fieldState.invalid}
                                 />
                             )}
@@ -418,24 +531,16 @@ export function ExpenseForm({
                                     render={({ field, fieldState }) => (
                                         <InputGroup>
                                             <InputGroupAddon>$</InputGroupAddon>
-                                            <InputGroupInput
+                                            <CentsMoneyInput
+                                                ref={field.ref}
                                                 inputMode="decimal"
-                                                value={centsToDisplay(
-                                                    field.value ?? 0,
-                                                )}
-                                                disabled={isPaidLocked}
+                                                valueCents={field.value ?? 0}
+                                                onValueChange={field.onChange}
+                                                onBlur={field.onBlur}
+                                                disabled={isLocked}
                                                 aria-invalid={
                                                     fieldState.invalid
                                                 }
-                                                onChange={(e) => {
-                                                    const cents =
-                                                        parseMoneyToCents(
-                                                            e.target.value,
-                                                        );
-                                                    field.onChange(
-                                                        cents ?? 0,
-                                                    );
-                                                }}
                                             />
                                         </InputGroup>
                                     )}
@@ -454,27 +559,36 @@ export function ExpenseForm({
                                     render={({ field, fieldState }) => (
                                         <InputGroup>
                                             <InputGroupAddon>$</InputGroupAddon>
-                                            <InputGroupInput
-                                                inputMode="decimal"
-                                                value={centsToDisplay(
-                                                    field.value ?? 0,
-                                                )}
-                                                disabled={
-                                                    isPaidLocked || !gstManual
-                                                }
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
-                                                onChange={(e) => {
-                                                    const cents =
-                                                        parseMoneyToCents(
-                                                            e.target.value,
-                                                        );
-                                                    field.onChange(
-                                                        cents ?? 0,
-                                                    );
-                                                }}
-                                            />
+                                            {isLocked || !gstManual ? (
+                                                <InputGroupInput
+                                                    ref={field.ref}
+                                                    inputMode="decimal"
+                                                    value={centsToDisplay(
+                                                        field.value ?? 0,
+                                                    )}
+                                                    disabled
+                                                    readOnly
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                    onBlur={field.onBlur}
+                                                />
+                                            ) : (
+                                                <CentsMoneyInput
+                                                    ref={field.ref}
+                                                    inputMode="decimal"
+                                                    valueCents={
+                                                        field.value ?? 0
+                                                    }
+                                                    onValueChange={
+                                                        field.onChange
+                                                    }
+                                                    onBlur={field.onBlur}
+                                                    aria-invalid={
+                                                        fieldState.invalid
+                                                    }
+                                                />
+                                            )}
                                         </InputGroup>
                                     )}
                                 />
@@ -491,25 +605,17 @@ export function ExpenseForm({
                                         <InputGroup>
                                             <InputGroupAddon>$</InputGroupAddon>
                                             <InputGroupInput
+                                                ref={field.ref}
                                                 inputMode="decimal"
                                                 value={centsToDisplay(
                                                     field.value ?? 0,
                                                 )}
-                                                disabled={
-                                                    isPaidLocked || !gstManual
-                                                }
+                                                disabled
+                                                readOnly
                                                 aria-invalid={
                                                     fieldState.invalid
                                                 }
-                                                onChange={(e) => {
-                                                    const cents =
-                                                        parseMoneyToCents(
-                                                            e.target.value,
-                                                        );
-                                                    field.onChange(
-                                                        cents ?? 0,
-                                                    );
-                                                }}
+                                                onBlur={field.onBlur}
                                             />
                                         </InputGroup>
                                     )}
@@ -524,16 +630,20 @@ export function ExpenseForm({
                         <div className="flex flex-wrap items-center gap-3">
                             <Checkbox
                                 id="gst-manual"
-                                checked={gstManual}
-                                onCheckedChange={(v) =>
-                                    setGstManual(v === true)
+                                checked={
+                                    isViewOnly
+                                        ? manualGstShownInView
+                                        : gstManual
                                 }
-                                disabled={isPaidLocked}
+                                onCheckedChange={(v) => {
+                                    if (!isViewOnly) setGstManual(v === true);
+                                }}
+                                disabled={isLocked}
                             />
                             <Label
                                 htmlFor="gst-manual"
                                 className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                Manual GST / grand total override
+                                Manual GST override
                             </Label>
                         </div>
                     </CardContent>
@@ -545,7 +655,7 @@ export function ExpenseForm({
             ) : null}
 
             <div className="flex flex-wrap gap-2">
-                {!isPaidLocked ? (
+                {!isPaidLocked && !isViewOnly ? (
                     <Button type="submit" disabled={pending}>
                         {pending
                             ? "Saving…"
@@ -554,9 +664,6 @@ export function ExpenseForm({
                               : "Save"}
                     </Button>
                 ) : null}
-                <Button type="button" variant="outline" asChild>
-                    <Link href="/dashboard/expenses/all">Back to list</Link>
-                </Button>
             </div>
         </form>
     );

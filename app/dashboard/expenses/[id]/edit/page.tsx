@@ -52,7 +52,9 @@ export default async function EditExpensePage({
             subtitle="Update expense details. Paid expenses cannot be edited."
             actions={
                 <Button variant="outline" asChild>
-                    <Link href={`/dashboard/expenses/${id}`}>View detail</Link>
+                    <Link href={`/dashboard/expenses/${id}/view`}>
+                        View detail
+                    </Link>
                 </Button>
             }>
             {!hasAnySub ? (

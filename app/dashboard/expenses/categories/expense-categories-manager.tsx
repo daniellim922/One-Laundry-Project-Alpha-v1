@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { AlertTriangle, Trash2 } from "lucide-react";
 
 import type { SelectExpenseSupplier } from "@/db/tables/expenseSupplierTable";
 import type { ExpenseCategoryWithSubcategories } from "@/services/expense/list-expense-master-data";
@@ -16,6 +16,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +28,8 @@ import {
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { SelectSearch } from "@/components/ui/SelectSearch";
+import { cn } from "@/lib/utils";
+import { expenseCategoryBadgeClassForId } from "@/types/badge-tones";
 
 type Subcategory = ExpenseCategoryWithSubcategories["subcategories"][number];
 type Category = ExpenseCategoryWithSubcategories;
@@ -191,7 +194,13 @@ function CategoryCardSection({
                         <li
                             key={`${c.id}-${+c.updatedAt}`}
                             className="flex items-center justify-between gap-3 border-b py-2">
-                            <span className="text-sm">{c.name}</span>
+                            <Badge
+                                className={cn(
+                                    "text-xs font-normal",
+                                    expenseCategoryBadgeClassForId(c.id),
+                                )}>
+                                {c.name}
+                            </Badge>
                             <Button
                                 type="button"
                                 size="icon-sm"
@@ -218,26 +227,33 @@ function CategoryCardSection({
                             Delete category{deleteTarget ? ` "${deleteTarget.name}"` : ""}?
                         </AlertDialogTitle>
                         <AlertDialogDescription asChild>
-                            <span className="text-muted-foreground block space-y-2 text-sm">
-                                {subLabels.length > 0 ? (
-                                    <>
+                            <div className="space-y-3 text-sm">
+                                <div className="text-muted-foreground space-y-2">
+                                    {subLabels.length > 0 ? (
+                                        <>
+                                            <span>
+                                                The following subcategories will
+                                                also be deleted:
+                                            </span>
+                                            <ul className="list-inside list-disc">
+                                                {subLabels.map((n) => (
+                                                    <li key={n}>{n}</li>
+                                                ))}
+                                            </ul>
+                                        </>
+                                    ) : (
                                         <span>
-                                            The following subcategories will
-                                            also be deleted:
+                                            This category has no subcategories.
                                         </span>
-                                        <ul className="list-inside list-disc">
-                                            {subLabels.map((n) => (
-                                                <li key={n}>{n}</li>
-                                            ))}
-                                        </ul>
-                                    </>
-                                ) : (
-                                    <span>This category has no subcategories.</span>
-                                )}
-                                <span className="text-destructive font-medium">
-                                    This action cannot be undone.
-                                </span>
-                            </span>
+                                    )}
+                                </div>
+                                <Alert variant="destructive">
+                                    <AlertTriangle />
+                                    <AlertDescription className="font-medium">
+                                        This action cannot be undone.
+                                    </AlertDescription>
+                                </Alert>
+                            </div>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -289,6 +305,7 @@ function SubcategoryCardSection({
             categories.flatMap((c) =>
                 c.subcategories.map((s) => ({
                     sub: s,
+                    categoryId: c.id,
                     categoryLabel: c.name,
                 })),
             ),
@@ -384,13 +401,19 @@ function SubcategoryCardSection({
                     </Button>
                 </form>
                 <ul className="space-y-2">
-                    {flatSubs.map(({ sub, categoryLabel }) => (
+                    {flatSubs.map(({ sub, categoryId, categoryLabel }) => (
                         <li
                             key={`${sub.id}-${+sub.updatedAt}`}
                             className="flex items-center justify-between gap-3 border-b py-2">
                             <div className="flex flex-wrap items-center gap-2">
                                 <span className="text-sm">{sub.name}</span>
-                                <Badge variant="outline" className="text-xs">
+                                <Badge
+                                    className={cn(
+                                        "text-xs font-normal",
+                                        expenseCategoryBadgeClassForId(
+                                            categoryId,
+                                        ),
+                                    )}>
                                     {categoryLabel}
                                 </Badge>
                             </div>
@@ -420,8 +443,13 @@ function SubcategoryCardSection({
                             Delete subcategory
                             {deleteTarget ? ` "${deleteTarget.name}"` : ""}?
                         </AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone.
+                        <AlertDialogDescription asChild>
+                            <Alert variant="destructive">
+                                <AlertTriangle />
+                                <AlertDescription className="font-medium">
+                                    This action cannot be undone.
+                                </AlertDescription>
+                            </Alert>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -546,8 +574,13 @@ function SupplierCardSection({
                         <AlertDialogTitle>
                             Delete supplier{deleteTarget ? ` "${deleteTarget.name}"` : ""}?
                         </AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone.
+                        <AlertDialogDescription asChild>
+                            <Alert variant="destructive">
+                                <AlertTriangle />
+                                <AlertDescription className="font-medium">
+                                    This action cannot be undone.
+                                </AlertDescription>
+                            </Alert>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

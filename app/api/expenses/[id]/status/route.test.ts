@@ -86,7 +86,7 @@ describe("PATCH /api/expenses/[id]/status", () => {
         expect(json.data.status).toBe("Expense Paid");
     });
 
-    it("returns 409 when not submitted", async () => {
+    it("returns 409 when transition is invalid (already paid, request paid)", async () => {
         mocks.dbSelectLimit.mockResolvedValue([
             { id: EXP_ID, status: "Expense Paid" },
         ]);
@@ -101,12 +101,59 @@ describe("PATCH /api/expenses/[id]/status", () => {
         expect(res.status).toBe(409);
     });
 
-    it("returns 400 for invalid body", async () => {
+    it("returns 409 when transition is invalid (submitted, request submitted)", async () => {
         const res = await PATCH(
             new Request(`http://localhost/api/expenses/${EXP_ID}/status`, {
                 method: "PATCH",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({ status: "Expense Submitted" }),
+            }),
+            { params: Promise.resolve({ id: EXP_ID }) },
+        );
+        expect(res.status).toBe(409);
+    });
+
+    it("reverts expense from paid to submitted", async () => {
+        mocks.dbSelectLimit.mockResolvedValue([
+            { id: EXP_ID, status: "Expense Paid" },
+        ]);
+        mocks.getExpenseDetailById.mockResolvedValue({
+            id: EXP_ID,
+            categoryName: "Overheads",
+            subcategoryName: "Rent",
+            supplierName: "Invoice Co",
+            description: null,
+            invoiceNumber: null,
+            supplierGstRegNumber: null,
+            subtotalCents: 100,
+            gstCents: 9,
+            grandTotalCents: 109,
+            invoiceDate: "2026-05-01",
+            submissionDate: "2026-05-02",
+            status: "Expense Submitted",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+        const res = await PATCH(
+            new Request(`http://localhost/api/expenses/${EXP_ID}/status`, {
+                method: "PATCH",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ status: "Expense Submitted" }),
+            }),
+            { params: Promise.resolve({ id: EXP_ID }) },
+        );
+        expect(res.status).toBe(200);
+        const json = await res.json();
+        expect(json.ok).toBe(true);
+        expect(json.data.status).toBe("Expense Submitted");
+    });
+
+    it("returns 400 for invalid body", async () => {
+        const res = await PATCH(
+            new Request(`http://localhost/api/expenses/${EXP_ID}/status`, {
+                method: "PATCH",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ status: "Draft" }),
             }),
             { params: Promise.resolve({ id: EXP_ID }) },
         );

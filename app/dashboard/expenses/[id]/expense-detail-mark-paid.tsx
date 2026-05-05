@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ export function ExpenseDetailMarkPaid({ expenseId }: { expenseId: string }) {
     return (
         <Button
             type="button"
+            className="inline-flex items-center gap-2"
             disabled={pending}
             onClick={() => {
                 setPending(true);
@@ -37,7 +39,8 @@ export function ExpenseDetailMarkPaid({ expenseId }: { expenseId: string }) {
                     }
                 })();
             }}>
-            {pending ? "Marking paid…" : "Mark paid"}
+            <Check className="h-4 w-4" aria-hidden />
+            {pending ? "Marking Paid…" : "Mark Paid"}
         </Button>
     );
 }

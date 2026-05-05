@@ -30,7 +30,7 @@ export async function updateExpense(
 
     revalidatePath("/dashboard/expenses");
     revalidatePath("/dashboard/expenses/all");
-    revalidatePath(`/dashboard/expenses/${id}`);
+    revalidatePath(`/dashboard/expenses/${id}/view`);
     revalidatePath(`/dashboard/expenses/${id}/edit`);
     return { success: true };
 }

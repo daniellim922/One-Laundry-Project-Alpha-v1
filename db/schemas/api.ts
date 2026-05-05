@@ -7,7 +7,7 @@ import { payrollTable } from "@/db/tables/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 
 export const expenseStatusPatchRequestSchema = z.object({
-    status: z.literal("Expense Paid"),
+    status: z.enum(["Expense Paid", "Expense Submitted"]),
 });
 
 const payrollIdSchema = createSelectSchema(payrollTable).pick({ id: true }).shape.id;

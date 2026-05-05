@@ -1,29 +1,26 @@
 "use client";
 
-import { Check } from "lucide-react";
-import { useRouter } from "next/navigation";
 import * as React from "react";
+import { Undo2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-import {
-    DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
-export function ExpenseMarkPaidMenuItem({
+export function ExpenseDetailRevertSubmitted({
     expenseId,
-    disabled,
 }: {
     expenseId: string;
-    disabled?: boolean;
 }) {
     const router = useRouter();
     const [pending, setPending] = React.useState(false);
 
     return (
-        <DropdownMenuItem
-            disabled={disabled || pending}
-            className="flex w-full items-center gap-2"
-            onSelect={(e) => {
-                e.preventDefault();
+        <Button
+            type="button"
+            variant="outline"
+            className="inline-flex items-center gap-2"
+            disabled={pending}
+            onClick={() => {
                 setPending(true);
                 void (async () => {
                     try {
@@ -35,22 +32,20 @@ export function ExpenseMarkPaidMenuItem({
                                     "content-type": "application/json",
                                 },
                                 body: JSON.stringify({
-                                    status: "Expense Paid",
+                                    status: "Expense Submitted",
                                 }),
                             },
                         );
-                        if (!res.ok) {
-                            setPending(false);
-                            return;
+                        if (res.ok) {
+                            router.refresh();
                         }
-                        router.refresh();
                     } finally {
                         setPending(false);
                     }
                 })();
             }}>
-            <Check className="h-4 w-4" aria-hidden />
-            {pending ? "Marking Paid…" : "Mark Paid"}
-        </DropdownMenuItem>
+            <Undo2 className="h-4 w-4" aria-hidden />
+            {pending ? "Reverting…" : "Revert to Submitted"}
+        </Button>
     );
 }

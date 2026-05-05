@@ -6,6 +6,7 @@ const EXPENSE_PATHS = [
     "/dashboard/expenses/new",
     "/dashboard/expenses/categories",
     { path: "/dashboard/expenses/[id]", type: "page" as const },
+    { path: "/dashboard/expenses/[id]/view", type: "page" as const },
     { path: "/dashboard/expenses/[id]/edit", type: "page" as const },
 ];
 

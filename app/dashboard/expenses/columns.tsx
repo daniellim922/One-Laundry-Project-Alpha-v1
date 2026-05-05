@@ -84,7 +84,7 @@ export const columns: ColumnDef<ExpenseListRow>[] = [
                 <RowActionsMenu>
                     <DropdownMenuItem asChild>
                         <Link
-                            href={`/dashboard/expenses/${expenseRow.id}`}
+                            href={`/dashboard/expenses/${expenseRow.id}/view`}
                             className="flex w-full items-center gap-2">
                             <Eye className="mr-2 h-4 w-4" />
                             View

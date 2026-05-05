@@ -58,19 +58,23 @@ export async function PATCH(
         });
     }
 
-    if (row.status !== "Expense Submitted") {
+    const next = parsed.data.status;
+    const valid =
+        (row.status === "Expense Submitted" && next === "Expense Paid") ||
+        (row.status === "Expense Paid" && next === "Expense Submitted");
+    if (!valid) {
         return apiError({
             status: 409,
             code: "INVALID_STATUS_TRANSITION",
             message:
-                "Only expenses in Expense Submitted status can be marked Expense Paid.",
+                "Only Expense Submitted can be marked Expense Paid, or Expense Paid reverted to Expense Submitted.",
         });
     }
 
     await db
         .update(expensesTable)
         .set({
-            status: parsed.data.status,
+            status: next,
             updatedAt: new Date(),
         })
         .where(eq(expensesTable.id, id));

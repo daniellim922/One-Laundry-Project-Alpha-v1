@@ -74,3 +74,35 @@ export const workerPaymentMethodBadgeTone: Record<WorkerPaymentMethod, string> =
             "bg-indigo-100 text-indigo-800 dark:bg-indigo-500/20 dark:text-indigo-300",
         Cash: "bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300",
     };
+
+/** Backing palette for `expenseCategoryBadgeClassForId` (expense master categories). */
+export const expenseCategoryBadgeToneClasses = [
+    "border-transparent bg-teal-100 text-teal-800 dark:bg-teal-500/20 dark:text-teal-300",
+    "border-transparent bg-violet-100 text-violet-800 dark:bg-violet-500/20 dark:text-violet-300",
+    "border-transparent bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300",
+    "border-transparent bg-cyan-100 text-cyan-800 dark:bg-cyan-500/20 dark:text-cyan-300",
+    "border-transparent bg-lime-100 text-lime-800 dark:bg-lime-500/20 dark:text-lime-300",
+    "border-transparent bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300",
+    "border-transparent bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300",
+    "border-transparent bg-indigo-100 text-indigo-800 dark:bg-indigo-500/20 dark:text-indigo-300",
+    "border-transparent bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
+    "border-transparent bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300",
+    "border-transparent bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-500/20 dark:text-fuchsia-300",
+    "border-transparent bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300",
+] as const;
+
+function hashStringToNonNegativeInt(input: string): number {
+    let h = 0;
+    for (let i = 0; i < input.length; i += 1) {
+        h = (Math.imul(31, h) + input.charCodeAt(i)) | 0;
+    }
+    return Math.abs(h);
+}
+
+/** Stable badge tone for a category row (by primary key id). */
+export function expenseCategoryBadgeClassForId(categoryId: string): string {
+    const i =
+        hashStringToNonNegativeInt(categoryId) %
+        expenseCategoryBadgeToneClasses.length;
+    return expenseCategoryBadgeToneClasses[i]!;
+}
