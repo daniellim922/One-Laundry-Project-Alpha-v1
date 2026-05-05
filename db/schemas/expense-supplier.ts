@@ -8,9 +8,11 @@ export const expenseSupplierFormSchema = createInsertSchema(
     expenseSupplierTable,
     {
         name: z.string().trim().min(1, "Name is required"),
+        gstRegNumber: z.string().trim().nullish(),
     },
 ).pick({
     name: true,
+    gstRegNumber: true,
 });
 
 export type ExpenseSupplierFormValues = z.infer<

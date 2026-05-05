@@ -480,6 +480,7 @@ function SupplierCardSection({
     onRouterRefresh: () => void;
 }) {
     const [name, setName] = React.useState("");
+    const [gstRegNumber, setGstRegNumber] = React.useState("");
     const [deleteTarget, setDeleteTarget] =
         React.useState<SelectExpenseSupplier | null>(null);
 
@@ -488,14 +489,21 @@ function SupplierCardSection({
         if (!name.trim()) return;
         setBusy(true);
         try {
+            const gstTrimmed = gstRegNumber.trim();
             const res = await fetch("/api/expenses/suppliers", {
                 method: "POST",
                 credentials: "include",
                 headers: { "content-type": "application/json" },
-                body: JSON.stringify({ name: name.trim() }),
+                body: JSON.stringify({
+                    name: name.trim(),
+                    ...(gstTrimmed !== ""
+                        ? { gstRegNumber: gstTrimmed }
+                        : {}),
+                }),
             });
             if (res.ok) {
                 setName("");
+                setGstRegNumber("");
                 await onRefresh();
                 onRouterRefresh();
             }
@@ -530,13 +538,22 @@ function SupplierCardSection({
             <CardContent className="space-y-4">
                 <form
                     onSubmit={(e) => void addSupplier(e)}
-                    className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-end">
                     <Field className="min-w-[200px] flex-1">
                         <FieldLabel>Name</FieldLabel>
                         <Input
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="e.g. Acme Supplies Pte Ltd"
+                        />
+                    </Field>
+                    <Field className="min-w-[180px] flex-1">
+                        <FieldLabel>GST registration number (optional)</FieldLabel>
+                        <Input
+                            value={gstRegNumber}
+                            onChange={(e) => setGstRegNumber(e.target.value)}
+                            placeholder="e.g. M90371234X"
+                            autoComplete="off"
                         />
                     </Field>
                     <Button type="submit" disabled={busy}>
@@ -548,7 +565,14 @@ function SupplierCardSection({
                         <li
                             key={`${s.id}-${+s.updatedAt}`}
                             className="flex items-center justify-between gap-3 border-b py-2">
-                            <span className="text-sm">{s.name}</span>
+                            <div className="min-w-0 space-y-0.5">
+                                <p className="text-sm">{s.name}</p>
+                                {s.gstRegNumber ? (
+                                    <p className="text-muted-foreground text-xs">
+                                        GST: {s.gstRegNumber}
+                                    </p>
+                                ) : null}
+                            </div>
                             <Button
                                 type="button"
                                 size="icon-sm"

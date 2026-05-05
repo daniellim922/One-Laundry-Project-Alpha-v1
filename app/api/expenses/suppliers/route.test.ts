@@ -43,6 +43,7 @@ describe("GET /api/expenses/suppliers", () => {
             {
                 id: "sup-1",
                 name: "Acme",
+                gstRegNumber: "M90371234X",
                 createdAt: new Date(),
                 updatedAt: new Date(),
             },
@@ -56,6 +57,7 @@ describe("GET /api/expenses/suppliers", () => {
         expect(json.ok).toBe(true);
         expect(Array.isArray(json.data)).toBe(true);
         expect(json.data[0].name).toBe("Acme");
+        expect(json.data[0].gstRegNumber).toBe("M90371234X");
     });
 });
 
@@ -67,6 +69,7 @@ describe("POST /api/expenses/suppliers", () => {
             {
                 id: "new-sup",
                 name: "Beta Supplies",
+                gstRegNumber: "M12345678X",
                 createdAt: new Date(),
                 updatedAt: new Date(),
             },
@@ -85,6 +88,22 @@ describe("POST /api/expenses/suppliers", () => {
         const json = await res.json();
         expect(json.ok).toBe(true);
         expect(json.data.id).toBe("new-sup");
+    });
+
+    it("creates a supplier with optional GST registration number", async () => {
+        const res = await POST(
+            new Request("http://localhost/api/expenses/suppliers", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({
+                    name: "Gamma Supplies",
+                    gstRegNumber: "M99999999X",
+                }),
+            }),
+        );
+        expect(res.status).toBe(201);
+        const json = await res.json();
+        expect(json.ok).toBe(true);
     });
 
     it("returns 400 on invalid payload", async () => {

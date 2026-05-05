@@ -7,8 +7,11 @@ import { Eye, Pencil } from "lucide-react";
 import {
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
-import { expenseStatusBadgeTone } from "@/types/badge-tones";
+import {
+    expenseCategoryBadgeClassForName,
+    expenseStatusBadgeTone,
+    expenseSubcategoryBadgeClassForName,
+} from "@/types/badge-tones";
 import type { ExpenseListRow } from "@/services/expense/list-expenses";
 import {
     createActionsColumn,
@@ -36,15 +39,24 @@ export const columns: ColumnDef<ExpenseListRow>[] = [
     {
         accessorKey: "categoryName",
         header: createSortableHeader("Category"),
-        cell: ({ row }) => (
-            <div className="flex flex-col gap-0.5">
-                <span>{row.original.categoryName}</span>
-                <Badge variant="outline" className="w-fit text-xs font-normal">
-                    {row.original.subcategoryName}
-                </Badge>
-            </div>
-        ),
         meta: { globalSearch: true },
+        cell: createBadgeCell<ExpenseListRow>({
+            value: (r) => r.categoryName,
+            variant: "outline",
+            toneClassNameFor: (r) =>
+                expenseCategoryBadgeClassForName(r.categoryName),
+        }),
+    },
+    {
+        accessorKey: "subcategoryName",
+        header: createSortableHeader("Subcategory"),
+        meta: { globalSearch: true },
+        cell: createBadgeCell<ExpenseListRow>({
+            value: (r) => r.subcategoryName,
+            variant: "outline",
+            toneClassNameFor: (r) =>
+                expenseSubcategoryBadgeClassForName(r.subcategoryName),
+        }),
     },
     {
         accessorKey: "subtotalCents",

@@ -18,6 +18,29 @@ import { DashboardQuickActionsCard } from "@/components/dashboard/dashboard-quic
 import { DollarSign, FolderTree, List, Plus, TrendingUp } from "lucide-react";
 import { listExpensesWithCategories } from "@/services/expense/list-expenses";
 
+import {
+    ExpenseMonthlyOverviewChart,
+    type ExpenseMonthlyOverviewCopy,
+} from "./expense-monthly-overview-chart";
+import { getExpenseMonthlyAggregates } from "./get-expense-monthly-aggregates";
+
+const EXPENSE_MONTHLY_AMOUNTS_COPY = {
+    title: "Monthly expense amounts",
+    description:
+        "Grand Total or Subtotal for all expenses, stacked by supplier by calendar month of invoice date. Use the amount control to choose Subtotal or Grand Total. Category and subcategory in the filter row bulk select or clear supplier rows in that group; individual suppliers can be toggled under each category heading. Suppliers are grouped under each category — subcategory. Only supplier lines with an expense in the selected year are listed.",
+    emptyListYear: "No expense amounts for this year.",
+    emptyListSearch: "No suppliers match this search.",
+    emptyListCategory:
+        "No suppliers match the current category or subcategory breakdown.",
+    emptyChartYear: "No amount to chart for this year.",
+    emptyChartAllDeselected:
+        "No amount to chart — all suppliers are deselected.",
+    emptyChartMonths: "Select at least one month to see the chart.",
+    emptyChartSelection:
+        "Select suppliers or adjust search to see the chart.",
+    idPrefix: "expense-monthly-amounts",
+} satisfies ExpenseMonthlyOverviewCopy;
+
 function singaporeYearMonth(d: Date) {
     const y = new Intl.DateTimeFormat("en-CA", {
         timeZone: "Asia/Singapore",
@@ -38,7 +61,10 @@ function previousYearMonth(ym: string) {
 }
 
 export async function ExpensesOverviewLoader() {
-    const rows = await listExpensesWithCategories();
+    const [rows, expenseMonthlyRows] = await Promise.all([
+        listExpensesWithCategories(),
+        getExpenseMonthlyAggregates(),
+    ]);
 
     const totalSpendCents = rows.reduce((s, r) => s + r.grandTotalCents, 0);
     const expensesCount = rows.length;
@@ -106,6 +132,17 @@ export async function ExpensesOverviewLoader() {
             value: cents,
         }));
 
+    const categorySpendTotalCents = categorySpendSegments.reduce(
+        (sum, seg) => sum + seg.value,
+        0,
+    );
+    const categorySpendCenterText = `$${(
+        categorySpendTotalCents / 100
+    ).toLocaleString("en-SG", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    })}`;
+
     const subSpendSorted = [...subSpend.values()].sort(
         (a, b) => b.cents - a.cents,
     );
@@ -131,6 +168,13 @@ export async function ExpensesOverviewLoader() {
                         icon: FolderTree,
                     },
                 ]}
+            />
+
+            <ExpenseMonthlyOverviewChart
+                rows={expenseMonthlyRows.rows}
+                defaultYear={expenseMonthlyRows.defaultYear}
+                yearOptions={expenseMonthlyRows.yearOptions}
+                copy={EXPENSE_MONTHLY_AMOUNTS_COPY}
             />
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -219,12 +263,7 @@ export async function ExpensesOverviewLoader() {
                         {categorySpendSegments.length > 0 ? (
                             <SimpleDonutChart
                                 centerLabel="SGD (¢)"
-                                formatCenterValue={(total) =>
-                                    `$${(total / 100).toLocaleString("en-SG", {
-                                        minimumFractionDigits: 0,
-                                        maximumFractionDigits: 0,
-                                    })}`
-                                }
+                                centerValueText={categorySpendCenterText}
                                 segments={categorySpendSegments}
                             />
                         ) : (

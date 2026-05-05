@@ -432,11 +432,21 @@ export function ExpenseForm({
                         <SelectSearch
                             options={supplierOptions}
                             value={supplierName}
-                            onChange={(next) =>
+                            onChange={(next) => {
                                 form.setValue("supplierName", next, {
                                     shouldValidate: true,
-                                })
-                            }
+                                });
+                                const match = suppliers.find(
+                                    (s) => s.name === next,
+                                );
+                                if (match) {
+                                    form.setValue(
+                                        "supplierGstRegNumber",
+                                        match.gstRegNumber ?? "",
+                                        { shouldValidate: true },
+                                    );
+                                }
+                            }}
                             disabled={isLocked || suppliers.length === 0}
                             placeholder="Choose supplier"
                             aria-invalid={

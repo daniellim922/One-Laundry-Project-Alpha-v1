@@ -21,13 +21,13 @@ export type DonutSegment = {
 export function SimpleDonutChart({
     segments,
     centerLabel,
-    formatCenterValue,
+    centerValueText,
     innerRadius = 60,
 }: {
     segments: DonutSegment[];
     centerLabel?: string;
-    /** When set, replaces the raw numeric total in the center (e.g. currency). */
-    formatCenterValue?: (total: number) => string;
+    /** When set (e.g. from a Server Component), replaces the numeric total in the center. */
+    centerValueText?: string;
     /** Use `0` for a full pie; default is a donut. */
     innerRadius?: number;
 }) {
@@ -93,9 +93,7 @@ export function SimpleDonutChart({
                                                 x={viewBox.cx}
                                                 y={viewBox.cy}
                                                 className="fill-foreground text-2xl font-bold">
-                                                {formatCenterValue
-                                                    ? formatCenterValue(total)
-                                                    : total}
+                                                {centerValueText ?? total}
                                             </tspan>
                                             <tspan
                                                 x={viewBox.cx}

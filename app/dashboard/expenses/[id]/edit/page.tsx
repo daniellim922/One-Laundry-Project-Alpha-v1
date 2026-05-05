@@ -37,6 +37,7 @@ export default async function EditExpensePage({
             {
                 id: crypto.randomUUID(),
                 name: expense.supplierName,
+                gstRegNumber: expense.supplierGstRegNumber ?? null,
                 createdAt: now,
                 updatedAt: now,
             },

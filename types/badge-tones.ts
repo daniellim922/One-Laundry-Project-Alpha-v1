@@ -91,6 +91,22 @@ export const expenseCategoryBadgeToneClasses = [
     "border-transparent bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300",
 ] as const;
 
+/** Distinct palette for expense subcategory badges (list/denormalized name). */
+export const expenseSubcategoryBadgeToneClasses = [
+    "border-transparent bg-pink-100 text-pink-800 dark:bg-pink-500/20 dark:text-pink-300",
+    "border-transparent bg-slate-100 text-slate-800 dark:bg-slate-500/20 dark:text-slate-300",
+    "border-transparent bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300",
+    "border-transparent bg-stone-100 text-stone-800 dark:bg-stone-500/20 dark:text-stone-300",
+    "border-transparent bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300",
+    "border-transparent bg-purple-100 text-purple-800 dark:bg-purple-500/20 dark:text-purple-300",
+    "border-transparent bg-zinc-100 text-zinc-800 dark:bg-zinc-500/20 dark:text-zinc-300",
+    "border-transparent bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300",
+    "border-transparent bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300",
+    "border-transparent bg-neutral-100 text-neutral-800 dark:bg-neutral-500/20 dark:text-neutral-300",
+    "border-transparent bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300",
+    "border-transparent bg-teal-100 text-teal-800 dark:bg-teal-500/20 dark:text-teal-300",
+] as const;
+
 function hashStringToNonNegativeInt(input: string): number {
     let h = 0;
     for (let i = 0; i < input.length; i += 1) {
@@ -105,4 +121,19 @@ export function expenseCategoryBadgeClassForId(categoryId: string): string {
         hashStringToNonNegativeInt(categoryId) %
         expenseCategoryBadgeToneClasses.length;
     return expenseCategoryBadgeToneClasses[i]!;
+}
+
+/** Stable badge tone for a category name (e.g. list rows with denormalized names). */
+export function expenseCategoryBadgeClassForName(name: string): string {
+    const i =
+        hashStringToNonNegativeInt(name) % expenseCategoryBadgeToneClasses.length;
+    return expenseCategoryBadgeToneClasses[i]!;
+}
+
+/** Stable badge tone for a subcategory name (e.g. list rows with denormalized names). */
+export function expenseSubcategoryBadgeClassForName(name: string): string {
+    const i =
+        hashStringToNonNegativeInt(name) %
+        expenseSubcategoryBadgeToneClasses.length;
+    return expenseSubcategoryBadgeToneClasses[i]!;
 }

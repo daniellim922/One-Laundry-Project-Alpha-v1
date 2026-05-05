@@ -43,7 +43,10 @@ export async function POST(request: Request) {
 
     const [row] = await db
         .insert(expenseSupplierTable)
-        .values({ name: parsed.data.name })
+        .values({
+            name: parsed.data.name,
+            gstRegNumber: parsed.data.gstRegNumber ?? null,
+        })
         .returning();
 
     revalidateExpenseDashboardPaths();
