@@ -1,7 +1,6 @@
 import Link from "next/link";
 
-import { db } from "@/lib/db";
-import { expensesTable } from "@/db/tables/expensesTable";
+import { listExpensesWithCategories } from "@/services/expense/list-expenses";
 import { DataTable } from "@/components/data-table/data-table";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -9,7 +8,7 @@ import { Plus } from "lucide-react";
 import { columns } from "../columns";
 
 export async function ExpensesAllTableLoader() {
-    const expenses = await db.select().from(expensesTable);
+    const expenses = await listExpensesWithCategories();
 
     return (
         <DataTable

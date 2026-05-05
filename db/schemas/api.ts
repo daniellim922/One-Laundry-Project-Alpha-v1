@@ -6,6 +6,10 @@ import { employmentTable } from "@/db/tables/employmentTable";
 import { payrollTable } from "@/db/tables/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 
+export const expenseStatusPatchRequestSchema = z.object({
+    status: z.literal("Expense Paid"),
+});
+
 const payrollIdSchema = createSelectSchema(payrollTable).pick({ id: true }).shape.id;
 
 export const payrollSettleRequestSchema = z.object({

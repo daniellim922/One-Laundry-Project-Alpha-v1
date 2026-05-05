@@ -7,43 +7,43 @@ todos:
       status: completed
     - id: db-schema
       content: Create expenseCategoryTable + expenseSubcategoryTable, rewrite expensesTable (FKs to category + subcategory), add status enum, push schema
-      status: in_progress
+      status: completed
     - id: zod-schemas
       content: Create drizzle-zod schemas for expense-category, expense-subcategory, and expense forms
-      status: pending
+      status: completed
     - id: api-categories
       content: Build CRUD API routes for expense categories and subcategories
-      status: pending
+      status: completed
     - id: api-categories-tests
       content: Write unit tests for category and subcategory API routes
-      status: pending
+      status: completed
     - id: server-actions
       content: Create/update server actions for expense CRUD
-      status: pending
+      status: completed
     - id: api-expenses
       content: Build API routes for expense list, detail, and status transition
-      status: pending
+      status: completed
     - id: api-expenses-tests
       content: Write unit tests for expense API routes
-      status: pending
+      status: completed
     - id: expense-form
       content: Build expense form component with GST auto-calc and manual override
-      status: pending
+      status: completed
     - id: category-management
       content: Build category + subcategory management page (inline CRUD with nesting)
-      status: pending
+      status: completed
     - id: crud-pages
       content: Wire new/edit/detail expense pages
-      status: pending
+      status: completed
     - id: datatable
       content: Update columns and all-expenses table with full fields + filters
-      status: pending
+      status: completed
     - id: dashboard
       content: Rewrite expenses overview with KPIs, charts, and category breakdown
-      status: pending
+      status: completed
     - id: nav-update
       content: Add categories sub-feature to navigation config
-      status: pending
+      status: completed
 isProject: false
 ---
 

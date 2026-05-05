@@ -20,7 +20,7 @@ describe("Supabase documents storage helpers", () => {
     it("uploadPdf uploads into the documents bucket with PDF metadata", async () => {
         const upload = vi.fn().mockResolvedValue({ error: null });
         const from = vi.fn().mockReturnValue({ upload });
-        const client = { storage: { from } } as Parameters<
+        const client = { storage: { from } } as unknown as Parameters<
             typeof uploadPdf
         >[0];
 
@@ -40,7 +40,7 @@ describe("Supabase documents storage helpers", () => {
             .fn()
             .mockResolvedValue({ error: { message: "quota exceeded" } });
         const from = vi.fn().mockReturnValue({ upload });
-        const client = { storage: { from } } as Parameters<
+        const client = { storage: { from } } as unknown as Parameters<
             typeof uploadPdf
         >[0];
 
@@ -55,7 +55,7 @@ describe("Supabase documents storage helpers", () => {
             .fn()
             .mockResolvedValue({ data: expected, error: null });
         const from = vi.fn().mockReturnValue({ download });
-        const client = { storage: { from } } as Parameters<
+        const client = { storage: { from } } as unknown as Parameters<
             typeof downloadPdf
         >[0];
 
@@ -72,7 +72,7 @@ describe("Supabase documents storage helpers", () => {
             error: { message: "not found" },
         });
         const from = vi.fn().mockReturnValue({ download });
-        const client = { storage: { from } } as Parameters<
+        const client = { storage: { from } } as unknown as Parameters<
             typeof downloadPdf
         >[0];
 

@@ -8,9 +8,6 @@ export type PayrollStatus = "Draft" | "Settled";
 
 export type ExpenseStatus = "Expense Submitted" | "Expense Paid";
 
-export const EXPENSE_CATEGORY_TYPES = ["Fixed", "Variable"] as const;
-export type ExpenseCategoryType = (typeof EXPENSE_CATEGORY_TYPES)[number];
-
 export const WORKER_STATUSES = ["Active", "Inactive"] as const;
 export type WorkerStatus = (typeof WORKER_STATUSES)[number];
 

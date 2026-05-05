@@ -1,5 +1,6 @@
 import type {
     AdvanceLoanStatus,
+    ExpenseStatus,
     InstallmentStatus,
     PayrollStatus,
     TimesheetPaymentStatus,
@@ -8,6 +9,13 @@ import type {
     WorkerPaymentMethod,
     WorkerStatus,
 } from "@/types/status";
+
+export const expenseStatusBadgeTone: Record<ExpenseStatus, string> = {
+    "Expense Submitted":
+        "bg-orange-100 text-orange-800 dark:bg-orange-500/20 dark:text-orange-300",
+    "Expense Paid":
+        "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300",
+};
 
 export const advanceLoanToneClassName: Record<AdvanceLoanStatus, string> = {
     "Advance Loan":

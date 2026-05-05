@@ -106,6 +106,10 @@ export const DASHBOARD_NAV_FEATURES: DashboardNavFeature[] = [
         subFeatures: [
             { name: "All expenses", url: "/dashboard/expenses/all" },
             { name: "Add expense", url: "/dashboard/expenses/new" },
+            {
+                name: "Manage categories",
+                url: "/dashboard/expenses/categories",
+            },
         ],
         iconName: "Expenses",
     },

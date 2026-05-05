@@ -4,7 +4,7 @@ import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 
 import { ExpensesAllTableLoader } from "./expenses-all-table-loader";
 
-export default function ExpensesAllPage() {
+export default async function ExpensesAllPage() {
     return (
         <div className="space-y-6">
             <div>
@@ -18,7 +18,7 @@ export default function ExpensesAllPage() {
 
             <Suspense
                 fallback={
-                    <DataTableSkeleton columnCount={4} rowCount={10} />
+                    <DataTableSkeleton columnCount={9} rowCount={10} />
                 }>
                 <ExpensesAllTableLoader />
             </Suspense>

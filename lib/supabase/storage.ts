@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-import { env } from "@/lib/env";
+import { envPublic } from "@/lib/env-public";
 
 const BUCKET = "documents";
 
@@ -54,14 +54,14 @@ async function collectFilePathsUnderPrefix(
 
 /**
  * Deletes every object under `payroll/` and `advance/` in the documents bucket.
- * Uses the public anon key from `env` (same as local Supabase dev defaults).
+ * Uses the publishable key from `env-public` (same as local Supabase dev defaults).
  * Intended for `db:reset` / dev workflows.
  */
 export async function wipeStorage(): Promise<void> {
     console.log("Clearing Supabase documents bucket (payroll, advance)...");
     const client = createClient(
-        env.NEXT_PUBLIC_SUPABASE_URL,
-        env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+        envPublic.NEXT_PUBLIC_SUPABASE_URL,
+        envPublic.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     );
 
     const paths: string[] = [];
