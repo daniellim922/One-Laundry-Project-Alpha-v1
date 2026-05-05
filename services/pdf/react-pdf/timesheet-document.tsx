@@ -1,3 +1,5 @@
+"use no memo";
+
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
 
 import { tableStyles } from "./primitives";
@@ -141,7 +143,7 @@ export function TimesheetPage({ data }: { data: TimesheetData }) {
     const periodLabel = `${fmtDayMonthLongYear(start)} to ${fmtDayMonthLongYear(end)}`;
 
     return (
-        <View style={s.shell} break>
+        <View style={s.shell}>
             <View style={s.titleBar}>
                 <Text style={s.titleText}>TIMESHEET</Text>
             </View>

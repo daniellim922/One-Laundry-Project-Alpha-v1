@@ -1,3 +1,5 @@
+"use no memo";
+
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
 import type { ReactNode } from "react";
 
@@ -37,7 +39,7 @@ export function DocumentShell({
     style?: Style;
 }) {
     return (
-        <View style={style ? [baseStyles.shell, style] : baseStyles.shell} break>
+        <View style={style ? [baseStyles.shell, style] : baseStyles.shell}>
             <View style={baseStyles.titleBar}>
                 <Text style={baseStyles.titleText}>{title}</Text>
             </View>

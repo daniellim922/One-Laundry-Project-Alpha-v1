@@ -1,3 +1,5 @@
+"use no memo";
+
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
 
 import {
