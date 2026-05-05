@@ -2,48 +2,48 @@
 name: Expenses Feature Build
 overview: Replace the stub expenses feature with a full category/subcategory system, enriched expense records (name, description, invoice number, supplier GST, subtotal/GST/grand total, dates, status), CRUD forms, DataTable, dashboard, API routes with tests, and updated domain vocabulary.
 todos:
-  - id: domain-vocab
-    content: Update UBIQUITOUS_LANGUAGE.md with expense domain terms
-    status: pending
-  - id: db-schema
-    content: Create expenseCategoryTable + expenseSubcategoryTable, rewrite expensesTable (FKs to category + subcategory), add status enum, push schema
-    status: pending
-  - id: zod-schemas
-    content: Create drizzle-zod schemas for expense-category, expense-subcategory, and expense forms
-    status: pending
-  - id: api-categories
-    content: Build CRUD API routes for expense categories and subcategories
-    status: pending
-  - id: api-categories-tests
-    content: Write unit tests for category and subcategory API routes
-    status: pending
-  - id: server-actions
-    content: Create/update server actions for expense CRUD
-    status: pending
-  - id: api-expenses
-    content: Build API routes for expense list, detail, and status transition
-    status: pending
-  - id: api-expenses-tests
-    content: Write unit tests for expense API routes
-    status: pending
-  - id: expense-form
-    content: Build expense form component with GST auto-calc and manual override
-    status: pending
-  - id: category-management
-    content: Build category + subcategory management page (inline CRUD with nesting)
-    status: pending
-  - id: crud-pages
-    content: Wire new/edit/detail expense pages
-    status: pending
-  - id: datatable
-    content: Update columns and all-expenses table with full fields + filters
-    status: pending
-  - id: dashboard
-    content: Rewrite expenses overview with KPIs, charts, and category breakdown
-    status: pending
-  - id: nav-update
-    content: Add categories sub-feature to navigation config
-    status: pending
+    - id: domain-vocab
+      content: Update UBIQUITOUS_LANGUAGE.md with expense domain terms
+      status: completed
+    - id: db-schema
+      content: Create expenseCategoryTable + expenseSubcategoryTable, rewrite expensesTable (FKs to category + subcategory), add status enum, push schema
+      status: pending
+    - id: zod-schemas
+      content: Create drizzle-zod schemas for expense-category, expense-subcategory, and expense forms
+      status: pending
+    - id: api-categories
+      content: Build CRUD API routes for expense categories and subcategories
+      status: pending
+    - id: api-categories-tests
+      content: Write unit tests for category and subcategory API routes
+      status: pending
+    - id: server-actions
+      content: Create/update server actions for expense CRUD
+      status: pending
+    - id: api-expenses
+      content: Build API routes for expense list, detail, and status transition
+      status: pending
+    - id: api-expenses-tests
+      content: Write unit tests for expense API routes
+      status: pending
+    - id: expense-form
+      content: Build expense form component with GST auto-calc and manual override
+      status: pending
+    - id: category-management
+      content: Build category + subcategory management page (inline CRUD with nesting)
+      status: pending
+    - id: crud-pages
+      content: Wire new/edit/detail expense pages
+      status: pending
+    - id: datatable
+      content: Update columns and all-expenses table with full fields + filters
+      status: pending
+    - id: dashboard
+      content: Rewrite expenses overview with KPIs, charts, and category breakdown
+      status: pending
+    - id: nav-update
+      content: Add categories sub-feature to navigation config
+      status: pending
 isProject: false
 ---
 
@@ -110,8 +110,6 @@ erDiagram
     expenseSubcategory ||--o{ expense : "has many"
 ```
 
-
-
 Monetary values stored as integer cents (consistent with existing `amount` columns in payroll/advance).
 
 ---
@@ -132,13 +130,13 @@ Monetary values stored as integer cents (consistent with existing `amount` colum
 
 ### Commit 3: Replace expenses table
 
-- Rewrite `[db/tables/expensesTable.ts](db/tables/expensesTable.ts)` with the full schema: `**categoryId` FK** -> `expenseCategoryTable.id`, `**subcategoryId` FK** -> `expenseSubcategoryTable.id`, `name`, `description`, `invoiceNumber`, `supplierGstRegNumber`, `subtotalCents`, `gstCents`, `grandTotalCents`, `invoiceDate`, `submissionDate`, `status`, `createdAt`, `updatedAt`
+- Rewrite `[db/tables/expensesTable.ts](db/tables/expensesTable.ts)` with the full schema: `**categoryId` FK** -> `expenseCategoryTable.id`, `**subcategoryId`FK** ->`expenseSubcategoryTable.id`, `name`, `description`, `invoiceNumber`, `supplierGstRegNumber`, `subtotalCents`, `gstCents`, `grandTotalCents`, `invoiceDate`, `submissionDate`, `status`, `createdAt`, `updatedAt`
 - Run `npm run db:migrate` to push schema
 
 ### Commit 4: Zod schemas (drizzle-zod)
 
 - Create `[db/schemas/expense-category.ts](db/schemas/expense-category.ts)` with `expenseCategoryFormSchema` and `expenseSubcategoryFormSchema`
-- Create `[db/schemas/expense.ts](db/schemas/expense.ts)` with `expenseFormSchema` (validates subtotal/GST/grand total relationship, dates, **both** `categoryId` and `subcategoryId` required, and `**subcategoryId` must belong to `categoryId`** via `superRefine` using loaded subcategory rows or a small lookup map passed into parse context)
+- Create `[db/schemas/expense.ts](db/schemas/expense.ts)` with `expenseFormSchema` (validates subtotal/GST/grand total relationship, dates, **both** `categoryId` and `subcategoryId` required, and `**subcategoryId` must belong to `categoryId`\*\* via `superRefine` using loaded subcategory rows or a small lookup map passed into parse context)
 
 ### Commit 5: API routes for expense categories and subcategories
 
@@ -205,10 +203,10 @@ Monetary values stored as integer cents (consistent with existing `amount` colum
 ### Commit 15: Dashboard overview
 
 - Rewrite `[app/dashboard/expenses/expenses-overview-loader.tsx](app/dashboard/expenses/expenses-overview-loader.tsx)`:
-  - KPI cards: total spend, count by status, month-over-month
-  - Donut chart by category type (Fixed vs Variable)
-  - Breakdown table by subcategory
-  - Quick actions: All expenses, Add expense, Manage categories
+    - KPI cards: total spend, count by status, month-over-month
+    - Donut chart by category type (Fixed vs Variable)
+    - Breakdown table by subcategory
+    - Quick actions: All expenses, Add expense, Manage categories
 
 ### Commit 16: Navigation update
 
@@ -219,7 +217,7 @@ Monetary values stored as integer cents (consistent with existing `amount` colum
 ## Decision Document
 
 - **Monetary storage**: integer cents (consistent with `advanceRequestTable.amountRequested`, `payrollVoucherTable` amounts)
-- **Category model**: three-table hierarchy — `expense_category` (type discriminator: Fixed/Variable) -> `expense_subcategory` (e.g. Petrol, Rental) -> `expense`. `**expense` stores both `categoryId` and `subcategoryId`** (FK to parent category and to subcategory). Subcategory still has `categoryId` as source of truth for nesting. **Write guardrail:** submit must satisfy `subcategory.categoryId === expense.categoryId` (enforced in Zod + service layer before insert/update; avoids orphan combinations if the UI ever sends mismatched IDs).
+- **Category model**: three-table hierarchy — `expense_category` (type discriminator: Fixed/Variable) -> `expense_subcategory` (e.g. Petrol, Rental) -> `expense`. `**expense` stores both `categoryId` and `subcategoryId`** (FK to parent category and to subcategory). Subcategory still has `categoryId` as source of truth for nesting. **Write guardrail:\*\* submit must satisfy `subcategory.categoryId === expense.categoryId` (enforced in Zod + service layer before insert/update; avoids orphan combinations if the UI ever sends mismatched IDs).
 - **GST hybrid**: form auto-computes `gstCents = Math.round(subtotalCents * 0.09)` and `grandTotalCents = subtotalCents + gstCents` on subtotal change; a manual-override toggle unlocks the GST and grand total fields for manual entry
 - **Status lifecycle**: simple two-state (`Expense Submitted` -> `Expense Paid`); prefix follows existing disambiguation convention (like `Timesheet Paid`, `Advance Paid`)
 - **No worker link**: expenses are business-level, not tied to any worker
@@ -231,13 +229,13 @@ Monetary values stored as integer cents (consistent with existing `amount` colum
 
 - **What makes a good test**: test the external HTTP contract (request in, response out) without reaching the database; mock `db` queries and auth at module boundaries
 - **Modules tested**:
-  - `app/api/expenses/categories/route.ts` (CRUD)
-  - `app/api/expenses/categories/[id]/route.ts` (update/delete)
-  - `app/api/expenses/subcategories/route.ts` (create)
-  - `app/api/expenses/subcategories/[id]/route.ts` (update/delete)
-  - `app/api/expenses/route.ts` (list)
-  - `app/api/expenses/[id]/route.ts` (detail)
-  - `app/api/expenses/[id]/status/route.ts` (transition)
+    - `app/api/expenses/categories/route.ts` (CRUD)
+    - `app/api/expenses/categories/[id]/route.ts` (update/delete)
+    - `app/api/expenses/subcategories/route.ts` (create)
+    - `app/api/expenses/subcategories/[id]/route.ts` (update/delete)
+    - `app/api/expenses/route.ts` (list)
+    - `app/api/expenses/[id]/route.ts` (detail)
+    - `app/api/expenses/[id]/status/route.ts` (transition)
 - **Prior art**: `[app/api/advance/[id]/pdf-data/route.test.ts](app/api/advance/[id]/pdf-data/route.test.ts)` and `[app/api/_shared/auth.test.ts](app/api/_shared/auth.test.ts)` — same `vi.mock` + `mockAuthenticatedApiOperator` pattern
 - **No component tests** (per user request)
 
@@ -256,4 +254,3 @@ Monetary values stored as integer cents (consistent with existing `amount` colum
 - The Singapore GST rate (9%) will be a named constant (`const SGP_GST_RATE = 0.09`) in a shared location for easy future updates
 - Category deletion will be soft-blocked: the API returns an error if any subcategories reference the category (no cascade delete). Subcategory deletion is soft-blocked if any expenses reference it.
 - The existing `expensesTable` stub currently stores `amount` as a single integer; the migration replaces it with `subtotalCents`, `gstCents`, `grandTotalCents` — this is a breaking schema change but acceptable given the stub has no production data
-

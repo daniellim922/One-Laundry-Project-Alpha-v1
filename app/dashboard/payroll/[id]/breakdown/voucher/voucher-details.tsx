@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 import {
@@ -11,7 +11,10 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { SelectPayrollVoucher } from "@/db/tables/payrollVoucherTable";
-import { VoucherEditableMoney } from "../../voucher-editable-money";
+import {
+    type VoucherPdfRegenerationStatus,
+    VoucherEditableMoney,
+} from "../../voucher-editable-money";
 import { VoucherEditableNumber } from "../../voucher-editable-number";
 
 type Props = {
@@ -47,9 +50,19 @@ export function VoucherDetails({
     voucher,
 }: Props) {
     const [open, setOpen] = useState(false);
+    const [pdfRegenStatus, setPdfRegenStatus] =
+        useState<VoucherPdfRegenerationStatus>("idle");
+
     const isDraft = payrollStatus === "Draft";
     const isPartTime = voucher.employmentType === "Part Time";
     const partTimeLocked = !isDraft || isPartTime;
+
+    const notifyPdfRegen = useCallback(
+        (status: VoucherPdfRegenerationStatus) => {
+            setPdfRegenStatus(status);
+        },
+        [],
+    );
 
     return (
         <Collapsible open={open} onOpenChange={setOpen}>
@@ -66,6 +79,23 @@ export function VoucherDetails({
                 </button>
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-4 pt-4">
+                {isDraft && pdfRegenStatus !== "idle" ? (
+                    <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        {pdfRegenStatus === "generating" ? (
+                            <span className="animate-pulse">
+                                Regenerating PDF…
+                            </span>
+                        ) : null}
+                        {pdfRegenStatus === "done" ? (
+                            <span className="text-green-600">PDF updated</span>
+                        ) : null}
+                        {pdfRegenStatus === "failed" ? (
+                            <span className="text-destructive">
+                                PDF regeneration failed
+                            </span>
+                        ) : null}
+                    </p>
+                ) : null}
                 <VoucherDetailSection
                     title="Employment & Payment"
                     gridClassName="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -113,6 +143,9 @@ export function VoucherDetails({
                                 value={voucher.monthlyPay}
                                 fullWidth
                                 readOnly={partTimeLocked}
+                                onPdfRegenerationStatus={
+                                    isDraft ? notifyPdfRegen : undefined
+                                }
                             />
                             <VoucherEditableMoney
                                 payrollId={payrollId}
@@ -122,6 +155,9 @@ export function VoucherDetails({
                                 value={voucher.hourlyRate}
                                 fullWidth
                                 readOnly={!isDraft}
+                                onPdfRegenerationStatus={
+                                    isDraft ? notifyPdfRegen : undefined
+                                }
                             />
                             <VoucherEditableMoney
                                 payrollId={payrollId}
@@ -131,6 +167,9 @@ export function VoucherDetails({
                                 value={voucher.restDayRate}
                                 fullWidth
                                 readOnly={partTimeLocked}
+                                onPdfRegenerationStatus={
+                                    isDraft ? notifyPdfRegen : undefined
+                                }
                             />
                 </VoucherDetailSection>
                 <VoucherDetailSection
@@ -145,6 +184,9 @@ export function VoucherDetails({
                                 format="plain"
                                 fullWidth
                                 readOnly={partTimeLocked}
+                                onPdfRegenerationStatus={
+                                    isDraft ? notifyPdfRegen : undefined
+                                }
                             />
                             <VoucherEditableNumber
                                 payrollId={payrollId}
@@ -155,6 +197,9 @@ export function VoucherDetails({
                                 publicHolidays={voucher.publicHolidays}
                                 fullWidth
                                 readOnly={partTimeLocked}
+                                onPdfRegenerationStatus={
+                                    isDraft ? notifyPdfRegen : undefined
+                                }
                             />
                             <VoucherEditableNumber
                                 payrollId={payrollId}
@@ -165,6 +210,9 @@ export function VoucherDetails({
                                 publicHolidays={voucher.publicHolidays}
                                 fullWidth
                                 readOnly={partTimeLocked}
+                                onPdfRegenerationStatus={
+                                    isDraft ? notifyPdfRegen : undefined
+                                }
                             />
                 </VoucherDetailSection>
             </CollapsibleContent>

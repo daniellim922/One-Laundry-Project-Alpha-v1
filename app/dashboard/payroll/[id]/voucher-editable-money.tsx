@@ -3,9 +3,16 @@
 import { useMemo } from "react";
 
 import { cn } from "@/lib/utils";
+import { generateAndUploadPayrollPdf } from "@/lib/client/generate-and-upload-pdf";
 import { requestUpdateVoucherPayRate } from "../command-api";
 import { VoucherEditableField } from "./voucher-editable-field";
 import type { VoucherPayRateField } from "@/services/payroll/update-voucher-pay-rates";
+
+export type VoucherPdfRegenerationStatus =
+    | "idle"
+    | "generating"
+    | "done"
+    | "failed";
 
 type Props = {
     payrollId: string;
@@ -19,6 +26,8 @@ type Props = {
     format?: "currency" | "plain";
     /** Full-width input in grid layouts; default keeps compact pay-rate fields. */
     fullWidth?: boolean;
+    /** Fired when a stored PDF is regenerated after a successful commit (draft flows). */
+    onPdfRegenerationStatus?: (status: VoucherPdfRegenerationStatus) => void;
 };
 
 function parseAmount(text: string, format: "currency" | "plain"): number | null {
@@ -45,6 +54,7 @@ export function VoucherEditableMoney({
     size = "default",
     format = "currency",
     fullWidth = false,
+    onPdfRegenerationStatus,
 }: Props) {
     const isLg = size === "lg";
     const committedDisplay = useMemo(() => formatInitial(value), [value]);
@@ -87,6 +97,19 @@ export function VoucherEditableMoney({
                     value: numeric,
                 })
             }
+            onAfterCommit={() => {
+                const notify = onPdfRegenerationStatus;
+                notify?.("generating");
+                generateAndUploadPayrollPdf(payrollId)
+                    .then(() => {
+                        notify?.("done");
+                        setTimeout(() => notify?.("idle"), 3000);
+                    })
+                    .catch(() => {
+                        notify?.("failed");
+                        setTimeout(() => notify?.("idle"), 5000);
+                    });
+            }}
         />
     );
 }

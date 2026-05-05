@@ -75,10 +75,19 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 ## Expenses
 
 
-| Term        | Definition                                                                                                                                                                                          | Aliases to avoid                                                                                   |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| **Expense** | A business **Expense** line: description, amount, optional category, and date. **Expenses** do not allocate to a **Worker** or a **Payroll** run (shop/overhead or general back-office spend only). | Cost (unless finance agrees); implying reimbursement through payroll **Grand Total** without a dedicated model |
-| **Expense category** | The optional free-text label used to group or filter an **Expense** operationally. | Ledger code (unless accounting adopts that field formally) |
+| Term | Definition | Aliases to avoid |
+| ---- | ---------- | ---------------- |
+| **Expense** | A recorded business spend line: display **name**, **description**, **invoice number**, **Supplier GST registration number**, money fields (**Subtotal**, **GST**, **Grand Total** in integer cents), **Invoice date**, **Submission date**, and **Expense status**. Each **Expense** is classified under one **Expense category** and one **Expense subcategory** whose parent category matches. **Expenses** do not allocate to a **Worker** or a **Payroll** run (shop overhead or general back-office spend only). | Cost (unless finance agrees); implying reimbursement through payroll **Grand Total** without a dedicated model |
+| **Expense category** | A top-level grouping for expenses: a human-readable **name**, an **Expense category type** (**Fixed** or **Variable**), and timestamps. It owns one or more **Expense subcategories**. | Ledger code (unless accounting adopts that field formally) |
+| **Expense category type** | Either **Fixed** or **Variable**, indicating how the category is rolled up for reporting (e.g. fixed vs variable spend on dashboards). | Cost type, bucket (too vague) |
+| **Expense subcategory** | A user-maintained label under a single **Expense category** (e.g. Petrol, Rental, Chemical). Every **Expense** chooses both a **Expense category** and a **Expense subcategory** that belongs to that category. | Tag, unstructured free-text category |
+| **Expense status** | **Expense Submitted** when the record is filed but not yet marked settled, or **Expense Paid** when treated as paid. The prefix disambiguates from **Timesheet Paid**, **Advance Paid**, and **Installment Paid**. | Bare **Submitted** / **Paid** without the **Expense** prefix |
+| **Invoice date** | The date shown on the supplier invoice or when the cost was incurred. | Bill date (ok colloquially) |
+| **Submission date** | The date the expense was captured in this system (often defaulted to “today” on create). | Created date (prefer when the operator cares about entry vs invoice) |
+| **Subtotal** | On an **Expense**, the pre-GST amount in integer cents before **GST**. (On a **Payroll voucher**, **Subtotal** means earnings after adjustments—same word, different bounded context.) | Gross (ambiguous across contexts) |
+| **GST** | The Goods and Services Tax amount for the **Expense** in integer cents (product logic may derive it from **Subtotal** at the prevailing Singapore rate, e.g. 9%, with optional manual override). | VAT (unless the jurisdiction term is agreed) |
+| **Grand Total** | On an **Expense**, **Subtotal** plus **GST** in integer cents. (On a **Payroll**, **Grand Total** is net pay—same word, different bounded context.) | Take-home (payroll); **Total** without clarifying expense vs payroll |
+| **Supplier GST registration number** | The supplier’s GST registration identifier as printed on the invoice (e.g. UEN), stored for reference and compliance. | GST number (ambiguous without **supplier** context) |
 
 
 ## Entry flow
@@ -103,6 +112,8 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 - **Advance request** status becomes **Advance Paid** when every linked **Installment** is **Installment Paid**.
 - **Settle** marks the run **Settled** and sets covered **Timesheet** entries to **Timesheet Paid**; **Reopen** reverses that for the run and reverts **Advance** recovery as above.
 - **Installments** in **Installment Paid** status are immutable outside of a payroll **Reopen**; the advance request form must reject edits that omit, delete, or alter paid installments.
+- An **Expense subcategory** belongs to exactly one **Expense category**.
+- An **Expense** references one **Expense category** and one **Expense subcategory**; the subcategory’s **Expense category** must match the expense’s category (no orphan category/subcategory pairs).
 
 ## Example dialogue
 

@@ -21,6 +21,7 @@ export function VoucherEditableField({
     committedDisplay,
     parseForCommit,
     commit,
+    onAfterCommit,
 }: {
     label: string;
     readOnly?: boolean;
@@ -34,6 +35,7 @@ export function VoucherEditableField({
     commit: (
         value: number | null,
     ) => Promise<unknown>;
+    onAfterCommit?: () => void;
 }) {
     const router = useRouter();
     const isLg = size === "lg";
@@ -65,6 +67,7 @@ export function VoucherEditableField({
                 return;
             }
             router.refresh();
+            onAfterCommit?.();
         });
     };
 
