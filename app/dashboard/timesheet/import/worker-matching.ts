@@ -1,9 +1,10 @@
-import type { WorkerStatus } from "@/types/status";
+import type { WorkerShiftPattern, WorkerStatus } from "@/types/status";
 
 export type TimesheetImportWorker = {
     id: string;
     name: string;
     status: WorkerStatus;
+    shiftPattern: WorkerShiftPattern;
 };
 
 export type TimesheetImportWorkerRow = {

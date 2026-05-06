@@ -44,6 +44,20 @@ function makeInsertChainResult(rows: { workerId: string }[]) {
     };
 }
 
+function mockWorkerSelectRows(
+    rows: {
+        id: string;
+        name: string;
+        status: string;
+        shiftPattern?: string;
+    }[],
+) {
+    return rows.map((row) => ({
+        ...row,
+        shiftPattern: row.shiftPattern ?? "Day Shift",
+    }));
+}
+
 function configureDefaultWorkersSelect() {
     mocks.db.select.mockImplementation(() => ({
         from: vi.fn((table: unknown) => {
@@ -53,10 +67,24 @@ function configureDefaultWorkersSelect() {
                 };
             }
             if (table === workerTable) {
-                return Promise.resolve([
-                    { id: "worker-1", name: "Worker One", status: "Active" },
-                    { id: "worker-2", name: "Worker Two", status: "Active" },
-                ]);
+                return {
+                    innerJoin: vi.fn().mockReturnValue(
+                        Promise.resolve(
+                            mockWorkerSelectRows([
+                                {
+                                    id: "worker-1",
+                                    name: "Worker One",
+                                    status: "Active",
+                                },
+                                {
+                                    id: "worker-2",
+                                    name: "Worker Two",
+                                    status: "Active",
+                                },
+                            ]),
+                        ),
+                    ),
+                };
             }
             throw new Error("Unexpected table in select mock");
         }),
@@ -74,7 +102,11 @@ function configureStatefulImportDatabase(
                 };
             }
             if (table === workerTable) {
-                return Promise.resolve(state.workers);
+                return {
+                    innerJoin: vi.fn().mockReturnValue(
+                        Promise.resolve(mockWorkerSelectRows(state.workers)),
+                    ),
+                };
             }
             throw new Error("Unexpected table in select mock");
         }),
@@ -181,10 +213,24 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
                     };
                 }
                 if (table === workerTable) {
-                    return Promise.resolve([
-                        { id: "worker-1", name: "Worker One", status: "Inactive" },
-                        { id: "worker-2", name: "Worker Two", status: "Active" },
-                    ]);
+                    return {
+                        innerJoin: vi.fn().mockReturnValue(
+                            Promise.resolve(
+                                mockWorkerSelectRows([
+                                    {
+                                        id: "worker-1",
+                                        name: "Worker One",
+                                        status: "Inactive",
+                                    },
+                                    {
+                                        id: "worker-2",
+                                        name: "Worker Two",
+                                        status: "Active",
+                                    },
+                                ]),
+                            ),
+                        ),
+                    };
                 }
                 throw new Error("Unexpected table in select mock");
             }),
@@ -331,9 +377,19 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
                     };
                 }
                 if (table === workerTable) {
-                    return Promise.resolve([
-                        { id: "worker-1", name: "Worker One", status: "Active" },
-                    ]);
+                    return {
+                        innerJoin: vi.fn().mockReturnValue(
+                            Promise.resolve(
+                                mockWorkerSelectRows([
+                                    {
+                                        id: "worker-1",
+                                        name: "Worker One",
+                                        status: "Active",
+                                    },
+                                ]),
+                            ),
+                        ),
+                    };
                 }
                 throw new Error("Unexpected table in select mock");
             }),
@@ -390,9 +446,19 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
                     };
                 }
                 if (table === workerTable) {
-                    return Promise.resolve([
-                        { id: "worker-1", name: "Worker One", status: "Active" },
-                    ]);
+                    return {
+                        innerJoin: vi.fn().mockReturnValue(
+                            Promise.resolve(
+                                mockWorkerSelectRows([
+                                    {
+                                        id: "worker-1",
+                                        name: "Worker One",
+                                        status: "Active",
+                                    },
+                                ]),
+                            ),
+                        ),
+                    };
                 }
                 throw new Error("Unexpected table in select mock");
             }),
@@ -434,6 +500,56 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
             imported: 1,
             skipped: 1,
             errors: undefined,
+        });
+    });
+
+    it("re-pairs AttendRecord cells for Night Shift employment before inserting timesheets", async () => {
+        const state = makeImportOperationalState();
+        state.workers[0]!.shiftPattern = "Night Shift";
+        configureStatefulImportDatabase(state);
+
+        await expect(
+            importAttendRecordTimesheet({
+                attendanceDate: {
+                    startDate: "01/04/2026",
+                    endDate: "02/04/2026",
+                },
+                tablingDate: "02/04/2026 17:10:10",
+                workers: [
+                    {
+                        userId: "",
+                        name: "Worker One",
+                        dates: [
+                            {
+                                dateIn: "01/04/2026",
+                                timeIn: "08:00",
+                                dateOut: "01/04/2026",
+                                timeOut: "20:00",
+                            },
+                            {
+                                dateIn: "02/04/2026",
+                                timeIn: "08:00",
+                                dateOut: "02/04/2026",
+                                timeOut: "     ",
+                            },
+                        ],
+                    },
+                ],
+            }),
+        ).resolves.toEqual({
+            status: "success",
+            imported: 1,
+            skipped: 0,
+            errors: undefined,
+        });
+
+        expect(state.timesheets).toHaveLength(2);
+        expect(state.timesheets[1]).toMatchObject({
+            workerId: "worker-1",
+            dateIn: "2026-04-01",
+            timeIn: "20:00:00",
+            dateOut: "2026-04-02",
+            timeOut: "08:00:00",
         });
     });
 });

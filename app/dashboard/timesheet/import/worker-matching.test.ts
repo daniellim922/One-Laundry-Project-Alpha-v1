@@ -3,9 +3,24 @@ import { describe, expect, it } from "vitest";
 import { resolveTimesheetImportWorkerMatches } from "./worker-matching";
 
 const workers = [
-    { id: "worker-1", name: "Alice Tan", status: "Active" as const },
-    { id: "worker-2", name: "Bob Lim", status: "Active" as const },
-    { id: "worker-3", name: "Chen Wei", status: "Inactive" as const },
+    {
+        id: "worker-1",
+        name: "Alice Tan",
+        status: "Active" as const,
+        shiftPattern: "Day Shift" as const,
+    },
+    {
+        id: "worker-2",
+        name: "Bob Lim",
+        status: "Active" as const,
+        shiftPattern: "Day Shift" as const,
+    },
+    {
+        id: "worker-3",
+        name: "Chen Wei",
+        status: "Inactive" as const,
+        shiftPattern: "Day Shift" as const,
+    },
 ];
 
 describe("resolveTimesheetImportWorkerMatches", () => {

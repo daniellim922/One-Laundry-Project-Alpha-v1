@@ -96,6 +96,7 @@ describe("TimesheetImportClient", () => {
                         id: "worker-1",
                         name: "Alice Tan",
                         status: "Active",
+                        shiftPattern: "Day Shift",
                     },
                 ]}
             />,
@@ -164,11 +165,13 @@ describe("TimesheetImportClient", () => {
                         id: "worker-1",
                         name: "Alice Tan",
                         status: "Active",
+                        shiftPattern: "Day Shift",
                     },
                     {
                         id: "worker-2",
                         name: "Inactive Alice",
                         status: "Inactive",
+                        shiftPattern: "Day Shift",
                     },
                 ]}
             />,
@@ -274,6 +277,7 @@ describe("TimesheetImportClient", () => {
                         id: "worker-1",
                         name: "Alice Tan",
                         status: "Active",
+                        shiftPattern: "Day Shift",
                     },
                 ]}
             />,
@@ -342,6 +346,7 @@ describe("TimesheetImportClient", () => {
                         id: "worker-1",
                         name: "Alice Tan",
                         status: "Active",
+                        shiftPattern: "Day Shift",
                     },
                 ]}
             />,
@@ -441,6 +446,7 @@ describe("TimesheetImportClient", () => {
                         id: "worker-1",
                         name: "Alice Tan",
                         status: "Active",
+                        shiftPattern: "Day Shift",
                     },
                 ]}
             />,
@@ -554,6 +560,7 @@ describe("TimesheetImportClient", () => {
                         id: "worker-1",
                         name: "Alice Tan",
                         status: "Active",
+                        shiftPattern: "Day Shift",
                     },
                 ]}
             />,
@@ -641,6 +648,7 @@ describe("TimesheetImportClient", () => {
                         id: "worker-1",
                         name: "Alice Tan",
                         status: "Active",
+                        shiftPattern: "Day Shift",
                     },
                 ]}
             />,

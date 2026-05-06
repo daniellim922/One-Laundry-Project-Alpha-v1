@@ -2,10 +2,12 @@ import { and, eq, or } from "drizzle-orm";
 
 import { timesheetEntryFormSchema } from "@/db/schemas/timesheet-entry";
 import { db } from "@/lib/db";
+import { employmentTable } from "@/db/tables/employmentTable";
 import { workerTable } from "@/db/tables/workerTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
-import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
 import { recordGuidedMonthlyWorkflowStepCompletion } from "@/services/payroll/guided-monthly-workflow-activity";
+import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
+import { transformNightShiftEntries } from "@/services/timesheet/transform-night-shift-entries";
 import { assertWorkerEligibleForTimesheet } from "@/services/worker/assert-worker-eligible-for-timesheet";
 import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
 import { parseDmyToIsoStrict } from "@/utils/time/calendar-date";
@@ -61,11 +63,18 @@ export async function importAttendRecordTimesheet(
             id: workerTable.id,
             name: workerTable.name,
             status: workerTable.status,
+            shiftPattern: employmentTable.shiftPattern,
         })
-        .from(workerTable);
+        .from(workerTable)
+        .innerJoin(
+            employmentTable,
+            eq(workerTable.employmentId, employmentTable.id),
+        );
     const nameToId = new Map(
         workerNames.map((worker) => [worker.name.toLowerCase().trim(), worker]),
     );
+
+    const attendancePeriodStart = data.attendanceDate.startDate ?? "";
 
     const toInsert: {
         workerId: string;
@@ -96,7 +105,15 @@ export async function importAttendRecordTimesheet(
 
         const workerId = matchedWorker.id;
 
-        for (const date of worker.dates) {
+        const datesForImport =
+            matchedWorker.shiftPattern === "Night Shift"
+                ? transformNightShiftEntries(
+                      worker.dates,
+                      attendancePeriodStart,
+                  )
+                : worker.dates;
+
+        for (const date of datesForImport) {
             const dateIn = dmySlashToIsoWire(date.dateIn);
             const dateOut = dmySlashToIsoWire(date.dateOut);
             if (!dateIn || !dateOut) {
