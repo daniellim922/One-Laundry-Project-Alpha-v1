@@ -7,10 +7,10 @@ todos:
       status: completed
     - id: worker-form
       content: Add shift pattern select to worker form and persist in create/update actions
-      status: pending
+      status: completed
     - id: transform-fn
       content: Create services/timesheet/transform-night-shift-entries.ts with unit tests
-      status: pending
+      status: completed
     - id: import-service
       content: Wire shift pattern lookup into import service and apply transformation before validation
       status: pending
