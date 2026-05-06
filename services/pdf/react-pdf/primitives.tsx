@@ -1,6 +1,6 @@
 "use no memo";
 
-import { View, Text, StyleSheet } from "@react-pdf/renderer";
+import { View, Text, Image, StyleSheet } from "@react-pdf/renderer";
 import type { ReactNode } from "react";
 
 type Style = ReturnType<typeof StyleSheet.create>[string];
@@ -63,19 +63,19 @@ const metaStyles = StyleSheet.create({
         paddingVertical: 3,
     },
     label: {
-        width: "18%",
+        width: "22%",
         textAlign: "right",
         fontSize: 9,
         fontWeight: "medium",
         paddingRight: 4,
     },
     value: {
-        width: "32%",
+        width: "28%",
         fontSize: 9,
         fontWeight: "bold",
     },
     valueUppercase: {
-        width: "32%",
+        width: "28%",
         fontSize: 9,
         fontWeight: "bold",
         textTransform: "uppercase",
@@ -126,14 +126,28 @@ const sigStyles = StyleSheet.create({
         fontSize: 9,
         fontWeight: "medium",
     },
-    lineRow: {
+    signatureAreaRow: {
         flexDirection: "row",
         justifyContent: "space-between",
-        marginTop: 36,
+        marginTop: 8,
+    },
+    sigBlock: {
+        width: 180,
+    },
+    sigImageSlot: {
+        height: 44,
+        width: 180,
+        justifyContent: "flex-end",
+    },
+    signatureImage: {
+        width: 120,
+        height: 40,
+        objectFit: "contain",
     },
     signatureLine: {
         width: 180,
         borderBottom: "1pt solid #000",
+        marginTop: 4,
     },
     dateRow: {
         flexDirection: "row",
@@ -162,6 +176,8 @@ export function SignatureSection({
     receiverName,
     approvedDate,
     receivedDate,
+    approverSignatureDataUrl,
+    receiverSignatureDataUrl,
 }: {
     approvedLabel: string;
     receivedLabel: string;
@@ -169,6 +185,8 @@ export function SignatureSection({
     receiverName: string;
     approvedDate?: string;
     receivedDate?: string;
+    approverSignatureDataUrl?: string | null;
+    receiverSignatureDataUrl?: string | null;
 }) {
     return (
         <View style={sigStyles.container}>
@@ -181,9 +199,29 @@ export function SignatureSection({
                 </Text>
             </View>
 
-            <View style={sigStyles.lineRow}>
-                <View style={sigStyles.signatureLine} />
-                <View style={sigStyles.signatureLine} />
+            <View style={sigStyles.signatureAreaRow}>
+                <View style={sigStyles.sigBlock}>
+                    <View style={sigStyles.sigImageSlot}>
+                        {approverSignatureDataUrl ? (
+                            <Image
+                                src={approverSignatureDataUrl}
+                                style={sigStyles.signatureImage}
+                            />
+                        ) : null}
+                    </View>
+                    <View style={sigStyles.signatureLine} />
+                </View>
+                <View style={sigStyles.sigBlock}>
+                    <View style={sigStyles.sigImageSlot}>
+                        {receiverSignatureDataUrl ? (
+                            <Image
+                                src={receiverSignatureDataUrl}
+                                style={sigStyles.signatureImage}
+                            />
+                        ) : null}
+                    </View>
+                    <View style={sigStyles.signatureLine} />
+                </View>
             </View>
 
             <View style={sigStyles.dateRow}>

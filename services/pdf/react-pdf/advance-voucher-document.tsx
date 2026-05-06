@@ -224,6 +224,8 @@ export function AdvanceVoucherDocument({
                         receivedDate={formatDate(
                             data.employeeSignatureDate ?? request.requestDate,
                         )}
+                        approverSignatureDataUrl={data.managerSignature}
+                        receiverSignatureDataUrl={data.employeeSignature}
                     />
                 </DocumentShell>
             </Page>
