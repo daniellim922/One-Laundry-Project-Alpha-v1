@@ -99,6 +99,7 @@ export const workers = [
         race: "Indian",
         employmentType: "Full Time",
         employmentArrangement: "Foreign Worker",
+        shiftPattern: "Night Shift",
         monthlyPay: 1400,
         minimumWorkingHours: 260,
         hourlyRate: 6,
