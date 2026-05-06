@@ -13,13 +13,13 @@ todos:
       status: completed
     - id: import-service
       content: Wire shift pattern lookup into import service and apply transformation before validation
-      status: pending
+      status: completed
     - id: client-preview
       content: Apply night-shift transformation in client preview so editable table shows correct pairing
-      status: pending
+      status: completed
     - id: seed-docs
       content: Update seed data, UBIQUITOUS_LANGUAGE.md, and AGENTS.md
-      status: pending
+      status: completed
 isProject: false
 ---
 
