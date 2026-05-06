@@ -22,6 +22,9 @@ export const WORKER_EMPLOYMENT_ARRANGEMENTS = [
 export type WorkerEmploymentArrangement =
     (typeof WORKER_EMPLOYMENT_ARRANGEMENTS)[number];
 
+export const WORKER_SHIFT_PATTERNS = ["Day Shift", "Night Shift"] as const;
+export type WorkerShiftPattern = (typeof WORKER_SHIFT_PATTERNS)[number];
+
 export const WORKER_PAYMENT_METHODS = [
     "PayNow",
     "Bank Transfer",

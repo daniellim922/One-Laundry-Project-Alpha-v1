@@ -16,6 +16,7 @@ export function makeWorkerWithEmployment(
         race: "Chinese",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
+        shiftPattern: "Day Shift",
         cpf: 300,
         monthlyPay: 2100,
         hourlyRate: 10,

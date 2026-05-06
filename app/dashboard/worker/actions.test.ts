@@ -49,6 +49,7 @@ function buildWorkerPayload(
         race: "Chinese",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
+        shiftPattern: "Day Shift",
         cpf: 320,
         monthlyPay: 2200,
         hourlyRate: 9,

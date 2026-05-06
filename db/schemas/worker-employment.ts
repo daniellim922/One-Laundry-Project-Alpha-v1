@@ -8,6 +8,7 @@ import {
     WORKER_EMPLOYMENT_ARRANGEMENTS,
     WORKER_EMPLOYMENT_TYPES,
     WORKER_PAYMENT_METHODS,
+    WORKER_SHIFT_PATTERNS,
     WORKER_STATUSES,
 } from "@/types/status";
 
@@ -41,9 +42,11 @@ const employmentFields = createInsertSchema(employmentTable, {
     employmentType: z.enum(WORKER_EMPLOYMENT_TYPES),
     employmentArrangement: z.enum(WORKER_EMPLOYMENT_ARRANGEMENTS),
     paymentMethod: z.enum(WORKER_PAYMENT_METHODS).nullable().optional(),
+    shiftPattern: z.enum(WORKER_SHIFT_PATTERNS).default("Day Shift"),
 }).pick({
     employmentType: true,
     employmentArrangement: true,
+    shiftPattern: true,
     cpf: true,
     monthlyPay: true,
     hourlyRate: true,

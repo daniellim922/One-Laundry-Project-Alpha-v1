@@ -61,6 +61,7 @@ function parsedPayloadToRowValues(
         {
             employmentType: data.employmentType,
             employmentArrangement: data.employmentArrangement,
+            shiftPattern: data.shiftPattern,
             cpf:
                 data.employmentArrangement === "Local Worker"
                     ? (data.cpf ?? null)

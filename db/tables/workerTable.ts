@@ -32,6 +32,7 @@ export type WorkerWithEmployment = SelectWorker &
         SelectEmployment,
         | "employmentType"
         | "employmentArrangement"
+        | "shiftPattern"
         | "cpf"
         | "monthlyPay"
         | "minimumWorkingHours"

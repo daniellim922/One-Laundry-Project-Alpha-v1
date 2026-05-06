@@ -21,6 +21,7 @@ export async function loadWorkerById(
             employmentId: workerTable.employmentId,
             employmentType: employmentTable.employmentType,
             employmentArrangement: employmentTable.employmentArrangement,
+            shiftPattern: employmentTable.shiftPattern,
             cpf: employmentTable.cpf,
             monthlyPay: employmentTable.monthlyPay,
             minimumWorkingHours: employmentTable.minimumWorkingHours,

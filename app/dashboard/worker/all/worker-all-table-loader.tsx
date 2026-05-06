@@ -21,6 +21,7 @@ export async function WorkerAllTableLoader() {
             updatedAt: workerTable.updatedAt,
             employmentType: employmentTable.employmentType,
             employmentArrangement: employmentTable.employmentArrangement,
+            shiftPattern: employmentTable.shiftPattern,
             cpf: employmentTable.cpf,
             monthlyPay: employmentTable.monthlyPay,
             minimumWorkingHours: employmentTable.minimumWorkingHours,
