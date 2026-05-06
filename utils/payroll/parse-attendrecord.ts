@@ -26,8 +26,25 @@ type CellValue = string | number | null;
 type Row = CellValue[];
 type Rows = Row[];
 
+/**
+ * Accepts common date-only string shapes and returns `DD/MM/YYYY`.
+ * Supports ISO (`YYYY-MM-DD`, `YYYY/MM/DD`) and day-first (`DD/MM/YYYY`, `DD-MM-YYYY`).
+ */
+export function normalizeDateToDmy(raw: string): string | null {
+    const s = raw.trim();
+    const iso = s.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/);
+    if (iso) {
+        return `${iso[3]}/${iso[2]}/${iso[1]}`;
+    }
+    const dmy = s.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
+    if (dmy) {
+        return `${dmy[1]}/${dmy[2]}/${dmy[3]}`;
+    }
+    return null;
+}
+
 export function parseAttendRecord(rows: Rows): AttendRecordOutput {
-    // Parse "Attendance date:01/01/2026 ~01/28/2026" (can be in any of the first rows)
+    // Parse "Attendance date:… ~…" (variable date formats; see normalizeDateToDmy)
     let attendanceDateMatch: RegExpMatchArray | null = null;
     for (const row of rows.slice(0, 10)) {
         if (!Array.isArray(row)) continue;
@@ -36,13 +53,15 @@ export function parseAttendRecord(rows: Rows): AttendRecordOutput {
         );
         if (cell) {
             attendanceDateMatch = String(cell).match(
-                /Attendance date:(\d{2}\/\d{2}\/\d{4})\s*~\s*(\d{2}\/\d{2}\/\d{4})/,
+                /Attendance date:\s*(\S+)\s*~\s*(\S+)/,
             );
             break;
         }
     }
-    const startDate = attendanceDateMatch?.[1];
-    const endDate = attendanceDateMatch?.[2];
+    const startDateRaw = attendanceDateMatch?.[1];
+    const endDateRaw = attendanceDateMatch?.[2];
+    const startDate = startDateRaw ? normalizeDateToDmy(startDateRaw) : null;
+    const endDate = endDateRaw ? normalizeDateToDmy(endDateRaw) : null;
 
     // Parse "Tabling date:01/28/2026 17:10:10"
     let tablingDate = "";
