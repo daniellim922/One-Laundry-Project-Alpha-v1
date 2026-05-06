@@ -24,7 +24,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Trash2, Upload } from "lucide-react";
+import { Plus, Trash2, Upload } from "lucide-react";
 import { parseAttendRecord } from "@/utils/payroll/parse-attendrecord";
 import {
     formatClockIntervalHm,
@@ -419,6 +419,23 @@ export function TimesheetImportClient({
         [],
     );
 
+    const addRowForWorker = React.useCallback((workerName: string) => {
+        setEditableRows((prev) => {
+            const firstIdx = prev.findIndex((r) => r.workerName === workerName);
+            if (firstIdx === -1) return prev;
+            const newRow: FlatRow = {
+                workerName,
+                dateIn: "",
+                dateOut: "",
+                timeIn: "",
+                timeOut: "",
+            };
+            const next = [...prev];
+            next.splice(firstIdx + 1, 0, newRow);
+            return next;
+        });
+    }, []);
+
     const handleSubmit = React.useCallback(
         async (mode?: "skip" | "force") => {
             if (!parsedData || editableRows.length === 0) return;
@@ -762,47 +779,56 @@ export function TimesheetImportClient({
                                                                 "pl-8",
                                                         )}>
                                                         {isFirstInGroup ? (
-                                                            <div className="space-y-1">
-                                                                <SelectSearch
-                                                                    options={activeWorkers.map(
-                                                                        (w) => ({
-                                                                            value: w.id,
-                                                                            label: w.name,
-                                                                        }),
-                                                                    )}
-                                                                    value={
-                                                                        workerMatchGroupsByImportedName.get(
-                                                                            row.workerName,
-                                                                        )
-                                                                            ?.resolvedWorker
-                                                                            ?.id ??
-                                                                        ""
-                                                                    }
-                                                                    onChange={(
-                                                                        id,
-                                                                    ) =>
-                                                                        setManualWorkerMatches(
-                                                                            (prev) => ({
-                                                                                ...prev,
-                                                                                [row.workerName]:
-                                                                                    id,
+                                                            <div className="flex items-start gap-1">
+                                                                <div className="flex-1 space-y-1">
+                                                                    <SelectSearch
+                                                                        options={activeWorkers.map(
+                                                                            (w) => ({
+                                                                                value: w.id,
+                                                                                label: w.name,
                                                                             }),
-                                                                        )
-                                                                    }
-                                                                    name={`worker-${i}`}
-                                                                    placeholder={
-                                                                        row.workerName ||
-                                                                        "Select worker"
-                                                                    }
-                                                                    searchPlaceholder="Search workers…"
-                                                                    emptyText="No workers found."
-                                                                />
-                                                                <p className="text-muted-foreground text-xs">
-                                                                    Source:{" "}
-                                                                    {
-                                                                        row.workerName
-                                                                    }
-                                                                </p>
+                                                                        )}
+                                                                        value={
+                                                                            workerMatchGroupsByImportedName.get(
+                                                                                row.workerName,
+                                                                            )
+                                                                                ?.resolvedWorker
+                                                                                ?.id ??
+                                                                            ""
+                                                                        }
+                                                                        onChange={(
+                                                                            id,
+                                                                        ) =>
+                                                                            setManualWorkerMatches(
+                                                                                (prev) => ({
+                                                                                    ...prev,
+                                                                                    [row.workerName]:
+                                                                                        id,
+                                                                                }),
+                                                                            )
+                                                                        }
+                                                                        name={`worker-${i}`}
+                                                                        placeholder={
+                                                                            row.workerName ||
+                                                                            "Select worker"
+                                                                        }
+                                                                        searchPlaceholder="Search workers…"
+                                                                        emptyText="No workers found."
+                                                                    />
+                                                                    <p className="text-muted-foreground text-xs">
+                                                                        Source:{" "}
+                                                                        {
+                                                                            row.workerName
+                                                                        }
+                                                                    </p>
+                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => addRowForWorker(row.workerName)}
+                                                                    className="text-muted-foreground hover:text-primary mt-1 rounded p-1"
+                                                                    aria-label={`Add row for ${row.workerName}`}>
+                                                                    <Plus className="size-4" />
+                                                                </button>
                                                             </div>
                                                         ) : (
                                                             <span className="text-muted-foreground/50">
