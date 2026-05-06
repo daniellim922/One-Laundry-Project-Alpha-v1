@@ -42,10 +42,25 @@ An **Unresolved worker match** is an imported timesheet worker name that does no
 **Status:** Resolved  
 `Inactive` status must block **new** payroll creation and **new** timesheet entry at the service boundary. Existing Draft payrolls for the worker remain settleable so final pay can be processed. Existing timesheets should be editable until their containing payroll is Settled, after which they are protected by the `Timesheet Paid` flag as usual. The service layer (not just the UI) must enforce the status check.
 
-### Expense module is deferred / out of scope
+### Expense module is independent of payroll
 
 **Status:** Resolved  
-Expenses will become a separate module in the future. The current standalone `expensesTable` should be ignored in payroll domain decisions; no Worker or Payroll allocation is planned at this time.
+Expenses are a separate back-office spend module with no Worker or Payroll allocation. They track shop overhead and general operational costs only.
+
+### Expenses snapshot master data names at write time
+
+**Status:** Resolved  
+`expensesTable` stores denormalized text columns (`supplierName`, `categoryName`, `subcategoryName`) rather than FK references to the lookup tables (`expense_supplier`, `expense_category`, `expense_subcategory`). This is intentional: an expense record preserves the supplier/category names as they were when recorded, so historical expenses remain readable even if master data is later renamed or deleted. Same pattern as payroll vouchers snapshotting employment data.
+
+### Expense category type (Fixed/Variable) dropped
+
+**Status:** Resolved  
+The binary Fixed/Variable classification on expense categories was removed because operators need more than two grouping buckets. Categories are now just a name — reporting rollups can be built on the category/subcategory hierarchy itself without a hardcoded type enum.
+
+### Expense status is bidirectional
+
+**Status:** Resolved  
+`Expense Submitted ↔ Expense Paid` is a two-way transition. Reverting to Expense Submitted re-enables full editing with no residual locks — there is no "has been paid before" flag. The status field alone gates editability (edits blocked while Expense Paid). This is simpler than payroll Settle/Reopen because expenses have no linked timesheets, advances, or worker balances to unwind.
 
 ### Payroll subTotal clamped at zero
 

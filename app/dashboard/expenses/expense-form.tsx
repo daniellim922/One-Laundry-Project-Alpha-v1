@@ -324,8 +324,12 @@ export function ExpenseForm({
             return;
         }
         setSubmitError(null);
+        const valuesForSave: ExpenseFormValues = {
+            ...values,
+            supplierGstRegNumber: form.getValues("supplierGstRegNumber") ?? "",
+        };
         startTransition(async () => {
-            const parsed = schema.safeParse(values);
+            const parsed = schema.safeParse(valuesForSave);
             if (!parsed.success) {
                 setSubmitError("Please fix the highlighted fields.");
                 return;
@@ -458,13 +462,13 @@ export function ExpenseForm({
                         />
                     </Field>
                     <Field>
-                        <FieldLabel>Description</FieldLabel>
+                        <FieldLabel>Supplier GST registration</FieldLabel>
                         <Input
-                            {...form.register("description")}
-                            disabled={isLocked}
+                            {...form.register("supplierGstRegNumber")}
+                            disabled
                         />
                         <FieldError
-                            errors={[form.formState.errors.description]}
+                            errors={[form.formState.errors.supplierGstRegNumber]}
                         />
                     </Field>
                 </div>
@@ -478,10 +482,13 @@ export function ExpenseForm({
                         />
                     </Field>
                     <Field>
-                        <FieldLabel>Supplier GST registration</FieldLabel>
+                        <FieldLabel>Description</FieldLabel>
                         <Input
-                            {...form.register("supplierGstRegNumber")}
+                            {...form.register("description")}
                             disabled={isLocked}
+                        />
+                        <FieldError
+                            errors={[form.formState.errors.description]}
                         />
                     </Field>
                 </div>
