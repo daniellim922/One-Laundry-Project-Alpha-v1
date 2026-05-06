@@ -28,43 +28,60 @@ export function StepProgressPanel({
     return (
         <div className={className}>
             <div className="rounded-xl border bg-card px-4 py-4">
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col">
                     {steps.map((step, index) => {
                         const isActive = activeStep === step.id;
-                        const hasNext = index < steps.length - 1 || finalAction != null;
+                        const hasNext =
+                            index < steps.length - 1 || finalAction != null;
 
                         return (
-                            <div key={step.id}>
-                                <Link
-                                    href={step.href}
-                                    className="flex items-center gap-2">
-                                    <StepCircle stepId={step.id} isActive={isActive} />
-                                    <span
-                                        className={`text-sm font-medium ${
-                                            isActive
-                                                ? "text-foreground"
-                                                : "text-muted-foreground"
-                                        }`}>
-                                        {step.label}
-                                    </span>
-                                </Link>
-
-                                {hasNext ? (
-                                    <StepConnector
-                                        isActive={activeStep === step.id + 1}
+                            <div
+                                key={step.id}
+                                className="flex items-start gap-2">
+                                <div className="flex flex-col items-center">
+                                    <StepCircle
+                                        stepId={step.id}
+                                        isActive={isActive}
                                     />
-                                ) : null}
+                                    {hasNext ? (
+                                        <StepConnector
+                                            isActive={
+                                                activeStep === step.id + 1
+                                            }
+                                        />
+                                    ) : null}
+                                </div>
+                                <div className="flex min-h-7 min-w-0 flex-1 items-center">
+                                    <Link
+                                        href={step.href}
+                                        className="inline-flex items-center">
+                                        <span
+                                            className={`text-sm font-medium ${
+                                                isActive
+                                                    ? "text-foreground"
+                                                    : "text-muted-foreground"
+                                            }`}>
+                                            {step.label}
+                                        </span>
+                                    </Link>
+                                </div>
                             </div>
                         );
                     })}
 
                     {finalAction ? (
-                        <div className="flex items-center gap-2">
-                            <StepCircle
-                                stepId={finalAction.id}
-                                isActive={activeStep === finalAction.id}
-                            />
-                            {finalAction.content}
+                        <div className="flex items-start gap-2">
+                            <div className="flex flex-col items-center">
+                                <StepCircle
+                                    stepId={finalAction.id}
+                                    isActive={
+                                        activeStep === finalAction.id
+                                    }
+                                />
+                            </div>
+                            <div className="flex min-h-7 min-w-0 flex-1 flex-wrap items-center gap-2">
+                                {finalAction.content}
+                            </div>
                         </div>
                     ) : null}
                 </div>
@@ -82,7 +99,7 @@ function StepCircle({
 }) {
     return (
         <div
-            className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold ${
+            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold ${
                 isActive
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-muted-foreground/40 bg-muted text-muted-foreground"
@@ -94,9 +111,9 @@ function StepCircle({
 
 function StepConnector({ isActive }: { isActive: boolean }) {
     return (
-        <div className="flex h-6 pl-3">
+        <div className="flex h-6 w-7 shrink-0 flex-col items-center">
             <div
-                className={`w-0.5 rounded-full ${
+                className={`h-full w-0.5 rounded-full ${
                     isActive ? "bg-primary/80" : "bg-muted"
                 }`}
             />

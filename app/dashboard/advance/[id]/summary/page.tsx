@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { EntityStatusBadge } from "@/components/ui/entity-status-badge";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { StepProgressPanel } from "@/components/ui/step-progress-panel";
+import { SummaryCaptureDownload } from "@/components/ui/summary-capture-download";
+import { isoToDdmmyyyy } from "@/lib/pdf-filename-parts";
 import { getAdvanceRequestByIdWithWorker } from "@/utils/advance/queries";
 import { Pencil } from "lucide-react";
 
+import { AdvanceVoucher } from "../advance-voucher";
 import { getAdvanceStepItems } from "../page";
-import { AdvanceSummaryCapture } from "../advance-summary-capture";
-import { AdvanceDownloadVoucher } from "../advance-downloadable";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -52,13 +53,12 @@ export default async function AdvanceSummaryPage({ params }: PageProps) {
             />
 
             <section className="min-h-[calc(100vh-10rem)] print:min-h-0">
-                <AdvanceSummaryCapture
-                    advanceRequestId={id}
-                    workerName={detail.request.workerName}
-                    amountRequested={detail.request.amountRequested}
-                    requestDate={detail.request.requestDate}>
-                    <AdvanceDownloadVoucher detail={detail} />
-                </AdvanceSummaryCapture>
+                <SummaryCaptureDownload
+                    pdfUrl={`/api/advance/${id}/pdf`}
+                    filename={`${detail.request.workerName} - Advance - $${detail.request.amountRequested} - ${isoToDdmmyyyy(detail.request.requestDate)}.pdf`}
+                    downloadClassName="space-y-3 download-advance">
+                    <AdvanceVoucher detail={detail} />
+                </SummaryCaptureDownload>
             </section>
         </FormPageLayout>
     );

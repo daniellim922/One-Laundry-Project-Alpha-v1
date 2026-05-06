@@ -1,9 +1,11 @@
-import { PayrollHeader } from "../payroll-header";
+import { SummaryCaptureDownload } from "@/components/ui/summary-capture-download";
+import { isoToDdmmyyyy } from "@/lib/pdf-filename-parts";
+
+import { getPayrollDetailData } from "../payroll-detail-data";
 import { PaymentVoucher } from "../payment-voucher";
+import { PayrollHeader } from "../payroll-header";
 import { PayrollStepProgress } from "../payroll-step-progress";
 import { SummarizedTimesheet } from "../summarized-timesheet";
-import { getPayrollDetailData } from "../payroll-detail-data";
-import { PayrollSummaryCapture } from "../payroll-summary-capture";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -30,11 +32,10 @@ export default async function PayrollSummaryPage({ params, searchParams }: PageP
             />
 
             <section className="min-h-[calc(100vh-10rem)] print:min-h-0">
-                <PayrollSummaryCapture
-                    payrollId={payroll.id}
-                    workerName={worker.name}
-                    periodStart={payroll.periodStart}
-                    periodEnd={payroll.periodEnd}>
+                <SummaryCaptureDownload
+                    pdfUrl={`/api/payroll/${payroll.id}/pdf?mode=summary`}
+                    filename={`${worker.name} - ${isoToDdmmyyyy(payroll.periodStart)}-${isoToDdmmyyyy(payroll.periodEnd)}.pdf`}
+                    downloadClassName="space-y-3 download-payroll">
                     <PaymentVoucher
                         voucher={voucher}
                         payroll={payroll}
@@ -48,7 +49,7 @@ export default async function PayrollSummaryPage({ params, searchParams }: PageP
                             workerName={worker.name}
                         />
                     ) : null}
-                </PayrollSummaryCapture>
+                </SummaryCaptureDownload>
             </section>
         </div>
     );

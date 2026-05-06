@@ -27,7 +27,7 @@ function formatDate(iso: string | null): string {
     return d ? formatEnGbDayMonthLongYear(d) : "—";
 }
 
-export function AdvanceDownloadVoucher({
+export function AdvanceVoucher({
     detail,
 }: {
     detail: AdvanceRequestDetail;
