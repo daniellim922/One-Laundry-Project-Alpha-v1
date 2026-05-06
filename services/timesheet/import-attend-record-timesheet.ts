@@ -9,7 +9,11 @@ import { recordGuidedMonthlyWorkflowStepCompletion } from "@/services/payroll/gu
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
 import { transformNightShiftEntries } from "@/services/timesheet/transform-night-shift-entries";
 import { assertWorkerEligibleForTimesheet } from "@/services/worker/assert-worker-eligible-for-timesheet";
-import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
+import {
+    normalizeDateToDmy,
+    type AttendRecordDate,
+    type AttendRecordOutput,
+} from "@/utils/payroll/parse-attendrecord";
 import { parseDmyToIsoStrict } from "@/utils/time/calendar-date";
 import { toTimesheetWireTimeHms } from "@/utils/time/hm-time";
 
@@ -40,6 +44,17 @@ function dmySlashToIsoWire(val: string): string {
     const [, day, month, year] = m;
     const strict = `${day!.padStart(2, "0")}/${month!.padStart(2, "0")}/${year}`;
     return parseDmyToIsoStrict(strict) ?? "";
+}
+
+/** Parser / Excel cells use one column date (`dateIn === dateOut`); cross-midnight rows imply client pairing. */
+function isNightShiftParserCellLayout(dates: AttendRecordDate[]): boolean {
+    if (dates.length === 0) return true;
+    for (const d of dates) {
+        const din = normalizeDateToDmy(d.dateIn) ?? d.dateIn.trim();
+        const dout = normalizeDateToDmy(d.dateOut) ?? d.dateOut.trim();
+        if (din !== dout) return false;
+    }
+    return true;
 }
 
 function pairsWhereClause(
@@ -107,10 +122,12 @@ export async function importAttendRecordTimesheet(
 
         const datesForImport =
             matchedWorker.shiftPattern === "Night Shift"
-                ? transformNightShiftEntries(
-                      worker.dates,
-                      attendancePeriodStart,
-                  )
+                ? isNightShiftParserCellLayout(worker.dates)
+                    ? transformNightShiftEntries(
+                          worker.dates,
+                          attendancePeriodStart,
+                      )
+                    : worker.dates
                 : worker.dates;
 
         for (const date of datesForImport) {

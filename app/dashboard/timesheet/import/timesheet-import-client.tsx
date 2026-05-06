@@ -31,7 +31,9 @@ import {
     parseTimeForHours,
 } from "@/utils/payroll/payroll-utils";
 import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
+import { transformNightShiftEntries } from "@/services/timesheet/transform-night-shift-entries";
 import {
+    resolveTimesheetImportWorkerForImportedName,
     resolveTimesheetImportWorkerMatches,
     type TimesheetImportWorker,
 } from "./worker-matching";
@@ -80,10 +82,24 @@ function hasRowError(row: FlatRow): boolean {
     return hours === "0h";
 }
 
-function flattenForPreview(data: AttendRecordOutput): FlatRow[] {
+function flattenForPreview(
+    data: AttendRecordOutput,
+    workers: TimesheetImportWorker[],
+    manualMatchesByImportedName: Record<string, string>,
+): FlatRow[] {
     const rows: FlatRow[] = [];
+    const periodStart = data.attendanceDate.startDate ?? "";
     for (const worker of data.workers) {
-        for (const d of worker.dates) {
+        const resolved = resolveTimesheetImportWorkerForImportedName({
+            importedName: worker.name,
+            workers,
+            manualMatchesByImportedName,
+        });
+        const dates =
+            resolved?.shiftPattern === "Night Shift"
+                ? transformNightShiftEntries(worker.dates, periodStart)
+                : worker.dates;
+        for (const d of dates) {
             rows.push({
                 workerName: worker.name,
                 dateIn: d.dateIn,
@@ -389,7 +405,7 @@ export function TimesheetImportClient({
                 return;
             }
             setParsedData(result);
-            setEditableRows(flattenForPreview(result));
+            setEditableRows(flattenForPreview(result, workers, {}));
             setFile(file);
         } catch (err) {
             setError(
@@ -400,7 +416,14 @@ export function TimesheetImportClient({
             setParsedData(null);
             setFile(null);
         }
-    }, []);
+    }, [workers]);
+
+    React.useEffect(() => {
+        if (!parsedData) return;
+        setEditableRows(
+            flattenForPreview(parsedData, workers, manualWorkerMatches),
+        );
+    }, [parsedData, workers, manualWorkerMatches]);
 
     const updateEditableRow = React.useCallback(
         (

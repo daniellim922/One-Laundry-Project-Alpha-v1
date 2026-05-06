@@ -26,15 +26,15 @@ function normalizeWorkerName(name: string): string {
     return name.trim().toLowerCase();
 }
 
-export function resolveTimesheetImportWorkerMatches({
-    rows,
+export function resolveTimesheetImportWorkerForImportedName({
+    importedName,
     workers,
     manualMatchesByImportedName = {},
 }: {
-    rows: TimesheetImportWorkerRow[];
+    importedName: string;
     workers: TimesheetImportWorker[];
     manualMatchesByImportedName?: Record<string, string>;
-}): TimesheetImportWorkerMatchResult {
+}): TimesheetImportWorker | null {
     const activeWorkersByName = new Map<string, TimesheetImportWorker[]>();
     const activeWorkersById = new Map<string, TimesheetImportWorker>();
 
@@ -48,6 +48,25 @@ export function resolveTimesheetImportWorkerMatches({
         activeWorkersByName.set(normalizedName, matchingWorkers);
     }
 
+    const manualWorkerId = manualMatchesByImportedName[importedName];
+    const manualWorker = manualWorkerId
+        ? activeWorkersById.get(manualWorkerId)
+        : null;
+    const exactMatches =
+        activeWorkersByName.get(normalizeWorkerName(importedName)) ?? [];
+
+    return manualWorker ?? (exactMatches.length === 1 ? exactMatches[0]! : null);
+}
+
+export function resolveTimesheetImportWorkerMatches({
+    rows,
+    workers,
+    manualMatchesByImportedName = {},
+}: {
+    rows: TimesheetImportWorkerRow[];
+    workers: TimesheetImportWorker[];
+    manualMatchesByImportedName?: Record<string, string>;
+}): TimesheetImportWorkerMatchResult {
     const groupsByName = new Map<
         string,
         { importedName: string; rowCount: number }
@@ -67,25 +86,19 @@ export function resolveTimesheetImportWorkerMatches({
         }
     }
 
-    const groups = Array.from(groupsByName.entries()).map(
-        ([normalizedName, group]) => {
-            const manualWorkerId =
-                manualMatchesByImportedName[group.importedName];
-            const manualWorker = manualWorkerId
-                ? activeWorkersById.get(manualWorkerId)
-                : null;
-            const exactMatches = activeWorkersByName.get(normalizedName) ?? [];
-            const resolvedWorker =
-                manualWorker ??
-                (exactMatches.length === 1 ? exactMatches[0]! : null);
+    const groups = Array.from(groupsByName.entries()).map(([, group]) => {
+        const resolvedWorker = resolveTimesheetImportWorkerForImportedName({
+            importedName: group.importedName,
+            workers,
+            manualMatchesByImportedName,
+        });
 
-            return {
-                importedName: group.importedName,
-                rowCount: group.rowCount,
-                resolvedWorker,
-            };
-        },
-    );
+        return {
+            importedName: group.importedName,
+            rowCount: group.rowCount,
+            resolvedWorker,
+        };
+    });
 
     return {
         groups,

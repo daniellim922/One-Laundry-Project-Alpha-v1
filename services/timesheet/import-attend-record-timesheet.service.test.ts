@@ -552,4 +552,47 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
             timeOut: "08:00:00",
         });
     });
+
+    it("does not re-pair Night Shift when the payload already has cross-midnight date pairs (e.g. import UI preview)", async () => {
+        const state = makeImportOperationalState();
+        state.workers[0]!.shiftPattern = "Night Shift";
+        configureStatefulImportDatabase(state);
+
+        await expect(
+            importAttendRecordTimesheet({
+                attendanceDate: {
+                    startDate: "01/04/2026",
+                    endDate: "02/04/2026",
+                },
+                tablingDate: "02/04/2026 17:10:10",
+                workers: [
+                    {
+                        userId: "",
+                        name: "Worker One",
+                        dates: [
+                            {
+                                dateIn: "01/04/2026",
+                                timeIn: "21:00",
+                                dateOut: "02/04/2026",
+                                timeOut: "08:00",
+                            },
+                        ],
+                    },
+                ],
+            }),
+        ).resolves.toMatchObject({
+            status: "success",
+            imported: 1,
+            skipped: 0,
+            errors: undefined,
+        });
+
+        expect(state.timesheets[state.timesheets.length - 1]).toMatchObject({
+            workerId: "worker-1",
+            dateIn: "2026-04-01",
+            timeIn: "21:00:00",
+            dateOut: "2026-04-02",
+            timeOut: "08:00:00",
+        });
+    });
 });
