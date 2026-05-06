@@ -1,7 +1,4 @@
-import Link from "next/link";
-
 import { FormPageLayout } from "@/components/form-page-layout";
-import { Button } from "@/components/ui/button";
 
 import {
     listExpenseCategoriesWithSubcategories,
@@ -20,11 +17,6 @@ export default async function ExpenseCategoriesPage() {
         <FormPageLayout
             title="Expense categories"
             subtitle="Manage categories, subcategories, and suppliers used when recording expenses."
-            actions={
-                <Button variant="outline" asChild>
-                    <Link href="/dashboard/expenses">Back to overview</Link>
-                </Button>
-            }
             maxWidthClassName="max-w-5xl">
             <ExpenseCategoriesManager
                 initialCategories={initialCategories}

@@ -17,7 +17,6 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     Card,
@@ -28,8 +27,6 @@ import {
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { SelectSearch } from "@/components/ui/SelectSearch";
-import { cn } from "@/lib/utils";
-import { expenseCategoryBadgeClassForId } from "@/types/badge-tones";
 
 type Subcategory = ExpenseCategoryWithSubcategories["subcategories"][number];
 type Category = ExpenseCategoryWithSubcategories;
@@ -194,13 +191,7 @@ function CategoryCardSection({
                         <li
                             key={`${c.id}-${+c.updatedAt}`}
                             className="flex items-center justify-between gap-3 border-b py-2">
-                            <Badge
-                                className={cn(
-                                    "text-xs font-normal",
-                                    expenseCategoryBadgeClassForId(c.id),
-                                )}>
-                                {c.name}
-                            </Badge>
+                            <span className="text-sm">{c.name}</span>
                             <Button
                                 type="button"
                                 size="icon-sm"
@@ -401,22 +392,13 @@ function SubcategoryCardSection({
                     </Button>
                 </form>
                 <ul className="space-y-2">
-                    {flatSubs.map(({ sub, categoryId, categoryLabel }) => (
+                    {flatSubs.map(({ sub, categoryLabel }) => (
                         <li
                             key={`${sub.id}-${+sub.updatedAt}`}
                             className="flex items-center justify-between gap-3 border-b py-2">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-sm">{sub.name}</span>
-                                <Badge
-                                    className={cn(
-                                        "text-xs font-normal",
-                                        expenseCategoryBadgeClassForId(
-                                            categoryId,
-                                        ),
-                                    )}>
-                                    {categoryLabel}
-                                </Badge>
-                            </div>
+                            <span className="text-sm">
+                                {categoryLabel} - {sub.name}
+                            </span>
                             <Button
                                 type="button"
                                 size="icon-sm"
@@ -565,14 +547,11 @@ function SupplierCardSection({
                         <li
                             key={`${s.id}-${+s.updatedAt}`}
                             className="flex items-center justify-between gap-3 border-b py-2">
-                            <div className="min-w-0 space-y-0.5">
-                                <p className="text-sm">{s.name}</p>
-                                {s.gstRegNumber ? (
-                                    <p className="text-muted-foreground text-xs">
-                                        GST: {s.gstRegNumber}
-                                    </p>
-                                ) : null}
-                            </div>
+                            <p className="text-sm">
+                                {s.gstRegNumber
+                                    ? `${s.name} - GST ${s.gstRegNumber}`
+                                    : s.name}
+                            </p>
                             <Button
                                 type="button"
                                 size="icon-sm"

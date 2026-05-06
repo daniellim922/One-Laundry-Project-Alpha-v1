@@ -7,11 +7,7 @@ import { Eye, Pencil } from "lucide-react";
 import {
     DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import {
-    expenseCategoryBadgeClassForName,
-    expenseStatusBadgeTone,
-    expenseSubcategoryBadgeClassForName,
-} from "@/types/badge-tones";
+import { expenseStatusBadgeTone } from "@/types/badge-tones";
 import type { ExpenseListRow } from "@/services/expense/list-expenses";
 import {
     createActionsColumn,
@@ -40,23 +36,13 @@ export const columns: ColumnDef<ExpenseListRow>[] = [
         accessorKey: "categoryName",
         header: createSortableHeader("Category"),
         meta: { globalSearch: true },
-        cell: createBadgeCell<ExpenseListRow>({
-            value: (r) => r.categoryName,
-            variant: "outline",
-            toneClassNameFor: (r) =>
-                expenseCategoryBadgeClassForName(r.categoryName),
-        }),
+        cell: ({ row }) => row.original.categoryName,
     },
     {
         accessorKey: "subcategoryName",
         header: createSortableHeader("Subcategory"),
         meta: { globalSearch: true },
-        cell: createBadgeCell<ExpenseListRow>({
-            value: (r) => r.subcategoryName,
-            variant: "outline",
-            toneClassNameFor: (r) =>
-                expenseSubcategoryBadgeClassForName(r.subcategoryName),
-        }),
+        cell: ({ row }) => row.original.subcategoryName,
     },
     {
         accessorKey: "subtotalCents",
