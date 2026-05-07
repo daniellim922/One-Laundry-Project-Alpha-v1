@@ -131,7 +131,8 @@ function defaultSelections(
     initial: ExpenseListRow | null | undefined,
 ): Pick<ExpenseFormValues, "categoryName" | "subcategoryName" | "supplierName"> {
     if (!initial) {
-        const cat = categories[0];
+        const cat =
+            categories.find((c) => c.name === "Variable") ?? categories[0];
         const sub = cat?.subcategories[0];
         const sup = suppliers[0];
         return {

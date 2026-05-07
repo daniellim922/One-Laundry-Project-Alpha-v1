@@ -24,6 +24,7 @@ import { timesheets } from "./timesheet";
 import { advances } from "./advances";
 import { payrolls } from "./payrolls";
 import { seedPublicHolidays } from "./public-holidays";
+import { seedExpenseMasterData } from "./expense-master-data";
 import { SEED_TIMESTAMP } from "./constants";
 
 type SplitWorkerSeed = {
@@ -173,6 +174,7 @@ async function seedPayrolls(insertedWorkers: { id: string }[]): Promise<void> {
     }
 }
 
+/** Also seeds expense category/subcategory/supplier master data after holidays. */
 export async function seedWorkersAndHolidays(): Promise<
     { id: string; name: string }[]
 > {
@@ -198,6 +200,9 @@ export async function seedWorkersAndHolidays(): Promise<
 
     await seedPublicHolidays();
     console.log("New public holidays created!");
+
+    await seedExpenseMasterData();
+    console.log("Expense master data created!");
 
     return insertedWorkers;
 }
