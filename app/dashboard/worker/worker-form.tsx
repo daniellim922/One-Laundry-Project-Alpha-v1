@@ -140,9 +140,7 @@ function bindTextNumericField(field: {
     ref: React.Ref<HTMLInputElement>;
 }) {
     const str =
-        field.value == null || field.value === ""
-            ? ""
-            : String(field.value);
+        field.value == null || field.value === "" ? "" : String(field.value);
     return {
         name: field.name,
         ref: field.ref,
@@ -184,9 +182,7 @@ function NumericControllerField<T extends FieldValues>({
             name={name}
             control={control}
             render={({ field, fieldState }) => (
-                <Field
-                    data-invalid={fieldState.invalid}
-                    className="space-y-2">
+                <Field data-invalid={fieldState.invalid} className="space-y-2">
                     <FieldLabel htmlFor={id}>
                         {label}
                         {required ? <RequiredMark /> : null}
@@ -619,9 +615,7 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                 label="Employment Arrangement"
                                 icon={<Users className="size-4" />}
                                 disabled={disabled}
-                                options={
-                                    EMPLOYMENT_ARRANGEMENT_SEGMENT_OPTIONS
-                                }
+                                options={EMPLOYMENT_ARRANGEMENT_SEGMENT_OPTIONS}
                                 ariaLabel="Employment arrangement"
                             />
                         </div>
