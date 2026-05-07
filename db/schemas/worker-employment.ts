@@ -71,14 +71,17 @@ const asOptionalNumberText = z
         return Number.isNaN(n) ? undefined : n;
     });
 
+/** Accept missing keys after Server Action / JSON serialization strips undefined-shaped fields. */
+const optionalEmployNumericTextField = asOptionalNumberText.optional();
+
 export const workerUpsertSchema = workerFields
     .extend({
         ...employmentFields.shape,
-        cpf: asOptionalNumberText,
-        monthlyPay: asOptionalNumberText,
-        hourlyRate: asOptionalNumberText,
-        restDayRate: asOptionalNumberText,
-        minimumWorkingHours: asOptionalNumberText,
+        cpf: optionalEmployNumericTextField,
+        monthlyPay: optionalEmployNumericTextField,
+        hourlyRate: optionalEmployNumericTextField,
+        restDayRate: optionalEmployNumericTextField,
+        minimumWorkingHours: optionalEmployNumericTextField,
     })
     .superRefine((values, ctx) => {
         const isFullTime = values.employmentType === "Full Time";
