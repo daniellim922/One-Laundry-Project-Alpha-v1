@@ -39,7 +39,6 @@ vi.mock("@/app/dashboard/worker/actions", () => ({
 
 import { WorkerForm } from "@/app/dashboard/worker/worker-form";
 import type { WorkerUpsertValues } from "@/db/schemas/worker-employment";
-import type { WorkerWithEmployment } from "@/db/tables/workerTable";
 import { makeWorkerWithEmployment } from "@/test/factories/worker";
 
 describe("WorkerForm", () => {
@@ -116,6 +115,22 @@ describe("WorkerForm", () => {
                 .getByRole("button", { name: "Local Worker" })
                 .getAttribute("aria-pressed"),
         ).toBe("true");
+    });
+
+    it("defaults shift pattern to Day Shift in create mode", () => {
+        render(<WorkerForm />);
+
+        expect(screen.getByRole("group", { name: "Shift pattern" })).toBeTruthy();
+        expect(
+            screen
+                .getByRole("button", { name: "Day Shift" })
+                .getAttribute("aria-pressed"),
+        ).toBe("true");
+        expect(
+            screen
+                .getByRole("button", { name: "Night Shift" })
+                .getAttribute("aria-pressed"),
+        ).toBe("false");
     });
 
     it("allows selecting Part Time and Foreign Worker", async () => {
@@ -498,6 +513,7 @@ describe("WorkerForm", () => {
         expect(payload.name).toBe("Created Worker");
         expect(payload.employmentType).toBe("Part Time");
         expect(payload.hourlyRate).toBe(12);
+        expect(payload.shiftPattern).toBe("Day Shift");
 
         expect(mocks.push).toHaveBeenCalledWith("/dashboard/worker/all");
         expect(mocks.refresh).toHaveBeenCalled();
@@ -542,8 +558,27 @@ describe("WorkerForm", () => {
         expect(workerId).toBe("worker-1");
         expect(payload.name).toBe("Existing Worker");
         expect(payload.status).toBe("Active");
+        expect(payload.shiftPattern).toBe("Day Shift");
 
         expect(mocks.push).toHaveBeenCalledWith("/dashboard/worker/all");
         expect(mocks.refresh).toHaveBeenCalled();
+    });
+
+    it("persists Night Shift via updateWorker when selected", async () => {
+        const user = userEvent.setup();
+        render(<WorkerForm worker={makeWorkerWithEmployment()} />);
+
+        await user.click(screen.getByRole("button", { name: "Night Shift" }));
+        await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+        await waitFor(() => {
+            expect(mocks.updateWorker).toHaveBeenCalledTimes(1);
+        });
+
+        const [, payload] = mocks.updateWorker.mock.calls[0] as [
+            string,
+            WorkerUpsertValues,
+        ];
+        expect(payload.shiftPattern).toBe("Night Shift");
     });
 });

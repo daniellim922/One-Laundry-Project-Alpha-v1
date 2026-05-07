@@ -2,24 +2,24 @@
 name: Night Shift Import Refactor
 overview: Add a `shiftPattern` field to Employment and implement shift-aware timesheet import logic that correctly pairs cross-midnight time entries for night shift workers.
 todos:
-  - id: schema
-    content: Add shiftPattern to employmentTable, types/status.ts, Zod schema, and WorkerWithEmployment type
-    status: pending
-  - id: worker-form
-    content: Add shift pattern select to worker form and persist in create/update actions
-    status: pending
-  - id: transform-fn
-    content: Create services/timesheet/transform-night-shift-entries.ts with unit tests
-    status: pending
-  - id: import-service
-    content: Wire shift pattern lookup into import service and apply transformation before validation
-    status: pending
-  - id: client-preview
-    content: Apply night-shift transformation in client preview so editable table shows correct pairing
-    status: pending
-  - id: seed-docs
-    content: Update seed data, UBIQUITOUS_LANGUAGE.md, and AGENTS.md
-    status: pending
+    - id: schema
+      content: Add shiftPattern to employmentTable, types/status.ts, Zod schema, and WorkerWithEmployment type
+      status: completed
+    - id: worker-form
+      content: Add shift pattern select to worker form and persist in create/update actions
+      status: completed
+    - id: transform-fn
+      content: Create services/timesheet/transform-night-shift-entries.ts with unit tests
+      status: completed
+    - id: import-service
+      content: Wire shift pattern lookup into import service and apply transformation before validation
+      status: completed
+    - id: client-preview
+      content: Apply night-shift transformation in client preview so editable table shows correct pairing
+      status: completed
+    - id: seed-docs
+      content: Update seed data, UBIQUITOUS_LANGUAGE.md, and AGENTS.md
+      status: completed
 isProject: false
 ---
 
@@ -57,9 +57,9 @@ flowchart TD
 1. **Parser stays pure** -- `parseAttendRecord` remains a dumb cell extractor. It outputs one entry per day-column cell with `dateIn === dateOut`. Shift-aware re-pairing is domain logic in the service layer.
 
 2. **Night shift pairing rule:** For a night shift worker with raw entries for days 1..N:
-   - Day 1: only has time-in (row 2 or row 1 if only one value). Pair with day 2's row 1 as time-out.
-   - Day K (middle): row 1 is time-out for K-1's shift; row 2 is time-in for K's shift (time-out comes from K+1's row 1).
-   - Day N (last): row 1 completes previous shift. If row 2 exists, that shift has no time-out (incomplete).
+    - Day 1: only has time-in (row 2 or row 1 if only one value). Pair with day 2's row 1 as time-out.
+    - Day K (middle): row 1 is time-out for K-1's shift; row 2 is time-in for K's shift (time-out comes from K+1's row 1).
+    - Day N (last): row 1 completes previous shift. If row 2 exists, that shift has no time-out (incomplete).
 
 3. **Client-side preview** also needs shift-aware transformation so the editable table shows correctly paired entries before upload.
 
@@ -82,12 +82,12 @@ flowchart TD
 ### Commit 3: Create the night-shift pairing transformation function (with tests)
 
 - Create `services/timesheet/transform-night-shift-entries.ts` containing a pure function:
-  ```typescript
-  function transformNightShiftEntries(
-    rawEntries: AttendRecordDate[], 
-    periodStartDate: string
-  ): AttendRecordDate[]
-  ```
+    ```typescript
+    function transformNightShiftEntries(
+        rawEntries: AttendRecordDate[],
+        periodStartDate: string,
+    ): AttendRecordDate[];
+    ```
 - The function takes raw same-date entries (as the parser outputs) and re-pairs them into cross-midnight entries
 - Write thorough unit tests covering: normal pairing, first-day time-in only, last-day time-out only, incomplete entries, single-entry periods
 

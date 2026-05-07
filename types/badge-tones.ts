@@ -7,6 +7,7 @@ import type {
     WorkerEmploymentArrangement,
     WorkerEmploymentType,
     WorkerPaymentMethod,
+    WorkerShiftPattern,
     WorkerStatus,
 } from "@/types/status";
 
@@ -35,14 +36,15 @@ export const timesheetPaymentStatusBadgeTone: Record<
     TimesheetPaymentStatus,
     string
 > = {
-    "Timesheet Unpaid": "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300",
-    "Timesheet Paid": "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300",
+    "Timesheet Unpaid":
+        "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300",
+    "Timesheet Paid":
+        "bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300",
 };
 
 export const payrollStatusBadgeTone: Record<PayrollStatus, string> = {
     Draft: "bg-slate-100 text-slate-800 dark:bg-slate-500/20 dark:text-slate-300",
-    Settled:
-        "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300",
+    Settled: "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-300",
 };
 
 export const employmentTypeBadgeTone: Record<WorkerEmploymentType, string> = {
@@ -65,6 +67,13 @@ export const employmentArrangementBadgeTone: Record<
 export const workerStatusBadgeTone: Record<WorkerStatus, string> = {
     Active: "bg-lime-100 text-lime-800 dark:bg-lime-500/20 dark:text-lime-300",
     Inactive: "bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300",
+};
+
+export const shiftPatternBadgeTone: Record<WorkerShiftPattern, string> = {
+    "Day Shift":
+        "bg-sky-100 text-sky-800 dark:bg-sky-500/20 dark:text-sky-300",
+    "Night Shift":
+        "bg-indigo-100 text-indigo-800 dark:bg-indigo-500/20 dark:text-indigo-300",
 };
 
 export const workerPaymentMethodBadgeTone: Record<WorkerPaymentMethod, string> =

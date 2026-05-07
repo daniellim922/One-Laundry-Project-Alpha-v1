@@ -65,11 +65,7 @@ import {
 } from "@/db/schemas/worker-employment";
 import type { WorkerWithEmployment } from "@/db/tables/workerTable";
 import { cn } from "@/lib/utils";
-import {
-    WORKER_EMPLOYMENT_ARRANGEMENTS,
-    WORKER_EMPLOYMENT_TYPES,
-    WORKER_PAYMENT_METHODS,
-} from "@/types/status";
+import { WORKER_SHIFT_PATTERNS } from "@/types/status";
 import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 import { createWorker, updateWorker } from "./actions";
 import { SegmentedTwoChoiceField } from "./segmented-two-choice-field";
@@ -112,6 +108,25 @@ const EMPLOYMENT_ARRANGEMENT_SEGMENT_OPTIONS = [
     },
 ] as const;
 
+const SHIFT_PATTERN_SEGMENT_OPTIONS = [
+    {
+        value: WORKER_SHIFT_PATTERNS[0],
+        label: WORKER_SHIFT_PATTERNS[0],
+        activeClassName:
+            "border-orange-400 bg-orange-50 text-orange-900 dark:bg-orange-500/20 dark:text-orange-200 dark:border-orange-400/70",
+        inactiveHoverClassName:
+            "hover:border-orange-300 hover:bg-orange-50/50 dark:hover:border-orange-500/35 dark:hover:bg-orange-500/10",
+    },
+    {
+        value: WORKER_SHIFT_PATTERNS[1],
+        label: WORKER_SHIFT_PATTERNS[1],
+        activeClassName:
+            "border-indigo-500 bg-indigo-50 text-indigo-900 dark:bg-indigo-500/25 dark:text-indigo-200 dark:border-indigo-500/55",
+        inactiveHoverClassName:
+            "hover:border-indigo-300 hover:bg-indigo-50/60 dark:hover:border-indigo-500/35 dark:hover:bg-indigo-500/12",
+    },
+] as const;
+
 function optionalNumberString(n: number | null | undefined): string {
     if (n == null || Number.isNaN(n)) return "";
     return String(n);
@@ -125,9 +140,7 @@ function bindTextNumericField(field: {
     ref: React.Ref<HTMLInputElement>;
 }) {
     const str =
-        field.value == null || field.value === ""
-            ? ""
-            : String(field.value);
+        field.value == null || field.value === "" ? "" : String(field.value);
     return {
         name: field.name,
         ref: field.ref,
@@ -169,9 +182,7 @@ function NumericControllerField<T extends FieldValues>({
             name={name}
             control={control}
             render={({ field, fieldState }) => (
-                <Field
-                    data-invalid={fieldState.invalid}
-                    className="space-y-2">
+                <Field data-invalid={fieldState.invalid} className="space-y-2">
                     <FieldLabel htmlFor={id}>
                         {label}
                         {required ? <RequiredMark /> : null}
@@ -214,6 +225,8 @@ function getDefaultValues(
             "Full Time") as WorkerFormValues["employmentType"],
         employmentArrangement: (worker?.employmentArrangement ??
             "Local Worker") as WorkerFormValues["employmentArrangement"],
+        shiftPattern: (worker?.shiftPattern ??
+            "Day Shift") as WorkerFormValues["shiftPattern"],
         countryOfOrigin: worker?.countryOfOrigin ?? "",
         race: worker?.race ?? "",
         cpf: optionalNumberString(worker?.cpf ?? undefined),
@@ -602,12 +615,20 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                 label="Employment Arrangement"
                                 icon={<Users className="size-4" />}
                                 disabled={disabled}
-                                options={
-                                    EMPLOYMENT_ARRANGEMENT_SEGMENT_OPTIONS
-                                }
+                                options={EMPLOYMENT_ARRANGEMENT_SEGMENT_OPTIONS}
                                 ariaLabel="Employment arrangement"
                             />
                         </div>
+
+                        <SegmentedTwoChoiceField
+                            control={form.control}
+                            name="shiftPattern"
+                            label="Shift Pattern"
+                            icon={<Clock className="size-4" />}
+                            disabled={disabled}
+                            options={SHIFT_PATTERN_SEGMENT_OPTIONS}
+                            ariaLabel="Shift pattern"
+                        />
 
                         <div className="grid gap-4 md:grid-cols-5">
                             <NumericControllerField

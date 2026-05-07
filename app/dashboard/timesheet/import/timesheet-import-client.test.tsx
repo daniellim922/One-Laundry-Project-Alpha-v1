@@ -27,9 +27,16 @@ const { importAttendRecordTimesheetMock } = vi.hoisted(() => ({
     importAttendRecordTimesheetMock: vi.fn(),
 }));
 
-vi.mock("@/utils/payroll/parse-attendrecord", () => ({
-    parseAttendRecord: parseAttendRecordMock,
-}));
+vi.mock("@/utils/payroll/parse-attendrecord", async (importOriginal) => {
+    const actual =
+        await importOriginal<
+            typeof import("@/utils/payroll/parse-attendrecord")
+        >();
+    return {
+        ...actual,
+        parseAttendRecord: parseAttendRecordMock,
+    };
+});
 
 vi.mock("./import-attend-record-timesheet", () => ({
     importAttendRecordTimesheet: importAttendRecordTimesheetMock,
@@ -96,6 +103,7 @@ describe("TimesheetImportClient", () => {
                         id: "worker-1",
                         name: "Alice Tan",
                         status: "Active",
+                        shiftPattern: "Day Shift",
                     },
                 ]}
             />,
@@ -164,11 +172,13 @@ describe("TimesheetImportClient", () => {
                         id: "worker-1",
                         name: "Alice Tan",
                         status: "Active",
+                        shiftPattern: "Day Shift",
                     },
                     {
                         id: "worker-2",
                         name: "Inactive Alice",
                         status: "Inactive",
+                        shiftPattern: "Day Shift",
                     },
                 ]}
             />,
@@ -274,6 +284,7 @@ describe("TimesheetImportClient", () => {
                         id: "worker-1",
                         name: "Alice Tan",
                         status: "Active",
+                        shiftPattern: "Day Shift",
                     },
                 ]}
             />,
@@ -342,6 +353,7 @@ describe("TimesheetImportClient", () => {
                         id: "worker-1",
                         name: "Alice Tan",
                         status: "Active",
+                        shiftPattern: "Day Shift",
                     },
                 ]}
             />,
@@ -441,6 +453,7 @@ describe("TimesheetImportClient", () => {
                         id: "worker-1",
                         name: "Alice Tan",
                         status: "Active",
+                        shiftPattern: "Day Shift",
                     },
                 ]}
             />,
@@ -554,6 +567,7 @@ describe("TimesheetImportClient", () => {
                         id: "worker-1",
                         name: "Alice Tan",
                         status: "Active",
+                        shiftPattern: "Day Shift",
                     },
                 ]}
             />,
@@ -641,6 +655,7 @@ describe("TimesheetImportClient", () => {
                         id: "worker-1",
                         name: "Alice Tan",
                         status: "Active",
+                        shiftPattern: "Day Shift",
                     },
                 ]}
             />,
@@ -666,5 +681,92 @@ describe("TimesheetImportClient", () => {
         expect(screen.queryByText("Unresolved worker matches")).toBeNull();
         expect(screen.queryByText("Unknown Worker")).toBeNull();
         expect((uploadButton as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    it("pairs night-shift preview rows when the resolved worker is on Night Shift", async () => {
+        const user = userEvent.setup();
+        const parsedAttendRecord: AttendRecordOutput = {
+            attendanceDate: {
+                startDate: "01/04/2026",
+                endDate: "02/04/2026",
+            },
+            tablingDate: "02/04/2026 17:00:00",
+            workers: [
+                {
+                    userId: "",
+                    name: "Alice Tan",
+                    dates: [
+                        {
+                            dateIn: "01/04/2026",
+                            timeIn: "21:00",
+                            dateOut: "01/04/2026",
+                            timeOut: "     ",
+                        },
+                        {
+                            dateIn: "02/04/2026",
+                            timeIn: "08:00",
+                            dateOut: "02/04/2026",
+                            timeOut: "     ",
+                        },
+                    ],
+                },
+            ],
+        };
+
+        parseAttendRecordMock.mockReturnValue(parsedAttendRecord);
+        importAttendRecordTimesheetMock.mockResolvedValue({
+            status: "success",
+            imported: 1,
+            skipped: 0,
+        });
+
+        render(
+            <TimesheetImportClient
+                workers={[
+                    {
+                        id: "worker-1",
+                        name: "Alice Tan",
+                        status: "Active",
+                        shiftPattern: "Night Shift",
+                    },
+                ]}
+            />,
+        );
+
+        await user.upload(
+            screen.getByLabelText(/Drag and drop or click to upload/i),
+            new File(["legacy attend record"], "night.xls", {
+                type: "application/vnd.ms-excel",
+            }),
+        );
+
+        await screen.findByText("night.xls");
+        expect(screen.getAllByText("02/04/2026").length).toBeGreaterThanOrEqual(
+            1,
+        );
+
+        await user.click(screen.getByRole("button", { name: "Upload Timesheet" }));
+
+        expect(importAttendRecordTimesheetMock).toHaveBeenCalledWith(
+            {
+                attendanceDate: parsedAttendRecord.attendanceDate,
+                tablingDate: parsedAttendRecord.tablingDate,
+                workers: [
+                    {
+                        userId: "",
+                        name: "Alice Tan",
+                        dates: [
+                            {
+                                dateIn: "01/04/2026",
+                                timeIn: "21:00",
+                                dateOut: "02/04/2026",
+                                timeOut: "08:00",
+                            },
+                        ],
+                    },
+                ],
+            },
+            undefined,
+        );
     });
 });

@@ -14,6 +14,7 @@ import {
 import {
     employmentArrangementBadgeTone,
     employmentTypeBadgeTone,
+    shiftPatternBadgeTone,
     workerPaymentMethodBadgeTone,
     workerStatusBadgeTone,
 } from "@/types/badge-tones";
@@ -38,6 +39,16 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
             value: (r) => r.status,
             variant: "outline",
             toneClassNameFor: (r) => workerStatusBadgeTone[r.status],
+        }),
+    },
+    {
+        accessorKey: "shiftPattern",
+        header: createSortableHeader("Shift Pattern"),
+        meta: { globalSearch: true },
+        cell: createBadgeCell<WorkerWithEmployment>({
+            value: (r) => r.shiftPattern,
+            variant: "outline",
+            toneClassNameFor: (r) => shiftPatternBadgeTone[r.shiftPattern],
         }),
     },
     {
@@ -73,13 +84,17 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
         accessorKey: "monthlyPay",
         header: createSortableHeader("Monthly Pay"),
         cell: ({ row }) =>
-            row.original.monthlyPay != null ? `$${row.original.monthlyPay}` : "—",
+            row.original.monthlyPay != null
+                ? `$${row.original.monthlyPay}`
+                : "—",
     },
     {
         accessorKey: "hourlyRate",
         header: createSortableHeader("Hourly Rate"),
         cell: ({ row }) =>
-            row.original.hourlyRate != null ? `$${row.original.hourlyRate}` : "—",
+            row.original.hourlyRate != null
+                ? `$${row.original.hourlyRate}`
+                : "—",
     },
     {
         accessorKey: "paymentMethod",

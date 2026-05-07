@@ -4,6 +4,7 @@ import {
     WORKER_EMPLOYMENT_ARRANGEMENTS,
     WORKER_EMPLOYMENT_TYPES,
     WORKER_PAYMENT_METHODS,
+    WORKER_SHIFT_PATTERNS,
 } from "@/types/status";
 
 export const employmentTable = pgTable("employment", {
@@ -14,6 +15,11 @@ export const employmentTable = pgTable("employment", {
     employmentArrangement: text("employment_arrangement", {
         enum: WORKER_EMPLOYMENT_ARRANGEMENTS,
     }).notNull(),
+    shiftPattern: text("shift_pattern", {
+        enum: WORKER_SHIFT_PATTERNS,
+    })
+        .notNull()
+        .default("Day Shift"),
     cpf: real("cpf"),
     monthlyPay: real("monthly_pay"),
     minimumWorkingHours: real("minimum_working_hours"),

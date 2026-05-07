@@ -44,8 +44,18 @@ export function makeAttendRecordPayload() {
 export function makeImportOperationalState() {
     return {
         workers: [
-            { id: "worker-1", name: "Worker One", status: "Active" },
-            { id: "worker-2", name: "Worker Two", status: "Active" },
+            {
+                id: "worker-1",
+                name: "Worker One",
+                status: "Active",
+                shiftPattern: "Day Shift",
+            },
+            {
+                id: "worker-2",
+                name: "Worker Two",
+                status: "Active",
+                shiftPattern: "Day Shift",
+            },
         ],
         timesheets: [
             {

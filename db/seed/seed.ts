@@ -48,6 +48,7 @@ type WorkerSeed = (typeof workers)[number] &
         race: string;
         employmentType: string;
         employmentArrangement: string;
+        shiftPattern: string;
         status: string;
     }>;
 
@@ -55,6 +56,12 @@ function splitWorkerSeed(seed: WorkerSeed): SplitWorkerSeed {
     const employment: InsertEmployment = {
         employmentType: seed.employmentType ?? null,
         employmentArrangement: seed.employmentArrangement ?? null,
+        ...(seed.shiftPattern != null
+            ? {
+                  shiftPattern:
+                      seed.shiftPattern as InsertEmployment["shiftPattern"],
+              }
+            : {}),
         cpf: seed.cpf ?? null,
         monthlyPay: seed.monthlyPay ?? null,
         minimumWorkingHours: seed.minimumWorkingHours ?? null,
