@@ -15,12 +15,16 @@ npm run test                    # unit tests (Vitest; same as test:unit)
 npm run test:unit               # Vitest (all unit tests)
 npm run test:unit:watch         # Vitest watch mode
 npm run test:unit:worker        # worker-focused Vitest paths
+npm run test:e2e                # browser E2E (Vitest + agent-browser; see test/ARCHITECTURE.md)
+npm run test:e2e:setup-auth    # save local agent-browser `one-laundry` auth from USERFLOW_* in `.env`
 npm run db:reset                # wipe + push schema + seed (DATABASE_URL)
 npm run db:migrate              # drizzle-kit push (db/schema.ts) + custom SQL schema artifacts (DATABASE_URL)
 npm run db:seed                 # seed the database (Postgres only; create Auth users in Supabase Studio)
 npm run db:seed:workers         # wipe + push schema + seed workers, public holidays, and expense master data (DATABASE_URL)
 npm run db:wipe                 # wipe database (DATABASE_URL)
 ```
+
+E2E uses the **local** `agent-browser` from this repo (`npm install`). If the CLI cannot find Chrome for Testing, run **`npx agent-browser install`** once from the project root (upstream command; not defined as an npm script here).
 
 ### File-scoped validation
 
@@ -104,7 +108,8 @@ Next.js 16 (App Router, React 19, React Compiler) · TypeScript 5 · PostgreSQL 
 
 ## Testing
 
-- **Vitest** — node environment, tests co-located with source as `*.test.ts` / `*.test.tsx` under `app/`, `components/`, `utils/`, `lib/`, `db/`, `services/`, `scripts/`. Client/component tests that need DOM set `/** @vitest-environment jsdom */` at the top of the file (see `test/ARCHITECTURE.md`). A few Postgres integration tests are excluded from the default run in `vitest.config.ts`; run them with `npx vitest run <path>` when `DATABASE_URL` points at a real database.
+- **Vitest** — node environment, tests co-located with source as `*.test.ts` / `*.test.tsx` under `app/`, `components/`, `utils/`, `lib/`, `db/`, `services/`, `scripts/`. Files matching `*.e2e.test.ts` are **only** run by `npm run test:e2e` (`vitest.e2e.config.ts`). Client/component tests that need DOM set `/** @vitest-environment jsdom */` at the top of the file (see `test/ARCHITECTURE.md`). A few Postgres integration tests are excluded from the default run in `vitest.config.ts`; run them with `npx vitest run <path>` when `DATABASE_URL` points at a real database.
+- **agent-browser E2E** — UI flows use the **local** CLI from `devDependencies` (see `test/e2e/setup-auth.sh` and `test/e2e/agent-browser.ts`). Prereqs: `npm install`, running app (`USERFLOW_BASE_URL`), optional one-time **`npx agent-browser install`** if Chrome for Testing is missing, and `npm run test:e2e:setup-auth` once per machine. Details in `test/ARCHITECTURE.md`.
 - **Factories** (shared by Vitest) live in `test/factories/`; shared mocks/harnesses in `test/_support/`. Layering and commands are summarized in `test/ARCHITECTURE.md`.
 - **`npm run test:coverage`** — Vitest with v8 coverage thresholds on `services/payroll/**` and `services/timesheet/**` (see `vitest.config.ts`).
 - **Codex post-change verification** is wired through `.codex/hooks.json`; when product code changes, the stop hook runs `npm run test:unit` (fast Vitest; `npm run test` runs the same default suite).
