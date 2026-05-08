@@ -18,8 +18,6 @@
         "test:unit": "vitest run",
         "test:unit:watch": "vitest",
         "test:unit:worker": "vitest run app/dashboard/worker services/worker app/api/workers",
-        "test:e2e": "vitest run --config vitest.e2e.config.ts",
-        "test:e2e:setup-auth": "bash test/e2e/setup-auth.sh",
         "test:coverage": "vitest run --coverage"
     },
     "dependencies": {
@@ -71,7 +69,6 @@
         "@types/react-dom": "^19",
         "@vitest/coverage-v8": "^4.1.0",
         "@vitest/eslint-plugin": "^1.6.0",
-        "agent-browser": "^0.27.0",
         "babel-plugin-react-compiler": "1.0.0",
         "drizzle-kit": "^0.31.9",
         "eslint": "^9",
