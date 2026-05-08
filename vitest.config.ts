@@ -15,7 +15,12 @@ export default defineConfig({
         include: [
             "{app,components,utils,lib,db,services,scripts}/**/*.test.{ts,tsx}",
         ],
-        exclude: ["node_modules", ".next", ...postgresIntegrationTestFiles],
+        exclude: [
+            "node_modules",
+            ".next",
+            "**/*.e2e.test.{ts,tsx}",
+            ...postgresIntegrationTestFiles,
+        ],
         // `lib/env` + `lib/db` require these; unit tests import modules that transitively load `db`.
         // Tests do not require a live Postgres instance unless they execute queries.
         env: {
