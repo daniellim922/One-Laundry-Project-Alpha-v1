@@ -81,11 +81,9 @@ export function parseAttendRecord(rows: Rows): AttendRecordOutput {
     const startDateParts = startDate?.match(/(\d{2})\/(\d{2})\/(\d{4})/);
     const startMonth = startDateParts?.[2];
     const startYear = startDateParts?.[3];
-
-    function formatDate(day: number): string {
-        const d = String(day).padStart(2, "0");
-        return `${d}/${startMonth}/${startYear}`;
-    }
+    const endDateParts = endDate?.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    const endMonth = endDateParts?.[2];
+    const endYear = endDateParts?.[3];
 
     function parseTimeCell(
         val: CellValue,
@@ -159,6 +157,18 @@ export function parseAttendRecord(rows: Rows): AttendRecordOutput {
                 break;
             }
 
+            let prevDayNum = 0;
+            let monthRolledOver = false;
+            const formatDateForCol = (day: number): string => {
+                if (day < prevDayNum) monthRolledOver = true;
+                prevDayNum = day;
+                const d = String(day).padStart(2, "0");
+                if (monthRolledOver && endMonth && endYear) {
+                    return `${d}/${endMonth}/${endYear}`;
+                }
+                return `${d}/${startMonth}/${startYear}`;
+            };
+
             for (
                 let col = dayColStart;
                 col <= dayColEnd && col < dataRow.length;
@@ -172,10 +182,11 @@ export function parseAttendRecord(rows: Rows): AttendRecordOutput {
                 if (Number.isNaN(dayNum) || dayNum < 1 || dayNum > 31) continue;
                 const parsed = parseTimeCell(dataRow[col]);
                 if (!parsed || !parsed.timeIn) continue;
+                const calDate = formatDateForCol(dayNum);
                 dates.push({
-                    dateIn: formatDate(dayNum),
+                    dateIn: calDate,
                     timeIn: parsed.timeIn,
-                    dateOut: formatDate(dayNum),
+                    dateOut: calDate,
                     timeOut: parsed.timeOut,
                 });
             }

@@ -120,6 +120,10 @@ describe("TimesheetImportClient", () => {
             await screen.findByText("Unresolved worker matches"),
         ).toBeDefined();
         expect(screen.getAllByText("Unknown Worker").length).toBeGreaterThan(0);
+        const unresolvedAlert = screen.getByRole("img", {
+            name: "Imported name does not match an active worker — select a worker to continue",
+        });
+        expect(unresolvedAlert).toBeTruthy();
 
         const uploadButton = screen.getByRole("button", {
             name: "Upload Timesheet",

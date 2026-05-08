@@ -113,4 +113,42 @@ describe("parseAttendRecord", () => {
         const out = parseAttendRecord(rows);
         expect(out.attendanceDate).toEqual({ startDate: "", endDate: "" });
     });
+
+    it("dates trailing day-1 column after month wrap using attendance end date (Apr 30 → May 1)", () => {
+        const attendanceRow = [
+            ...Array(25).fill(null),
+            "Attendance date:2026-04-01 ~2026-05-01",
+        ];
+        const rows = [
+            [],
+            [],
+            attendanceRow,
+            [],
+            [
+                null,
+                "UserID:",
+                null,
+                "1",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                "Name:",
+                "worker1",
+            ],
+            [null, 29, 30, 1],
+            [null, "09:00\n17:00", "18:00", "04:00"],
+        ];
+        const out = parseAttendRecord(rows);
+        expect(out.workers).toHaveLength(1);
+        expect(out.workers[0]!.dates.map((d) => d.dateIn)).toEqual([
+            "29/04/2026",
+            "30/04/2026",
+            "01/05/2026",
+        ]);
+    });
 });
