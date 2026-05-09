@@ -1,12 +1,8 @@
 import { randomBytes } from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
 
 import { expect, type Page } from "@playwright/test";
 
 import type { WorkerUpsertFormInput } from "@/db/schemas/worker-employment";
-
-import workerE2EMatrixProfilesJson from "./workers.json";
 
 import type {
     WorkerEmploymentArrangement,
@@ -16,44 +12,21 @@ import type {
     WorkerStatus,
 } from "@/types/status";
 
-/** Persisted between worker-create → read → delete → update Playwright projects. */
-const MATRIX_E2E_STATE_FILENAME = ".matrix-e2e-state.json" as const;
+import type { WorkerMatrixE2EProfileForCreate } from "../shared/matrix";
+import { mainTableRowByText } from "../shared/ui";
 
-export function workerMatrixE2EStatePath(): string {
-    return path.join(
-        process.cwd(),
-        "test/playwright/workers",
-        MATRIX_E2E_STATE_FILENAME,
-    );
-}
+import workerE2EMatrixProfilesJson from "./workers.json";
 
-export type WorkerMatrixE2EPersistedRecord = {
-    name: string;
-    nric: string;
-    profile: WorkerE2EMatrixProfileForCreate;
-};
+export {
+    readWorkerMatrixE2EState,
+    writeWorkerMatrixE2EState,
+    workerMatrixE2EStatePath,
+} from "../shared/matrix";
 
-export type WorkerMatrixE2EStateFile = {
-    runSuffix: string;
-    records: WorkerMatrixE2EPersistedRecord[];
-};
-
-export function writeWorkerMatrixE2EState(payload: WorkerMatrixE2EStateFile): void {
-    const target = workerMatrixE2EStatePath();
-    fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.writeFileSync(target, `${JSON.stringify(payload, null, 2)}\n`, "utf-8");
-}
-
-export function readWorkerMatrixE2EState(): WorkerMatrixE2EStateFile {
-    const target = workerMatrixE2EStatePath();
-    if (!fs.existsSync(target)) {
-        throw new Error(
-            `Missing worker matrix E2E state at ${target}. Run worker-create.spec.ts first.`,
-        );
-    }
-    const raw = fs.readFileSync(target, "utf-8");
-    return JSON.parse(raw) as WorkerMatrixE2EStateFile;
-}
+export type {
+    WorkerMatrixE2EPersistedRecord,
+    WorkerMatrixE2EStateFile,
+} from "../shared/matrix";
 
 /** Matches `formId` in `WorkerForm` (`app/dashboard/worker/worker-form.tsx`). */
 const WORKER_FORM_ELEMENT_ID_PREFIX = "worker-form" as const;
@@ -103,10 +76,7 @@ export type WorkerE2EMatrixProfileFromJsonFile = Omit<
 >;
 
 /** Resolved matrix row passed to create form (crypto NRIC per row; omit status → Active). */
-export type WorkerE2EMatrixProfileForCreate = Omit<
-    WorkerUpsertFormInput,
-    "status"
->;
+export type WorkerE2EMatrixProfileForCreate = WorkerMatrixE2EProfileForCreate;
 
 export const WORKER_E2E_MATRIX_PROFILES =
     workerE2EMatrixProfilesJson as WorkerE2EMatrixProfileFromJsonFile[];
@@ -602,8 +572,5 @@ export async function submitWorkerForm(
 }
 
 export function workerTableRow(page: Page, workerName: string) {
-    return page
-        .getByRole("main")
-        .getByRole("row")
-        .filter({ hasText: workerName });
+    return mainTableRowByText(page, workerName);
 }

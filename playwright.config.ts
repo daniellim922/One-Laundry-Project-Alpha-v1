@@ -28,9 +28,9 @@ const chromiumUse = {
     storageState: authFile,
 };
 
-/** Serial worker matrix CRUD chain (alphabetical order would run delete before read). */
-const workerMatrixCrudSpecRe =
-    /[/\\]workers[/\\]worker-(create|read|delete|update)\.spec\.ts$/;
+/** Serial worker matrix CRUD chain + matrix timesheet/advance specs run outside generic chromium. */
+const chromiumExcludedSpecsRe =
+    /(?:[/\\]workers[/\\]worker-(?:create|read|delete|update)\.spec\.ts|[/\\]timesheets[/\\]timesheet-create\.spec\.ts|[/\\]advances[/\\]advance-create\.spec\.ts)$/;
 
 export default defineConfig({
     testDir: path.join(rootDir, "test/playwright"),
@@ -54,7 +54,7 @@ export default defineConfig({
         {
             name: "chromium",
             testMatch: /.*\.spec\.ts/,
-            testIgnore: workerMatrixCrudSpecRe,
+            testIgnore: chromiumExcludedSpecsRe,
             use: chromiumUse,
             dependencies: ["setup"],
         },
@@ -81,6 +81,18 @@ export default defineConfig({
             testMatch: /[/\\]workers[/\\]worker-update\.spec\.ts$/,
             use: chromiumUse,
             dependencies: ["worker-matrix-delete"],
+        },
+        {
+            name: "matrix-timesheet-create",
+            testMatch: /[/\\]timesheets[/\\]timesheet-create\.spec\.ts$/,
+            use: chromiumUse,
+            dependencies: ["worker-matrix-update"],
+        },
+        {
+            name: "matrix-advance-create",
+            testMatch: /[/\\]advances[/\\]advance-create\.spec\.ts$/,
+            use: chromiumUse,
+            dependencies: ["matrix-timesheet-create"],
         },
     ],
     webServer: {

@@ -398,8 +398,23 @@ function AdvanceRequestFormEditable({
 
         setGeneratingPdf(true);
         try {
-            await generateAndUploadAdvancePdf(result.id);
-        } catch {
+            const pdfMs = 60_000;
+            const timeout = new Promise<never>((_, reject) => {
+                setTimeout(
+                    () => reject(new Error("ADVANCE_PDF_TIMEOUT")),
+                    pdfMs,
+                );
+            });
+            await Promise.race([
+                generateAndUploadAdvancePdf(result.id),
+                timeout,
+            ]);
+        } catch (e) {
+            if (e instanceof Error && e.message === "ADVANCE_PDF_TIMEOUT") {
+                console.warn(
+                    "[advance] PDF upload timed out; continuing to list (record already saved)",
+                );
+            }
             // PDF generation is best-effort; the advance is already saved
         } finally {
             setGeneratingPdf(false);
