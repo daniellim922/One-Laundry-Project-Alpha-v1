@@ -18,7 +18,9 @@
         "test:unit": "vitest run",
         "test:unit:watch": "vitest",
         "test:unit:worker": "vitest run app/dashboard/worker services/worker app/api/workers",
-        "test:coverage": "vitest run --coverage"
+        "test:coverage": "vitest run --coverage",
+        "test:e2e": "playwright test test/playwright",
+        "test:e2e:ui": "playwright test test/playwright --ui"
     },
     "dependencies": {
         "@ai-hero/sandcastle": "^0.4.8",
@@ -59,6 +61,7 @@
         }
     },
     "devDependencies": {
+        "@playwright/test": "^1.59.1",
         "@tailwindcss/postcss": "^4",
         "@testing-library/react": "^16.3.2",
         "@testing-library/user-event": "^14.6.1",

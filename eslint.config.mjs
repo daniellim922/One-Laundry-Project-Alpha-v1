@@ -17,6 +17,7 @@ const eslintConfig = defineConfig([
   },
   {
     files: ["**/*.{test,spec}.{ts,tsx}"],
+    ignores: ["test/playwright/**"],
     ...vitest.configs.recommended,
   },
   // Override default ignores of eslint-config-next.

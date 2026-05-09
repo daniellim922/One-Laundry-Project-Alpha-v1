@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 
 import { requireCurrentDashboardUser } from "@/app/dashboard/_shared/auth";
 import {
@@ -16,23 +16,52 @@ import { workerTable, type InsertWorker } from "@/db/tables/workerTable";
 import { db } from "@/lib/db";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
 
+function walkErrorChain(error: unknown): unknown[] {
+    const out: unknown[] = [];
+    let current: unknown = error;
+    const seen = new Set<unknown>();
+
+    while (current != null && typeof current === "object" && !seen.has(current)) {
+        seen.add(current);
+        out.push(current);
+        current = Reflect.get(current, "cause");
+    }
+    return out;
+}
+
 function isUniqueViolation(error: unknown): boolean {
-    if (!error || typeof error !== "object") return false;
-    const code = Reflect.get(error, "code");
-    return code === "23505";
+    for (const e of walkErrorChain(error)) {
+        if (!e || typeof e !== "object") continue;
+        const code = Reflect.get(e, "code");
+        if (code === "23505") return true;
+    }
+    return false;
 }
 
 function isNricUniqueViolation(error: unknown): boolean {
-    if (!error || typeof error !== "object") return false;
-    const constraint =
-        (Reflect.get(error, "constraint") as string | undefined) ??
-        (Reflect.get(error, "detail") as string | undefined) ??
-        (Reflect.get(error, "message") as string | undefined) ??
-        "";
-    return (
-        typeof constraint === "string" &&
-        constraint.includes("worker_nric_unique")
-    );
+    for (const e of walkErrorChain(error)) {
+        if (!e || typeof e !== "object") continue;
+
+        const constraint =
+            (Reflect.get(e, "constraint") as string | undefined) ??
+            (Reflect.get(e, "constraint_name") as string | undefined);
+
+        const message = Reflect.get(e, "message") as string | undefined;
+        const detail = Reflect.get(e, "detail") as string | undefined;
+
+        const combined = [constraint, message, detail]
+            .filter((s): s is string => typeof s === "string" && s.length > 0)
+            .join("\n");
+
+        if (combined.includes("worker_nric_unique")) return true;
+        if (
+            typeof detail === "string" &&
+            detail.includes("Key (nric)=")
+        ) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function trimToNull(s: string | null | undefined): string | null {
@@ -103,6 +132,18 @@ export async function createWorker(input: unknown): Promise<ActionResult> {
     }
 
     const { worker, employment } = parsedPayloadToRowValues(parsed.data);
+
+    if (worker.nric) {
+        const [existingNricRow] = await db
+            .select({ id: workerTable.id })
+            .from(workerTable)
+            .where(eq(workerTable.nric, worker.nric))
+            .limit(1);
+
+        if (existingNricRow) {
+            return { success: false, error: "NRIC already exists" };
+        }
+    }
 
     try {
         const [employmentRow] = await db
@@ -182,6 +223,23 @@ export async function updateWorker(
         }
 
         const employmentId = existing.employmentId;
+
+        if (worker.nric) {
+            const [duplicateNricRow] = await db
+                .select({ id: workerTable.id })
+                .from(workerTable)
+                .where(
+                    and(
+                        eq(workerTable.nric, worker.nric),
+                        ne(workerTable.id, id),
+                    ),
+                )
+                .limit(1);
+
+            if (duplicateNricRow) {
+                return { success: false, error: "NRIC already exists" };
+            }
+        }
 
         await db
             .update(employmentTable)

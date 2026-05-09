@@ -60,6 +60,9 @@ export async function applyCustomSchemaArtifacts(
             END
             $$;
 
+            ALTER TABLE "worker" DROP CONSTRAINT IF EXISTS worker_nric_unique;
+            ALTER TABLE "worker" ADD CONSTRAINT worker_nric_unique UNIQUE ("nric");
+
             CREATE UNIQUE INDEX IF NOT EXISTS timesheet_worker_date_time_in_uniq
             ON "timesheet" ("worker_id", "date_in", "time_in");
         `),

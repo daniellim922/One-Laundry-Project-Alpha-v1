@@ -1,0 +1,381 @@
+import { randomBytes } from "node:crypto";
+
+import type { Locator, Page } from "@playwright/test";
+
+import type { WorkerUpsertFormInput } from "@/db/schemas/worker-employment";
+
+import workerE2EMatrixProfilesJson from "./workers.json";
+
+import type {
+    WorkerEmploymentArrangement,
+    WorkerEmploymentType,
+    WorkerPaymentMethod,
+    WorkerShiftPattern,
+    WorkerStatus,
+} from "@/types/status";
+
+/** Matches `formId` in `WorkerForm` (`app/dashboard/worker/worker-form.tsx`). */
+const WORKER_FORM_ELEMENT_ID_PREFIX = "worker-form" as const;
+
+/** Table shows this for workers created on `/dashboard/worker/new` (no Status toggle on create). */
+export const WORKER_E2E_DEFAULT_TABLE_STATUS = "Active" as const satisfies WorkerStatus;
+
+type WorkerFormInputFieldKey =
+    | "name"
+    | "nric"
+    | "email"
+    | "phone"
+    | "countryOfOrigin"
+    | "race"
+    | "monthlyPay"
+    | "hourlyRate"
+    | "restDayRate"
+    | "minimumWorkingHours"
+    | "cpf"
+    | "payNowPhone"
+    | "bankAccountNumber";
+
+type WorkerUpsertScalars = Pick<
+    WorkerUpsertFormInput,
+    WorkerFormInputFieldKey
+>;
+
+function coerceFormFillText(
+    value: string | number | null | undefined,
+): string {
+    if (value == null) return "";
+    return typeof value === "number" ? String(value) : value;
+}
+
+type WorkerUpsertChoices = Pick<
+    WorkerUpsertFormInput,
+    | "employmentType"
+    | "employmentArrangement"
+    | "shiftPattern"
+    | "status"
+    | "paymentMethod"
+>;
+
+/** Form fill payload: omit keys rather than relying on sparse JSON rows. */
+type WorkerFormFieldValues = Partial<WorkerUpsertScalars & WorkerUpsertChoices>;
+
+export type WorkerE2EMatrixProfileFromJsonFile = Omit<
+    WorkerUpsertFormInput,
+    "nric" | "status"
+>;
+
+/** Resolved matrix row passed to create form (crypto NRIC per row; omit status → Active). */
+export type WorkerE2EMatrixProfileForCreate = Omit<
+    WorkerUpsertFormInput,
+    "status"
+>;
+
+export const WORKER_E2E_MATRIX_PROFILES =
+    workerE2EMatrixProfilesJson as WorkerE2EMatrixProfileFromJsonFile[];
+
+/** Short unique token for plus-tags and display-name suffix within one Playwright run. */
+export function createWorkerE2EMatrixRunSuffix(): string {
+    return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function generateUniqueMatrixWorkerNric(): string {
+    return `E2E${randomBytes(16).toString("hex").toUpperCase()}`;
+}
+
+/** Deterministic-but-unique NRIC prefix for assertions (avoids substring collisions with matrix `E2E…` identities). */
+export function createDuplicateNricAssertionValue(): string {
+    return `E2EDUP${randomBytes(12).toString("hex").toUpperCase()}`;
+}
+
+function workerFormInputLocator(
+    page: Page,
+    field: WorkerFormInputFieldKey,
+): Locator {
+    return page.locator(`#${WORKER_FORM_ELEMENT_ID_PREFIX}-${field}`);
+}
+
+/**
+ * Unique identities per run: crypto NRIC, plus-tagged email, display name includes run suffix.
+ */
+export function withWorkerE2EMatrixRunIdentity(
+    profile: WorkerE2EMatrixProfileFromJsonFile,
+    runSuffix: string,
+): WorkerE2EMatrixProfileForCreate {
+    const safeSuffix = runSuffix.replace(/[^a-zA-Z0-9]/g, "").slice(0, 12);
+    const emailRaw = profile.email?.trim() ?? "";
+    const at = emailRaw.indexOf("@");
+    const taggedEmail =
+        at > 0
+            ? `${emailRaw.slice(0, at)}+${safeSuffix}${emailRaw.slice(at)}`
+            : `${emailRaw}+${safeSuffix}`;
+
+    return {
+        ...profile,
+        name: `${profile.name} ${runSuffix}`,
+        nric: generateUniqueMatrixWorkerNric(),
+        email: taggedEmail,
+    };
+}
+
+/** Mirrors monthly/hourly/rest-day cells in `app/dashboard/worker/all/columns.tsx`. */
+export function workerTableMoneyCellFromJsonAmount(amount: string): string {
+    return `$${Number(amount)}`;
+}
+
+/** Mirrors minimum-hours cell (`${number}h`) after DB normalization. */
+export function workerTableMinimumHoursCellFromJson(hours: string): string {
+    return `${Number(hours)}h`;
+}
+
+/** Create flows always need concrete identity strings (stricter than nullable DB input). */
+export type E2EWorkerIdentity = {
+    name: string;
+    nric: string;
+    email: string;
+};
+
+export function createE2EWorkerFixture(): E2EWorkerIdentity {
+    const ts = Date.now();
+    return {
+        name: `E2E Worker ${ts}`,
+        nric: `E2E${String(ts).slice(-10)}`,
+        email: `e2e.worker.${ts}@example.test`,
+    };
+}
+
+async function fillName(page: Page, value: string): Promise<void> {
+    await workerFormInputLocator(page, "name").fill(value);
+}
+
+async function fillNric(page: Page, value: string): Promise<void> {
+    await workerFormInputLocator(page, "nric").fill(value);
+}
+
+async function fillEmail(page: Page, value: string): Promise<void> {
+    await workerFormInputLocator(page, "email").fill(value);
+}
+
+async function fillPhone(page: Page, value: string): Promise<void> {
+    await workerFormInputLocator(page, "phone").fill(value);
+}
+
+async function fillCountryOfOrigin(page: Page, value: string): Promise<void> {
+    await workerFormInputLocator(page, "countryOfOrigin").fill(value);
+}
+
+async function fillRace(page: Page, value: string): Promise<void> {
+    await workerFormInputLocator(page, "race").fill(value);
+}
+
+async function fillMonthlyPay(page: Page, value: string): Promise<void> {
+    await workerFormInputLocator(page, "monthlyPay").fill(value);
+}
+
+async function fillHourlyRate(page: Page, value: string): Promise<void> {
+    await workerFormInputLocator(page, "hourlyRate").fill(value);
+}
+
+async function fillRestDayRate(page: Page, value: string): Promise<void> {
+    await workerFormInputLocator(page, "restDayRate").fill(value);
+}
+
+async function fillMinimumWorkingHours(page: Page, value: string): Promise<void> {
+    await workerFormInputLocator(page, "minimumWorkingHours").fill(value);
+}
+
+async function fillCpf(page: Page, value: string): Promise<void> {
+    await workerFormInputLocator(page, "cpf").fill(value);
+}
+
+async function fillPayNowPhone(page: Page, value: string): Promise<void> {
+    await workerFormInputLocator(page, "payNowPhone").fill(value);
+}
+
+async function fillBankAccountNumber(page: Page, value: string): Promise<void> {
+    await workerFormInputLocator(page, "bankAccountNumber").fill(value);
+}
+
+async function setEmploymentType(
+    page: Page,
+    value: WorkerEmploymentType,
+): Promise<void> {
+    await page
+        .getByRole("group", { name: "Employment type" })
+        .getByRole("button", { name: value, exact: true })
+        .click();
+}
+
+async function setEmploymentArrangement(
+    page: Page,
+    value: WorkerEmploymentArrangement,
+): Promise<void> {
+    await page
+        .getByRole("group", { name: "Employment arrangement" })
+        .getByRole("button", { name: value, exact: true })
+        .click();
+}
+
+async function setShiftPattern(
+    page: Page,
+    value: WorkerShiftPattern,
+): Promise<void> {
+    await page
+        .getByRole("group", { name: "Shift pattern" })
+        .getByRole("button", { name: value, exact: true })
+        .click();
+}
+
+async function setStatus(page: Page, value: WorkerStatus): Promise<void> {
+    const group = page.getByRole("group", { name: "Status" });
+    // Create-worker route omits the Status toggle (defaults to Active in form state).
+    if ((await group.count()) === 0) return;
+    await group
+        .getByRole("button", { name: value, exact: true })
+        .click();
+}
+
+export async function selectPaymentMethod(
+    page: Page,
+    method: WorkerPaymentMethod,
+): Promise<void> {
+    await page
+        .locator(`#${WORKER_FORM_ELEMENT_ID_PREFIX}-paymentMethod`)
+        .click();
+    await page.getByRole("option", { name: method, exact: true }).click();
+}
+
+/**
+ * Applies only keys present on `values`. Order matches typical UX (identity → choices → pay → payment).
+ */
+export async function fillWorkerFormFields(
+    page: Page,
+    values: WorkerFormFieldValues,
+): Promise<void> {
+    if (values.name !== undefined) {
+        await fillName(page, coerceFormFillText(values.name));
+    }
+    if (values.nric !== undefined) {
+        await fillNric(page, coerceFormFillText(values.nric));
+    }
+    if (values.email !== undefined) {
+        await fillEmail(page, coerceFormFillText(values.email));
+    }
+    if (values.phone !== undefined) {
+        await fillPhone(page, coerceFormFillText(values.phone));
+    }
+    if (values.countryOfOrigin !== undefined) {
+        await fillCountryOfOrigin(page, coerceFormFillText(values.countryOfOrigin));
+    }
+    if (values.race !== undefined) {
+        await fillRace(page, coerceFormFillText(values.race));
+    }
+
+    if (values.employmentType !== undefined) {
+        await setEmploymentType(page, values.employmentType);
+    }
+    if (values.employmentArrangement !== undefined) {
+        await setEmploymentArrangement(page, values.employmentArrangement);
+    }
+    if (values.shiftPattern !== undefined) {
+        await setShiftPattern(page, values.shiftPattern);
+    }
+    if (values.status !== undefined) await setStatus(page, values.status);
+
+    if (values.monthlyPay !== undefined) {
+        await fillMonthlyPay(page, coerceFormFillText(values.monthlyPay));
+    }
+    if (values.hourlyRate !== undefined) {
+        await fillHourlyRate(page, coerceFormFillText(values.hourlyRate));
+    }
+    if (values.restDayRate !== undefined) {
+        await fillRestDayRate(page, coerceFormFillText(values.restDayRate));
+    }
+    if (values.minimumWorkingHours !== undefined) {
+        await fillMinimumWorkingHours(
+            page,
+            coerceFormFillText(values.minimumWorkingHours),
+        );
+    }
+    if (values.cpf !== undefined) {
+        await fillCpf(page, coerceFormFillText(values.cpf));
+    }
+
+    if (values.paymentMethod != null) {
+        await selectPaymentMethod(page, values.paymentMethod);
+    }
+    if (values.payNowPhone !== undefined) {
+        await fillPayNowPhone(page, coerceFormFillText(values.payNowPhone));
+    }
+    if (values.bankAccountNumber !== undefined) {
+        await fillBankAccountNumber(
+            page,
+            coerceFormFillText(values.bankAccountNumber),
+        );
+    }
+}
+
+export async function gotoWorkerOverview(page: Page): Promise<void> {
+    await page.goto("/dashboard/worker");
+    await page.getByRole("heading", { name: "Worker" }).waitFor();
+}
+
+export async function gotoAllWorkers(page: Page): Promise<void> {
+    await page.goto("/dashboard/worker/all");
+    await page.getByRole("heading", { name: "All workers" }).waitFor();
+}
+
+export async function gotoNewWorker(page: Page): Promise<void> {
+    await page.goto("/dashboard/worker/new");
+    await page.getByRole("button", { name: "Add New Worker" }).waitFor();
+}
+
+export type FillNewFullTimeLocalWorkerPayFields = Pick<
+    WorkerUpsertFormInput,
+    "monthlyPay" | "hourlyRate" | "restDayRate" | "minimumWorkingHours"
+> & {
+    cpf?: WorkerUpsertFormInput["cpf"];
+};
+
+export async function fillNewFullTimeLocalWorker(
+    page: Page,
+    data: E2EWorkerIdentity,
+    pay: FillNewFullTimeLocalWorkerPayFields,
+): Promise<void> {
+    await fillName(page, data.name);
+    await fillNric(page, data.nric);
+    await fillEmail(page, data.email);
+
+    await setEmploymentType(page, "Full Time");
+    await setEmploymentArrangement(page, "Local Worker");
+    await setShiftPattern(page, "Day Shift");
+
+    await fillMonthlyPay(page, coerceFormFillText(pay.monthlyPay));
+    await fillHourlyRate(page, coerceFormFillText(pay.hourlyRate));
+    await fillRestDayRate(page, coerceFormFillText(pay.restDayRate));
+    if (pay.minimumWorkingHours) {
+        await fillMinimumWorkingHours(
+            page,
+            coerceFormFillText(pay.minimumWorkingHours),
+        );
+    }
+    if (pay.cpf != null && pay.cpf !== "") {
+        await fillCpf(page, coerceFormFillText(pay.cpf));
+    }
+
+    await selectPaymentMethod(page, "Cash");
+}
+
+export async function submitWorkerForm(
+    page: Page,
+    mode: "create" | "edit",
+): Promise<void> {
+    const label = mode === "create" ? "Add New Worker" : "Save changes";
+    await page.getByRole("button", { name: label }).click();
+}
+
+export function workerTableRow(page: Page, workerName: string) {
+    return page
+        .getByRole("main")
+        .getByRole("row")
+        .filter({ hasText: workerName });
+}

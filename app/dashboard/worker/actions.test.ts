@@ -77,7 +77,7 @@ function queueInsertRejected(error: unknown) {
     return { values, returning };
 }
 
-function queueSelectWorker(rows: unknown[]) {
+function queueSelectLimitOnce(rows: unknown[]) {
     mocks.db.select.mockReturnValueOnce({
         from: vi.fn().mockReturnValue({
             where: vi.fn().mockReturnValue({
@@ -85,6 +85,10 @@ function queueSelectWorker(rows: unknown[]) {
             }),
         }),
     });
+}
+
+function queueSelectWorker(rows: unknown[]) {
+    queueSelectLimitOnce(rows);
 }
 
 function queueUpdateResolved() {
@@ -119,6 +123,7 @@ describe("createWorker", () => {
     });
 
     it("creates employment + worker and revalidates worker pages", async () => {
+        queueSelectLimitOnce([]);
         queueInsertResolved([{ id: "employment-1" }]);
         queueInsertResolved([{ id: "worker-1" }]);
 
@@ -153,6 +158,7 @@ describe("createWorker", () => {
     });
 
     it("accepts PayNow with non-digit characters in payNowPhone", async () => {
+        queueSelectLimitOnce([]);
         queueInsertResolved([{ id: "employment-1" }]);
         queueInsertResolved([{ id: "worker-1" }]);
 
@@ -167,7 +173,20 @@ describe("createWorker", () => {
         expect(mocks.db.insert).toHaveBeenCalledTimes(2);
     });
 
+    it("returns duplicate NRIC error when NRIC is already taken", async () => {
+        queueSelectLimitOnce([{ id: "existing-worker" }]);
+
+        const result = await createWorker(buildWorkerPayload());
+
+        expect(result).toEqual({
+            success: false,
+            error: "NRIC already exists",
+        });
+        expect(mocks.db.insert).not.toHaveBeenCalled();
+    });
+
     it("returns duplicate NRIC error when worker nric unique constraint fails", async () => {
+        queueSelectLimitOnce([]);
         queueInsertResolved([{ id: "employment-1" }]);
         queueInsertRejected({
             code: "23505",
@@ -183,6 +202,7 @@ describe("createWorker", () => {
     });
 
     it("returns generic failure on unexpected database errors", async () => {
+        queueSelectLimitOnce([]);
         queueInsertRejected(new Error("database unavailable"));
 
         const result = await createWorker(buildWorkerPayload());
@@ -246,6 +266,7 @@ describe("updateWorker", () => {
 
     it("updates worker when PayNow contains non-digit characters", async () => {
         queueSelectWorker([{ id: "worker-1", employmentId: "employment-1" }]);
+        queueSelectLimitOnce([]);
         queueUpdateResolved();
         queueUpdateResolved();
 
@@ -274,8 +295,22 @@ describe("updateWorker", () => {
         expect(mocks.db.update).not.toHaveBeenCalled();
     });
 
+    it("returns duplicate NRIC error when another worker already uses the NRIC", async () => {
+        queueSelectWorker([{ id: "worker-1", employmentId: "employment-1" }]);
+        queueSelectLimitOnce([{ id: "worker-2" }]);
+
+        const result = await updateWorker("worker-1", buildWorkerPayload());
+
+        expect(result).toEqual({
+            success: false,
+            error: "NRIC already exists",
+        });
+        expect(mocks.db.update).not.toHaveBeenCalled();
+    });
+
     it("returns duplicate NRIC error when unique constraint fails during update", async () => {
         queueSelectWorker([{ id: "worker-1", employmentId: "employment-1" }]);
+        queueSelectLimitOnce([]);
         queueUpdateResolved();
         queueUpdateRejected({
             code: "23505",
@@ -293,6 +328,7 @@ describe("updateWorker", () => {
 
     it("returns payroll sync errors when synchronization fails", async () => {
         queueSelectWorker([{ id: "worker-1", employmentId: "employment-1" }]);
+        queueSelectLimitOnce([]);
         queueUpdateResolved();
         queueUpdateResolved();
         mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({
@@ -309,6 +345,7 @@ describe("updateWorker", () => {
 
     it("updates worker + employment, synchronizes payroll, and revalidates all related pages", async () => {
         queueSelectWorker([{ id: "worker-1", employmentId: "employment-1" }]);
+        queueSelectLimitOnce([]);
         queueUpdateResolved();
         queueUpdateResolved();
 
