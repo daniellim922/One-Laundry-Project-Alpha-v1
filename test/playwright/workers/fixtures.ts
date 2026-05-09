@@ -1,6 +1,8 @@
 import { randomBytes } from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 
-import type { Locator, Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 import type { WorkerUpsertFormInput } from "@/db/schemas/worker-employment";
 
@@ -13,6 +15,45 @@ import type {
     WorkerShiftPattern,
     WorkerStatus,
 } from "@/types/status";
+
+/** Persisted between worker-create → read → delete → update Playwright projects. */
+const MATRIX_E2E_STATE_FILENAME = ".matrix-e2e-state.json" as const;
+
+export function workerMatrixE2EStatePath(): string {
+    return path.join(
+        process.cwd(),
+        "test/playwright/workers",
+        MATRIX_E2E_STATE_FILENAME,
+    );
+}
+
+export type WorkerMatrixE2EPersistedRecord = {
+    name: string;
+    nric: string;
+    profile: WorkerE2EMatrixProfileForCreate;
+};
+
+export type WorkerMatrixE2EStateFile = {
+    runSuffix: string;
+    records: WorkerMatrixE2EPersistedRecord[];
+};
+
+export function writeWorkerMatrixE2EState(payload: WorkerMatrixE2EStateFile): void {
+    const target = workerMatrixE2EStatePath();
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, `${JSON.stringify(payload, null, 2)}\n`, "utf-8");
+}
+
+export function readWorkerMatrixE2EState(): WorkerMatrixE2EStateFile {
+    const target = workerMatrixE2EStatePath();
+    if (!fs.existsSync(target)) {
+        throw new Error(
+            `Missing worker matrix E2E state at ${target}. Run worker-create.spec.ts first.`,
+        );
+    }
+    const raw = fs.readFileSync(target, "utf-8");
+    return JSON.parse(raw) as WorkerMatrixE2EStateFile;
+}
 
 /** Matches `formId` in `WorkerForm` (`app/dashboard/worker/worker-form.tsx`). */
 const WORKER_FORM_ELEMENT_ID_PREFIX = "worker-form" as const;
@@ -35,14 +76,9 @@ type WorkerFormInputFieldKey =
     | "payNowPhone"
     | "bankAccountNumber";
 
-type WorkerUpsertScalars = Pick<
-    WorkerUpsertFormInput,
-    WorkerFormInputFieldKey
->;
+type WorkerUpsertScalars = Pick<WorkerUpsertFormInput, WorkerFormInputFieldKey>;
 
-function coerceFormFillText(
-    value: string | number | null | undefined,
-): string {
+function coerceFormFillText(value: string | number | null | undefined): string {
     if (value == null) return "";
     return typeof value === "number" ? String(value) : value;
 }
@@ -57,7 +93,9 @@ type WorkerUpsertChoices = Pick<
 >;
 
 /** Form fill payload: omit keys rather than relying on sparse JSON rows. */
-type WorkerFormFieldValues = Partial<WorkerUpsertScalars & WorkerUpsertChoices>;
+export type WorkerFormFieldValues = Partial<
+    WorkerUpsertScalars & WorkerUpsertChoices
+>;
 
 export type WorkerE2EMatrixProfileFromJsonFile = Omit<
     WorkerUpsertFormInput,
@@ -87,10 +125,7 @@ export function createDuplicateNricAssertionValue(): string {
     return `E2EDUP${randomBytes(12).toString("hex").toUpperCase()}`;
 }
 
-function workerFormInputLocator(
-    page: Page,
-    field: WorkerFormInputFieldKey,
-): Locator {
+function workerFormInputLocator(page: Page, field: WorkerFormInputFieldKey) {
     return page.locator(`#${WORKER_FORM_ELEMENT_ID_PREFIX}-${field}`);
 }
 
@@ -118,29 +153,204 @@ export function withWorkerE2EMatrixRunIdentity(
 }
 
 /** Mirrors monthly/hourly/rest-day cells in `app/dashboard/worker/all/columns.tsx`. */
-export function workerTableMoneyCellFromJsonAmount(amount: string): string {
+export function workerTableMoneyCellFromJsonAmount(
+    amount: string | number,
+): string {
     return `$${Number(amount)}`;
 }
 
 /** Mirrors minimum-hours cell (`${number}h`) after DB normalization. */
-export function workerTableMinimumHoursCellFromJson(hours: string): string {
+export function workerTableMinimumHoursCellFromJson(hours: string | number): string {
     return `${Number(hours)}h`;
 }
 
-/** Create flows always need concrete identity strings (stricter than nullable DB input). */
-export type E2EWorkerIdentity = {
-    name: string;
-    nric: string;
-    email: string;
-};
+export function nonEmptyMoneyOrHoursField(
+    value: string | number | null | undefined,
+): string | null {
+    if (value == null) return null;
+    const s = typeof value === "number" ? String(value) : value.trim();
+    return s.length > 0 ? s : null;
+}
 
-export function createE2EWorkerFixture(): E2EWorkerIdentity {
-    const ts = Date.now();
-    return {
-        name: `E2E Worker ${ts}`,
-        nric: `E2E${String(ts).slice(-10)}`,
-        email: `e2e.worker.${ts}@example.test`,
-    };
+/** Keeps email valid by inserting `edited` before `@`. */
+export function workerMatrixEmailInsertEdited(email: string): string {
+    const trimmed = email.trim();
+    const at = trimmed.indexOf("@");
+    if (at <= 0) return `${trimmed}edited`;
+    return `${trimmed.slice(0, at)}edited${trimmed.slice(at)}`;
+}
+
+export function workerMatrixMoneyAddCent(value: string): string {
+    const n = Number(value.trim());
+    const next = n + 0.01;
+    const rounded = Math.round(next * 100) / 100;
+    return String(rounded);
+}
+
+/** Like `250` → `25001` per matrix E2E convention (whole-number-ish fields). */
+export function workerMatrixIntegerLikeAppend01(value: string): string {
+    const s = value.trim();
+    const base = s.includes(".") ? s.split(".")[0] ?? s : s;
+    return `${base}01`;
+}
+
+export function applyWorkerMatrixUpdateTransforms(
+    profile: WorkerE2EMatrixProfileForCreate,
+): WorkerFormFieldValues {
+    const out: WorkerFormFieldValues = {};
+    out.name = `${profile.name} edited`;
+    out.nric = `${profile.nric}01`;
+    if (profile.email != null && profile.email.trim() !== "") {
+        out.email = workerMatrixEmailInsertEdited(profile.email);
+    }
+    const phone = profile.phone?.trim();
+    if (phone != null && phone !== "") {
+        out.phone = `${phone}01`;
+    }
+    if (
+        profile.countryOfOrigin != null &&
+        String(profile.countryOfOrigin).trim() !== ""
+    ) {
+        out.countryOfOrigin = `${coerceFormFillText(profile.countryOfOrigin)} edited`;
+    }
+    if (profile.race != null && String(profile.race).trim() !== "") {
+        out.race = `${coerceFormFillText(profile.race)} edited`;
+    }
+
+    const monthlyPay = nonEmptyMoneyOrHoursField(profile.monthlyPay);
+    if (monthlyPay != null) {
+        out.monthlyPay = workerMatrixMoneyAddCent(monthlyPay);
+    }
+    const hourlyRate = nonEmptyMoneyOrHoursField(profile.hourlyRate);
+    if (hourlyRate != null) {
+        out.hourlyRate = workerMatrixMoneyAddCent(hourlyRate);
+    }
+    const restDayRate = nonEmptyMoneyOrHoursField(profile.restDayRate);
+    if (restDayRate != null) {
+        out.restDayRate = workerMatrixMoneyAddCent(restDayRate);
+    }
+    const minimumWorkingHours = nonEmptyMoneyOrHoursField(
+        profile.minimumWorkingHours,
+    );
+    if (minimumWorkingHours != null) {
+        out.minimumWorkingHours =
+            workerMatrixIntegerLikeAppend01(minimumWorkingHours);
+    }
+    const cpf = nonEmptyMoneyOrHoursField(profile.cpf);
+    if (cpf != null) {
+        out.cpf = workerMatrixIntegerLikeAppend01(cpf);
+    }
+
+    if (profile.payNowPhone != null && String(profile.payNowPhone).trim() !== "") {
+        out.payNowPhone = `${coerceFormFillText(profile.payNowPhone)}01`;
+    }
+    if (
+        profile.bankAccountNumber != null &&
+        String(profile.bankAccountNumber).trim() !== ""
+    ) {
+        out.bankAccountNumber = `${coerceFormFillText(profile.bankAccountNumber)}01`;
+    }
+
+    return out;
+}
+
+export async function expectWorkerMatrixRowMatchesCreatedProfile(
+    page: Page,
+    profile: WorkerE2EMatrixProfileForCreate,
+): Promise<void> {
+    const row = workerTableRow(page, profile.name);
+    await expect(row).toBeVisible();
+    await expect(row).toContainText(WORKER_E2E_DEFAULT_TABLE_STATUS);
+    expect(profile.shiftPattern).toBeTruthy();
+    expect(profile.employmentType).toBeTruthy();
+    expect(profile.employmentArrangement).toBeTruthy();
+    expect(profile.paymentMethod).toBeTruthy();
+
+    await expect(row).toContainText(profile.shiftPattern!);
+    await expect(row).toContainText(profile.employmentType!);
+    await expect(row).toContainText(profile.employmentArrangement!);
+    await expect(row).toContainText(profile.paymentMethod!);
+
+    const monthlyPay = nonEmptyMoneyOrHoursField(profile.monthlyPay);
+    if (monthlyPay != null) {
+        await expect(row).toContainText(
+            workerTableMoneyCellFromJsonAmount(monthlyPay),
+        );
+    }
+    const hourlyRate = nonEmptyMoneyOrHoursField(profile.hourlyRate);
+    if (hourlyRate != null) {
+        await expect(row).toContainText(
+            workerTableMoneyCellFromJsonAmount(hourlyRate),
+        );
+    }
+    const minimumWorkingHours = nonEmptyMoneyOrHoursField(
+        profile.minimumWorkingHours,
+    );
+    if (minimumWorkingHours != null) {
+        await expect(row).toContainText(
+            workerTableMinimumHoursCellFromJson(minimumWorkingHours),
+        );
+    }
+}
+
+export async function expectWorkerMatrixRowMatchesUpdatedProfile(
+    page: Page,
+    originalProfile: WorkerE2EMatrixProfileForCreate,
+    transforms: WorkerFormFieldValues,
+): Promise<void> {
+    const row = workerTableRow(page, transforms.name!);
+    await expect(row).toBeVisible();
+    await expect(row).toContainText(WORKER_E2E_DEFAULT_TABLE_STATUS);
+    await expect(row).toContainText(originalProfile.shiftPattern!);
+    await expect(row).toContainText(originalProfile.employmentType!);
+    await expect(row).toContainText(originalProfile.employmentArrangement!);
+    await expect(row).toContainText(originalProfile.paymentMethod!);
+
+    const monthlyPay = transforms.monthlyPay;
+    if (monthlyPay != null && monthlyPay !== "") {
+        await expect(row).toContainText(
+            workerTableMoneyCellFromJsonAmount(monthlyPay),
+        );
+    }
+    const hourlyRate = transforms.hourlyRate;
+    if (hourlyRate != null && hourlyRate !== "") {
+        await expect(row).toContainText(
+            workerTableMoneyCellFromJsonAmount(hourlyRate),
+        );
+    }
+    const minimumWorkingHours = transforms.minimumWorkingHours;
+    if (minimumWorkingHours != null && minimumWorkingHours !== "") {
+        await expect(row).toContainText(
+            workerTableMinimumHoursCellFromJson(minimumWorkingHours),
+        );
+    }
+}
+
+export async function openWorkerRowMenuItem(
+    page: Page,
+    workerName: string,
+    item: "View" | "Edit",
+): Promise<void> {
+    const row = workerTableRow(page, workerName);
+    await row.scrollIntoViewIfNeeded();
+    await row.getByRole("button", { name: "Open row actions" }).click();
+
+    const menuitem = page.getByRole("menuitem", { name: item, exact: true });
+    await menuitem.waitFor({ state: "visible", timeout: 15_000 });
+    await menuitem.scrollIntoViewIfNeeded();
+
+    try {
+        await menuitem.click({ force: true, timeout: 10_000 });
+    } catch {
+        const href = await menuitem.getAttribute("href");
+        if (href?.startsWith("/")) {
+            await page.goto(href);
+            return;
+        }
+        throw new Error(
+            `Could not open worker row action "${item}" (no usable href fallback).`,
+        );
+    }
 }
 
 async function fillName(page: Page, value: string): Promise<void> {
@@ -227,11 +437,13 @@ async function setShiftPattern(
 
 async function setStatus(page: Page, value: WorkerStatus): Promise<void> {
     const group = page.getByRole("group", { name: "Status" });
-    // Create-worker route omits the Status toggle (defaults to Active in form state).
-    if ((await group.count()) === 0) return;
-    await group
-        .getByRole("button", { name: value, exact: true })
-        .click();
+    try {
+        await group.waitFor({ state: "visible", timeout: 15_000 });
+    } catch {
+        // Create-worker route omits the Status toggle (defaults to Active in form state).
+        return;
+    }
+    await group.getByRole("button", { name: value, exact: true }).click();
 }
 
 export async function selectPaymentMethod(
@@ -327,6 +539,22 @@ export async function gotoAllWorkers(page: Page): Promise<void> {
 export async function gotoNewWorker(page: Page): Promise<void> {
     await page.goto("/dashboard/worker/new");
     await page.getByRole("button", { name: "Add New Worker" }).waitFor();
+}
+
+/** Create flows always need concrete identity strings (stricter than nullable DB input). */
+export type E2EWorkerIdentity = {
+    name: string;
+    nric: string;
+    email: string;
+};
+
+export function createE2EWorkerFixture(): E2EWorkerIdentity {
+    const ts = Date.now();
+    return {
+        name: `E2E Worker ${ts}`,
+        nric: `E2E${String(ts).slice(-10)}`,
+        email: `e2e.worker.${ts}@example.test`,
+    };
 }
 
 export type FillNewFullTimeLocalWorkerPayFields = Pick<

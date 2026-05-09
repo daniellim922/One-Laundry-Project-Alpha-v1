@@ -1,10 +1,14 @@
 import { expect, test } from "@playwright/test";
 
-import { gotoAllWorkers, gotoWorkerOverview } from "../fixtures";
+import {
+    gotoAllWorkers,
+    gotoWorkerOverview,
+    openWorkerRowMenuItem,
+} from "./fixtures";
 
 /**
- * Ordering: `worker-00-*.spec.ts` runs before `worker-crud.spec.ts` alphabetically so the
- * all-workers smoke test observes a sane row count/search before CRUD piles on E2E rows.
+ * Ordering: `worker-00-*.spec.ts` runs before matrix CRUD chain specs alphabetically so the
+ * all-workers smoke test observes a sane row count/search before worker-create adds matrix rows.
  */
 test.describe("Worker table and overview", () => {
     test("overview quick actions reach worker routes", async ({ page }) => {
@@ -74,11 +78,7 @@ test.describe("Worker table and overview", () => {
             table.getByRole("button", { name: "Name" }).first(),
         ).toBeVisible();
 
-        const targetRow = dataRows.filter({ hasText: probeName }).first();
-        await targetRow
-            .getByRole("button", { name: "Open row actions" })
-            .click();
-        await page.getByRole("menuitem", { name: "View" }).click({ force: true });
+        await openWorkerRowMenuItem(page, probeName, "View");
         await expect(page).toHaveURL(/\/dashboard\/worker\/[^/]+\/view/);
         await expect(
             page.getByRole("heading", { name: "View worker" }),

@@ -16,6 +16,7 @@
 /coverage
 /test/playwright/artifacts/
 /test/playwright/.auth/
+/test/playwright/workers/.matrix-e2e-state.json
 
 # next.js
 /.next/

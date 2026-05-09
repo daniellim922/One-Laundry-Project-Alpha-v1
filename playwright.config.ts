@@ -23,12 +23,21 @@ const baseURL = getBaseUrl();
 
 fs.mkdirSync(path.dirname(authFile), { recursive: true });
 
+const chromiumUse = {
+    ...devices["Desktop Chrome"],
+    storageState: authFile,
+};
+
+/** Serial worker matrix CRUD chain (alphabetical order would run delete before read). */
+const workerMatrixCrudSpecRe =
+    /[/\\]workers[/\\]worker-(create|read|delete|update)\.spec\.ts$/;
+
 export default defineConfig({
     testDir: path.join(rootDir, "test/playwright"),
     fullyParallel: true,
     forbidOnly: Boolean(process.env.CI),
     retries: process.env.CI ? 2 : 0,
-    /** Avoid cross-file races against one dev DB (`workers.json` matrix + overview search smoke). */
+    /** Avoid cross-file races against one dev DB (`workers/workers.json` matrix + overview search smoke). */
     workers: 1,
     reporter: "list",
     timeout: 60_000,
@@ -45,11 +54,33 @@ export default defineConfig({
         {
             name: "chromium",
             testMatch: /.*\.spec\.ts/,
-            use: {
-                ...devices["Desktop Chrome"],
-                storageState: authFile,
-            },
+            testIgnore: workerMatrixCrudSpecRe,
+            use: chromiumUse,
             dependencies: ["setup"],
+        },
+        {
+            name: "worker-matrix-create",
+            testMatch: /[/\\]workers[/\\]worker-create\.spec\.ts$/,
+            use: chromiumUse,
+            dependencies: ["setup", "chromium"],
+        },
+        {
+            name: "worker-matrix-read",
+            testMatch: /[/\\]workers[/\\]worker-read\.spec\.ts$/,
+            use: chromiumUse,
+            dependencies: ["worker-matrix-create"],
+        },
+        {
+            name: "worker-matrix-delete",
+            testMatch: /[/\\]workers[/\\]worker-delete\.spec\.ts$/,
+            use: chromiumUse,
+            dependencies: ["worker-matrix-read"],
+        },
+        {
+            name: "worker-matrix-update",
+            testMatch: /[/\\]workers[/\\]worker-update\.spec\.ts$/,
+            use: chromiumUse,
+            dependencies: ["worker-matrix-delete"],
         },
     ],
     webServer: {
