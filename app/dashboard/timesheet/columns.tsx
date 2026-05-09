@@ -108,8 +108,7 @@ function TimesheetRowActions({
                         )}
                         <DropdownMenuItem
                             className="text-destructive focus:text-destructive flex w-full items-center gap-2"
-                            onSelect={(e) => {
-                                e.preventDefault();
+                            onSelect={() => {
                                 setDeleteOpen(true);
                             }}>
                             <Trash2 className="h-4 w-4" />

@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 import { isoToDmy } from "@/utils/time/calendar-date";
 
@@ -73,4 +73,51 @@ export function mainTableRowByText(page: Page, text: string) {
         .getByRole("main")
         .getByRole("row")
         .filter({ hasText: text });
+}
+
+/**
+ * Opens the DataTable row ⋯ menu ({@link RowActionsMenu} / Radix).
+ * Plain locator clicks sometimes wedge in Chromium (“performing click action” until timeout).
+ * Keyboard activation matches Radix’s trigger contract and stays stable in dense tables.
+ */
+export async function clickOpenRowActionsTrigger(row: Locator): Promise<void> {
+    const trigger = row.getByRole("button", { name: "Open row actions" });
+    await expect(trigger).toBeVisible({ timeout: 15_000 });
+    await trigger.press("Enter");
+}
+
+/**
+ * After the ⋯ menu is open: navigates using Next Link `href` when present.
+ * Portal/pointer clicks on nested links often wedge or stall navigation in Chromium tests.
+ * Items without `href` (e.g. Delete opening a dialog) use a forced click.
+ */
+export async function followDashboardRowMenuItem(
+    page: Page,
+    itemLabel: string,
+): Promise<void> {
+    const menuitem = page.getByRole("menuitem", {
+        name: itemLabel,
+        exact: true,
+    });
+    await menuitem.waitFor({ state: "visible", timeout: 15_000 });
+    await menuitem.scrollIntoViewIfNeeded();
+
+    const href = await menuitem.getAttribute("href");
+    if (href?.startsWith("/")) {
+        await page.goto(href);
+        return;
+    }
+
+    try {
+        await menuitem.click({ force: true, timeout: 10_000 });
+    } catch {
+        const hrefRetry = await menuitem.getAttribute("href");
+        if (hrefRetry?.startsWith("/")) {
+            await page.goto(hrefRetry);
+            return;
+        }
+        throw new Error(
+            `Could not activate row menu item "${itemLabel}" (no href and click failed).`,
+        );
+    }
 }

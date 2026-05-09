@@ -28,9 +28,9 @@ const chromiumUse = {
     storageState: authFile,
 };
 
-/** Serial worker matrix CRUD chain + matrix timesheet/advance specs run outside generic chromium. */
+/** Serial worker matrix chain: worker projects + matrix timesheet/advance spec files run outside generic chromium. */
 const chromiumExcludedSpecsRe =
-    /(?:[/\\]workers[/\\]worker-(?:create|read|delete|update)\.spec\.ts|[/\\]timesheets[/\\]timesheet-create\.spec\.ts|[/\\]advances[/\\]advance-create\.spec\.ts)$/;
+    /(?:[/\\]workers[/\\]worker-(?:create|read|delete|update)\.spec\.ts|[/\\]timesheets[/\\]timesheet-(?:create|update|delete)\.spec\.ts|[/\\]advances[/\\]advance-(?:create|read|update)\.spec\.ts)$/;
 
 export default defineConfig({
     testDir: path.join(rootDir, "test/playwright"),
@@ -89,10 +89,34 @@ export default defineConfig({
             dependencies: ["worker-matrix-update"],
         },
         {
+            name: "matrix-timesheet-update",
+            testMatch: /[/\\]timesheets[/\\]timesheet-update\.spec\.ts$/,
+            use: chromiumUse,
+            dependencies: ["matrix-timesheet-create"],
+        },
+        {
+            name: "matrix-timesheet-delete",
+            testMatch: /[/\\]timesheets[/\\]timesheet-delete\.spec\.ts$/,
+            use: chromiumUse,
+            dependencies: ["matrix-timesheet-update"],
+        },
+        {
             name: "matrix-advance-create",
             testMatch: /[/\\]advances[/\\]advance-create\.spec\.ts$/,
             use: chromiumUse,
-            dependencies: ["matrix-timesheet-create"],
+            dependencies: ["matrix-timesheet-delete"],
+        },
+        {
+            name: "matrix-advance-read",
+            testMatch: /[/\\]advances[/\\]advance-read\.spec\.ts$/,
+            use: chromiumUse,
+            dependencies: ["matrix-advance-create"],
+        },
+        {
+            name: "matrix-advance-update",
+            testMatch: /[/\\]advances[/\\]advance-update\.spec\.ts$/,
+            use: chromiumUse,
+            dependencies: ["matrix-advance-read"],
         },
     ],
     webServer: {

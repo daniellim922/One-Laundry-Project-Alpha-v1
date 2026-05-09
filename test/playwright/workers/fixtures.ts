@@ -13,7 +13,7 @@ import type {
 } from "@/types/status";
 
 import type { WorkerMatrixE2EProfileForCreate } from "../shared/matrix";
-import { mainTableRowByText } from "../shared/ui";
+import { clickOpenRowActionsTrigger, followDashboardRowMenuItem, mainTableRowByText } from "../shared/ui";
 
 import workerE2EMatrixProfilesJson from "./workers.json";
 
@@ -303,24 +303,8 @@ export async function openWorkerRowMenuItem(
 ): Promise<void> {
     const row = workerTableRow(page, workerName);
     await row.scrollIntoViewIfNeeded();
-    await row.getByRole("button", { name: "Open row actions" }).click();
-
-    const menuitem = page.getByRole("menuitem", { name: item, exact: true });
-    await menuitem.waitFor({ state: "visible", timeout: 15_000 });
-    await menuitem.scrollIntoViewIfNeeded();
-
-    try {
-        await menuitem.click({ force: true, timeout: 10_000 });
-    } catch {
-        const href = await menuitem.getAttribute("href");
-        if (href?.startsWith("/")) {
-            await page.goto(href);
-            return;
-        }
-        throw new Error(
-            `Could not open worker row action "${item}" (no usable href fallback).`,
-        );
-    }
+    await clickOpenRowActionsTrigger(row);
+    await followDashboardRowMenuItem(page, item);
 }
 
 async function fillName(page: Page, value: string): Promise<void> {
