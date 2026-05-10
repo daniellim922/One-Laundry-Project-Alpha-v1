@@ -9,6 +9,7 @@ import { workerTable } from "@/db/tables/workerTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
 import type { PayrollPdfData } from "@/services/pdf/react-pdf";
+import { getBundledApproverSignatureDataUrl } from "@/services/pdf/approver-signature";
 import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 
 function normalizePgDate(value: string | Date): string {
@@ -100,6 +101,7 @@ export async function GET(
             periodLabel: `${formatEnGbDmyNumericFromCalendar(periodStart)} – ${formatEnGbDmyNumericFromCalendar(periodEnd)}`,
             voucherDate: formatEnGbDmyNumericFromCalendar(payrollDate),
             workerName: worker.name,
+            approverSignatureDataUrl: getBundledApproverSignatureDataUrl(),
         },
         timesheet: {
             entries: entries.map((e) => ({

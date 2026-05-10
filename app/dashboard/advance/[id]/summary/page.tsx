@@ -7,6 +7,7 @@ import { FormPageLayout } from "@/components/form-page-layout";
 import { StepProgressPanel } from "@/components/ui/step-progress-panel";
 import { SummaryCaptureDownload } from "@/components/ui/summary-capture-download";
 import { isoToDdmmyyyy } from "@/lib/pdf-filename-parts";
+import { getBundledApproverSignatureDataUrl } from "@/services/pdf/approver-signature";
 import { getAdvanceRequestByIdWithWorker } from "@/utils/advance/queries";
 import { Pencil } from "lucide-react";
 
@@ -23,6 +24,7 @@ export default async function AdvanceSummaryPage({ params }: PageProps) {
     if (!detail) {
         notFound();
     }
+    const approverSignatureDataUrl = getBundledApproverSignatureDataUrl();
     return (
         <FormPageLayout
             title="Advance request"
@@ -57,7 +59,10 @@ export default async function AdvanceSummaryPage({ params }: PageProps) {
                     pdfUrl={`/api/advance/${id}/pdf`}
                     filename={`${detail.request.workerName} - Advance - $${detail.request.amountRequested} - ${isoToDdmmyyyy(detail.request.requestDate)}.pdf`}
                     downloadClassName="space-y-3 download-advance">
-                    <AdvanceVoucher detail={detail} />
+                    <AdvanceVoucher
+                        detail={detail}
+                        approverSignatureDataUrl={approverSignatureDataUrl}
+                    />
                 </SummaryCaptureDownload>
             </section>
         </FormPageLayout>

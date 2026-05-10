@@ -1,7 +1,8 @@
 import { requireCurrentApiUser } from "@/app/api/_shared/auth";
 import { apiError, apiSuccess } from "@/app/api/_shared/responses";
-import { getAdvanceRequestByIdWithWorker } from "@/utils/advance/queries";
 import type { AdvanceVoucherData } from "@/services/pdf/react-pdf";
+import { getBundledApproverSignatureDataUrl } from "@/services/pdf/approver-signature";
+import { getAdvanceRequestByIdWithWorker } from "@/utils/advance/queries";
 
 export async function GET(
     _req: Request,
@@ -36,7 +37,7 @@ export async function GET(
         })),
         employeeSignature: detail.employeeSignature,
         employeeSignatureDate: detail.employeeSignatureDate,
-        managerSignature: detail.managerSignature,
+        managerSignature: getBundledApproverSignatureDataUrl(),
         managerSignatureDate: detail.managerSignatureDate,
     };
 

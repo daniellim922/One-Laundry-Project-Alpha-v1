@@ -55,6 +55,8 @@ export type PayrollVoucherData = {
     periodLabel: string;
     voucherDate: string;
     workerName: string;
+    /** Bundled PNG data URL for the payment approver line (server-filled). */
+    approverSignatureDataUrl?: string | null;
 };
 
 const s = StyleSheet.create({
@@ -251,7 +253,13 @@ function paymentMethodDisplay(voucher: PayrollVoucherData["voucher"]): string {
 }
 
 export function PayrollVoucherPage({ data }: { data: PayrollVoucherData }) {
-    const { voucher, periodLabel, voucherDate, workerName } = data;
+    const {
+        voucher,
+        periodLabel,
+        voucherDate,
+        workerName,
+        approverSignatureDataUrl,
+    } = data;
     const { earnings, deductions, hoursNotMetItem, subTotal, grandTotal } =
         buildLineItems(voucher);
 
@@ -367,6 +375,7 @@ export function PayrollVoucherPage({ data }: { data: PayrollVoucherData }) {
                 approverName="Alvis Ong Thai Ying"
                 receiverName={workerName}
                 approvedDate={voucherDate}
+                approverSignatureDataUrl={approverSignatureDataUrl}
             />
         </DocumentShell>
     );

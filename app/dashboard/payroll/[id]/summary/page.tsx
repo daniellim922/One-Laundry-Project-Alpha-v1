@@ -1,6 +1,8 @@
 import { SummaryCaptureDownload } from "@/components/ui/summary-capture-download";
 import { isoToDdmmyyyy } from "@/lib/pdf-filename-parts";
 
+import { getBundledApproverSignatureDataUrl } from "@/services/pdf/approver-signature";
+
 import { getPayrollDetailData } from "../payroll-detail-data";
 import { PaymentVoucher } from "../payment-voucher";
 import { PayrollHeader } from "../payroll-header";
@@ -17,6 +19,7 @@ export default async function PayrollSummaryPage({ params, searchParams }: PageP
     const sp = (await searchParams) ?? {};
     const mode = typeof sp.mode === "string" ? sp.mode : undefined;
     const { payroll, worker, voucher, entries } = await getPayrollDetailData(id);
+    const approverSignatureDataUrl = getBundledApproverSignatureDataUrl();
 
     return (
         <div className="space-y-6">
@@ -41,6 +44,7 @@ export default async function PayrollSummaryPage({ params, searchParams }: PageP
                         payroll={payroll}
                         workerName={worker.name}
                         showDownloadButton={false}
+                        approverSignatureDataUrl={approverSignatureDataUrl}
                     />
                     {mode !== "voucher" ? (
                         <SummarizedTimesheet

@@ -40,6 +40,8 @@ function samplePayrollPdfData(
             periodLabel: "01/01/2026 – 31/01/2026",
             voucherDate: "05/02/2026",
             workerName: "Test Worker Alpha",
+            approverSignatureDataUrl:
+                "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
         },
         timesheet: {
             entries: [
@@ -79,7 +81,8 @@ function sampleAdvanceData(
         ],
         employeeSignature: null,
         employeeSignatureDate: null,
-        managerSignature: null,
+        managerSignature:
+            "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
         managerSignatureDate: null,
     };
     return { ...base, ...overrides };
@@ -92,6 +95,7 @@ async function assertValidPdfBuffer(instance: ReturnType<typeof pdf>) {
     expect(buf.subarray(0, 4).toString("latin1")).toBe("%PDF");
 }
 
+/* eslint-disable vitest/expect-expect -- expectations live in assertValidPdfBuffer */
 describe("React PDF documents", () => {
     it("renders combined payroll PDF without throwing and emits a PDF blob", async () => {
         await assertValidPdfBuffer(
