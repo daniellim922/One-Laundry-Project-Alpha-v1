@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
     and: vi.fn(),
     gte: vi.fn(),
     lte: vi.fn(),
+    bundledApproverSignature:
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
     db: {
         select: vi.fn(),
     },
@@ -32,6 +34,10 @@ vi.mock("@/lib/db", () => ({
 vi.mock("@/app/api/_shared/auth", () => ({
     requireCurrentApiUser: (...args: unknown[]) =>
         mocks.requireCurrentApiUser(...args),
+}));
+
+vi.mock("@/services/pdf/approver-signature", () => ({
+    getBundledApproverSignatureDataUrl: () => mocks.bundledApproverSignature,
 }));
 
 import { GET } from "@/app/api/payroll/[id]/pdf-data/route";
@@ -126,6 +132,9 @@ describe("GET /api/payroll/[id]/pdf-data", () => {
         const body = await res.json();
         expect(body.ok).toBe(true);
         expect(body.data.voucher.workerName).toBe("Alice Ng");
+        expect(body.data.voucher.approverSignatureDataUrl).toBe(
+            mocks.bundledApproverSignature,
+        );
         expect(body.data.timesheet.entries).toHaveLength(1);
         expect(body.data.timesheet.entries[0].dateIn).toBe("2026-01-02");
     });

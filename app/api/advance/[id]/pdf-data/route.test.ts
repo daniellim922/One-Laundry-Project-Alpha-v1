@@ -6,6 +6,8 @@ import { mockAuthenticatedApiOperator } from "@/test/_support/api-auth-mock";
 const mocks = vi.hoisted(() => ({
     requireCurrentApiUser: vi.fn(),
     getAdvanceRequestByIdWithWorker: vi.fn(),
+    bundledApproverSignature:
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
 }));
 
 vi.mock("@/app/api/_shared/auth", () => ({
@@ -16,6 +18,10 @@ vi.mock("@/app/api/_shared/auth", () => ({
 vi.mock("@/utils/advance/queries", () => ({
     getAdvanceRequestByIdWithWorker: (...args: unknown[]) =>
         mocks.getAdvanceRequestByIdWithWorker(...args),
+}));
+
+vi.mock("@/services/pdf/approver-signature", () => ({
+    getBundledApproverSignatureDataUrl: () => mocks.bundledApproverSignature,
 }));
 
 import { GET } from "@/app/api/advance/[id]/pdf-data/route";
@@ -69,7 +75,7 @@ describe("GET /api/advance/[id]/pdf-data", () => {
                 ],
                 employeeSignature: null,
                 employeeSignatureDate: null,
-                managerSignature: null,
+                managerSignature: mocks.bundledApproverSignature,
                 managerSignatureDate: null,
             },
         });

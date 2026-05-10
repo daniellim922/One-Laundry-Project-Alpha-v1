@@ -29,8 +29,10 @@ function formatDate(iso: string | null): string {
 
 export function AdvanceVoucher({
     detail,
+    approverSignatureDataUrl,
 }: {
     detail: AdvanceRequestDetail;
+    approverSignatureDataUrl: string;
 }) {
     const { request, advances } = detail;
 
@@ -146,7 +148,7 @@ export function AdvanceVoucher({
                 receivedDate={formatDate(
                     detail.employeeSignatureDate ?? request.requestDate,
                 )}
-                approverSignatureDataUrl={detail.managerSignature}
+                approverSignatureDataUrl={approverSignatureDataUrl}
                 receiverSignatureDataUrl={detail.employeeSignature}
             />
         </DownloadDocumentShell>

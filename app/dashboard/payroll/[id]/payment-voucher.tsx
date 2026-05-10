@@ -56,6 +56,7 @@ interface PaymentVoucherProps {
     };
     workerName: string;
     showDownloadButton?: boolean;
+    approverSignatureDataUrl?: string | null;
 }
 
 const currencyFmt = new Intl.NumberFormat("en-US", {
@@ -81,6 +82,7 @@ export function PaymentVoucher({
     payroll,
     workerName,
     showDownloadButton = true,
+    approverSignatureDataUrl,
 }: PaymentVoucherProps) {
     const [isGenerating, setIsGenerating] = useState(false);
 
@@ -365,6 +367,7 @@ export function PaymentVoucher({
                     approverName="Alvis Ong Thai Ying"
                     receiverName={workerName}
                     approvedDate={voucherDate}
+                    approverSignatureDataUrl={approverSignatureDataUrl}
                 />
             </DownloadDocumentShell>
         </div>
