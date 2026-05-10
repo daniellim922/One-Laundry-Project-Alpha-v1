@@ -5,7 +5,7 @@ import { readWorkerMatrixE2EState } from "../shared/matrix";
 import {
     submitWorkerForm,
     WORKER_ALL_PATH_URL_RE,
-} from "./submit-worker-form";
+} from "./worker-submit-form";
 
 function isBrowserOrContextClosedError(err: unknown): boolean {
     if (!(err instanceof Error)) return false;

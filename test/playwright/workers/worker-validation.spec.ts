@@ -13,7 +13,7 @@ import type {
 import {
     submitWorkerForm,
     WORKER_ALL_PATH_URL_RE,
-} from "./submit-worker-form";
+} from "./worker-submit-form";
 
 const WORKER_FORM_ELEMENT_ID_PREFIX = "worker-form" as const;
 
