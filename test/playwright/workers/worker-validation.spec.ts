@@ -1,14 +1,163 @@
-import { expect, test } from "@playwright/test";
+import { randomBytes } from "node:crypto";
+
+import { expect, test, type Page } from "@playwright/test";
+
+import type { WorkerUpsertFormInput } from "@/db/schemas/worker-employment";
+import type {
+    WorkerEmploymentArrangement,
+    WorkerEmploymentType,
+    WorkerPaymentMethod,
+    WorkerShiftPattern,
+} from "@/types/status";
 
 import {
-    createDuplicateNricAssertionValue,
-    createE2EWorkerFixture,
-    fillNewFullTimeLocalWorker,
-    gotoAllWorkers,
-    gotoNewWorker,
-    selectPaymentMethod,
     submitWorkerForm,
-} from "./fixtures";
+    WORKER_ALL_PATH_URL_RE,
+} from "./submit-worker-form";
+
+const WORKER_FORM_ELEMENT_ID_PREFIX = "worker-form" as const;
+
+type E2EWorkerIdentity = {
+    name: string;
+    nric: string;
+    email: string;
+};
+
+type FillNewFullTimeLocalWorkerPayFields = Pick<
+    WorkerUpsertFormInput,
+    "monthlyPay" | "hourlyRate" | "restDayRate" | "minimumWorkingHours"
+> & {
+    cpf?: WorkerUpsertFormInput["cpf"];
+};
+
+function coerceFormFillText(value: string | number | null | undefined): string {
+    if (value == null) return "";
+    return typeof value === "number" ? String(value) : value;
+}
+
+function createDuplicateNricAssertionValue(): string {
+    return `E2EDUP${randomBytes(12).toString("hex").toUpperCase()}`;
+}
+
+function createE2EWorkerFixture(): E2EWorkerIdentity {
+    const ts = Date.now();
+    return {
+        name: `E2E Worker ${ts}`,
+        nric: `E2E${String(ts).slice(-10)}`,
+        email: `e2e.worker.${ts}@example.test`,
+    };
+}
+
+async function fillName(page: Page, value: string): Promise<void> {
+    await page.locator(`#${WORKER_FORM_ELEMENT_ID_PREFIX}-name`).fill(value);
+}
+
+async function fillNric(page: Page, value: string): Promise<void> {
+    await page.locator(`#${WORKER_FORM_ELEMENT_ID_PREFIX}-nric`).fill(value);
+}
+
+async function fillEmail(page: Page, value: string): Promise<void> {
+    await page.locator(`#${WORKER_FORM_ELEMENT_ID_PREFIX}-email`).fill(value);
+}
+
+async function fillMonthlyPay(page: Page, value: string): Promise<void> {
+    await page.locator(`#${WORKER_FORM_ELEMENT_ID_PREFIX}-monthlyPay`).fill(value);
+}
+
+async function fillHourlyRate(page: Page, value: string): Promise<void> {
+    await page.locator(`#${WORKER_FORM_ELEMENT_ID_PREFIX}-hourlyRate`).fill(value);
+}
+
+async function fillRestDayRate(page: Page, value: string): Promise<void> {
+    await page.locator(`#${WORKER_FORM_ELEMENT_ID_PREFIX}-restDayRate`).fill(value);
+}
+
+async function fillMinimumWorkingHours(page: Page, value: string): Promise<void> {
+    await page
+        .locator(`#${WORKER_FORM_ELEMENT_ID_PREFIX}-minimumWorkingHours`)
+        .fill(value);
+}
+
+async function fillCpf(page: Page, value: string): Promise<void> {
+    await page.locator(`#${WORKER_FORM_ELEMENT_ID_PREFIX}-cpf`).fill(value);
+}
+
+async function setEmploymentType(
+    page: Page,
+    value: WorkerEmploymentType,
+): Promise<void> {
+    await page
+        .getByRole("group", { name: "Employment type" })
+        .getByRole("button", { name: value, exact: true })
+        .click();
+}
+
+async function setEmploymentArrangement(
+    page: Page,
+    value: WorkerEmploymentArrangement,
+): Promise<void> {
+    await page
+        .getByRole("group", { name: "Employment arrangement" })
+        .getByRole("button", { name: value, exact: true })
+        .click();
+}
+
+async function setShiftPattern(
+    page: Page,
+    value: WorkerShiftPattern,
+): Promise<void> {
+    await page
+        .getByRole("group", { name: "Shift pattern" })
+        .getByRole("button", { name: value, exact: true })
+        .click();
+}
+
+async function selectPaymentMethod(
+    page: Page,
+    method: WorkerPaymentMethod,
+): Promise<void> {
+    await page.locator(`#${WORKER_FORM_ELEMENT_ID_PREFIX}-paymentMethod`).click();
+    await page.getByRole("option", { name: method, exact: true }).click();
+}
+
+async function gotoAllWorkers(page: Page): Promise<void> {
+    await page.goto("/dashboard/worker/all");
+    await page.getByRole("heading", { name: "All workers" }).waitFor();
+}
+
+async function gotoNewWorker(page: Page): Promise<void> {
+    await page.goto("/dashboard/worker/new");
+    await page.getByRole("button", { name: "Add New Worker" }).waitFor();
+}
+
+async function fillNewFullTimeLocalWorker(
+    page: Page,
+    data: E2EWorkerIdentity,
+    pay: FillNewFullTimeLocalWorkerPayFields,
+): Promise<void> {
+    await fillName(page, data.name);
+    await fillNric(page, data.nric);
+    await fillEmail(page, data.email);
+
+    await setEmploymentType(page, "Full Time");
+    await setEmploymentArrangement(page, "Local Worker");
+    await setShiftPattern(page, "Day Shift");
+
+    await fillMonthlyPay(page, coerceFormFillText(pay.monthlyPay));
+    await fillHourlyRate(page, coerceFormFillText(pay.hourlyRate));
+    await fillRestDayRate(page, coerceFormFillText(pay.restDayRate));
+    if (pay.minimumWorkingHours) {
+        await fillMinimumWorkingHours(
+            page,
+            coerceFormFillText(pay.minimumWorkingHours),
+        );
+    }
+    if (pay.cpf != null && pay.cpf !== "") {
+        await fillCpf(page, coerceFormFillText(pay.cpf));
+    }
+
+    await selectPaymentMethod(page, "Cash");
+}
 
 test.describe("Worker form validation", () => {
     test("required name shows validation after touch", async ({ page }) => {
@@ -116,7 +265,9 @@ test.describe("Worker form validation", () => {
         await gotoNewWorker(page);
         await fillNewFullTimeLocalWorker(page, first, pay);
         await submitWorkerForm(page, "create");
-        await expect(page).toHaveURL(/\/dashboard\/worker\/all/);
+        await expect(page).toHaveURL(WORKER_ALL_PATH_URL_RE, {
+            timeout: 15_000,
+        });
 
         await gotoAllWorkers(page);
         const verifyTable = page.getByRole("main").locator("table").first();
@@ -127,7 +278,7 @@ test.describe("Worker form validation", () => {
         const second = { ...createE2EWorkerFixture(), nric: sharedNric };
         await gotoNewWorker(page);
         await fillNewFullTimeLocalWorker(page, second, pay);
-        await submitWorkerForm(page, "create");
+        await submitWorkerForm(page, "create", { expectInlineError: true });
         await expect(
             page.getByText("NRIC already exists", { exact: true }),
         ).toBeVisible({ timeout: 15_000 });

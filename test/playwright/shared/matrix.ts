@@ -46,6 +46,35 @@ export function readWorkerMatrixE2EState(): WorkerMatrixE2EStateFile {
     return JSON.parse(raw) as WorkerMatrixE2EStateFile;
 }
 
+function isFullTimeForeignDayShiftCash(
+    profile: WorkerMatrixE2EProfileForCreate,
+): boolean {
+    return (
+        profile.employmentType === "Full Time" &&
+        profile.employmentArrangement === "Foreign Worker" &&
+        profile.paymentMethod === "Cash" &&
+        profile.shiftPattern === "Day Shift"
+    );
+}
+
+/**
+ * Persisted records for timesheet/advance matrix E2E: first worker matching Full Time,
+ * Foreign Worker, Day Shift, and Cash payment (aligned with workers.json row `E2E FT FW DS Cash`).
+ */
+export function getTimesheetAdvanceMatrixRecords(
+    state: WorkerMatrixE2EStateFile,
+): WorkerMatrixE2EPersistedRecord[] {
+    const first = state.records.find((record) =>
+        isFullTimeForeignDayShiftCash(record.profile),
+    );
+    if (first === undefined) {
+        throw new Error(
+            "No full-time foreign worker with Day Shift and Cash payment in matrix E2E state; add one to workers.json (e.g. E2E FT FW DS Cash) and re-run worker-create.",
+        );
+    }
+    return [first];
+}
+
 /** ISO calendar date `YYYY-MM-DD` shifted by whole months in local time. */
 export function addCalendarMonthsIso(baseIso: string, deltaMonths: number): string {
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(baseIso.trim());

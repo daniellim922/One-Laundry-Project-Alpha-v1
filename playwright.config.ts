@@ -28,9 +28,9 @@ const chromiumUse = {
     storageState: authFile,
 };
 
-/** Serial worker matrix chain: worker projects + matrix timesheet/advance spec files run outside generic chromium. */
+/** Serialized worker → timesheet → advance chain; those specs run in dedicated projects, not the generic chromium suite. */
 const chromiumExcludedSpecsRe =
-    /(?:[/\\]workers[/\\]worker-(?:create|read|delete|update)\.spec\.ts|[/\\]timesheets[/\\]timesheet-(?:create|update|delete)\.spec\.ts|[/\\]advances[/\\]advance-(?:create|read|update)\.spec\.ts)$/;
+    /(?:[/\\]workers[/\\]worker-(?:create|read|delete|update)\.spec\.ts|[/\\]timesheets[/\\]timesheet-(?:create|read|update|delete)\.spec\.ts|[/\\]advances[/\\]advance-(?:create|read|update)\.spec\.ts)$/;
 
 export default defineConfig({
     testDir: path.join(rootDir, "test/playwright"),
@@ -59,64 +59,70 @@ export default defineConfig({
             dependencies: ["setup"],
         },
         {
-            name: "worker-matrix-create",
+            name: "worker-create",
             testMatch: /[/\\]workers[/\\]worker-create\.spec\.ts$/,
             use: chromiumUse,
             dependencies: ["setup", "chromium"],
         },
         {
-            name: "worker-matrix-read",
+            name: "worker-read",
             testMatch: /[/\\]workers[/\\]worker-read\.spec\.ts$/,
             use: chromiumUse,
-            dependencies: ["worker-matrix-create"],
+            dependencies: ["worker-create"],
         },
         {
-            name: "worker-matrix-delete",
+            name: "worker-delete",
             testMatch: /[/\\]workers[/\\]worker-delete\.spec\.ts$/,
             use: chromiumUse,
-            dependencies: ["worker-matrix-read"],
+            dependencies: ["worker-read"],
         },
         {
-            name: "worker-matrix-update",
+            name: "worker-update",
             testMatch: /[/\\]workers[/\\]worker-update\.spec\.ts$/,
             use: chromiumUse,
-            dependencies: ["worker-matrix-delete"],
+            dependencies: ["worker-delete"],
         },
         {
-            name: "matrix-timesheet-create",
+            name: "timesheet-create",
             testMatch: /[/\\]timesheets[/\\]timesheet-create\.spec\.ts$/,
             use: chromiumUse,
-            dependencies: ["worker-matrix-update"],
+            dependencies: ["worker-update"],
         },
         {
-            name: "matrix-timesheet-update",
+            name: "timesheet-read",
+            testMatch: /[/\\]timesheets[/\\]timesheet-read\.spec\.ts$/,
+            use: chromiumUse,
+            dependencies: ["timesheet-create"],
+        },
+        {
+            name: "timesheet-update",
             testMatch: /[/\\]timesheets[/\\]timesheet-update\.spec\.ts$/,
             use: chromiumUse,
-            dependencies: ["matrix-timesheet-create"],
+            dependencies: ["timesheet-read"],
         },
         {
-            name: "matrix-timesheet-delete",
+            name: "timesheet-delete",
             testMatch: /[/\\]timesheets[/\\]timesheet-delete\.spec\.ts$/,
             use: chromiumUse,
-            dependencies: ["matrix-timesheet-update"],
+            dependencies: ["timesheet-update"],
         },
         {
-            name: "matrix-advance-create",
+            name: "advance-create",
             testMatch: /[/\\]advances[/\\]advance-create\.spec\.ts$/,
             use: chromiumUse,
-            dependencies: ["matrix-timesheet-delete"],
+            dependencies: ["timesheet-delete"],
         },
         {
-            name: "matrix-advance-read",
+            name: "advance-read",
             testMatch: /[/\\]advances[/\\]advance-read\.spec\.ts$/,
             use: chromiumUse,
-            dependencies: ["matrix-advance-create"],
+            dependencies: ["advance-create"],
         },
         {
-            name: "matrix-advance-update",
+            name: "advance-update",
             testMatch: /[/\\]advances[/\\]advance-update\.spec\.ts$/,
             use: chromiumUse,
-            dependencies: ["matrix-advance-read"],
+            dependencies: ["advance-read"],
         },
     ],
     webServer: {

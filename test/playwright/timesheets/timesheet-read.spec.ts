@@ -1,11 +1,11 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-import type { WorkerStatus } from "@/types/status";
-import { readWorkerMatrixE2EState } from "../shared/matrix";
 import {
-    submitWorkerForm,
-    WORKER_ALL_PATH_URL_RE,
-} from "./submit-worker-form";
+    getTimesheetAdvanceMatrixRecords,
+    isoToDisplayDmy,
+    readWorkerMatrixE2EState,
+    todayIsoLocal,
+} from "../shared/matrix";
 
 function isBrowserOrContextClosedError(err: unknown): boolean {
     if (!(err instanceof Error)) return false;
@@ -22,24 +22,9 @@ function mainTableRowByText(page: Page, text: string) {
         .filter({ hasText: text });
 }
 
-function workerTableRow(page: Page, workerName: string) {
-    return mainTableRowByText(page, workerName);
-}
-
-async function setDashboardMainTableSearchFilter(
-    page: Page,
-    value: string,
-): Promise<void> {
-    const search = page.getByRole("main").getByPlaceholder("Search...");
-    await expect(search).toBeVisible({ timeout: 30_000 });
-    await search.evaluate((el: HTMLInputElement, val: string) => {
-        const setter = Object.getOwnPropertyDescriptor(
-            window.HTMLInputElement.prototype,
-            "value",
-        )?.set;
-        setter?.call(el, val);
-        el.dispatchEvent(new Event("input", { bubbles: true }));
-    }, value);
+async function gotoAllTimesheets(page: Page): Promise<void> {
+    await page.goto("/dashboard/timesheet/all");
+    await page.getByRole("heading", { name: "All timesheets" }).waitFor();
 }
 
 async function clickOpenRowActionsTrigger(
@@ -170,80 +155,84 @@ async function followDashboardRowMenuItem(
     }
 }
 
-async function gotoAllWorkers(page: Page): Promise<void> {
-    await page.goto("/dashboard/worker/all");
-    await page.getByRole("heading", { name: "All workers" }).waitFor();
-}
-
-async function openWorkerRowMenuItem(
+async function openTimesheetRowActionsFromRow(
     page: Page,
-    workerName: string,
-    item: "View" | "Edit",
+    row: Locator,
+    item: "View" | "Edit" | "Delete",
 ): Promise<void> {
-    const table = page.getByRole("main").locator("table").first();
-    await expect(
-        table
-            .getByRole("button", {
-                name: "Open row actions",
-            })
-            .first(),
-    ).toBeVisible({ timeout: 60_000 });
-
-    await setDashboardMainTableSearchFilter(page, workerName);
-
-    const row = workerTableRow(page, workerName);
-    await expect(row).toBeVisible({ timeout: 90_000 });
     await row.scrollIntoViewIfNeeded();
-    await clickOpenRowActionsTrigger(row, {
-        visibleTimeoutMs: 45_000,
-        menuOpenTimeoutMs: 45_000,
-    });
+    await clickOpenRowActionsTrigger(row);
     await followDashboardRowMenuItem(page, item);
-}
-
-async function setStatus(page: Page, value: WorkerStatus): Promise<void> {
-    const group = page.getByRole("group", { name: "Status" });
-    try {
-        await group.waitFor({ state: "visible", timeout: 45_000 });
-    } catch {
-        return;
-    }
-    await group.getByRole("button", { name: value, exact: true }).click();
-}
-
-async function fillWorkerFormFields(
-    page: Page,
-    values: { status?: WorkerStatus },
-): Promise<void> {
-    if (values.status !== undefined) {
-        await setStatus(page, values.status);
-    }
 }
 
 test.describe.configure({ mode: "serial" });
 
-test.describe("Worker matrix delete (inactive)", () => {
-    test("workers.json matrix: set status inactive for each worker", async ({
-        page,
-    }) => {
-        test.setTimeout(180_000);
-        const { records } = readWorkerMatrixE2EState();
+test.describe("Timesheet matrix read", () => {
+    test("workers.json matrix: view created entry detail", async ({ page }) => {
+        test.setTimeout(480_000);
 
-        for (const record of records) {
-            await gotoAllWorkers(page);
-            await openWorkerRowMenuItem(page, record.name, "Edit");
-            // Confirms row-actions menu opened under URL-sync remount before Edit navigation.
-            await expect(page).toHaveURL(/\/dashboard\/worker\/[^/]+\/edit$/);
+        const state = readWorkerMatrixE2EState();
+        const todayIso = todayIsoLocal();
+        const todayDisplay = isoToDisplayDmy(todayIso);
 
-            await fillWorkerFormFields(page, { status: "Inactive" });
-            await submitWorkerForm(page, "edit");
-            await expect(page).toHaveURL(WORKER_ALL_PATH_URL_RE, {
-                timeout: 15_000,
+        for (const record of getTimesheetAdvanceMatrixRecords(state)) {
+            const workerName = record.name;
+
+            await test.step(`Read timesheet for ${workerName}`, async () => {
+                await gotoAllTimesheets(page);
+
+                const table = page.getByRole("main").locator("table").first();
+                await expect(
+                    table
+                        .getByRole("button", { name: "Open row actions" })
+                        .first(),
+                ).toBeVisible({ timeout: 60_000 });
+
+                const search = page
+                    .getByRole("main")
+                    .getByPlaceholder("Search...");
+                await search.fill(workerName, { force: true });
+                await expect
+                    .poll(async () => table.locator("tbody tr").count(), {
+                        timeout: 15_000,
+                    })
+                    .toBeGreaterThan(0);
+
+                const row = mainTableRowByText(page, workerName).filter({
+                    hasText: todayDisplay,
+                });
+                await expect(row.first()).toBeVisible();
+                await expect(row.first()).toContainText("09:00");
+                await expect(row.first()).toContainText("19:00");
+                await expect(row.first()).toContainText("10.00");
+                await expect(row.first()).toContainText("Timesheet Unpaid");
+
+                await openTimesheetRowActionsFromRow(page, row.first(), "View");
+                await expect(page).toHaveURL(
+                    /\/dashboard\/timesheet\/[^/]+\/view$/,
+                );
+
+                await page
+                    .getByRole("heading", { name: "Timesheet entry" })
+                    .waitFor();
+
+                await expect(
+                    page.getByText("Timesheet Unpaid", { exact: true }),
+                ).toBeVisible();
+
+                await expect(page.locator("#workerId")).toContainText(workerName);
+
+                await expect(page.locator("#dateIn")).toHaveValue(todayDisplay);
+                await expect(page.locator("#dateOut")).toHaveValue(todayDisplay);
+                await expect(page.locator("#timeIn")).toHaveValue("09:00");
+                await expect(page.locator("#timeOut")).toHaveValue("19:00");
+
+                await expect(
+                    page.locator(".rounded-md.bg-muted").filter({
+                        hasText: "Total hours",
+                    }),
+                ).toContainText("10.00");
             });
-
-            const row = workerTableRow(page, record.name);
-            await expect(row).toBeVisible();
-            await expect(row).toContainText("Inactive");
         }
     });
 });

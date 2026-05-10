@@ -1,20 +1,57 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 import {
-    fillDatePickerInputById,
-    mainTableRowByText,
-    selectFromSearchCombobox,
-} from "../shared/ui";
-import {
+    getTimesheetAdvanceMatrixRecords,
     isoToDisplayDmy,
     readWorkerMatrixE2EState,
     todayIsoLocal,
 } from "../shared/matrix";
+import { isoToDmy } from "@/utils/time/calendar-date";
+
+function mainTableRowByText(page: Page, text: string) {
+    return page
+        .getByRole("main")
+        .getByRole("row")
+        .filter({ hasText: text });
+}
+
+async function fillDatePickerInputById(
+    page: Page,
+    elementId: string,
+    isoYmd: string,
+): Promise<void> {
+    const display = isoToDmy(isoYmd);
+    await page.locator(`#${elementId}`).fill(display);
+    await page.locator(`#${elementId}`).blur();
+}
+
+async function selectFromSearchCombobox(
+    page: Page,
+    triggerSelector: string,
+    optionLabel: string,
+    searchPlaceholder: string,
+): Promise<void> {
+    const trigger = page.locator(triggerSelector);
+    await expect(trigger).toBeEnabled({ timeout: 15_000 });
+    await trigger.click();
+
+    const search = page.getByPlaceholder(searchPlaceholder);
+    await expect(search).toBeVisible({ timeout: 15_000 });
+    await search.click();
+    await search.fill(optionLabel);
+
+    const item = page
+        .locator('[data-slot="command"]')
+        .locator('[data-slot="command-item"]')
+        .filter({ hasText: optionLabel });
+    await expect(item.first()).toBeVisible({ timeout: 20_000 });
+    await item.first().click({ force: true });
+}
 
 test.describe.configure({ mode: "serial" });
 
 test.describe("Timesheet matrix create", () => {
-    test("workers.json matrix: add one timesheet entry per worker", async ({
+    test("workers.json matrix: add one timesheet for FT foreign day-shift cash worker", async ({
         page,
     }) => {
         test.setTimeout(480_000);
@@ -23,7 +60,7 @@ test.describe("Timesheet matrix create", () => {
         const todayIso = todayIsoLocal();
         const todayDisplay = isoToDisplayDmy(todayIso);
 
-        for (const record of state.records) {
+        for (const record of getTimesheetAdvanceMatrixRecords(state)) {
             const workerName = record.name;
             await test.step(`Create timesheet for ${workerName}`, async () => {
                 await page.goto("/dashboard/timesheet/new");

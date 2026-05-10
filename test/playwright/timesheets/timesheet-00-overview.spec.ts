@@ -1,10 +1,38 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
-import {
-    clickSidebarFeatureRoot,
-    clickSidebarSubLink,
-} from "../shared/ui";
-import { gotoTimesheetOverview } from "./fixtures";
+function sidebarRoot(page: Page) {
+    return page.locator('[data-sidebar="sidebar"]');
+}
+
+async function clickSidebarSubLink(
+    page: Page,
+    featureTitle: string,
+    subLinkName: string,
+): Promise<void> {
+    const root = sidebarRoot(page);
+    const subLink = root.getByRole("link", { name: subLinkName });
+    if (!(await subLink.isVisible())) {
+        await root
+            .getByRole("button", { name: `Toggle ${featureTitle} submenu` })
+            .click();
+    }
+    await expect(subLink).toBeVisible({ timeout: 15_000 });
+    await subLink.click();
+}
+
+async function clickSidebarFeatureRoot(
+    page: Page,
+    featureTitle: string,
+): Promise<void> {
+    await sidebarRoot(page)
+        .getByRole("link", { name: featureTitle, exact: true })
+        .click();
+}
+
+async function gotoTimesheetOverview(page: Page): Promise<void> {
+    await page.goto("/dashboard/timesheet");
+    await page.getByRole("heading", { name: "Timesheet" }).waitFor();
+}
 
 test.describe("Timesheet overview and navigation", () => {
     test("overview quick actions and sidebar reach timesheet routes", async ({

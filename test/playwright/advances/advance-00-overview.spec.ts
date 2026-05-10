@@ -1,10 +1,38 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
-import {
-    clickSidebarFeatureRoot,
-    clickSidebarSubLink,
-} from "../shared/ui";
-import { gotoAdvanceOverview } from "./fixtures";
+function sidebarRoot(page: Page) {
+    return page.locator('[data-sidebar="sidebar"]');
+}
+
+async function clickSidebarSubLink(
+    page: Page,
+    featureTitle: string,
+    subLinkName: string,
+): Promise<void> {
+    const root = sidebarRoot(page);
+    const subLink = root.getByRole("link", { name: subLinkName });
+    if (!(await subLink.isVisible())) {
+        await root
+            .getByRole("button", { name: `Toggle ${featureTitle} submenu` })
+            .click();
+    }
+    await expect(subLink).toBeVisible({ timeout: 15_000 });
+    await subLink.click();
+}
+
+async function clickSidebarFeatureRoot(
+    page: Page,
+    featureTitle: string,
+): Promise<void> {
+    await sidebarRoot(page)
+        .getByRole("link", { name: featureTitle, exact: true })
+        .click();
+}
+
+async function gotoAdvanceOverview(page: Page): Promise<void> {
+    await page.goto("/dashboard/advance");
+    await page.getByRole("heading", { name: "Advance" }).waitFor();
+}
 
 test.describe("Advance overview and navigation", () => {
     test("overview quick actions and sidebar reach advance routes", async ({
