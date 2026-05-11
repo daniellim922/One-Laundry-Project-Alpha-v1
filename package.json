@@ -17,7 +17,6 @@
         "test": "npm run test:unit",
         "test:unit": "vitest run",
         "test:unit:watch": "vitest",
-        "test:unit:worker": "vitest run app/dashboard/worker services/worker app/api/workers",
         "test:coverage": "vitest run --coverage",
         "test:e2e": "playwright test test/playwright",
         "test:e2e:ui": "playwright test test/playwright --ui"

@@ -111,9 +111,78 @@ function createPayrollInsertExecutor(insertedVoucherValues: unknown[]) {
     });
 }
 
+function activeWorkerPayrollRow(workerId = "worker-1", name = "Alicia") {
+    return {
+        worker: {
+            id: workerId,
+            name,
+            status: "Active",
+        },
+        employment: {
+            employmentType: "Full Time",
+            employmentArrangement: "Local Worker",
+            minimumWorkingHours: 16,
+            monthlyPay: 2000,
+            hourlyRate: 10,
+            restDayRate: 25,
+            cpf: 0,
+            paymentMethod: "Cash",
+            payNowPhone: null,
+            bankAccountNumber: null,
+        },
+    };
+}
+
+function createEmptyDraftInputSelectExecutor() {
+    return vi
+        .fn()
+        .mockReturnValueOnce({
+            from: vi.fn().mockReturnValue({
+                where: vi.fn().mockResolvedValue([]),
+            }),
+        })
+        .mockReturnValueOnce({
+            from: vi.fn().mockReturnValue({
+                where: vi.fn().mockResolvedValue([]),
+            }),
+        });
+}
+
 describe("payroll overlap action handling", () => {
     beforeEach(() => {
-        vi.clearAllMocks();
+        Object.values(mocks).forEach((mock) => {
+            if (typeof mock === "function") mock.mockReset();
+        });
+        mocks.db.select.mockReset();
+        mocks.db.transaction.mockReset();
+    });
+
+    it("returns a missing fields error when create payload has no worker ID", async () => {
+        const result = await createPayrollRecord({
+            workerId: "   ",
+            periodStart: "2026-03-01",
+            periodEnd: "2026-03-31",
+            payrollDate: "2026-04-05",
+        });
+
+        expect(result).toEqual({ error: "Missing required fields" });
+        expect(mocks.db.select).not.toHaveBeenCalled();
+        expect(mocks.db.transaction).not.toHaveBeenCalled();
+    });
+
+    it("returns worker not found when creating payroll for an unknown worker", async () => {
+        mockSelectWithJoinLimitResolved([]);
+
+        const result = await createPayrollRecord({
+            workerId: "worker-missing",
+            periodStart: "2026-03-01",
+            periodEnd: "2026-03-31",
+            payrollDate: "2026-04-05",
+        });
+
+        expect(result).toEqual({ error: "Worker not found" });
+        expect(mocks.findPayrollPeriodConflicts).not.toHaveBeenCalled();
+        expect(mocks.db.transaction).not.toHaveBeenCalled();
     });
 
     it("returns an error when creating payroll for an inactive worker", async () => {
@@ -637,6 +706,74 @@ describe("payroll overlap action handling", () => {
         );
     });
 
+    it("creates only one payroll when batch worker IDs contain duplicates", async () => {
+        const insertedVoucherValues: Array<Record<string, unknown>> = [];
+
+        mockSelectWithJoinLimitResolved([activeWorkerPayrollRow()]);
+        mocks.findPayrollPeriodConflicts.mockResolvedValueOnce([]);
+        mocks.getAdvancesForPayrollPeriod.mockResolvedValueOnce([]);
+        mocks.db.transaction.mockImplementationOnce(
+            async (callback: (tx: unknown) => Promise<void>) =>
+                callback({
+                    select: createEmptyDraftInputSelectExecutor(),
+                    insert: createPayrollInsertExecutor(insertedVoucherValues),
+                }),
+        );
+
+        const result = await createPayrollRecords({
+            workerIds: ["worker-1", "worker-1", "worker-1"],
+            periodStart: "2026-01-01",
+            periodEnd: "2026-01-31",
+            payrollDate: "2026-02-05",
+        });
+
+        expect(result).toEqual({
+            success: true,
+            created: 1,
+            skipped: 0,
+            conflicts: [],
+            createdPayrolls: [
+                { payrollId: "payroll-mock-1", workerId: "worker-1" },
+            ],
+        });
+        expect(mocks.db.transaction).toHaveBeenCalledTimes(1);
+        expect(mocks.findPayrollPeriodConflicts).toHaveBeenCalledTimes(1);
+    });
+
+    it("continues batch payroll creation when a selected worker is missing", async () => {
+        const insertedVoucherValues: Array<Record<string, unknown>> = [];
+
+        mockSelectWithJoinLimitResolved([]);
+        mockSelectWithJoinLimitResolved([activeWorkerPayrollRow()]);
+        mocks.findPayrollPeriodConflicts.mockResolvedValueOnce([]);
+        mocks.getAdvancesForPayrollPeriod.mockResolvedValueOnce([]);
+        mocks.db.transaction.mockImplementationOnce(
+            async (callback: (tx: unknown) => Promise<void>) =>
+                callback({
+                    select: createEmptyDraftInputSelectExecutor(),
+                    insert: createPayrollInsertExecutor(insertedVoucherValues),
+                }),
+        );
+
+        const result = await createPayrollRecords({
+            workerIds: ["worker-missing", "worker-1"],
+            periodStart: "2026-01-01",
+            periodEnd: "2026-01-31",
+            payrollDate: "2026-02-05",
+        });
+
+        expect(result).toEqual({
+            success: true,
+            created: 1,
+            skipped: 0,
+            conflicts: [],
+            createdPayrolls: [
+                { payrollId: "payroll-mock-1", workerId: "worker-1" },
+            ],
+        });
+        expect(mocks.db.transaction).toHaveBeenCalledTimes(1);
+    });
+
     it("returns an error when batch payroll creation includes an inactive worker", async () => {
         mockSelectWithJoinLimitResolved([
             {
@@ -661,6 +798,66 @@ describe("payroll overlap action handling", () => {
         });
         expect(mocks.findPayrollPeriodConflicts).not.toHaveBeenCalled();
         expect(mocks.db.transaction).not.toHaveBeenCalled();
+    });
+
+    it("converts a create transaction overlap constraint into conflict details", async () => {
+        const conflict = {
+            payrollId: "payroll-existing-1",
+            workerId: "worker-1",
+            workerName: "Alicia",
+            periodStart: "2026-03-01",
+            periodEnd: "2026-03-31",
+            status: "Draft" as const,
+        };
+
+        mockSelectWithJoinLimitResolved([activeWorkerPayrollRow()]);
+        mocks.findPayrollPeriodConflicts
+            .mockResolvedValueOnce([])
+            .mockResolvedValueOnce([conflict]);
+        mocks.db.transaction.mockRejectedValueOnce({
+            code: "23P01",
+            constraint: "payroll_worker_period_overlap_excl",
+        });
+
+        const result = await createPayrollRecord({
+            workerId: "worker-1",
+            periodStart: "2026-03-01",
+            periodEnd: "2026-03-31",
+            payrollDate: "2026-04-05",
+        });
+
+        expect(result).toEqual({
+            error: "Payroll period overlaps with existing payroll for Alicia (2026-03-01 to 2026-03-31)",
+            code: "OVERLAP_CONFLICT",
+            conflicts: [conflict],
+        });
+        expect(
+            mocks.recordGuidedMonthlyWorkflowStepCompletion,
+        ).not.toHaveBeenCalled();
+    });
+
+    it("returns a generic create error when payroll transaction fails", async () => {
+        const consoleError = vi
+            .spyOn(console, "error")
+            .mockImplementation(() => undefined);
+
+        mockSelectWithJoinLimitResolved([activeWorkerPayrollRow()]);
+        mocks.findPayrollPeriodConflicts.mockResolvedValueOnce([]);
+        mocks.db.transaction.mockRejectedValueOnce(new Error("database offline"));
+
+        const result = await createPayrollRecord({
+            workerId: "worker-1",
+            periodStart: "2026-03-01",
+            periodEnd: "2026-03-31",
+            payrollDate: "2026-04-05",
+        });
+
+        expect(result).toEqual({ error: "Failed to create payroll" });
+        expect(
+            mocks.recordGuidedMonthlyWorkflowStepCompletion,
+        ).not.toHaveBeenCalled();
+
+        consoleError.mockRestore();
     });
 
     it("returns structured overlap conflict on payroll edit", async () => {
@@ -808,5 +1005,99 @@ describe("payroll overlap action handling", () => {
                 grandTotal: 1080,
             }),
         );
+    });
+
+    it("converts an update transaction overlap constraint into conflict details", async () => {
+        const conflict = {
+            payrollId: "payroll-existing-2",
+            workerId: "worker-1",
+            workerName: "Alicia",
+            periodStart: "2026-03-15",
+            periodEnd: "2026-04-10",
+            status: "Draft" as const,
+        };
+
+        mockSelectWithLimitResolved([
+            {
+                id: "payroll-editing",
+                workerId: "worker-1",
+                payrollVoucherId: "voucher-1",
+                status: "Draft",
+            },
+        ]);
+        mockSelectWithJoinLimitResolved([activeWorkerPayrollRow()]);
+        mocks.findPayrollPeriodConflicts
+            .mockResolvedValueOnce([])
+            .mockResolvedValueOnce([conflict]);
+        mocks.db.select
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockResolvedValue([]),
+                }),
+            })
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockResolvedValue([]),
+                }),
+            });
+        mocks.getAdvancesForPayrollPeriod.mockResolvedValueOnce([]);
+        mocks.db.transaction.mockRejectedValueOnce({
+            code: "23P01",
+            constraint: "payroll_worker_period_overlap_excl",
+        });
+
+        const result = await updatePayrollRecord({
+            payrollId: "payroll-editing",
+            periodStart: "2026-03-20",
+            periodEnd: "2026-04-20",
+            payrollDate: "2026-04-25",
+        });
+
+        expect(result).toEqual({
+            error: "Payroll period overlaps with existing payroll for Alicia (2026-03-15 to 2026-04-10)",
+            code: "OVERLAP_CONFLICT",
+            conflicts: [conflict],
+        });
+    });
+
+    it("returns a generic update error when payroll transaction fails", async () => {
+        const consoleError = vi
+            .spyOn(console, "error")
+            .mockImplementation(() => undefined);
+
+        mockSelectWithLimitResolved([
+            {
+                id: "payroll-editing",
+                workerId: "worker-1",
+                payrollVoucherId: "voucher-1",
+                status: "Draft",
+            },
+        ]);
+        mockSelectWithJoinLimitResolved([activeWorkerPayrollRow()]);
+        mocks.findPayrollPeriodConflicts.mockResolvedValueOnce([]);
+        mocks.db.select
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockResolvedValue([]),
+                }),
+            })
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockResolvedValue([]),
+                }),
+            });
+        mocks.getAdvancesForPayrollPeriod.mockResolvedValueOnce([]);
+        mocks.db.transaction.mockRejectedValueOnce(new Error("database offline"));
+
+        const result = await updatePayrollRecord({
+            payrollId: "payroll-editing",
+            periodStart: "2026-03-20",
+            periodEnd: "2026-04-20",
+            payrollDate: "2026-04-25",
+        });
+
+        expect(result).toEqual({ error: "Failed to update payroll" });
+
+        consoleError.mockRestore();
     });
 });

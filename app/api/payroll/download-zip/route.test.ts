@@ -8,11 +8,16 @@ import { mockAuthenticatedApiOperator } from "@/test/_support/api-auth-mock";
 const mocks = vi.hoisted(() => ({
     requireCurrentApiUser: vi.fn(),
     recordGuidedMonthlyWorkflowStepCompletion: vi.fn(),
+    revalidatePath: vi.fn(),
     db: {
         select: vi.fn(),
     },
     createClient: vi.fn(),
     downloadPdf: vi.fn(),
+}));
+
+vi.mock("next/cache", () => ({
+    revalidatePath: (...args: unknown[]) => mocks.revalidatePath(...args),
 }));
 
 vi.mock("@/app/api/_shared/auth", () => ({
@@ -186,6 +191,7 @@ describe("POST /api/payroll/download-zip", () => {
         ).toHaveBeenCalledWith({
             stepId: "payroll_download",
         });
+        expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard");
     });
 
     it("skips payrolls without pdfStoragePath and includes them in X-Skipped-Ids", async () => {

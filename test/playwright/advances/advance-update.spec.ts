@@ -211,7 +211,9 @@ test.describe("Advance matrix update", () => {
                 await openAdvanceRowActionsFromRow(page, rowFor600.first(), "View");
                 await expect(page).toHaveURL(/\/dashboard\/advance\/[^/]+\/breakdown$/);
 
-                await page.getByRole("link", { name: "Edit" }).click();
+                await page
+                    .getByRole("link", { name: "Edit", exact: true })
+                    .click();
                 await expect(page).toHaveURL(/\/dashboard\/advance\/[^/]+\/edit$/);
 
                 await page.locator("#advance-request-form-inst-0").waitFor({

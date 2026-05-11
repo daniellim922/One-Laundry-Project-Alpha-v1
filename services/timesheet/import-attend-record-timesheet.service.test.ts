@@ -187,6 +187,37 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
         });
     });
 
+    it("swallows workflow recording failures while keeping the import successful", async () => {
+        const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+        mocks.recordGuidedMonthlyWorkflowStepCompletion.mockRejectedValue(
+            new Error("activity write failed"),
+        );
+
+        try {
+            await expect(
+                importAttendRecordTimesheet(makeAttendRecordPayload()),
+            ).resolves.toEqual({
+                status: "success",
+                imported: 3,
+                skipped: 0,
+                errors: undefined,
+            });
+
+            expect(
+                mocks.recordGuidedMonthlyWorkflowStepCompletion,
+            ).toHaveBeenCalledWith({
+                stepId: "timesheet_import",
+            });
+            expect(mocks.synchronizeWorkerDraftPayrolls).toHaveBeenCalledTimes(2);
+            expect(consoleError).toHaveBeenCalledWith(
+                "Failed to record guided monthly workflow completion for timesheet import",
+                expect.any(Error),
+            );
+        } finally {
+            consoleError.mockRestore();
+        }
+    });
+
     it("returns synchronization failures in the import error list", async () => {
         mocks.synchronizeWorkerDraftPayrolls
             .mockResolvedValueOnce({ success: true })
@@ -358,6 +389,7 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
         });
 
         expect(state).toEqual(preserved);
+        expect(mocks.db.insert).not.toHaveBeenCalled();
         expect(mocks.recordGuidedMonthlyWorkflowStepCompletion).not.toHaveBeenCalled();
         expect(mocks.synchronizeWorkerDraftPayrolls).not.toHaveBeenCalled();
     });
@@ -431,6 +463,85 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
         expect(mocks.db.insert).not.toHaveBeenCalled();
     });
 
+    it("imports overlapping rows when mode is force", async () => {
+        mocks.db.select.mockImplementation(() => ({
+            from: vi.fn((table: unknown) => {
+                if (table === timesheetTable) {
+                    return {
+                        where: vi.fn().mockResolvedValue([
+                            {
+                                workerId: "worker-1",
+                                dateIn: "2026-01-01",
+                                timeIn: "08:00:00",
+                            },
+                        ]),
+                    };
+                }
+                if (table === workerTable) {
+                    return {
+                        innerJoin: vi.fn().mockReturnValue(
+                            Promise.resolve(
+                                mockWorkerSelectRows([
+                                    {
+                                        id: "worker-1",
+                                        name: "Worker One",
+                                        status: "Active",
+                                    },
+                                ]),
+                            ),
+                        ),
+                    };
+                }
+                throw new Error("Unexpected table in select mock");
+            }),
+        }));
+
+        await expect(
+            importAttendRecordTimesheet(
+                {
+                    attendanceDate: {
+                        startDate: "01/01/2026",
+                        endDate: "01/01/2026",
+                    },
+                    tablingDate: "01/01/2026 17:10:10",
+                    workers: [
+                        {
+                            userId: "",
+                            name: "Worker One",
+                            dates: [
+                                {
+                                    dateIn: "01/01/2026",
+                                    timeIn: "09:00",
+                                    dateOut: "01/01/2026",
+                                    timeOut: "17:00",
+                                },
+                            ],
+                        },
+                    ],
+                },
+                { mode: "force" },
+            ),
+        ).resolves.toEqual({
+            status: "success",
+            imported: 1,
+            skipped: 0,
+            errors: undefined,
+        });
+
+        expect(mocks.db.insert).toHaveBeenCalledWith(timesheetTable);
+        expect(
+            mocks.db.insert.mock.results[0]?.value.values,
+        ).toHaveBeenCalledWith([
+            expect.objectContaining({
+                workerId: "worker-1",
+                dateIn: "2026-01-01",
+                timeIn: "09:00:00",
+                dateOut: "2026-01-01",
+                timeOut: "17:00:00",
+            }),
+        ]);
+    });
+
     it("skips overlapping worker/date rows when mode is skip", async () => {
         mocks.db.select.mockImplementation(() => ({
             from: vi.fn((table: unknown) => {
@@ -501,6 +612,87 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
             skipped: 1,
             errors: undefined,
         });
+    });
+
+    it("returns all rows as skipped when skip mode finds every parsed row already imported", async () => {
+        mocks.db.select.mockImplementation(() => ({
+            from: vi.fn((table: unknown) => {
+                if (table === timesheetTable) {
+                    return {
+                        where: vi.fn().mockResolvedValue([
+                            {
+                                workerId: "worker-1",
+                                dateIn: "2026-01-01",
+                                timeIn: "08:00:00",
+                            },
+                            {
+                                workerId: "worker-1",
+                                dateIn: "2026-01-02",
+                                timeIn: "08:00:00",
+                            },
+                        ]),
+                    };
+                }
+                if (table === workerTable) {
+                    return {
+                        innerJoin: vi.fn().mockReturnValue(
+                            Promise.resolve(
+                                mockWorkerSelectRows([
+                                    {
+                                        id: "worker-1",
+                                        name: "Worker One",
+                                        status: "Active",
+                                    },
+                                ]),
+                            ),
+                        ),
+                    };
+                }
+                throw new Error("Unexpected table in select mock");
+            }),
+        }));
+
+        await expect(
+            importAttendRecordTimesheet(
+                {
+                    attendanceDate: {
+                        startDate: "01/01/2026",
+                        endDate: "02/01/2026",
+                    },
+                    tablingDate: "02/01/2026 17:10:10",
+                    workers: [
+                        {
+                            userId: "",
+                            name: "Worker One",
+                            dates: [
+                                {
+                                    dateIn: "01/01/2026",
+                                    timeIn: "09:00",
+                                    dateOut: "01/01/2026",
+                                    timeOut: "17:00",
+                                },
+                                {
+                                    dateIn: "02/01/2026",
+                                    timeIn: "09:00",
+                                    dateOut: "02/01/2026",
+                                    timeOut: "17:00",
+                                },
+                            ],
+                        },
+                    ],
+                },
+                { mode: "skip" },
+            ),
+        ).resolves.toEqual({
+            status: "success",
+            imported: 0,
+            skipped: 2,
+            errors: undefined,
+        });
+
+        expect(mocks.db.insert).not.toHaveBeenCalled();
+        expect(mocks.recordGuidedMonthlyWorkflowStepCompletion).not.toHaveBeenCalled();
+        expect(mocks.synchronizeWorkerDraftPayrolls).not.toHaveBeenCalled();
     });
 
     it("re-pairs AttendRecord cells for Night Shift employment before inserting timesheets", async () => {
