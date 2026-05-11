@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import type { VariantProps } from "class-variance-authority";
 
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
     Card,
@@ -43,21 +43,18 @@ export function DashboardQuickActionsCard({
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2">
                 {actions.map(({ href, label, icon: Icon }) => (
-                    <Button
+                    <Link
                         key={`${href}:${label}`}
-                        variant={buttonVariant}
+                        href={href}
                         className={cn(
+                            buttonVariants({ variant: buttonVariant }),
                             buttonVariant === "outline" &&
                                 "transition-colors hover:bg-primary/10 hover:text-foreground hover:border-foreground/15 dark:hover:border-input dark:hover:bg-input/50 dark:hover:text-accent-foreground",
-                        )}
-                        asChild>
-                        <Link
-                            href={href}
-                            className="inline-flex items-center gap-2">
-                            <Icon className="h-4 w-4 shrink-0" />
-                            {label}
-                        </Link>
-                    </Button>
+                            "inline-flex items-center gap-2",
+                        )}>
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {label}
+                    </Link>
                 ))}
             </CardContent>
         </Card>

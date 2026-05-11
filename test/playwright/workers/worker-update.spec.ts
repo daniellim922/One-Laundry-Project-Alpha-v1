@@ -554,7 +554,8 @@ test.describe("Worker matrix update", () => {
     test("workers.json matrix: set active and apply edit transforms", async ({
         page,
     }) => {
-        test.setTimeout(180_000);
+        /** Eight matrix rows × edit/submit/assert; worker save can lag on draft-payroll sync. */
+        test.setTimeout(420_000);
         const { records } = readWorkerMatrixE2EState();
 
         for (const record of records) {

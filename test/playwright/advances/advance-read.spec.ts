@@ -222,8 +222,6 @@ test.describe("Advance matrix read", () => {
                         repaymentTable.locator("tbody tr").nth(i),
                     ).toContainText("$200");
                 }
-
-                await search.fill("", { force: true });
             });
         }
     });

@@ -211,8 +211,9 @@ test.describe("Worker form validation", () => {
         await page.locator("#worker-form-name").fill(data.name);
 
         const monthly = page.locator("#worker-form-monthlyPay");
-        await monthly.focus();
-        await monthly.blur();
+        await monthly.click();
+        /** Blur via focus move — `locator.blur()` has hung on grouped inputs in Chromium. */
+        await page.keyboard.press("Tab");
         await expect(
             page.getByText("Monthly pay is required for full time workers"),
         ).toBeVisible();

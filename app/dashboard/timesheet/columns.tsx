@@ -71,7 +71,7 @@ function TimesheetRowActions({
     return (
         <>
             <div className="flex justify-end">
-                <DropdownMenu>
+                <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild>
                         <Button
                             variant="ghost"
