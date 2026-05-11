@@ -17,6 +17,7 @@ import {
 } from "@/components/data-table/column-builders";
 import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
 
+import { ExpenseDeleteMenuItem } from "./expense-delete-menu-item";
 import { ExpenseMarkPaidMenuItem } from "./expense-mark-paid-menu-item";
 
 function formatSgdCents(cents: number) {
@@ -106,6 +107,10 @@ export const columns: ColumnDef<ExpenseListRow>[] = [
                         </DropdownMenuItem>
                     )}
                     <ExpenseMarkPaidMenuItem
+                        expenseId={expenseRow.id}
+                        disabled={isPaid}
+                    />
+                    <ExpenseDeleteMenuItem
                         expenseId={expenseRow.id}
                         disabled={isPaid}
                     />

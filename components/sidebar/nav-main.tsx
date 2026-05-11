@@ -93,12 +93,31 @@ export function NavMain({
                                                 key={subItem.title}>
                                                 <SidebarMenuSubButton
                                                     asChild>
-                                                    <Link
-                                                        href={subItem.url}>
-                                                        <span>
-                                                            {subItem.title}
-                                                        </span>
-                                                    </Link>
+                                                    {subItem.url.startsWith(
+                                                        "/api/",
+                                                    ) ? (
+                                                        <a
+                                                            href={
+                                                                subItem.url
+                                                            }>
+                                                            <span>
+                                                                {
+                                                                    subItem.title
+                                                                }
+                                                            </span>
+                                                        </a>
+                                                    ) : (
+                                                        <Link
+                                                            href={
+                                                                subItem.url
+                                                            }>
+                                                            <span>
+                                                                {
+                                                                    subItem.title
+                                                                }
+                                                            </span>
+                                                        </Link>
+                                                    )}
                                                 </SidebarMenuSubButton>
                                             </SidebarMenuSubItem>
                                         ))}

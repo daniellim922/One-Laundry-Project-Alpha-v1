@@ -10,6 +10,11 @@ export const expenseStatusPatchRequestSchema = z.object({
     status: z.enum(["Expense Paid", "Expense Submitted"]),
 });
 
+/** Body for `POST /api/expenses/export`: export only these expense IDs (order preserved). */
+export const expenseExportSelectionRequestSchema = z.object({
+    ids: z.array(z.uuid()).min(1).max(2000),
+});
+
 const payrollIdSchema = createSelectSchema(payrollTable).pick({ id: true }).shape.id;
 
 export const payrollSettleRequestSchema = z.object({

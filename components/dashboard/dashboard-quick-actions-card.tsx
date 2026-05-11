@@ -16,6 +16,8 @@ export type DashboardQuickAction = {
     href: string;
     label: string;
     icon: LucideIcon;
+    /** When false, avoids Next prefetch (e.g. binary API downloads). Defaults to true. */
+    prefetch?: boolean;
 };
 
 type ButtonVariant = NonNullable<VariantProps<typeof buttonVariants>["variant"]>;
@@ -42,20 +44,28 @@ export function DashboardQuickActionsCard({
                 ) : null}
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2">
-                {actions.map(({ href, label, icon: Icon }) => (
-                    <Link
-                        key={`${href}:${label}`}
-                        href={href}
-                        className={cn(
-                            buttonVariants({ variant: buttonVariant }),
-                            buttonVariant === "outline" &&
-                                "transition-colors hover:bg-primary/10 hover:text-foreground hover:border-foreground/15 dark:hover:border-input dark:hover:bg-input/50 dark:hover:text-accent-foreground",
-                            "inline-flex items-center gap-2",
-                        )}>
-                        <Icon className="h-4 w-4 shrink-0" />
-                        {label}
-                    </Link>
-                ))}
+                {actions.map(
+                    ({
+                        href,
+                        label,
+                        icon: Icon,
+                        prefetch = true,
+                    }) => (
+                        <Link
+                            key={`${href}:${label}`}
+                            href={href}
+                            prefetch={prefetch}
+                            className={cn(
+                                buttonVariants({ variant: buttonVariant }),
+                                buttonVariant === "outline" &&
+                                    "transition-colors hover:bg-primary/10 hover:text-foreground hover:border-foreground/15 dark:hover:border-input dark:hover:bg-input/50 dark:hover:text-accent-foreground",
+                                "inline-flex items-center gap-2",
+                            )}>
+                            <Icon className="h-4 w-4 shrink-0" />
+                            {label}
+                        </Link>
+                    ),
+                )}
             </CardContent>
         </Card>
     );

@@ -1,28 +1,9 @@
-import Link from "next/link";
-
 import { listExpensesWithCategories } from "@/services/expense/list-expenses";
-import { DataTable } from "@/components/data-table/data-table";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 
-import { columns } from "../columns";
+import { ExpensesAllTable } from "./expenses-all-table";
 
 export async function ExpensesAllTableLoader() {
     const expenses = await listExpensesWithCategories();
 
-    return (
-        <DataTable
-            columns={columns}
-            data={expenses}
-            searchParamKey="search"
-            actions={
-                <Button asChild>
-                    <Link href="/dashboard/expenses/new">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add expense
-                    </Link>
-                </Button>
-            }
-        />
-    );
+    return <ExpensesAllTable expenses={expenses} />;
 }

@@ -10,11 +10,13 @@ import {
 import {
     employmentArrangementBadgeTone,
     employmentTypeBadgeTone,
+    shiftPatternBadgeTone,
     workerStatusBadgeTone,
 } from "@/types/badge-tones";
 import type {
     WorkerEmploymentArrangement,
     WorkerEmploymentType,
+    WorkerShiftPattern,
     WorkerStatus,
 } from "@/types/status";
 
@@ -24,6 +26,7 @@ export type WorkerForPayrollSelection = {
     status: WorkerStatus;
     employmentType: WorkerEmploymentType;
     employmentArrangement: WorkerEmploymentArrangement;
+    shiftPattern: WorkerShiftPattern;
 };
 
 export const columns: ColumnDef<WorkerForPayrollSelection>[] = [
@@ -34,6 +37,16 @@ export const columns: ColumnDef<WorkerForPayrollSelection>[] = [
         accessorKey: "name",
         header: createSortableHeader("Worker"),
         meta: { globalSearch: true },
+    },
+    {
+        accessorKey: "shiftPattern",
+        header: createSortableHeader("Shift Pattern"),
+        meta: { globalSearch: true },
+        cell: createBadgeCell<WorkerForPayrollSelection>({
+            value: (r) => r.shiftPattern,
+            variant: "outline",
+            toneClassNameFor: (r) => shiftPatternBadgeTone[r.shiftPattern],
+        }),
     },
     {
         accessorKey: "employmentArrangement",

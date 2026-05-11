@@ -13,6 +13,7 @@ export default async function NewPayrollPage() {
             status: workerTable.status,
             employmentType: employmentTable.employmentType,
             employmentArrangement: employmentTable.employmentArrangement,
+            shiftPattern: employmentTable.shiftPattern,
         })
         .from(workerTable)
         .innerJoin(

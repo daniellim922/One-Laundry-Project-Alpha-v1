@@ -62,6 +62,16 @@ The binary Fixed/Variable classification on expense categories was removed becau
 **Status:** Resolved  
 `Expense Submitted ↔ Expense Paid` is a two-way transition. Reverting to Expense Submitted re-enables full editing with no residual locks — there is no "has been paid before" flag. The status field alone gates editability (edits blocked while Expense Paid). This is simpler than payroll Settle/Reopen because expenses have no linked timesheets, advances, or worker balances to unwind.
 
+### Only Expense Submitted expenses may be deleted
+
+**Status:** Resolved  
+Deletion removes an **Expense** permanently and is allowed only while status is **Expense Submitted**. **Expense Paid** rows cannot be deleted; the operator must revert to **Expense Submitted** first. There is no soft-delete or archive status for expenses in the current model.
+
+### Expense export is a full-register Excel download
+
+**Status:** Resolved  
+Operators can download all expenses as one **.xlsx** file (**Expense export**): one row per expense with the column set and SGD decimal money fields described in **UBIQUITOUS_LANGUAGE.md**. The database continues to store money as integer cents. Filtered or date-range exports are deferred until product asks for them.
+
 ### Payroll subTotal clamped at zero
 
 **Status:** Resolved  

@@ -342,7 +342,7 @@ export function ExpenseForm({
                     setSubmitError(res.error);
                     return;
                 }
-                router.push(`/dashboard/expenses/${res.id}/view`);
+                router.push("/dashboard/expenses/all");
                 router.refresh();
                 return;
             }

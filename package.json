@@ -12,7 +12,7 @@
         "db:wipe": "npx tsx db/wipe-db.ts",
         "db:migrate": "npx drizzle-kit push && npx tsx db/apply-custom-schema.ts",
         "db:seed": "npx tsx db/seed/seed.ts",
-        "db:seed:workers": "npx tsx db/seed/workers-only.ts",
+        "db:seed:prod": "npx tsx db/seed/workers-only.ts",
         "db:reset": "npx tsx db/reset.ts",
         "test": "npm run test:unit",
         "test:unit": "vitest run",

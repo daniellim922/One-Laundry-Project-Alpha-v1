@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { expensesTable } from "@/db/tables/expensesTable";
@@ -89,6 +89,51 @@ export async function listExpensesWithCategories(
                 ? r.submissionDate
                 : String(r.submissionDate),
     }));
+}
+
+/** Returns expense list rows for the given IDs, in the same order as `ids` (skips unknown IDs). */
+export async function listExpensesByIds(
+    ids: string[],
+): Promise<ExpenseListRow[]> {
+    if (ids.length === 0) return [];
+
+    const rows = await db
+        .select({
+            id: expensesTable.id,
+            categoryName: expensesTable.categoryName,
+            subcategoryName: expensesTable.subcategoryName,
+            supplierName: expensesTable.supplierName,
+            description: expensesTable.description,
+            invoiceNumber: expensesTable.invoiceNumber,
+            supplierGstRegNumber: expensesTable.supplierGstRegNumber,
+            subtotalCents: expensesTable.subtotalCents,
+            gstCents: expensesTable.gstCents,
+            grandTotalCents: expensesTable.grandTotalCents,
+            invoiceDate: expensesTable.invoiceDate,
+            submissionDate: expensesTable.submissionDate,
+            status: expensesTable.status,
+            createdAt: expensesTable.createdAt,
+            updatedAt: expensesTable.updatedAt,
+        })
+        .from(expensesTable)
+        .where(inArray(expensesTable.id, ids));
+
+    const normalized = rows.map((r) => ({
+        ...r,
+        invoiceDate:
+            typeof r.invoiceDate === "string"
+                ? r.invoiceDate
+                : String(r.invoiceDate),
+        submissionDate:
+            typeof r.submissionDate === "string"
+                ? r.submissionDate
+                : String(r.submissionDate),
+    }));
+
+    const byId = new Map(normalized.map((r) => [r.id, r]));
+    return ids
+        .map((id) => byId.get(id))
+        .filter((r): r is ExpenseListRow => r !== undefined);
 }
 
 export async function getExpenseDetailById(
