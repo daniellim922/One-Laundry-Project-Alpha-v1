@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/workerTable";
+import { getBundledApproverSignatureDataUrl } from "@/services/pdf/approver-signature";
 import { getAdvanceRequestByIdWithWorker } from "@/utils/advance/queries";
 
 import { AdvanceRequestForm } from "@/app/dashboard/advance/advance-request-form";
@@ -29,6 +30,8 @@ export default async function AdvanceEditPage({
         notFound();
     }
 
+    const bundledManagerSignatureDataUrl = getBundledApproverSignatureDataUrl();
+
     return (
         <FormPageLayout
             title="Edit advance request"
@@ -43,6 +46,9 @@ export default async function AdvanceEditPage({
                     workers={workers}
                     initialData={detail}
                     advanceRequestId={id}
+                    bundledManagerSignatureDataUrl={
+                        bundledManagerSignatureDataUrl
+                    }
                 />
             )}
         </FormPageLayout>

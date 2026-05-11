@@ -259,6 +259,7 @@ test.describe("Advance matrix update", () => {
                     ).toContainText("$400");
                 }
 
+                await gotoAllAdvances(page);
                 await search.fill("", { force: true });
             });
         }

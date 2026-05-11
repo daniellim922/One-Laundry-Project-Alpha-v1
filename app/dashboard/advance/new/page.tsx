@@ -3,6 +3,7 @@ import { asc } from "drizzle-orm";
 import { FormPageLayout } from "@/components/form-page-layout";
 import { db } from "@/lib/db";
 import { workerTable } from "@/db/tables/workerTable";
+import { getBundledApproverSignatureDataUrl } from "@/services/pdf/approver-signature";
 
 import { AdvanceRequestForm } from "@/app/dashboard/advance/advance-request-form";
 
@@ -12,6 +13,8 @@ export default async function AdvanceRequestPage({
     searchParams: Promise<{ workerId?: string }>;
 }) {
     const { workerId: initialWorkerId } = await searchParams;
+
+    const bundledManagerSignatureDataUrl = getBundledApproverSignatureDataUrl();
 
     const workers = await db
         .select({
@@ -34,6 +37,9 @@ export default async function AdvanceRequestPage({
                     key={initialWorkerId ?? "new"}
                     workers={workers}
                     initialWorkerId={initialWorkerId ?? undefined}
+                    bundledManagerSignatureDataUrl={
+                        bundledManagerSignatureDataUrl
+                    }
                 />
             )}
         </FormPageLayout>

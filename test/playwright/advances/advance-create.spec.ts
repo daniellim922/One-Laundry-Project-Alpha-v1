@@ -145,7 +145,6 @@ test.describe("Advance matrix create", () => {
                     repayment3,
                 );
 
-                await drawSignatureStroke(page, "Manager signature");
                 await drawSignatureStroke(page, "Employee signature");
 
                 await page.getByTestId("advance-request-submit").click();

@@ -70,7 +70,10 @@ const textareaClass = cn(
 
 export type AdvanceRequestWorkerOption = { id: string; name: string };
 
-function detailToDefaultValues(detail: AdvanceRequestDetail): FormValues {
+function detailToDefaultValues(
+    detail: AdvanceRequestDetail,
+    bundledManagerSignatureDataUrl: string,
+): FormValues {
     const { request, advances, purpose } = detail;
     return {
         workerId: request.workerId,
@@ -78,7 +81,7 @@ function detailToDefaultValues(detail: AdvanceRequestDetail): FormValues {
         amount: request.amountRequested,
         purpose: purpose ?? "",
         employeeSignature: detail.employeeSignature ?? "",
-        managerSignature: detail.managerSignature ?? "",
+        managerSignature: bundledManagerSignatureDataUrl,
         installmentAmounts:
             advances.length > 0
                 ? advances.map((a) => ({
@@ -300,6 +303,7 @@ function AdvanceRequestReadOnlyBody({
 
 type AdvanceRequestFormEditableProps = {
     workers: AdvanceRequestWorkerOption[];
+    bundledManagerSignatureDataUrl: string;
     initialWorkerId?: string;
     initialData?: AdvanceRequestDetail;
     advanceRequestId?: string;
@@ -307,6 +311,7 @@ type AdvanceRequestFormEditableProps = {
 
 function AdvanceRequestFormEditable({
     workers,
+    bundledManagerSignatureDataUrl,
     initialWorkerId,
     initialData,
     advanceRequestId,
@@ -322,14 +327,17 @@ function AdvanceRequestFormEditable({
         resolver: zodResolver(advanceRequestFormSchema),
         mode: "onChange",
         defaultValues: initialData
-            ? detailToDefaultValues(initialData)
+            ? detailToDefaultValues(
+                  initialData,
+                  bundledManagerSignatureDataUrl,
+              )
             : {
                   workerId: initialWorkerId ?? "",
                   requestDate: dateToLocalIsoYmd(),
                   amount: undefined as unknown as number,
                   purpose: "",
                   employeeSignature: "",
-                  managerSignature: "",
+                  managerSignature: bundledManagerSignatureDataUrl,
                   installmentAmounts: [
                       {
                           amount: undefined,
@@ -896,7 +904,9 @@ function AdvanceRequestFormEditable({
                             Signatures
                         </CardTitle>
                         <p className="text-muted-foreground text-sm">
-                            Manager and employee must sign before submitting.
+                            The authorised manager signature is applied
+                            automatically. The employee must sign below before
+                            submitting.
                         </p>
                     </CardHeader>
                     <CardContent className="grid gap-6 pt-4 sm:grid-cols-2">
@@ -908,12 +918,18 @@ function AdvanceRequestFormEditable({
                                     data-invalid={fieldState.invalid}
                                     className="min-w-0 space-y-2">
                                     <FieldLabel>Manager</FieldLabel>
-                                    <SignaturePad
-                                        value={field.value}
-                                        onChange={field.onChange}
-                                        disabled={pending}
-                                        aria-label="Manager signature"
+                                    {/* eslint-disable-next-line @next/next/no-img-element -- bundled PNG data URL */}
+                                    <img
+                                        src={bundledManagerSignatureDataUrl}
+                                        alt=""
+                                        aria-hidden
+                                        className="max-h-36 w-full rounded-md border bg-white object-contain dark:bg-neutral-100"
                                     />
+                                    <input type="hidden" {...field} />
+                                    <p className="text-muted-foreground text-xs">
+                                        Authorised approver signature
+                                        (pre-filled).
+                                    </p>
                                     {fieldState.invalid && (
                                         <FieldError
                                             errors={[fieldState.error]}
@@ -977,12 +993,14 @@ function AdvanceRequestFormEditable({
 
 export function AdvanceRequestForm({
     workers = [],
+    bundledManagerSignatureDataUrl,
     initialWorkerId,
     initialData,
     advanceRequestId,
     readOnly = false,
 }: {
     workers?: AdvanceRequestWorkerOption[];
+    bundledManagerSignatureDataUrl?: string;
     initialWorkerId?: string;
     initialData?: AdvanceRequestDetail;
     advanceRequestId?: string;
@@ -1001,6 +1019,9 @@ export function AdvanceRequestForm({
     return (
         <AdvanceRequestFormEditable
             workers={workers}
+            bundledManagerSignatureDataUrl={
+                bundledManagerSignatureDataUrl ?? ""
+            }
             initialWorkerId={initialWorkerId}
             initialData={initialData}
             advanceRequestId={advanceRequestId}
