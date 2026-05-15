@@ -117,7 +117,12 @@ function generatePayrolls(): PayrollEntry[] {
                     (hoursMap.get(`${workerIndex}:${period.key}`) ?? 0) * 100,
                 ) / 100;
 
-            const minimumWorkingHours = isForeignFullTimeWorker(worker)
+            const hasNoMinimumWorkingHours =
+                "minimumWorkingHours" in worker &&
+                worker.minimumWorkingHours == null;
+            const minimumWorkingHours = hasNoMinimumWorkingHours
+                ? null
+                : isForeignFullTimeWorker(worker)
                 ? getVoucherMinimumWorkingHours(period)
                 : "minimumWorkingHours" in worker
                   ? (worker.minimumWorkingHours ?? null)
