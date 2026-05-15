@@ -26,8 +26,9 @@ describe("workerUpsertSchema", () => {
         };
 
         const first = workerUpsertSchema.safeParse(foreignWorkerFullTimePayload);
-        expect(first.success, JSON.stringify(first)).toBe(true);
-        if (!first.success) return;
+        if (!first.success) {
+            throw new Error(JSON.stringify(first.error.flatten()));
+        }
 
         expect(first.data.cpf).toBeUndefined();
 
@@ -38,7 +39,9 @@ describe("workerUpsertSchema", () => {
         expect("cpf" in wire).toBe(false);
 
         const second = workerUpsertSchema.safeParse(wire);
-        expect(second.success, JSON.stringify(second)).toBe(true);
+        if (!second.success) {
+            throw new Error(JSON.stringify(second.error.flatten()));
+        }
     });
 
     it("parses part-time payloads after stripping several optional numeric columns", () => {
@@ -64,8 +67,9 @@ describe("workerUpsertSchema", () => {
         };
 
         const first = workerUpsertSchema.safeParse(partTimePayload);
-        expect(first.success, JSON.stringify(first)).toBe(true);
-        if (!first.success) return;
+        if (!first.success) {
+            throw new Error(JSON.stringify(first.error.flatten()));
+        }
 
         expect(first.data.monthlyPay).toBeUndefined();
         expect(first.data.restDayRate).toBeUndefined();
@@ -80,6 +84,8 @@ describe("workerUpsertSchema", () => {
         expect("minimumWorkingHours" in wire).toBe(false);
 
         const second = workerUpsertSchema.safeParse(wire);
-        expect(second.success, JSON.stringify(second)).toBe(true);
+        if (!second.success) {
+            throw new Error(JSON.stringify(second.error.flatten()));
+        }
     });
 });
