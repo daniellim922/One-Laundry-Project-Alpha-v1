@@ -21,7 +21,7 @@ npm run db:reset                # wipe + push schema + seed (DATABASE_URL)
 npm run db:migrate              # drizzle-kit push (db/schema.ts) + custom SQL schema artifacts (DATABASE_URL)
 npm run db:seed                 # seed the database (Postgres only; create Auth users in Supabase Studio)
 npm run db:seed:prod            # wipe + push schema + custom SQL artifacts + seed workers, public holidays, and expense master data (DATABASE_URL)
-npm run db:wipe                 # wipe database (DATABASE_URL)
+npm run db:wipe                 # wipe database (DATABASE_URL) and Supabase documents storage
 ```
 
 E2E uses the **local** `agent-browser` from this repo (`npm install`). If the CLI cannot find Chrome for Testing, run **`npx agent-browser install`** once from the project root (upstream command; not defined as an npm script here).

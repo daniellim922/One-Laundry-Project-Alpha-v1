@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { sql } from "drizzle-orm";
 import { db } from "@/lib/db";
+import { wipeStorage } from "@/lib/supabase/storage";
 
 function rowsFromExecute<T extends Record<string, unknown>>(
     result: unknown,
@@ -95,6 +96,7 @@ export async function wipeDb() {
 
 async function main() {
     await wipeDb();
+    await wipeStorage();
     process.exit(0);
 }
 
