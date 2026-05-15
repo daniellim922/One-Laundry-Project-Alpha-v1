@@ -40,4 +40,18 @@ describe("calculateVoucherAmounts", () => {
         expect(result.subTotal).toBe(1500);
         expect(result.hoursNotMetDeduction).toBe(-500);
     });
+
+    it("produces no hours-not-met deduction when hourly rate is zero", () => {
+        const result = calculateVoucherAmounts({
+            basePayTotal: 4000,
+            hoursNotMet: -40,
+            hourlyRate: 0,
+            cpf: 0,
+            advance: 0,
+        });
+
+        expect(result.hoursNotMetDeduction).toBe(0);
+        expect(result.subTotal).toBe(4000);
+        expect(result.grandTotal).toBe(4000);
+    });
 });

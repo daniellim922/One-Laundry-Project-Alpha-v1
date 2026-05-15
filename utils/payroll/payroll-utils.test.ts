@@ -67,4 +67,42 @@ describe("calculatePay", () => {
         expect(result.publicHolidayPay).toBe(40); // 20 * 2
         expect(result.earningsTotal).toBe(2220); // 2000 + 100 + 80 + 40
     });
+
+    it("full-time worker with zero hourly rate earns no overtime pay", () => {
+        const input: PayCalcInput = {
+            employmentType: "Full Time",
+            totalHoursWorked: 280,
+            minimumWorkingHours: 260,
+            monthlyPay: 4000,
+            hourlyRate: 0,
+            restDayRate: 20,
+            restDays: 0,
+            publicHolidays: 0,
+        };
+
+        const result = calculatePay(input);
+
+        expect(result.overtimeHours).toBe(20);
+        expect(result.overtimePay).toBe(0);
+        expect(result.earningsTotal).toBe(4000);
+    });
+
+    it("full-time worker with zero rest-day rate earns no rest-day or public-holiday pay", () => {
+        const input: PayCalcInput = {
+            employmentType: "Full Time",
+            totalHoursWorked: 260,
+            minimumWorkingHours: 260,
+            monthlyPay: 4000,
+            hourlyRate: 10,
+            restDayRate: 0,
+            restDays: 4,
+            publicHolidays: 2,
+        };
+
+        const result = calculatePay(input);
+
+        expect(result.restDayPay).toBe(0);
+        expect(result.publicHolidayPay).toBe(0);
+        expect(result.earningsTotal).toBe(4000);
+    });
 });

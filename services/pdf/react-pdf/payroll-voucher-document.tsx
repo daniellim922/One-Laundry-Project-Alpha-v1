@@ -146,7 +146,7 @@ function ItemRow({ item }: { item: LineItem }) {
     );
 }
 
-function buildLineItems(voucher: PayrollVoucherData["voucher"]) {
+export function buildLineItems(voucher: PayrollVoucherData["voucher"]) {
     const earnings: LineItem[] = [];
     const deductions: LineItem[] = [];
     const isPartTime = voucher.employmentType === "Part Time";
@@ -170,7 +170,11 @@ function buildLineItems(voucher: PayrollVoucherData["voucher"]) {
             amount: voucher.monthlyPay ?? 0,
         });
 
-        if (voucher.overtimeHours != null && voucher.overtimeHours > 0) {
+        if (
+            voucher.overtimeHours != null &&
+            voucher.overtimeHours > 0 &&
+            (voucher.overtimePay ?? 0) !== 0
+        ) {
             earnings.push({
                 description: "Overtime",
                 qty: voucher.overtimeHours,
@@ -183,7 +187,8 @@ function buildLineItems(voucher: PayrollVoucherData["voucher"]) {
         if (
             voucher.restDays != null &&
             voucher.restDays > 0 &&
-            voucher.restDayRate != null
+            voucher.restDayRate != null &&
+            (voucher.restDayPay ?? 0) !== 0
         ) {
             earnings.push({
                 description: "Rest-day premium",
@@ -198,7 +203,8 @@ function buildLineItems(voucher: PayrollVoucherData["voucher"]) {
     if (
         voucher.publicHolidays != null &&
         voucher.publicHolidays > 0 &&
-        voucher.restDayRate != null
+        voucher.restDayRate != null &&
+        (voucher.publicHolidayPay ?? 0) !== 0
     ) {
         earnings.push({
             description: "Public Holiday Pay",

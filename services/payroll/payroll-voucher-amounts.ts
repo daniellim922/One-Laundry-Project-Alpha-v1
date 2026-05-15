@@ -12,7 +12,8 @@ function calcHoursNotMetDeduction(args: {
 }): number {
     const { hoursNotMet, hourlyRate } = args;
     if (hoursNotMet == null || hoursNotMet === 0) return 0;
-    return -roundMoney(Math.max(0, -hoursNotMet) * (hourlyRate ?? 0));
+    const deduction = roundMoney(Math.max(0, -hoursNotMet) * (hourlyRate ?? 0));
+    return deduction === 0 ? 0 : -deduction;
 }
 
 export function calculateVoucherAmounts(args: {
