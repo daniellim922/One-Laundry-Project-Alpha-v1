@@ -23,6 +23,7 @@
     },
     "dependencies": {
         "@ai-hero/sandcastle": "^0.4.8",
+        "@e965/xlsx": "^0.20.3",
         "@headlessui/react": "^2.2.9",
         "@hookform/resolvers": "^5.2.2",
         "@react-pdf/renderer": "^4.5.1",
@@ -39,7 +40,7 @@
         "drizzle-zod": "^0.8.3",
         "jszip": "^3.10.1",
         "lucide-react": "^0.575.0",
-        "next": "16.1.6",
+        "next": "^16.2.6",
         "next-themes": "^0.4.6",
         "pg": "^8.18.0",
         "postgres": "^3.4.7",
@@ -52,13 +53,13 @@
         "recharts": "^3.8.0",
         "server-only": "^0.0.1",
         "tailwind-merge": "^3.5.0",
-        "xlsx": "^0.18.5",
         "zod": "^4.3.6"
     },
     "overrides": {
         "@react-pdf/reconciler": {
             "scheduler": "0.27.0"
-        }
+        },
+        "postcss": "8.5.14"
     },
     "devDependencies": {
         "@playwright/test": "^1.59.1",
@@ -73,11 +74,11 @@
         "@vitest/coverage-v8": "^4.1.0",
         "@vitest/eslint-plugin": "^1.6.0",
         "babel-plugin-react-compiler": "1.0.0",
-        "drizzle-kit": "^0.31.9",
+        "drizzle-kit": "^0.31.10",
         "eslint": "^9",
-        "eslint-config-next": "16.1.6",
+        "eslint-config-next": "^16.2.6",
         "jsdom": "^29.0.2",
-        "shadcn": "^3.8.5",
+        "shadcn": "^4.7.0",
         "supabase": "^2.95.3",
         "tailwindcss": "^4",
         "tsx": "^4.21.0",

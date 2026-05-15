@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+import * as XLSX from "@e965/xlsx";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { mockAuthenticatedApiOperator } from "@/test/_support/api-auth-mock";
