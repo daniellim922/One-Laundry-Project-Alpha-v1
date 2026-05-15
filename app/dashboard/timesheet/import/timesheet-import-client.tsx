@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import * as XLSX from "xlsx";
+import * as XLSX from "@e965/xlsx";
 
 import { importAttendRecordTimesheet } from "./import-attend-record-timesheet";
 import type { OverlapEntry } from "@/services/timesheet/import-attend-record-timesheet";
