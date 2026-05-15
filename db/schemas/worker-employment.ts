@@ -124,6 +124,7 @@ export const workerUpsertSchema = workerFields
                 requiredMessage: string;
                 validationMessage: string;
                 maxTwoDecimals: boolean;
+                allowZero: boolean;
             }> = [
                 {
                     key: "monthlyPay",
@@ -131,21 +132,25 @@ export const workerUpsertSchema = workerFields
                         "Monthly pay is required for full time workers",
                     validationMessage: "Monthly pay must be a positive number",
                     maxTwoDecimals: true,
+                    allowZero: false,
                 },
                 {
                     key: "hourlyRate",
                     requiredMessage:
                         "Hourly rate is required for full time workers",
-                    validationMessage: "Hourly rate must be a positive number",
+                    validationMessage:
+                        "Hourly rate must be zero or a positive number",
                     maxTwoDecimals: true,
+                    allowZero: true,
                 },
                 {
                     key: "restDayRate",
                     requiredMessage:
                         "Rest day rate is required for full time workers",
                     validationMessage:
-                        "Rest day rate must be a positive number",
+                        "Rest day rate must be zero or a positive number",
                     maxTwoDecimals: true,
+                    allowZero: true,
                 },
             ];
 
@@ -175,7 +180,7 @@ export const workerUpsertSchema = workerFields
                     continue;
                 }
 
-                if (v <= 0) {
+                if (field.allowZero ? v < 0 : v <= 0) {
                     ctx.addIssue({
                         code: "custom",
                         path: [field.key],

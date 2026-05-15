@@ -173,6 +173,29 @@ describe("createWorker", () => {
         expect(mocks.db.insert).toHaveBeenCalledTimes(2);
     });
 
+    it("creates full-time workers with zero hourly and rest-day rates", async () => {
+        const employmentInsert = queueInsertResolved([{ id: "employment-1" }]);
+        queueInsertResolved([{ id: "worker-1" }]);
+
+        const result = await createWorker(
+            buildWorkerPayload({
+                nric: "",
+                monthlyPay: 4000,
+                hourlyRate: 0,
+                restDayRate: 0,
+            }),
+        );
+
+        expect(result).toEqual({ success: true, id: "worker-1" });
+        expect(employmentInsert.values).toHaveBeenCalledWith(
+            expect.objectContaining({
+                monthlyPay: 4000,
+                hourlyRate: 0,
+                restDayRate: 0,
+            }),
+        );
+    });
+
     it("returns duplicate NRIC error when NRIC is already taken", async () => {
         queueSelectLimitOnce([{ id: "existing-worker" }]);
 
