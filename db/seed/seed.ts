@@ -42,7 +42,6 @@ type WorkerSeed = (typeof workers)[number] &
         paymentMethod: string;
         payNowPhone: string;
         bankAccountNumber: string;
-        nric: string;
         email: string;
         phone: string;
         countryOfOrigin: string;
@@ -75,7 +74,6 @@ function splitWorkerSeed(seed: WorkerSeed): SplitWorkerSeed {
 
     const worker: Omit<InsertWorker, "employmentId"> = {
         name: seed.name,
-        nric: seed.nric ?? null,
         email: seed.email ?? null,
         phone: seed.phone ?? null,
         status: seed.status ?? "Active",

@@ -8,12 +8,6 @@ Editable: True
 Validation: Has to be filled in order to submit the form
 Default: Null
 
-Field: NRIC
-Type: String
-Required: False
-Visible: True
-Editable: True
-
 Field: Email
 Type:Email
 Required: False

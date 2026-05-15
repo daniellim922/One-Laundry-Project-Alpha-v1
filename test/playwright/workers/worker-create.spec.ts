@@ -1,5 +1,3 @@
-import { randomBytes } from "node:crypto";
-
 import { expect, test, type Page } from "@playwright/test";
 
 import type { WorkerUpsertFormInput } from "@/db/schemas/worker-employment";
@@ -27,7 +25,6 @@ const WORKER_E2E_DEFAULT_TABLE_STATUS =
 
 type WorkerFormInputFieldKey =
     | "name"
-    | "nric"
     | "email"
     | "phone"
     | "countryOfOrigin"
@@ -51,20 +48,13 @@ type WorkerUpsertChoices = Pick<
 >;
 type WorkerFormFieldValues = Partial<WorkerUpsertScalars & WorkerUpsertChoices>;
 
-type WorkerE2EMatrixProfileFromJsonFile = Omit<
-    WorkerUpsertFormInput,
-    "nric" | "status"
->;
+type WorkerE2EMatrixProfileFromJsonFile = Omit<WorkerUpsertFormInput, "status">;
 
 const WORKER_E2E_MATRIX_PROFILES =
     workerE2EMatrixProfilesJson as WorkerE2EMatrixProfileFromJsonFile[];
 
 function createWorkerE2EMatrixRunSuffix(): string {
     return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function generateUniqueMatrixWorkerNric(): string {
-    return `E2E${randomBytes(16).toString("hex").toUpperCase()}`;
 }
 
 function withWorkerE2EMatrixRunIdentity(
@@ -82,7 +72,6 @@ function withWorkerE2EMatrixRunIdentity(
     return {
         ...profile,
         name: `${profile.name} ${runSuffix}`,
-        nric: generateUniqueMatrixWorkerNric(),
         email: taggedEmail,
     };
 }
@@ -125,10 +114,6 @@ function workerTableRow(page: Page, workerName: string) {
 
 async function fillName(page: Page, value: string): Promise<void> {
     await workerFormInputLocator(page, "name").fill(value);
-}
-
-async function fillNric(page: Page, value: string): Promise<void> {
-    await workerFormInputLocator(page, "nric").fill(value);
 }
 
 async function fillEmail(page: Page, value: string): Promise<void> {
@@ -229,9 +214,6 @@ async function fillWorkerFormFields(
 ): Promise<void> {
     if (values.name !== undefined) {
         await fillName(page, coerceFormFillText(values.name));
-    }
-    if (values.nric !== undefined) {
-        await fillNric(page, coerceFormFillText(values.nric));
     }
     if (values.email !== undefined) {
         await fillEmail(page, coerceFormFillText(values.email));
@@ -360,7 +342,6 @@ test.describe("Worker matrix create", () => {
 
             records.push({
                 name: String(profile.name),
-                nric: String(profile.nric),
                 profile,
             });
         }

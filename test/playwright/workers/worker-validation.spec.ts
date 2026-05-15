@@ -1,5 +1,3 @@
-import { randomBytes } from "node:crypto";
-
 import { expect, test, type Page } from "@playwright/test";
 
 import type { WorkerUpsertFormInput } from "@/db/schemas/worker-employment";
@@ -19,7 +17,6 @@ const WORKER_FORM_ELEMENT_ID_PREFIX = "worker-form" as const;
 
 type E2EWorkerIdentity = {
     name: string;
-    nric: string;
     email: string;
 };
 
@@ -35,25 +32,16 @@ function coerceFormFillText(value: string | number | null | undefined): string {
     return typeof value === "number" ? String(value) : value;
 }
 
-function createDuplicateNricAssertionValue(): string {
-    return `E2EDUP${randomBytes(12).toString("hex").toUpperCase()}`;
-}
-
 function createE2EWorkerFixture(): E2EWorkerIdentity {
     const ts = Date.now();
     return {
         name: `E2E Worker ${ts}`,
-        nric: `E2E${String(ts).slice(-10)}`,
         email: `e2e.worker.${ts}@example.test`,
     };
 }
 
 async function fillName(page: Page, value: string): Promise<void> {
     await page.locator(`#${WORKER_FORM_ELEMENT_ID_PREFIX}-name`).fill(value);
-}
-
-async function fillNric(page: Page, value: string): Promise<void> {
-    await page.locator(`#${WORKER_FORM_ELEMENT_ID_PREFIX}-nric`).fill(value);
 }
 
 async function fillEmail(page: Page, value: string): Promise<void> {
@@ -136,7 +124,6 @@ async function fillNewFullTimeLocalWorker(
     pay: FillNewFullTimeLocalWorkerPayFields,
 ): Promise<void> {
     await fillName(page, data.name);
-    await fillNric(page, data.nric);
     await fillEmail(page, data.email);
 
     await setEmploymentType(page, "Full Time");
@@ -189,7 +176,6 @@ test.describe("Worker form validation", () => {
 
         const data = createE2EWorkerFixture();
         await page.locator("#worker-form-name").fill(data.name);
-        await page.locator("#worker-form-nric").fill(data.nric);
 
         await expect(
             page.getByRole("button", { name: "Add New Worker" }),
@@ -253,8 +239,7 @@ test.describe("Worker form validation", () => {
         ).toBeDisabled();
     });
 
-    test("duplicate NRIC shows server error", async ({ page }) => {
-        const sharedNric = createDuplicateNricAssertionValue();
+    test("duplicate names can be submitted", async ({ page }) => {
         const pay = {
             monthlyPay: "2800",
             hourlyRate: "12",
@@ -262,7 +247,8 @@ test.describe("Worker form validation", () => {
             minimumWorkingHours: "250",
         };
 
-        const first = { ...createE2EWorkerFixture(), nric: sharedNric };
+        const sharedName = `${createE2EWorkerFixture().name} duplicate`;
+        const first = { ...createE2EWorkerFixture(), name: sharedName };
         await gotoNewWorker(page);
         await fillNewFullTimeLocalWorker(page, first, pay);
         await submitWorkerForm(page, "create");
@@ -273,15 +259,19 @@ test.describe("Worker form validation", () => {
         await gotoAllWorkers(page);
         const verifyTable = page.getByRole("main").locator("table").first();
         const verifySearch = page.getByRole("main").getByPlaceholder("Search...");
-        await verifySearch.fill(sharedNric, { force: true });
+        await verifySearch.fill(sharedName, { force: true });
         await expect(verifyTable.locator("tbody tr")).toHaveCount(1);
 
-        const second = { ...createE2EWorkerFixture(), nric: sharedNric };
+        const second = {
+            ...createE2EWorkerFixture(),
+            name: sharedName,
+            email: `second.${Date.now()}@example.test`,
+        };
         await gotoNewWorker(page);
         await fillNewFullTimeLocalWorker(page, second, pay);
-        await submitWorkerForm(page, "create", { expectInlineError: true });
-        await expect(
-            page.getByText("NRIC already exists", { exact: true }),
-        ).toBeVisible({ timeout: 15_000 });
+        await submitWorkerForm(page, "create");
+        await expect(page).toHaveURL(WORKER_ALL_PATH_URL_RE, {
+            timeout: 15_000,
+        });
     });
 });

@@ -252,13 +252,9 @@ test.describe("Worker table and overview", () => {
 
         const cells = dataRows.first().getByRole("cell");
         const probeName = (await cells.nth(0).innerText()).trim();
-        const probeNric = (await cells.nth(1).innerText()).trim();
-        /** NRIC yields a tighter probe than “E2E …” prefixes once many fixtures share that token. */
-        const probeTerm =
-            probeNric.length > 0 && probeNric !== "—" ? probeNric : probeName;
 
         const search = page.getByRole("main").getByPlaceholder("Search...");
-        await search.fill(probeTerm, { force: true });
+        await search.fill(probeName, { force: true });
         await expect.poll(async () => dataRows.count(), { timeout: 15_000 }).toBeGreaterThan(0);
         const filteredCount = await dataRows.count();
         expect(filteredCount).toBeLessThanOrEqual(initialCount);

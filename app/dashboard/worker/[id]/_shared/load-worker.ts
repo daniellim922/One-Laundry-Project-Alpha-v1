@@ -12,7 +12,6 @@ export async function loadWorkerById(
         .select({
             id: workerTable.id,
             name: workerTable.name,
-            nric: workerTable.nric,
             email: workerTable.email,
             phone: workerTable.phone,
             status: workerTable.status,

@@ -7,7 +7,7 @@ Domain vocabulary inferred from the implemented schema, payroll calculations, an
 
 | Term                       | Definition                                                                                                             | Aliases to avoid                                   |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| **Worker**                 | A person on staff with profile and NRIC (or equivalent id), linked to exactly one **Employment** record.               | Staff member (prefer **Worker** in HR/payroll UI)  |
+| **Worker**                 | A person on staff with a profile, linked to exactly one **Employment** record and identified durably by the internal Worker ID. | Staff member (prefer **Worker** in HR/payroll UI)  |
 | **Employee** (surface)     | The same person as **Worker**, used on **formal** copy (e.g. advance signatures). Not a separate entity in the model.  | Using **Employee** on casual payroll screens       |
 | **Employment**             | The contractual pay rules for a **Worker**: type, arrangement, **Shift pattern**, rates, minimum hours, CPF, and how salary is paid out. Stored as a mutable container (single current record, not historical). | Contract (unless legal sense is explicit), profile |
 | **Employment type**        | Either **Full Time** or **Part Time**, determining how **Gross pay** is built from base, overtime, and premiums.       | Schedule, roster (when **Shift pattern** is meant)                               |

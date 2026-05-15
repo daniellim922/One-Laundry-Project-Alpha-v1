@@ -15,12 +15,11 @@ export function workerMatrixE2EStatePath(): string {
     );
 }
 
-/** Resolved matrix row passed to create form (crypto NRIC per row; omit status → Active). */
+/** Resolved matrix row passed to create form (unique run-tagged name/email per row; omit status → Active). */
 export type WorkerMatrixE2EProfileForCreate = Omit<WorkerUpsertFormInput, "status">;
 
 export type WorkerMatrixE2EPersistedRecord = {
     name: string;
-    nric: string;
     profile: WorkerMatrixE2EProfileForCreate;
 };
 

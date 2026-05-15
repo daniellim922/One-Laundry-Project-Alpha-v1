@@ -14,7 +14,6 @@ function expectSuccessfulParse<T>(
 describe("workerUpsertSchema", () => {
     const fullTimePayload = {
         name: "Ding Chun Rong",
-        nric: "",
         email: "",
         phone: "",
         status: "Active",
@@ -44,6 +43,17 @@ describe("workerUpsertSchema", () => {
 
         expect(data.hourlyRate).toBe(0);
         expect(data.restDayRate).toBe(0);
+    });
+
+    it("omits identity-number fields from parsed worker payloads", () => {
+        const data = expectSuccessfulParse(
+            workerUpsertSchema.safeParse({
+                ...fullTimePayload,
+                identityNumber: "S1234567A",
+            }),
+        );
+
+        expect("identityNumber" in data).toBe(false);
     });
 
     it("rejects zero monthly pay for full-time workers", () => {
@@ -114,7 +124,6 @@ describe("workerUpsertSchema", () => {
     it("parses part-time payloads after stripping several optional numeric columns", () => {
         const partTimePayload = {
             name: "Part Timer",
-            nric: "",
             email: "",
             phone: "",
             status: "Active",

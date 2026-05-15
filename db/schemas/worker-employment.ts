@@ -30,7 +30,6 @@ const workerFields = createInsertSchema(workerTable, {
     }),
 }).pick({
     name: true,
-    nric: true,
     email: true,
     phone: true,
     status: true,

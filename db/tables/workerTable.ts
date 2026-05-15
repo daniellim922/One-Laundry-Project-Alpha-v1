@@ -5,7 +5,6 @@ import { workerStatusEnum } from "./statusEnums";
 export const workerTable = pgTable("worker", {
     id: uuid().primaryKey().defaultRandom(),
     name: text("name").notNull(),
-    nric: text("nric"),
     email: text("email"),
     phone: text("phone"),
     status: workerStatusEnum("status").notNull(),

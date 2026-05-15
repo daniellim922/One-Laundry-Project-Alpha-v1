@@ -8,7 +8,6 @@ export function makeWorkerWithEmployment(
         id: "worker-1",
         employmentId: "employment-1",
         name: "Existing Worker",
-        nric: "S1234567A",
         email: "existing@example.com",
         phone: "81112222",
         status: "Active",

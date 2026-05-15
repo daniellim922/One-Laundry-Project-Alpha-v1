@@ -21,7 +21,6 @@ import {
     Mail,
     Phone,
     User,
-    UserCircle2,
     Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -42,7 +41,6 @@ import {
     CardContent,
     CardDescription,
     CardHeader,
-    CardTitle,
 } from "@/components/ui/card";
 import {
     Field,
@@ -217,7 +215,6 @@ function getDefaultValues(
 ): WorkerFormValues {
     return {
         name: worker?.name ?? "",
-        nric: worker?.nric ?? "",
         email: worker?.email ?? "",
         phone: worker?.phone ?? "",
         status: (worker?.status ?? "Active") as WorkerFormValues["status"],
@@ -308,9 +305,6 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                         <CardDescription className="space-y-1 text-sm">
                             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                                 <span>ID: {worker.id}</span>
-                                {worker.nric ? (
-                                    <span>NRIC: {worker.nric}</span>
-                                ) : null}
                             </div>
                             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                                 <span>
@@ -419,38 +413,6 @@ export function WorkerForm({ worker, disabled = false }: WorkerFormProps) {
                                             />
                                             <InputGroupAddon>
                                                 <User className="size-4 text-muted-foreground" />
-                                            </InputGroupAddon>
-                                        </InputGroup>
-                                        {fieldState.invalid && (
-                                            <FieldError
-                                                errors={[fieldState.error]}
-                                            />
-                                        )}
-                                    </Field>
-                                )}
-                            />
-                            <Controller
-                                name="nric"
-                                control={form.control}
-                                render={({ field, fieldState }) => (
-                                    <Field
-                                        data-invalid={fieldState.invalid}
-                                        className="space-y-2">
-                                        <FieldLabel htmlFor={`${formId}-nric`}>
-                                            NRIC
-                                        </FieldLabel>
-                                        <InputGroup>
-                                            <InputGroupInput
-                                                {...field}
-                                                value={field.value ?? ""}
-                                                id={`${formId}-nric`}
-                                                aria-invalid={
-                                                    fieldState.invalid
-                                                }
-                                                disabled={disabled}
-                                            />
-                                            <InputGroupAddon>
-                                                <UserCircle2 className="size-4 text-muted-foreground" />
                                             </InputGroupAddon>
                                         </InputGroup>
                                         {fieldState.invalid && (

@@ -26,12 +26,6 @@ export const columns: ColumnDef<WorkerWithEmployment>[] = [
         meta: { globalSearch: true },
     },
     {
-        accessorKey: "nric",
-        header: createSortableHeader("NRIC"),
-        meta: { globalSearch: true },
-        cell: ({ row }) => row.original.nric ?? "—",
-    },
-    {
         accessorKey: "status",
         header: createSortableHeader("Status"),
         meta: { globalSearch: true },

@@ -23,7 +23,6 @@ const WORKER_E2E_DEFAULT_TABLE_STATUS =
 
 type WorkerFormInputFieldKey =
     | "name"
-    | "nric"
     | "email"
     | "phone"
     | "countryOfOrigin"
@@ -116,7 +115,6 @@ function applyWorkerMatrixUpdateTransforms(
 ): WorkerFormFieldValues {
     const out: WorkerFormFieldValues = {};
     out.name = `${profile.name} edited`;
-    out.nric = `${profile.nric}01`;
     if (profile.email != null && profile.email.trim() !== "") {
         out.email = workerMatrixEmailInsertEdited(profile.email);
     }
@@ -350,10 +348,6 @@ async function fillName(page: Page, value: string): Promise<void> {
     await workerFormInputLocator(page, "name").fill(value);
 }
 
-async function fillNric(page: Page, value: string): Promise<void> {
-    await workerFormInputLocator(page, "nric").fill(value);
-}
-
 async function fillEmail(page: Page, value: string): Promise<void> {
     await workerFormInputLocator(page, "email").fill(value);
 }
@@ -452,9 +446,6 @@ async function fillWorkerFormFields(
 ): Promise<void> {
     if (values.name !== undefined) {
         await fillName(page, coerceFormFillText(values.name));
-    }
-    if (values.nric !== undefined) {
-        await fillNric(page, coerceFormFillText(values.nric));
     }
     if (values.email !== undefined) {
         await fillEmail(page, coerceFormFillText(values.email));
@@ -587,9 +578,6 @@ test.describe("Worker matrix update", () => {
             await openWorkerRowMenuItem(page, transforms.name!, "View");
             await expect(page.locator("#worker-form-name")).toHaveValue(
                 transforms.name!,
-            );
-            await expect(page.locator("#worker-form-nric")).toHaveValue(
-                transforms.nric!,
             );
             if (
                 transforms.email != null &&

@@ -12,7 +12,7 @@ function workerFormSubmitErrorLocator(page: Page) {
 export type SubmitWorkerFormOptions = {
     /**
      * When true, success is a visible inline error on the form (no redirect).
-     * Use for tests that assert server-side validation like duplicate NRIC.
+     * Use for tests that assert server-side validation.
      */
     expectInlineError?: boolean;
 };

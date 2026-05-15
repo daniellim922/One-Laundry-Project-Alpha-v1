@@ -174,7 +174,6 @@ export const workers = [
     },
     {
         name: "Ong Siew Lay",
-        nric: "S2165101Z",
         status: "Active",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
@@ -184,7 +183,6 @@ export const workers = [
     },
     {
         name: "KWEK JOO SOON",
-        nric: "S0987243D",
         status: "Active",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
@@ -194,7 +192,6 @@ export const workers = [
     },
     {
         name: "YEO ROBERT",
-        nric: "S0037729E",
         status: "Active",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
@@ -204,7 +201,6 @@ export const workers = [
     },
     {
         name: "ONG SIEW TUAN",
-        nric: "S1652591Z",
         status: "Active",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
@@ -214,7 +210,6 @@ export const workers = [
     },
     {
         name: "HO POH LIAN",
-        nric: "S1240680J",
         status: "Active",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
@@ -224,7 +219,6 @@ export const workers = [
     },
     {
         name: "TOH CHIEW HUAH",
-        nric: "S2644557D",
         status: "Active",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
@@ -234,7 +228,6 @@ export const workers = [
     },
     {
         name: "YEO KIM HOCK",
-        nric: "S0313266H",
         status: "Active",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
@@ -244,7 +237,6 @@ export const workers = [
     },
     {
         name: "TAN KIM MOI",
-        nric: "S0496522A",
         status: "Active",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
@@ -254,7 +246,6 @@ export const workers = [
     },
     {
         name: "TAN TIAN SOO",
-        nric: "S1826774H",
         status: "Active",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
@@ -264,7 +255,6 @@ export const workers = [
     },
     {
         name: "ALVIS ONG THAI YING",
-        nric: "T0035231J",
         status: "Active",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
@@ -273,7 +263,6 @@ export const workers = [
     },
     {
         name: "ONG CHONG WEE",
-        nric: "S7004109Z",
         status: "Active",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
@@ -282,7 +271,6 @@ export const workers = [
     },
     {
         name: "SHEBE ONG LI YING",
-        nric: "S9833923Z",
         status: "Active",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
@@ -292,7 +280,6 @@ export const workers = [
     },
     {
         name: "CHIAM BOON HWEE",
-        nric: "S0555626J",
         status: "Active",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
@@ -302,7 +289,6 @@ export const workers = [
     },
     {
         name: "ANG AH CHIA",
-        nric: "S1090711Z",
         status: "Active",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
@@ -312,7 +298,6 @@ export const workers = [
     },
     {
         name: "TAN GIOK",
-        nric: "S0871244A",
         status: "Active",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
@@ -322,7 +307,6 @@ export const workers = [
     },
     {
         name: "LIM GHEE HENG",
-        nric: "S1669468A",
         status: "Active",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
@@ -332,7 +316,6 @@ export const workers = [
     },
     {
         name: "ONG BENG KHENG",
-        nric: "S1108021I",
         status: "Active",
         employmentType: "Full Time",
         employmentArrangement: "Local Worker",
