@@ -8,6 +8,7 @@
         "build": "next build",
         "start": "next start",
         "lint": "eslint",
+        "security:audit": "node scripts/security-audit.mjs",
         "typecheck": "tsc --noEmit",
         "db:wipe": "npx tsx db/wipe-db.ts",
         "db:migrate": "npx drizzle-kit push && npx tsx db/apply-custom-schema.ts",
@@ -44,9 +45,9 @@
         "pg": "^8.18.0",
         "postgres": "^3.4.7",
         "radix-ui": "^1.4.3",
-        "react": "19.2.3",
+        "react": "19.2.6",
         "react-day-picker": "^9.14.0",
-        "react-dom": "19.2.3",
+        "react-dom": "19.2.6",
         "react-hook-form": "^7.72.1",
         "react-signature-canvas": "^1.1.0-alpha.2",
         "recharts": "^3.8.0",
@@ -58,6 +59,7 @@
         "@react-pdf/reconciler": {
             "scheduler": "0.27.0"
         },
+        "@esbuild-kit/core-utils": "file:vendor/esbuild-kit-core-utils",
         "postcss": "8.5.14"
     },
     "devDependencies": {
@@ -75,6 +77,7 @@
         "@vitest/eslint-plugin": "^1.6.0",
         "babel-plugin-react-compiler": "1.0.0",
         "drizzle-kit": "^0.31.10",
+        "esbuild": "0.27.7",
         "eslint": "^9",
         "eslint-config-next": "16.2.6",
         "jsdom": "^29.0.2",

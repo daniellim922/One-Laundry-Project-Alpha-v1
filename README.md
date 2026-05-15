@@ -13,6 +13,13 @@ Development uses a **hosted** Supabase project for Auth and Postgres (no local S
 
 The app, `drizzle-kit push`, wipe, seed, and Vitest integration tests that hit Postgres all use **`DATABASE_URL`**.
 
+## Dependency and supply-chain security
+
+- Use `npm ci` for deploys and CI so installs are locked to `package-lock.json`.
+- Use `npm install` only when intentionally updating dependencies, then commit both `package.json` and `package-lock.json`.
+- Run `npm run security:audit` before shipping dependency changes. It runs `npm audit --audit-level=moderate` and checks for known TanStack May 2026 supply-chain indicators.
+- Do not add a strict Content Security Policy directly in production. Roll CSP out separately in report-only mode first because the App Router, auth redirects, and PDF workflows need compatibility testing.
+
 Runtime sign-in uses Supabase email and password. Typical variables:
 
 ```bash
