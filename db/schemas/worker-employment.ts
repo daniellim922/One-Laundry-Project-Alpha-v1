@@ -23,6 +23,14 @@ function isWholeNumber(n: number): boolean {
     return Math.abs(n - Math.round(n)) < 1e-9;
 }
 
+function violatesMinimum(
+    value: number,
+    minimum: number,
+    options: { inclusive: boolean },
+): boolean {
+    return options.inclusive ? value < minimum : value <= minimum;
+}
+
 const workerFields = createInsertSchema(workerTable, {
     name: (schema) => schema.min(1, "Name is required"),
     status: z.enum(WORKER_STATUSES, {
@@ -120,36 +128,36 @@ export const workerUpsertSchema = workerFields
         if (isFullTime) {
             const payFields: Array<{
                 key: "monthlyPay" | "hourlyRate" | "restDayRate";
+                label: string;
                 requiredMessage: string;
                 validationMessage: string;
-                maxTwoDecimals: boolean;
-                allowZero: boolean;
+                minimumInclusive: boolean;
             }> = [
                 {
                     key: "monthlyPay",
+                    label: "Monthly pay",
                     requiredMessage:
                         "Monthly pay is required for full time workers",
                     validationMessage: "Monthly pay must be a positive number",
-                    maxTwoDecimals: true,
-                    allowZero: false,
+                    minimumInclusive: false,
                 },
                 {
                     key: "hourlyRate",
+                    label: "Hourly rate",
                     requiredMessage:
                         "Hourly rate is required for full time workers",
                     validationMessage:
                         "Hourly rate must be zero or a positive number",
-                    maxTwoDecimals: true,
-                    allowZero: true,
+                    minimumInclusive: true,
                 },
                 {
                     key: "restDayRate",
+                    label: "Rest day rate",
                     requiredMessage:
                         "Rest day rate is required for full time workers",
                     validationMessage:
                         "Rest day rate must be zero or a positive number",
-                    maxTwoDecimals: true,
-                    allowZero: true,
+                    minimumInclusive: true,
                 },
             ];
 
@@ -164,22 +172,20 @@ export const workerUpsertSchema = workerFields
                     continue;
                 }
 
-                if (field.maxTwoDecimals && !atMostTwoDecimalPlaces(v)) {
-                    const maxDecLabel =
-                        field.key === "monthlyPay"
-                            ? "Monthly pay"
-                            : field.key === "hourlyRate"
-                              ? "Hourly rate"
-                              : "Rest day rate";
+                if (!atMostTwoDecimalPlaces(v)) {
                     ctx.addIssue({
                         code: "custom",
                         path: [field.key],
-                        message: `${maxDecLabel} must use at most two decimal places`,
+                        message: `${field.label} must use at most two decimal places`,
                     });
                     continue;
                 }
 
-                if (field.allowZero ? v < 0 : v <= 0) {
+                if (
+                    violatesMinimum(v, 0, {
+                        inclusive: field.minimumInclusive,
+                    })
+                ) {
                     ctx.addIssue({
                         code: "custom",
                         path: [field.key],

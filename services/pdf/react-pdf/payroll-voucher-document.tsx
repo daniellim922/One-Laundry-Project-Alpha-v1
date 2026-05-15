@@ -146,6 +146,14 @@ function ItemRow({ item }: { item: LineItem }) {
     );
 }
 
+function hasPositiveQuantity(value: number | null | undefined): value is number {
+    return value != null && value > 0;
+}
+
+function hasNonZeroAmount(value: number | null | undefined): boolean {
+    return (value ?? 0) !== 0;
+}
+
 export function buildLineItems(voucher: PayrollVoucherData["voucher"]) {
     const earnings: LineItem[] = [];
     const deductions: LineItem[] = [];
@@ -171,9 +179,8 @@ export function buildLineItems(voucher: PayrollVoucherData["voucher"]) {
         });
 
         if (
-            voucher.overtimeHours != null &&
-            voucher.overtimeHours > 0 &&
-            (voucher.overtimePay ?? 0) !== 0
+            hasPositiveQuantity(voucher.overtimeHours) &&
+            hasNonZeroAmount(voucher.overtimePay)
         ) {
             earnings.push({
                 description: "Overtime",
@@ -185,10 +192,9 @@ export function buildLineItems(voucher: PayrollVoucherData["voucher"]) {
         }
 
         if (
-            voucher.restDays != null &&
-            voucher.restDays > 0 &&
+            hasPositiveQuantity(voucher.restDays) &&
             voucher.restDayRate != null &&
-            (voucher.restDayPay ?? 0) !== 0
+            hasNonZeroAmount(voucher.restDayPay)
         ) {
             earnings.push({
                 description: "Rest-day premium",
@@ -201,10 +207,9 @@ export function buildLineItems(voucher: PayrollVoucherData["voucher"]) {
     }
 
     if (
-        voucher.publicHolidays != null &&
-        voucher.publicHolidays > 0 &&
+        hasPositiveQuantity(voucher.publicHolidays) &&
         voucher.restDayRate != null &&
-        (voucher.publicHolidayPay ?? 0) !== 0
+        hasNonZeroAmount(voucher.publicHolidayPay)
     ) {
         earnings.push({
             description: "Public Holiday Pay",
@@ -215,17 +220,16 @@ export function buildLineItems(voucher: PayrollVoucherData["voucher"]) {
         });
     }
 
-    const hoursNotMetItem: LineItem | null =
-        voucher.hoursNotMetDeduction != null &&
-        voucher.hoursNotMetDeduction !== 0
-            ? {
-                  description: "Hours Not Met Deduction",
-                  qty: Math.abs(voucher.hoursNotMet ?? 0),
-                  unit: "hrs",
-                  rate: voucher.hourlyRate ?? 0,
-                  amount: voucher.hoursNotMetDeduction,
-              }
-            : null;
+    let hoursNotMetItem: LineItem | null = null;
+    if (hasNonZeroAmount(voucher.hoursNotMetDeduction)) {
+        hoursNotMetItem = {
+            description: "Hours Not Met Deduction",
+            qty: Math.abs(voucher.hoursNotMet ?? 0),
+            unit: "hrs",
+            rate: voucher.hourlyRate ?? 0,
+            amount: voucher.hoursNotMetDeduction ?? 0,
+        };
+    }
 
     if (voucher.cpf != null && voucher.cpf > 0) {
         deductions.push({ description: "CPF", amount: -voucher.cpf });
