@@ -12,22 +12,19 @@ import {
     Plus,
 } from "lucide-react";
 
-import { getPayrollMonthlyGrandTotalAggregates } from "./get-payroll-monthly-grand-total-aggregates";
+import { getPayrollMonthlyGrandTotalAggregates } from "@/services/dashboard/payroll-monthly-grand-total-aggregates";
 
 const PAYROLL_MONTHLY_AMOUNTS_COPY = {
     title: "Monthly payroll amounts",
     description:
         "Voucher Subtotal or Grand Total for Settled payrolls, stacked by worker by calendar month of payroll period end (work covered by period start–end). Use the amount control to choose Subtotal or Grand Total. Employment type and arrangement in the top row bulk select or clear all workers in that group; individual workers can be toggled in the list. Only workers with a Settled payroll in the selected year are listed.",
     emptyListYear: "No Settled payroll amounts for this year.",
-    emptyListEmployment:
-        "No workers match the selected employment filters.",
+    emptyListEmployment: "No workers match the selected employment filters.",
     emptyListSearch: "No workers match this search.",
     emptyChartYear: "No amount to chart for this year.",
-    emptyChartEmployment:
-        "No amount to chart — all workers are deselected.",
+    emptyChartEmployment: "No amount to chart — all workers are deselected.",
     emptyChartMonths: "Select at least one month to see the chart.",
-    emptyChartSelection:
-        "Select workers or adjust search to see the chart.",
+    emptyChartSelection: "Select workers or adjust search to see the chart.",
     idPrefix: "payroll-monthly-amounts",
     stackId: "grandTotal",
     formatValue: formatStackedChartCurrency,

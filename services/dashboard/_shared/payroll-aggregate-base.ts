@@ -1,14 +1,14 @@
 import { eq } from "drizzle-orm";
 
-import { db } from "@/lib/db";
-import { employmentTable } from "@/db/tables/employmentTable";
-import { payrollTable } from "@/db/tables/payrollTable";
-import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
-import { workerTable } from "@/db/tables/workerTable";
 import {
     dashboardYearWindow,
     yearMonthSqlFromColumn,
 } from "@/app/dashboard/_shared/dashboard-year-window";
+import { employmentTable } from "@/db/tables/employmentTable";
+import { payrollTable } from "@/db/tables/payrollTable";
+import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
+import { workerTable } from "@/db/tables/workerTable";
+import { db } from "@/lib/db";
 import { settledPayrollOverlappingYearsWhere } from "@/services/payroll/monthly-dashboard-aggregation";
 
 export function payrollDashboardAggregateContext() {
@@ -26,7 +26,9 @@ type AggregateYearMonthCols = Pick<
 
 /** Shared `select → payroll + voucher + worker + employment → settled window` builder. */
 export function payrollSettledAggregateQueryBuilder(
-    buildSelect: (cols: AggregateYearMonthCols) => Parameters<typeof db.select>[0],
+    buildSelect: (
+        cols: AggregateYearMonthCols,
+    ) => Parameters<typeof db.select>[0],
 ) {
     const { maxYear, minYear, yearOptions, yearExpr, monthExpr } =
         payrollDashboardAggregateContext();

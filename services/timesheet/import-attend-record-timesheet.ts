@@ -7,14 +7,10 @@ import { workerTable } from "@/db/tables/workerTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { recordGuidedMonthlyWorkflowStepCompletion } from "@/services/payroll/guided-monthly-workflow-activity";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
-import { transformNightShiftEntries } from "@/services/timesheet/transform-night-shift-entries";
+import { resolveAttendRecordDatesForShift } from "@/services/timesheet/import-preview";
 import { assertWorkerEligibleForTimesheet } from "@/services/worker/assert-worker-eligible-for-timesheet";
-import {
-    normalizeDateToDmy,
-    type AttendRecordDate,
-    type AttendRecordOutput,
-} from "@/utils/payroll/parse-attendrecord";
-import { parseDmyToIsoStrict } from "@/utils/time/calendar-date";
+import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
+import { dmySlashToIsoWire } from "@/utils/timesheet/import-preview-dates";
 import { toTimesheetWireTimeHms } from "@/utils/time/hm-time";
 
 export type ImportAttendRecordMode = "skip" | "force";
@@ -37,34 +33,15 @@ export type ImportAttendRecordResult =
           overlaps: OverlapEntry[];
       };
 
-/** Convert DD/MM/YYYY (single- or double-digit segments) to strict ISO YYYY-MM-DD for DB storage. */
-function dmySlashToIsoWire(val: string): string {
-    const m = val.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (!m) return "";
-    const [, day, month, year] = m;
-    const strict = `${day!.padStart(2, "0")}/${month!.padStart(2, "0")}/${year}`;
-    return parseDmyToIsoStrict(strict) ?? "";
-}
-
-/** Parser / Excel cells use one column date (`dateIn === dateOut`); cross-midnight rows imply client pairing. */
-function isNightShiftParserCellLayout(dates: AttendRecordDate[]): boolean {
-    if (dates.length === 0) return true;
-    for (const d of dates) {
-        const din = normalizeDateToDmy(d.dateIn) ?? d.dateIn.trim();
-        const dout = normalizeDateToDmy(d.dateOut) ?? d.dateOut.trim();
-        if (din !== dout) return false;
-    }
-    return true;
-}
-
-function pairsWhereClause(
-    pairs: { workerId: string; dateIn: string }[],
-) {
+function pairsWhereClause(pairs: { workerId: string; dateIn: string }[]) {
     if (pairs.length === 0) {
         return undefined;
     }
     const clauses = pairs.map((p) =>
-        and(eq(timesheetTable.workerId, p.workerId), eq(timesheetTable.dateIn, p.dateIn)),
+        and(
+            eq(timesheetTable.workerId, p.workerId),
+            eq(timesheetTable.dateIn, p.dateIn),
+        ),
     );
     return clauses.length === 1 ? clauses[0]! : or(...clauses);
 }
@@ -120,15 +97,11 @@ export async function importAttendRecordTimesheet(
 
         const workerId = matchedWorker.id;
 
-        const datesForImport =
-            matchedWorker.shiftPattern === "Night Shift"
-                ? isNightShiftParserCellLayout(worker.dates)
-                    ? transformNightShiftEntries(
-                          worker.dates,
-                          attendancePeriodStart,
-                      )
-                    : worker.dates
-                : worker.dates;
+        const datesForImport = resolveAttendRecordDatesForShift(
+            worker.dates,
+            matchedWorker.shiftPattern,
+            attendancePeriodStart,
+        );
 
         for (const date of datesForImport) {
             const dateIn = dmySlashToIsoWire(date.dateIn);
@@ -153,8 +126,12 @@ export async function importAttendRecordTimesheet(
                 timeOut,
             });
             if (!rowParsed.success) {
-                const msg = rowParsed.error.issues.map((i) => i.message).join("; ");
-                errors.push(`Invalid row for ${worker.name} (${date.dateIn}): ${msg}`);
+                const msg = rowParsed.error.issues
+                    .map((i) => i.message)
+                    .join("; ");
+                errors.push(
+                    `Invalid row for ${worker.name} (${date.dateIn}): ${msg}`,
+                );
                 continue;
             }
 
@@ -179,12 +156,19 @@ export async function importAttendRecordTimesheet(
         };
     }
 
-    const pairKey = (workerId: string, dateIn: string) => `${workerId}|${dateIn}`;
-    const uniquePairsMap = new Map<string, { workerId: string; dateIn: string }>();
+    const pairKey = (workerId: string, dateIn: string) =>
+        `${workerId}|${dateIn}`;
+    const uniquePairsMap = new Map<
+        string,
+        { workerId: string; dateIn: string }
+    >();
     for (const row of toInsert) {
         const key = pairKey(row.workerId, row.dateIn);
         if (!uniquePairsMap.has(key)) {
-            uniquePairsMap.set(key, { workerId: row.workerId, dateIn: row.dateIn });
+            uniquePairsMap.set(key, {
+                workerId: row.workerId,
+                dateIn: row.dateIn,
+            });
         }
     }
     const uniquePairs = [...uniquePairsMap.values()];
@@ -233,7 +217,12 @@ export async function importAttendRecordTimesheet(
     );
     const rowsToInsert =
         options?.mode === "skip"
-            ? toInsert.filter((row) => !overlappingPairKeys.has(pairKey(row.workerId, row.dateIn)))
+            ? toInsert.filter(
+                  (row) =>
+                      !overlappingPairKeys.has(
+                          pairKey(row.workerId, row.dateIn),
+                      ),
+              )
             : toInsert;
 
     const pairFilteredSkipped = toInsert.length - rowsToInsert.length;

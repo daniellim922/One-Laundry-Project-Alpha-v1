@@ -2,7 +2,7 @@ import { DashboardQuickActionsCard } from "@/components/dashboard/dashboard-quic
 import { TimesheetMonthlyHoursOverviewCard } from "@/components/dashboard/timesheet-monthly-hours-overview-card";
 import { List, Plus, Upload } from "lucide-react";
 
-import { getTimesheetMonthlyHoursAggregates } from "./get-timesheet-monthly-hours-aggregates";
+import { getTimesheetMonthlyHoursAggregates } from "@/services/dashboard/timesheet-monthly-hours-aggregates";
 
 export async function TimesheetOverviewLoader() {
     const { rows, defaultYear, yearOptions } =

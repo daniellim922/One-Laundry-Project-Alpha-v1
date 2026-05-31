@@ -5,7 +5,7 @@ import {
     ExpenseMonthlyOverviewChart,
     type ExpenseMonthlyOverviewCopy,
 } from "./expense-monthly-overview-chart";
-import { getExpenseMonthlyAggregates } from "./get-expense-monthly-aggregates";
+import { getExpenseMonthlyAggregates } from "@/services/dashboard/expense-monthly-aggregates";
 
 const EXPENSE_MONTHLY_AMOUNTS_COPY = {
     title: "Monthly expense amounts",
@@ -19,8 +19,7 @@ const EXPENSE_MONTHLY_AMOUNTS_COPY = {
     emptyChartAllDeselected:
         "No amount to chart — all suppliers are deselected.",
     emptyChartMonths: "Select at least one month to see the chart.",
-    emptyChartSelection:
-        "Select suppliers or adjust search to see the chart.",
+    emptyChartSelection: "Select suppliers or adjust search to see the chart.",
     idPrefix: "expense-monthly-amounts",
 } satisfies ExpenseMonthlyOverviewCopy;
 

@@ -3,14 +3,12 @@ import { sql } from "drizzle-orm";
 import { employmentTable } from "@/db/tables/employmentTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { workerTable } from "@/db/tables/workerTable";
-import { payrollSettledAggregateQueryBuilder } from "@/app/dashboard/_shared/payroll-aggregate-base";
+import { payrollSettledAggregateQueryBuilder } from "@/services/dashboard/_shared/payroll-aggregate-base";
 import { DASHBOARD_PAYROLL_NAMED_WORKER_NAMES_NORMALIZED } from "@/types/monthly-payroll-category-aggregates";
 import type { MonthlyPayrollCategoryAggregatesPayload } from "@/types/monthly-payroll-category-aggregates";
 
 const namedListSql = sql.join(
-    DASHBOARD_PAYROLL_NAMED_WORKER_NAMES_NORMALIZED.map(
-        (n) => sql`${n}`,
-    ),
+    DASHBOARD_PAYROLL_NAMED_WORKER_NAMES_NORMALIZED.map((n) => sql`${n}`),
     sql`, `,
 );
 

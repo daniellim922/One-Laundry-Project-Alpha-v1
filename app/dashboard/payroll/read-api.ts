@@ -1,7 +1,7 @@
 "use client";
 
 import type { RevertPreviewRow } from "@/services/payroll/get-revert-preview";
-import type { PayrollSelectionRow } from "@/services/payroll/list-draft-payrolls-for-settlement";
+import type { PayrollSelectionRow } from "@/services/payroll/_shared/query-payroll-selection-rows";
 
 type ApiReadSuccess<T> = {
     ok: true;

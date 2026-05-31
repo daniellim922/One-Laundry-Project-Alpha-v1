@@ -14,17 +14,15 @@ export async function getExpenseMonthlyAggregates(): Promise<MonthlySupplierAmou
         expensesTable.invoiceDate,
     );
 
-    const raw = (await db
+    const raw = await db
         .select({
             supplierName: expensesTable.supplierName,
             categoryName: expensesTable.categoryName,
             subcategoryName: expensesTable.subcategoryName,
             year: yearExpr,
             month: monthExpr,
-            grandTotalAmount:
-                sql<number>`coalesce(sum(${expensesTable.grandTotalCents}), 0)::double precision / 100.0`,
-            subTotalAmount:
-                sql<number>`coalesce(sum(${expensesTable.subtotalCents}), 0)::double precision / 100.0`,
+            grandTotalAmount: sql<number>`coalesce(sum(${expensesTable.grandTotalCents}), 0)::double precision / 100.0`,
+            subTotalAmount: sql<number>`coalesce(sum(${expensesTable.subtotalCents}), 0)::double precision / 100.0`,
         })
         .from(expensesTable)
         .where(
@@ -39,15 +37,7 @@ export async function getExpenseMonthlyAggregates(): Promise<MonthlySupplierAmou
             expensesTable.subcategoryName,
             yearExpr,
             monthExpr,
-        )) as {
-        supplierName: string;
-        categoryName: string;
-        subcategoryName: string;
-        year: number;
-        month: number;
-        grandTotalAmount: number;
-        subTotalAmount: number;
-    }[];
+        );
 
     return {
         defaultYear: maxYear,

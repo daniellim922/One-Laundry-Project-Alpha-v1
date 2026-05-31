@@ -38,9 +38,10 @@ vi.mock("@/lib/db", () => ({
 import { employmentTable } from "@/db/tables/employmentTable";
 import { payrollTable } from "@/db/tables/payrollTable";
 import { workerTable } from "@/db/tables/workerTable";
-import { listDraftPayrollsForSettlement } from "@/services/payroll/list-draft-payrolls-for-settlement";
-import { listPayrollsForDownload } from "@/services/payroll/list-payrolls-for-download";
-import { queryPayrollRowsWithWorkerForList } from "@/services/payroll/_shared/query-payroll-selection-rows";
+import {
+    queryPayrollRowsWithWorkerForList,
+    queryPayrollSelectionRows,
+} from "@/services/payroll/_shared/query-payroll-selection-rows";
 
 describe("queryPayrollRowsWithWorkerForList", () => {
     beforeEach(() => {
@@ -57,7 +58,9 @@ describe("queryPayrollRowsWithWorkerForList", () => {
             from: vi.fn().mockReturnValue({
                 innerJoin: vi.fn().mockReturnValue({
                     innerJoin: vi.fn().mockReturnValue({
-                        innerJoin: vi.fn().mockReturnValue(options.mockAfterJoins),
+                        innerJoin: vi
+                            .fn()
+                            .mockReturnValue(options.mockAfterJoins),
                     }),
                 }),
             }),
@@ -105,7 +108,9 @@ describe("queryPayrollRowsWithWorkerForList", () => {
         expect(drizzleAscSpy).toHaveBeenCalledWith(
             employmentTable.employmentArrangement,
         );
-        expect(drizzleAscSpy).toHaveBeenCalledWith(employmentTable.employmentType);
+        expect(drizzleAscSpy).toHaveBeenCalledWith(
+            employmentTable.employmentType,
+        );
         expect(drizzleAscSpy).toHaveBeenCalledWith(workerTable.name);
     });
 
@@ -148,7 +153,7 @@ describe("queryPayrollRowsWithWorkerForList", () => {
         ]);
     });
 
-    it("listDraftPayrollsForSettlement uses Draft status filter", async () => {
+    it("queryPayrollSelectionRows uses Draft status filter", async () => {
         const orderBy = vi.fn().mockResolvedValue([]);
         const whereOnQuery = vi.fn().mockReturnValue({ orderBy });
 
@@ -159,13 +164,13 @@ describe("queryPayrollRowsWithWorkerForList", () => {
             },
         });
 
-        await listDraftPayrollsForSettlement();
+        await queryPayrollSelectionRows("Draft");
 
         expect(whereOnQuery).toHaveBeenCalledTimes(1);
         expect(orderBy).toHaveBeenCalledTimes(1);
     });
 
-    it("listPayrollsForDownload does not apply status filter", async () => {
+    it("queryPayrollSelectionRows without filter does not apply status filter", async () => {
         const orderBy = vi.fn().mockResolvedValue([]);
         const whereOnQuery = vi.fn().mockReturnValue({ orderBy });
 
@@ -176,7 +181,7 @@ describe("queryPayrollRowsWithWorkerForList", () => {
             },
         });
 
-        await listPayrollsForDownload();
+        await queryPayrollSelectionRows();
 
         expect(whereOnQuery).not.toHaveBeenCalled();
         expect(orderBy).toHaveBeenCalledTimes(1);

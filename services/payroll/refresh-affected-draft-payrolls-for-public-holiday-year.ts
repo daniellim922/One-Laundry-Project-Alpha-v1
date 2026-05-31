@@ -148,7 +148,7 @@ export async function refreshAffectedDraftPayrollsForPublicHolidayYearInTx(
     },
 ): Promise<DraftPayrollRefreshResult> {
     return refreshAffectedDraftPayrollsForPublicHolidayYearWithExecutor(
-        tx as unknown as DraftPayrollExecutor,
+        tx,
         input,
     );
 }

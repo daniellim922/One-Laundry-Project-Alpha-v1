@@ -3,14 +3,16 @@ import type { z } from "zod";
 import { requireCurrentApiUser } from "@/app/api/_shared/auth";
 import { apiError, apiSuccess } from "@/app/api/_shared/responses";
 import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
+import type { VoucherMutationResult } from "@/services/payroll/_shared/voucher-update-pipeline";
 
-type VoucherMutationFailure = {
-    success: false;
-    code: string;
-    error: string;
-};
+type VoucherMutationFailure = Extract<
+    VoucherMutationResult,
+    { success: false }
+>;
 
-export function voucherMutationFailureResponse(result: VoucherMutationFailure): Response {
+export function voucherMutationFailureResponse(
+    result: VoucherMutationFailure,
+): Response {
     return apiError({
         status:
             result.code === "VALIDATION_ERROR"
@@ -27,7 +29,7 @@ export function voucherMutationFailureResponse(result: VoucherMutationFailure): 
 
 export async function handlePayrollVoucherJsonPatch<
     TSchema extends z.ZodType,
-    TResult extends { success: boolean },
+    TResult extends VoucherMutationResult,
 >(
     request: Request,
     context: { params: Promise<{ id: string }> },
@@ -74,9 +76,7 @@ export async function handlePayrollVoucherJsonPatch<
     const result = await options.execute(args);
 
     if (!result.success) {
-        return voucherMutationFailureResponse(
-            result as unknown as VoucherMutationFailure,
-        );
+        return voucherMutationFailureResponse(result);
     }
 
     try {

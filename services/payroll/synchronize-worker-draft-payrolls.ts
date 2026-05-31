@@ -104,8 +104,5 @@ export async function synchronizeWorkerDraftPayrollsInTx(
         workerId: string;
     },
 ): Promise<PayrollSyncResult> {
-    return synchronizeWorkerDraftPayrollsWithExecutor(
-        tx as unknown as DraftPayrollExecutor,
-        input,
-    );
+    return synchronizeWorkerDraftPayrollsWithExecutor(tx, input);
 }

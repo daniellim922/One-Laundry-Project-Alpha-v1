@@ -2,7 +2,7 @@ import { AdvanceMonthlyRepaymentOverviewCard } from "@/components/dashboard/adva
 import { DashboardQuickActionsCard } from "@/components/dashboard/dashboard-quick-actions-card";
 import { List, Plus } from "lucide-react";
 
-import { getAdvanceMonthlyRepaymentAggregates } from "./get-advance-monthly-repayment-aggregates";
+import { getAdvanceMonthlyRepaymentAggregates } from "@/services/dashboard/advance-monthly-repayment-aggregates";
 
 export async function AdvanceOverviewLoader() {
     const { rows, defaultYear, yearOptions } =

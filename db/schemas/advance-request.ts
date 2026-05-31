@@ -20,9 +20,7 @@ const signatureDataUrlSchema = z
     .string()
     .trim()
     .refine(
-        (s) =>
-            s.length === 0 ||
-            s.startsWith("data:image/png;base64,"),
+        (s) => s.length === 0 || s.startsWith("data:image/png;base64,"),
         "Signature must be a PNG data URL",
     );
 
@@ -44,11 +42,14 @@ const requestCore = createInsertSchema(advanceRequestTable, {
     purpose: true,
 });
 
+/** Empty create form starts with no amount; superRefine requires a positive integer on submit. */
+const optionalAmountField = requestCore.shape.amountRequested.optional();
+
 export const advanceRequestFormSchema = z
     .object({
         workerId: requestCore.shape.workerId,
         requestDate: requestCore.shape.requestDate,
-        amount: requestCore.shape.amountRequested,
+        amount: optionalAmountField,
         purpose: requestCore.shape.purpose,
         employeeSignature: signatureDataUrlSchema,
         managerSignature: signatureDataUrlSchema,
@@ -58,6 +59,22 @@ export const advanceRequestFormSchema = z
         const today = dateToLocalIsoYmd();
         let hasValidInstallment = false;
         const amountRequested = values.amount;
+
+        if (!Number.isInteger(amountRequested) || (amountRequested ?? 0) <= 0) {
+            ctx.addIssue({
+                code: "custom",
+                path: ["amount"],
+                message: "Amount is required",
+            });
+        }
+
+        const resolvedAmountRequested =
+            typeof amountRequested === "number" &&
+            Number.isInteger(amountRequested) &&
+            amountRequested > 0
+                ? amountRequested
+                : null;
+
         const validInstallmentAmounts: number[] = [];
 
         values.installmentAmounts.forEach((row, i) => {
@@ -118,14 +135,13 @@ export const advanceRequestFormSchema = z
                     validInstallmentAmounts.push(amountValue as number);
 
                     if (
-                        Number.isInteger(amountRequested) &&
-                        amountRequested > 0 &&
-                        (amountValue as number) > amountRequested
+                        resolvedAmountRequested != null &&
+                        (amountValue as number) > resolvedAmountRequested
                     ) {
                         ctx.addIssue({
                             code: "custom",
                             path: ["installmentAmounts", i, "amount"],
-                            message: `Installment amount cannot exceed amount requested ($${amountRequested})`,
+                            message: `Installment amount cannot exceed amount requested ($${resolvedAmountRequested})`,
                         });
                     }
                 }
@@ -139,16 +155,16 @@ export const advanceRequestFormSchema = z
                 message:
                     "At least one installment with amount and repayment date is required",
             });
-        } else if (Number.isInteger(amountRequested) && amountRequested > 0) {
+        } else if (resolvedAmountRequested != null) {
             const totalInstallments = validInstallmentAmounts.reduce(
                 (sum, a) => sum + a,
                 0,
             );
-            if (totalInstallments !== amountRequested) {
+            if (totalInstallments !== resolvedAmountRequested) {
                 ctx.addIssue({
                     code: "custom",
                     path: ["installmentAmounts"],
-                    message: `Total of installments ($${totalInstallments}) must equal amount requested ($${amountRequested})`,
+                    message: `Total of installments ($${totalInstallments}) must equal amount requested ($${resolvedAmountRequested})`,
                 });
             }
         }

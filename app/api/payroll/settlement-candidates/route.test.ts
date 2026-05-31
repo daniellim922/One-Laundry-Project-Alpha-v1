@@ -4,7 +4,7 @@ import { mockAuthenticatedApiOperator } from "@/test/_support/api-auth-mock";
 
 const mocks = vi.hoisted(() => ({
     requireCurrentApiUser: vi.fn(),
-    listDraftPayrollsForSettlement: vi.fn(),
+    queryPayrollSelectionRows: vi.fn(),
 }));
 
 vi.mock("@/app/api/_shared/auth", () => ({
@@ -12,9 +12,9 @@ vi.mock("@/app/api/_shared/auth", () => ({
         mocks.requireCurrentApiUser(...args),
 }));
 
-vi.mock("@/services/payroll/list-draft-payrolls-for-settlement", () => ({
-    listDraftPayrollsForSettlement: (...args: unknown[]) =>
-        mocks.listDraftPayrollsForSettlement(...args),
+vi.mock("@/services/payroll/_shared/query-payroll-selection-rows", () => ({
+    queryPayrollSelectionRows: (...args: unknown[]) =>
+        mocks.queryPayrollSelectionRows(...args),
 }));
 
 import { GET } from "@/app/api/payroll/settlement-candidates/route";
@@ -26,7 +26,7 @@ describe("GET /api/payroll/settlement-candidates", () => {
     });
 
     it("returns settlement candidates", async () => {
-        mocks.listDraftPayrollsForSettlement.mockResolvedValue([
+        mocks.queryPayrollSelectionRows.mockResolvedValue([
             {
                 id: "payroll-1",
                 workerId: "worker-1",
@@ -70,7 +70,7 @@ describe("GET /api/payroll/settlement-candidates", () => {
     });
 
     it("returns an empty state without error", async () => {
-        mocks.listDraftPayrollsForSettlement.mockResolvedValue([]);
+        mocks.queryPayrollSelectionRows.mockResolvedValue([]);
 
         const response = await GET();
 
