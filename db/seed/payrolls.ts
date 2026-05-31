@@ -9,17 +9,16 @@ import {
     isLocalFullTimeWorker,
 } from "./minimum-hours";
 import { getAdvanceDeductionForWorkerPeriod } from "./advances";
-import { settledHistoricalPayrollSeedPeriods } from "./periods";
+import {
+    settledHistoricalPayrollSeedPeriods,
+    type SeedPeriod,
+} from "./periods";
 import { getSeedPayrollStatus } from "./settlement-state";
 import { timesheets } from "./timesheet";
 import { workers } from "./workers";
 import { publicHolidays } from "./public-holidays";
 import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
-import { calculateVoucherAmounts } from "@/services/payroll/payroll-voucher-amounts";
-
-function roundMoney(n: number): number {
-    return Math.round(n * 100) / 100;
-}
+import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll-voucher-values";
 
 type VoucherEntry = {
     voucherNumber: string;
@@ -56,6 +55,8 @@ type PayrollEntry = {
     voucher: VoucherEntry;
 };
 
+type SeedWorker = (typeof workers)[number];
+
 function countWorkingDaysInPeriod(
     periodStart: string,
     periodEnd: string,
@@ -85,6 +86,69 @@ function countWorkingDaysInPeriod(
     return count;
 }
 
+function resolveSeedMinimumWorkingHours(
+    worker: SeedWorker,
+    period: SeedPeriod,
+): number | null {
+    const hasNoMinimumWorkingHours =
+        "minimumWorkingHours" in worker && worker.minimumWorkingHours == null;
+
+    if (hasNoMinimumWorkingHours) {
+        return null;
+    }
+
+    if (isForeignFullTimeWorker(worker)) {
+        return getVoucherMinimumWorkingHours(period);
+    }
+
+    return "minimumWorkingHours" in worker
+        ? (worker.minimumWorkingHours ?? null)
+        : null;
+}
+
+function buildSeedEmploymentSnapshot(worker: SeedWorker, period: SeedPeriod) {
+    return {
+        employmentType: worker.employmentType,
+        employmentArrangement: worker.employmentArrangement ?? null,
+        minimumWorkingHours: resolveSeedMinimumWorkingHours(worker, period),
+        monthlyPay: "monthlyPay" in worker ? (worker.monthlyPay ?? null) : null,
+        hourlyRate: "hourlyRate" in worker ? (worker.hourlyRate ?? null) : null,
+        restDayRate:
+            "restDayRate" in worker ? (worker.restDayRate ?? null) : null,
+        cpf: "cpf" in worker ? (worker.cpf ?? 0) : 0,
+        paymentMethod: worker.paymentMethod ?? null,
+        payNowPhone:
+            "payNowPhone" in worker ? (worker.payNowPhone ?? null) : null,
+        bankAccountNumber:
+            "bankAccountNumber" in worker
+                ? (worker.bankAccountNumber ?? null)
+                : null,
+    };
+}
+
+function countSeedPublicHolidays(args: {
+    period: SeedPeriod;
+    presentDateInKeys: string[];
+    isZeroTimesheetLocal: boolean;
+}): number {
+    const phDatesInPeriod = publicHolidays
+        .map((holiday) => holiday.date)
+        .filter(
+            (date) =>
+                date >= args.period.periodStart &&
+                date <= args.period.periodEnd,
+        );
+
+    // Seed invariant: local FT workers with no timesheets in the period still
+    // accrue every configured public holiday in that period, not only worked PH dates.
+    if (args.isZeroTimesheetLocal) {
+        return phDatesInPeriod.length;
+    }
+
+    const presentSet = new Set(args.presentDateInKeys);
+    return phDatesInPeriod.filter((date) => presentSet.has(date)).length;
+}
+
 function generatePayrolls(): PayrollEntry[] {
     const hoursMap = new Map<string, number>();
     const presentDateInKeysByWorkerPeriod = new Map<string, string[]>();
@@ -99,8 +163,6 @@ function generatePayrolls(): PayrollEntry[] {
         presentDateInKeysByWorkerPeriod.set(key, dateInKeys);
     }
 
-    const publicHolidayDates = publicHolidays.map((h) => h.date);
-
     const payrolls: PayrollEntry[] = [];
 
     for (const period of settledHistoricalPayrollSeedPeriods) {
@@ -112,131 +174,50 @@ function generatePayrolls(): PayrollEntry[] {
             workerIndex += 1
         ) {
             const worker = workers[workerIndex];
+            const periodKey = `${workerIndex}:${period.key}`;
+            const presentDateInKeys =
+                presentDateInKeysByWorkerPeriod.get(periodKey) ?? [];
             const totalHoursWorked =
-                Math.round(
-                    (hoursMap.get(`${workerIndex}:${period.key}`) ?? 0) * 100,
-                ) / 100;
-
-            const hasNoMinimumWorkingHours =
-                "minimumWorkingHours" in worker &&
-                worker.minimumWorkingHours == null;
-            const minimumWorkingHours = hasNoMinimumWorkingHours
-                ? null
-                : isForeignFullTimeWorker(worker)
-                ? getVoucherMinimumWorkingHours(period)
-                : "minimumWorkingHours" in worker
-                  ? (worker.minimumWorkingHours ?? null)
-                  : null;
-            const overtimeHours =
-                minimumWorkingHours != null
-                    ? Math.max(
-                          0,
-                          Math.round(
-                              (totalHoursWorked - minimumWorkingHours) * 100,
-                          ) / 100,
-                      )
-                    : 0;
-            const rawHoursNotMet =
-                minimumWorkingHours != null
-                    ? Math.round(
-                          (totalHoursWorked - minimumWorkingHours) * 100,
-                      ) / 100
-                    : null;
-            const hoursNotMet =
-                rawHoursNotMet == null
-                    ? null
-                    : rawHoursNotMet > 0
-                      ? 0
-                      : rawHoursNotMet;
-
-            const hourlyRate =
-                "hourlyRate" in worker ? (worker.hourlyRate ?? null) : null;
-            const monthlyPay =
-                "monthlyPay" in worker ? (worker.monthlyPay ?? null) : null;
-            const restDayRate =
-                "restDayRate" in worker ? (worker.restDayRate ?? null) : null;
-            const isPartTime = worker.employmentType === "Part Time";
+                Math.round((hoursMap.get(periodKey) ?? 0) * 100) / 100;
+            const hasTimesheets =
+                presentDateInKeysByWorkerPeriod.has(periodKey);
+            const isZeroTimesheetLocal =
+                isLocalFullTimeWorker(worker) && !hasTimesheets;
             const restDays = computeRestDaysForPayrollPeriod({
                 periodStart: period.periodStart,
                 periodEnd: period.periodEnd,
-                presentDateInKeys:
-                    presentDateInKeysByWorkerPeriod.get(
-                        `${workerIndex}:${period.key}`,
-                    ) ?? [],
+                presentDateInKeys,
             });
-
-            const phDatesInPeriod = publicHolidayDates.filter(
-                (date) =>
-                    date >= period.periodStart && date <= period.periodEnd,
-            );
-            const hasTimesheets = presentDateInKeysByWorkerPeriod.has(
-                `${workerIndex}:${period.key}`,
-            );
-            const isZeroTimesheetLocal =
-                isLocalFullTimeWorker(worker) && !hasTimesheets;
-
-            let publicHolidaysCount: number;
-            if (isZeroTimesheetLocal) {
-                publicHolidaysCount = phDatesInPeriod.length;
-            } else {
-                const presentDateInKeys =
-                    presentDateInKeysByWorkerPeriod.get(
-                        `${workerIndex}:${period.key}`,
-                    ) ?? [];
-                const presentSet = new Set(presentDateInKeys);
-                publicHolidaysCount = phDatesInPeriod.filter((date) =>
-                    presentSet.has(date),
-                ).length;
-            }
-
-            let publicHolidayPay: number;
-            if (isZeroTimesheetLocal) {
-                const periodWorkingDays = countWorkingDaysInPeriod(
-                    period.periodStart,
-                    period.periodEnd,
-                );
-                publicHolidayPay = roundMoney(
-                    ((monthlyPay ?? 0) / periodWorkingDays) *
-                        publicHolidaysCount,
-                );
-            } else {
-                publicHolidayPay = roundMoney(
-                    (restDayRate ?? 0) * publicHolidaysCount,
-                );
-            }
-
-            let basePayTotal = 0;
-            let overtimePay = 0;
-            let restDayPay = 0;
-
-            if (isPartTime) {
-                basePayTotal =
-                    roundMoney((hourlyRate ?? 0) * totalHoursWorked) +
-                    publicHolidayPay;
-            } else {
-                overtimePay = roundMoney((hourlyRate ?? 0) * overtimeHours);
-                restDayPay = roundMoney((restDayRate ?? 0) * restDays);
-                basePayTotal = roundMoney(
-                    (monthlyPay ?? 0) +
-                        overtimePay +
-                        restDayPay +
-                        publicHolidayPay,
-                );
-            }
-
-            const cpf = "cpf" in worker ? (worker.cpf ?? 0) : 0;
-            const advance = getAdvanceDeductionForWorkerPeriod(
+            const publicHolidaysCount = countSeedPublicHolidays({
+                period,
+                presentDateInKeys,
+                isZeroTimesheetLocal,
+            });
+            const employment = buildSeedEmploymentSnapshot(worker, period);
+            const employmentForCalc =
+                isZeroTimesheetLocal && employment.monthlyPay != null
+                    ? {
+                          ...employment,
+                          restDayRate:
+                              employment.monthlyPay /
+                              countWorkingDaysInPeriod(
+                                  period.periodStart,
+                                  period.periodEnd,
+                              ),
+                      }
+                    : employment;
+            const advanceTotal = getAdvanceDeductionForWorkerPeriod(
                 workerIndex,
                 period.periodStart,
             );
-            const { hoursNotMetDeduction, subTotal, grandTotal } =
-                calculateVoucherAmounts({
-                    basePayTotal,
-                    cpf,
-                    advance,
-                    hoursNotMet,
-                    hourlyRate,
-                });
+
+            const voucherValues = buildDraftPayrollVoucherValues({
+                employment: employmentForCalc,
+                totalHoursWorked,
+                restDays,
+                publicHolidays: publicHolidaysCount,
+                advanceTotal,
+            });
 
             payrolls.push({
                 workerIndex,
@@ -245,33 +226,10 @@ function generatePayrolls(): PayrollEntry[] {
                 payrollDate: period.payrollDate,
                 status,
                 voucher: {
+                    ...voucherValues,
                     voucherNumber: `2025-${String((voucherSequence += 1)).padStart(4, "0")}`,
-                    employmentType: worker.employmentType ?? null,
-                    employmentArrangement: worker.employmentArrangement ?? null,
-                    monthlyPay,
-                    minimumWorkingHours,
-                    totalHoursWorked,
-                    hoursNotMet,
-                    hoursNotMetDeduction,
-                    overtimeHours,
-                    hourlyRate,
-                    overtimePay,
-                    restDays,
-                    restDayRate,
-                    restDayPay,
-                    publicHolidays: publicHolidaysCount,
-                    publicHolidayPay,
-                    cpf,
-                    advance,
-                    subTotal,
-                    grandTotal,
-                    paymentMethod: worker.paymentMethod ?? null,
-                    payNowPhone:
-                        (worker as { payNowPhone?: string | null })
-                            .payNowPhone ?? null,
-                    bankAccountNumber:
-                        (worker as { bankAccountNumber?: string | null })
-                            .bankAccountNumber ?? null,
+                    restDayRate: employment.restDayRate,
+                    hourlyRate: employment.hourlyRate,
                 },
             });
         }
