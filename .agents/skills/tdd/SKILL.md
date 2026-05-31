@@ -44,14 +44,16 @@ RIGHT (vertical):
 
 ### 1. Planning
 
+When exploring the codebase, use the project's domain glossary so that test names and interface vocabulary match the project's language, and respect ADRs in the area you're touching.
+
 Before writing any code:
 
-- Confirm with user what interface changes are needed
-- Confirm with user which behaviors to test (prioritize)
-- Identify opportunities for [deep modules](deep-modules.md) (small interface, deep implementation)
-- Design interfaces for [testability](interface-design.md)
-- List the behaviors to test (not implementation steps)
-- Get user approval on the plan
+- [ ] Confirm with user what interface changes are needed
+- [ ] Confirm with user which behaviors to test (prioritize)
+- [ ] Identify opportunities for [deep modules](deep-modules.md) (small interface, deep implementation)
+- [ ] Design interfaces for [testability](interface-design.md)
+- [ ] List the behaviors to test (not implementation steps)
+- [ ] Get user approval on the plan
 
 Ask: "What should the public interface look like? Which behaviors are most important to test?"
 
@@ -88,11 +90,11 @@ Rules:
 
 After all tests pass, look for [refactor candidates](refactoring.md):
 
-- Extract duplication
-- Deepen modules (move complexity behind simple interfaces)open
-- Apply SOLID principles where natural
-- Consider what new code reveals about existing code
-- Run tests after each refactor step
+- [ ] Extract duplication
+- [ ] Deepen modules (move complexity behind simple interfaces)
+- [ ] Apply SOLID principles where natural
+- [ ] Consider what new code reveals about existing code
+- [ ] Run tests after each refactor step
 
 **Never refactor while RED.** Get to GREEN first.
 

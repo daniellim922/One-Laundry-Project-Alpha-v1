@@ -1,83 +1,117 @@
 ---
 name: write-a-skill
-description: Create or update agent skills with clear trigger boundaries, progressive disclosure, optional scripts, and repo-safe validation guidance. Use when the user wants to create, revise, structure, or improve a SKILL.md-based workflow.
+description: Create new agent skills with proper structure, progressive disclosure, and bundled resources. Use when user wants to create, write, or build a new skill.
 ---
 
 # Writing Skills
 
-## Workflow
+## Process
 
-1. Define the job and trigger boundary:
-   - What concrete task does the skill own?
-   - What should trigger it?
-   - What should *not* trigger it?
-   - Does it need scripts, references, or only instructions?
-2. Create the minimum skill structure:
-   - `SKILL.md` is required
-   - add `references/` only for detail that should stay out of the main file
-   - add `scripts/` only for deterministic or repetitive work
-   - add `assets/` or `agents/openai.yaml` only when they materially help
-3. Draft `SKILL.md` with YAML frontmatter:
-   - `name` must be lowercase kebab-case
-   - `description` must say what it does and when to use it
-4. Keep the main file focused:
-   - concise workflow steps
-   - explicit inputs and outputs
-   - relative links to references or scripts from the skill root
-5. Review the skill against likely prompts and refine the description until the trigger boundary is clear.
+1. **Gather requirements** - ask user about:
+   - What task/domain does the skill cover?
+   - What specific use cases should it handle?
+   - Does it need executable scripts or just instructions?
+   - Any reference materials to include?
+
+2. **Draft the skill** - create:
+   - SKILL.md with concise instructions
+   - Additional reference files if content exceeds 500 lines
+   - Utility scripts if deterministic operations needed
+
+3. **Review with user** - present draft and ask:
+   - Does this cover your use cases?
+   - Anything missing or unclear?
+   - Should any section be more/less detailed?
+
+## Skill Structure
+
+```
+skill-name/
+├── SKILL.md           # Main instructions (required)
+├── REFERENCE.md       # Detailed docs (if needed)
+├── EXAMPLES.md        # Usage examples (if needed)
+└── scripts/           # Utility scripts (if needed)
+    └── helper.js
+```
 
 ## SKILL.md Template
 
 ```md
 ---
 name: skill-name
-description: Explain what the skill does. Use when [specific triggers].
+description: Brief description of capability. Use when [specific triggers].
 ---
 
 # Skill Name
 
-## Workflow
+## Quick start
 
-1. Inspect the relevant inputs.
-2. Apply the skill-specific process.
-3. Validate the result before finishing.
+[Minimal working example]
 
-## References
+## Workflows
 
-- [Reference guide](references/REFERENCE.md)
-- `scripts/validate.sh`
+[Step-by-step processes with checklists for complex tasks]
+
+## Advanced features
+
+[Link to separate files: See [REFERENCE.md](REFERENCE.md)]
 ```
 
-## Description Rules
+## Description Requirements
 
-- The description is the main trigger surface. Make it specific.
-- First sentence: capability.
-- Second sentence: `Use when ...`
-- Include keywords, file types, domains, or situations that distinguish it from other skills.
-- Avoid vague descriptions like `Helps with documents.`
+The description is **the only thing your agent sees** when deciding which skill to load. It's surfaced in the system prompt alongside all other installed skills. Your agent reads these descriptions and picks the relevant skill based on the user's request.
 
-## Script Rules
+**Goal**: Give your agent just enough info to know:
 
-Add scripts only when they improve reliability or save repeated generation.
+1. What capability this skill provides
+2. When/why to trigger it (specific keywords, contexts, file types)
 
-- Scripts must be non-interactive.
-- Scripts should expose `--help` with usage, flags, and examples.
-- Prefer structured stdout and diagnostic stderr.
-- Reference script paths relative to the skill root.
+**Format**:
 
-## Authoring Rules
+- Max 1024 chars
+- Write in third person
+- First sentence: what it does
+- Second sentence: "Use when [specific triggers]"
 
-- Prefer instructions over scripts unless execution needs determinism.
-- Keep `SKILL.md` short; move deep detail to `references/`.
-- Use concrete, procedural steps instead of hardcoded one-off answers.
-- Include validation or self-check steps when failure is likely.
-- Add example trigger queries when the skill boundary is broad or ambiguous.
+**Good example**:
+
+```
+Extract text and tables from PDF files, fill forms, merge documents. Use when working with PDF files or when user mentions PDFs, forms, or document extraction.
+```
+
+**Bad example**:
+
+```
+Helps with documents.
+```
+
+The bad example gives your agent no way to distinguish this from other document skills.
+
+## When to Add Scripts
+
+Add utility scripts when:
+
+- Operation is deterministic (validation, formatting)
+- Same code would be generated repeatedly
+- Errors need explicit handling
+
+Scripts save tokens and improve reliability vs generated code.
+
+## When to Split Files
+
+Split into separate files when:
+
+- SKILL.md exceeds 100 lines
+- Content has distinct domains (finance vs sales schemas)
+- Advanced features are rarely needed
 
 ## Review Checklist
 
-- [ ] `name` is valid kebab-case
-- [ ] `description` clearly states what it does and when to use it
-- [ ] The workflow is reusable, not just an answer for one task
-- [ ] Relative links to scripts and references are correct
-- [ ] Scripts are non-interactive and self-describing
-- [ ] The skill avoids time-sensitive or product-version-specific claims unless required
+After drafting, verify:
+
+- [ ] Description includes triggers ("Use when...")
+- [ ] SKILL.md under 100 lines
+- [ ] No time-sensitive info
+- [ ] Consistent terminology
+- [ ] Concrete examples included
+- [ ] References one level deep
