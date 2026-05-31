@@ -26,14 +26,20 @@ import {
 } from "@/components/ui/table";
 import { Plus, Trash2, TriangleAlert, Upload } from "lucide-react";
 import { parseAttendRecord } from "@/utils/payroll/parse-attendrecord";
-import {
-    formatClockIntervalHm,
-    parseTimeForHours,
-} from "@/utils/payroll/payroll-utils";
+import { formatClockIntervalHm } from "@/utils/payroll/payroll-utils";
 import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
-import { transformNightShiftEntries } from "@/services/timesheet/transform-night-shift-entries";
 import {
-    resolveTimesheetImportWorkerForImportedName,
+    editableRowsToAttendRecord,
+    flattenForPreview,
+    groupRowsByWorker,
+    hasRowError,
+    isPreviewDateInvalid,
+    isPreviewTimeInInvalid,
+    isPreviewTimeOutInvalid,
+    type TimesheetImportPreviewRow,
+} from "@/services/timesheet/import-preview";
+import { formatDmyInput } from "@/utils/time/calendar-date";
+import {
     resolveTimesheetImportWorkerMatches,
     type TimesheetImportWorker,
 } from "./worker-matching";
@@ -53,97 +59,11 @@ function isValidFile(file: File): boolean {
     );
 }
 
-type FlatRow = {
-    workerName: string;
-    dateIn: string;
-    dateOut: string;
-    timeIn: string;
-    timeOut: string;
-};
-
-function hasMissingData(row: FlatRow): boolean {
-    return (
-        parseDate(row.dateIn) == null ||
-        parseDate(row.dateOut) == null ||
-        parseTimeForHours(row.timeIn) == null ||
-        parseTimeForHours(row.timeOut) == null
-    );
-}
-
-/** True if row has invalid inputs or hours calculate to 0h (bad dates/times or end before start). */
-function hasRowError(row: FlatRow): boolean {
-    if (hasMissingData(row)) return true;
-    const hours = formatClockIntervalHm(
-        row.dateIn,
-        row.timeIn,
-        row.dateOut,
-        row.timeOut,
-    );
-    return hours === "0h";
-}
-
-function flattenForPreview(
-    data: AttendRecordOutput,
-    workers: TimesheetImportWorker[],
-    manualMatchesByImportedName: Record<string, string>,
-): FlatRow[] {
-    const rows: FlatRow[] = [];
-    const periodStart = data.attendanceDate.startDate ?? "";
-    for (const worker of data.workers) {
-        const resolved = resolveTimesheetImportWorkerForImportedName({
-            importedName: worker.name,
-            workers,
-            manualMatchesByImportedName,
-        });
-        const dates =
-            resolved?.shiftPattern === "Night Shift"
-                ? transformNightShiftEntries(worker.dates, periodStart)
-                : worker.dates;
-        for (const d of dates) {
-            rows.push({
-                workerName: worker.name,
-                dateIn: d.dateIn,
-                dateOut: d.dateOut,
-                timeIn: d.timeIn,
-                timeOut: d.timeOut.trim() || "",
-            });
-        }
-    }
-    return rows;
-}
-
 /** Enforce HH:MM format as user types - digits only, auto-insert colon */
 function formatTimeInput(raw: string): string {
     const digits = raw.replace(/\D/g, "").slice(0, 4);
     if (digits.length <= 2) return digits;
     return `${digits.slice(0, 2)}:${digits.slice(2)}`;
-}
-
-/** Parse "DD/MM/YYYY" to Date. Returns null if invalid. */
-function parseDate(dateStr: string): Date | null {
-    const m = String(dateStr)
-        .trim()
-        .match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (!m) return null;
-    const day = parseInt(m[1]!, 10);
-    const month = parseInt(m[2]!, 10) - 1;
-    const year = parseInt(m[3]!, 10);
-    const d = new Date(year, month, day);
-    if (
-        d.getFullYear() !== year ||
-        d.getMonth() !== month ||
-        d.getDate() !== day
-    )
-        return null;
-    return d;
-}
-
-/** Enforce DD/MM/YYYY format as user types - digits only, auto-insert slashes */
-function formatDateInput(raw: string): string {
-    const digits = raw.replace(/\D/g, "").slice(0, 8);
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
 }
 
 function placeCaretAtEnd(el: HTMLElement) {
@@ -188,23 +108,19 @@ function ContentEditableDateCell(props: {
             suppressContentEditableWarning
             onInput={(e) => {
                 const el = e.currentTarget;
-                const formatted = formatDateInput(el.textContent ?? "");
+                const formatted = formatDmyInput(el.textContent ?? "");
                 if (el.textContent !== formatted) {
                     el.textContent = formatted;
                     placeCaretAtEnd(el);
                 }
             }}
             onBlur={(e) =>
-                onCommit(
-                    rowIndex,
-                    field,
-                    e.currentTarget.textContent ?? "",
-                )
+                onCommit(rowIndex, field, e.currentTarget.textContent ?? "")
             }
             onPaste={(e) => {
                 e.preventDefault();
                 const text = e.clipboardData.getData("text/plain");
-                const formatted = formatDateInput(text.replace(/\D/g, ""));
+                const formatted = formatDmyInput(text.replace(/\D/g, ""));
                 document.execCommand("insertText", false, formatted);
             }}
             className={`min-w-28 rounded px-2 py-1.5 outline-none focus:ring-2 focus:ring-ring focus:ring-inset ${invalid ? "text-destructive" : ""}`}>
@@ -243,8 +159,7 @@ function ContentEditableTimeCell(props: {
                 const el = e.currentTarget;
                 if (emptyPlaceholderEmDash) {
                     const raw = (el.textContent ?? "").replace(/—/g, "");
-                    const formatted =
-                        raw === "" ? "" : formatTimeInput(raw);
+                    const formatted = raw === "" ? "" : formatTimeInput(raw);
                     if (el.textContent !== formatted) {
                         el.textContent = formatted || "—";
                         if (formatted) placeCaretAtEnd(el);
@@ -277,75 +192,6 @@ function ContentEditableTimeCell(props: {
     );
 }
 
-/** Group rows by worker name for display, preserving flat index for updates */
-function groupRowsByWorker(
-    rows: FlatRow[],
-): { row: FlatRow; flatIndex: number; isFirstInGroup: boolean }[] {
-    const groups = new Map<string, { row: FlatRow; index: number }[]>();
-    for (let i = 0; i < rows.length; i++) {
-        const row = rows[i]!;
-        const list = groups.get(row.workerName) ?? [];
-        list.push({ row, index: i });
-        groups.set(row.workerName, list);
-    }
-    const workerOrder: string[] = [];
-    for (const row of rows) {
-        if (!workerOrder.includes(row.workerName)) {
-            workerOrder.push(row.workerName);
-        }
-    }
-    const result: {
-        row: FlatRow;
-        flatIndex: number;
-        isFirstInGroup: boolean;
-    }[] = [];
-    for (const name of workerOrder) {
-        const list = groups.get(name) ?? [];
-        for (let j = 0; j < list.length; j++) {
-            result.push({
-                row: list[j]!.row,
-                flatIndex: list[j]!.index,
-                isFirstInGroup: j === 0,
-            });
-        }
-    }
-    return result;
-}
-
-function editableRowsToAttendRecord(
-    editableRows: FlatRow[],
-    meta: {
-        attendanceDate: AttendRecordOutput["attendanceDate"];
-        tablingDate: string;
-    },
-    resolvedWorkerNamesByImportedName: Map<string, string>,
-): AttendRecordOutput {
-    const workersMap = new Map<string, FlatRow[]>();
-    for (const row of editableRows) {
-        const workerName =
-            resolvedWorkerNamesByImportedName.get(row.workerName) ??
-            row.workerName;
-        const list = workersMap.get(workerName) ?? [];
-        list.push(row);
-        workersMap.set(workerName, list);
-    }
-    const workers = Array.from(workersMap.entries()).map(([name, rows]) => ({
-        userId: "",
-        name,
-        dates: rows.map((r) => ({
-            dateIn: r.dateIn,
-            timeIn: r.timeIn,
-            dateOut: r.dateOut,
-            timeOut: r.timeOut || "     ",
-        })),
-    }));
-    return {
-        attendanceDate: meta.attendanceDate,
-        tablingDate: meta.tablingDate,
-        workers,
-    };
-}
-
 export function TimesheetImportClient({
     workers,
 }: {
@@ -355,68 +201,73 @@ export function TimesheetImportClient({
     const [file, setFile] = React.useState<File | null>(null);
     const [parsedData, setParsedData] =
         React.useState<AttendRecordOutput | null>(null);
-    const [editableRows, setEditableRows] = React.useState<FlatRow[]>([]);
+    const [editableRows, setEditableRows] = React.useState<
+        TimesheetImportPreviewRow[]
+    >([]);
     const [error, setError] = React.useState<string | null>(null);
     const [submitResult, setSubmitResult] = React.useState<{
         imported?: number;
         skipped?: number;
         errors?: string[];
     } | null>(null);
-    const [overlapResult, setOverlapResult] = React.useState<OverlapEntry[] | null>(
-        null,
-    );
+    const [overlapResult, setOverlapResult] = React.useState<
+        OverlapEntry[] | null
+    >(null);
     const [pending, setPending] = React.useState(false);
     const [manualWorkerMatches, setManualWorkerMatches] = React.useState<
         Record<string, string>
     >({});
 
-    const handleParse = React.useCallback(async (file: File) => {
-        setError(null);
-        setSubmitResult(null);
-        setOverlapResult(null);
-        setManualWorkerMatches({});
-        try {
-            const data = await file.arrayBuffer();
-            const workbook = XLSX.read(data, {
-                type: "array",
-                cellDates: true,
-            });
-            const sheetName = workbook.SheetNames[0];
-            if (!sheetName) {
-                setError("Workbook has no sheets.");
-                setParsedData(null);
-                setFile(null);
-                return;
-            }
-            const ws = workbook.Sheets[sheetName];
-            const rows = XLSX.utils.sheet_to_json(ws, {
-                header: 1,
-                defval: null,
-                raw: false,
-            }) as (string | number | null)[][];
+    const handleParse = React.useCallback(
+        async (file: File) => {
+            setError(null);
+            setSubmitResult(null);
+            setOverlapResult(null);
+            setManualWorkerMatches({});
+            try {
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data, {
+                    type: "array",
+                    cellDates: true,
+                });
+                const sheetName = workbook.SheetNames[0];
+                if (!sheetName) {
+                    setError("Workbook has no sheets.");
+                    setParsedData(null);
+                    setFile(null);
+                    return;
+                }
+                const ws = workbook.Sheets[sheetName];
+                const rows = XLSX.utils.sheet_to_json(ws, {
+                    header: 1,
+                    defval: null,
+                    raw: false,
+                }) as (string | number | null)[][];
 
-            const result = parseAttendRecord(rows);
-            if (!result.workers.length) {
+                const result = parseAttendRecord(rows);
+                if (!result.workers.length) {
+                    setError(
+                        "Unrecognized format — expected AttendRecord-style Excel",
+                    );
+                    setParsedData(null);
+                    setFile(null);
+                    return;
+                }
+                setParsedData(result);
+                setEditableRows(flattenForPreview(result, workers, {}));
+                setFile(file);
+            } catch (err) {
                 setError(
-                    "Unrecognized format — expected AttendRecord-style Excel",
+                    err instanceof Error
+                        ? err.message
+                        : "Failed to parse Excel file",
                 );
                 setParsedData(null);
                 setFile(null);
-                return;
             }
-            setParsedData(result);
-            setEditableRows(flattenForPreview(result, workers, {}));
-            setFile(file);
-        } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : "Failed to parse Excel file",
-            );
-            setParsedData(null);
-            setFile(null);
-        }
-    }, [workers]);
+        },
+        [workers],
+    );
 
     React.useEffect(() => {
         if (!parsedData) return;
@@ -446,7 +297,7 @@ export function TimesheetImportClient({
         setEditableRows((prev) => {
             const firstIdx = prev.findIndex((r) => r.workerName === workerName);
             if (firstIdx === -1) return prev;
-            const newRow: FlatRow = {
+            const newRow: TimesheetImportPreviewRow = {
                 workerName,
                 dateIn: "",
                 dateOut: "",
@@ -694,70 +545,74 @@ export function TimesheetImportClient({
                                     </ul>
                                 </AmberCallout>
                             )}
-                            {overlapResult != null && overlapResult.length > 0 && (
-                                <AmberCallout title="Overlapping timesheet dates">
-                                    <p className="mt-1">
-                                        {overlapResult.reduce(
-                                            (sum, o) => sum + o.existingCount,
-                                            0,
-                                        )}{" "}
-                                        entr
-                                        {overlapResult.reduce(
-                                            (sum, o) => sum + o.existingCount,
-                                            0,
-                                        ) !== 1
-                                            ? "ies"
-                                            : "y"}{" "}
-                                        already exist for{" "}
-                                        {
-                                            new Set(
+                            {overlapResult != null &&
+                                overlapResult.length > 0 && (
+                                    <AmberCallout title="Overlapping timesheet dates">
+                                        <p className="mt-1">
+                                            {overlapResult.reduce(
+                                                (sum, o) =>
+                                                    sum + o.existingCount,
+                                                0,
+                                            )}{" "}
+                                            entr
+                                            {overlapResult.reduce(
+                                                (sum, o) =>
+                                                    sum + o.existingCount,
+                                                0,
+                                            ) !== 1
+                                                ? "ies"
+                                                : "y"}{" "}
+                                            already exist for{" "}
+                                            {
+                                                new Set(
+                                                    overlapResult.map(
+                                                        (o) => o.workerName,
+                                                    ),
+                                                ).size
+                                            }{" "}
+                                            worker
+                                            {new Set(
                                                 overlapResult.map(
                                                     (o) => o.workerName,
                                                 ),
-                                            ).size
-                                        }{" "}
-                                        worker
-                                        {new Set(
-                                            overlapResult.map(
-                                                (o) => o.workerName,
-                                            ),
-                                        ).size !== 1
-                                            ? "s"
-                                            : ""}{" "}
-                                        on the selected dates. Choose how to
-                                        proceed.
-                                    </p>
-                                    <ul className="mt-2 max-h-32 list-inside list-disc overflow-y-auto">
-                                        {overlapResult.map((o, idx) => (
-                                            <li key={`${o.workerName}-${o.dateIn}-${idx}`}>
-                                                {o.workerName} — {o.dateIn}{" "}
-                                                ({o.existingCount} existing)
-                                            </li>
-                                        ))}
-                                    </ul>
-                                    <div className="mt-3 flex flex-wrap gap-2">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            disabled={pending}
-                                            onClick={() => {
-                                                void handleSubmit("skip");
-                                            }}>
-                                            Skip duplicates
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            disabled={pending}
-                                            onClick={() => {
-                                                void handleSubmit("force");
-                                            }}>
-                                            Import all anyway
-                                        </Button>
-                                    </div>
-                                </AmberCallout>
-                            )}
+                                            ).size !== 1
+                                                ? "s"
+                                                : ""}{" "}
+                                            on the selected dates. Choose how to
+                                            proceed.
+                                        </p>
+                                        <ul className="mt-2 max-h-32 list-inside list-disc overflow-y-auto">
+                                            {overlapResult.map((o, idx) => (
+                                                <li
+                                                    key={`${o.workerName}-${o.dateIn}-${idx}`}>
+                                                    {o.workerName} — {o.dateIn}{" "}
+                                                    ({o.existingCount} existing)
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={pending}
+                                                onClick={() => {
+                                                    void handleSubmit("skip");
+                                                }}>
+                                                Skip duplicates
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                disabled={pending}
+                                                onClick={() => {
+                                                    void handleSubmit("force");
+                                                }}>
+                                                Import all anyway
+                                            </Button>
+                                        </div>
+                                    </AmberCallout>
+                                )}
                             <div className="rounded-md border overflow-x-auto max-h-[70vh] overflow-y-auto">
                                 <Table>
                                     <TableHeader>
@@ -805,7 +660,8 @@ export function TimesheetImportClient({
                                                             <div className="flex items-center gap-2">
                                                                 {workerMatchGroupsByImportedName.get(
                                                                     row.workerName,
-                                                                )?.resolvedWorker ==
+                                                                )
+                                                                    ?.resolvedWorker ==
                                                                 null ? (
                                                                     <span
                                                                         role="img"
@@ -818,7 +674,9 @@ export function TimesheetImportClient({
                                                                 <div className="flex-1 space-y-1">
                                                                     <SelectSearch
                                                                         options={activeWorkers.map(
-                                                                            (w) => ({
+                                                                            (
+                                                                                w,
+                                                                            ) => ({
                                                                                 value: w.id,
                                                                                 label: w.name,
                                                                             }),
@@ -835,7 +693,9 @@ export function TimesheetImportClient({
                                                                             id,
                                                                         ) =>
                                                                             setManualWorkerMatches(
-                                                                                (prev) => ({
+                                                                                (
+                                                                                    prev,
+                                                                                ) => ({
                                                                                     ...prev,
                                                                                     [row.workerName]:
                                                                                         id,
@@ -859,7 +719,11 @@ export function TimesheetImportClient({
                                                                 </div>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => addRowForWorker(row.workerName)}
+                                                                    onClick={() =>
+                                                                        addRowForWorker(
+                                                                            row.workerName,
+                                                                        )
+                                                                    }
                                                                     className="text-muted-foreground hover:text-primary shrink-0 rounded p-1"
                                                                     aria-label={`Add row for ${row.workerName}`}>
                                                                     <Plus className="size-4" />
@@ -876,11 +740,9 @@ export function TimesheetImportClient({
                                                             rowIndex={i}
                                                             field="dateIn"
                                                             value={row.dateIn}
-                                                            invalid={
-                                                                parseDate(
-                                                                    row.dateIn,
-                                                                ) == null
-                                                            }
+                                                            invalid={isPreviewDateInvalid(
+                                                                row.dateIn,
+                                                            )}
                                                             onCommit={
                                                                 updateEditableRow
                                                             }
@@ -893,11 +755,9 @@ export function TimesheetImportClient({
                                                             displayText={
                                                                 row.timeIn
                                                             }
-                                                            invalid={
-                                                                parseTimeForHours(
-                                                                    row.timeIn,
-                                                                ) == null
-                                                            }
+                                                            invalid={isPreviewTimeInInvalid(
+                                                                row.timeIn,
+                                                            )}
                                                             onCommit={
                                                                 updateEditableRow
                                                             }
@@ -908,11 +768,9 @@ export function TimesheetImportClient({
                                                             rowIndex={i}
                                                             field="dateOut"
                                                             value={row.dateOut}
-                                                            invalid={
-                                                                parseDate(
-                                                                    row.dateOut,
-                                                                ) == null
-                                                            }
+                                                            invalid={isPreviewDateInvalid(
+                                                                row.dateOut,
+                                                            )}
                                                             onCommit={
                                                                 updateEditableRow
                                                             }
@@ -926,11 +784,9 @@ export function TimesheetImportClient({
                                                                 row.timeOut ||
                                                                 "—"
                                                             }
-                                                            invalid={
-                                                                parseTimeForHours(
-                                                                    row.timeOut,
-                                                                ) == null
-                                                            }
+                                                            invalid={isPreviewTimeOutInvalid(
+                                                                row.timeOut,
+                                                            )}
                                                             onCommit={
                                                                 updateEditableRow
                                                             }
