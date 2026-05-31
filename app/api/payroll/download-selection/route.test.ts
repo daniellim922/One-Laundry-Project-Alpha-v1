@@ -2,17 +2,16 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
     createClient: vi.fn(),
-    listPayrollsForDownload: vi.fn(),
+    queryPayrollSelectionRows: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
-    createClient: (...args: unknown[]) =>
-        mocks.createClient(...args),
+    createClient: (...args: unknown[]) => mocks.createClient(...args),
 }));
 
-vi.mock("@/services/payroll/list-payrolls-for-download", () => ({
-    listPayrollsForDownload: (...args: unknown[]) =>
-        mocks.listPayrollsForDownload(...args),
+vi.mock("@/services/payroll/_shared/query-payroll-selection-rows", () => ({
+    queryPayrollSelectionRows: (...args: unknown[]) =>
+        mocks.queryPayrollSelectionRows(...args),
 }));
 
 import { GET } from "@/app/api/payroll/download-selection/route";
@@ -34,7 +33,7 @@ describe("GET /api/payroll/download-selection", () => {
     });
 
     it("returns download selection rows", async () => {
-        mocks.listPayrollsForDownload.mockResolvedValue([
+        mocks.queryPayrollSelectionRows.mockResolvedValue([
             {
                 id: "payroll-1",
                 workerId: "worker-1",
@@ -78,7 +77,7 @@ describe("GET /api/payroll/download-selection", () => {
     });
 
     it("returns an empty state without error", async () => {
-        mocks.listPayrollsForDownload.mockResolvedValue([]);
+        mocks.queryPayrollSelectionRows.mockResolvedValue([]);
 
         const response = await GET();
 
@@ -98,11 +97,13 @@ describe("GET /api/payroll/download-selection", () => {
         await expect(response.json()).resolves.toEqual(
             unauthorizedRouteJsonEnvelope(),
         );
-        expect(mocks.listPayrollsForDownload).not.toHaveBeenCalled();
+        expect(mocks.queryPayrollSelectionRows).not.toHaveBeenCalled();
     });
 
     it("returns 401 when the authenticated user has no email", async () => {
-        mocks.createClient.mockResolvedValue(resolvedSupabaseSignedInMissingEmail());
+        mocks.createClient.mockResolvedValue(
+            resolvedSupabaseSignedInMissingEmail(),
+        );
 
         const response = await GET();
 
@@ -110,6 +111,6 @@ describe("GET /api/payroll/download-selection", () => {
         await expect(response.json()).resolves.toEqual(
             unauthorizedRouteJsonEnvelope(),
         );
-        expect(mocks.listPayrollsForDownload).not.toHaveBeenCalled();
+        expect(mocks.queryPayrollSelectionRows).not.toHaveBeenCalled();
     });
 });

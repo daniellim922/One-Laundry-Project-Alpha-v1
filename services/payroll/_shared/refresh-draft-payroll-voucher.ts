@@ -10,7 +10,9 @@ import { db } from "@/lib/db";
 import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll-voucher-values";
 import { countPayrollPublicHolidays } from "@/services/payroll/public-holiday-payroll";
 
-export type DraftPayrollExecutor = Pick<typeof db, "select" | "update">;
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+export type DraftPayrollExecutor = Pick<DbTransaction, "select" | "update">;
 
 export type DraftPayrollRefreshRow = Pick<
     typeof payrollTable.$inferSelect,

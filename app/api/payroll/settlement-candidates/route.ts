@@ -1,6 +1,6 @@
 import { requireCurrentApiUser } from "@/app/api/_shared/auth";
 import { apiSuccess } from "@/app/api/_shared/responses";
-import { listDraftPayrollsForSettlement } from "@/services/payroll/list-draft-payrolls-for-settlement";
+import { queryPayrollSelectionRows } from "@/services/payroll/_shared/query-payroll-selection-rows";
 
 export async function GET() {
     const auth = await requireCurrentApiUser();
@@ -8,6 +8,6 @@ export async function GET() {
         return auth;
     }
 
-    const rows = await listDraftPayrollsForSettlement();
+    const rows = await queryPayrollSelectionRows("Draft");
     return apiSuccess(rows);
 }
