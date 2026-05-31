@@ -1,3 +1,5 @@
+"use client";
+
 import { formatDmyInput } from "@/utils/time/calendar-date";
 
 export function placeCaretAtEnd(el: HTMLElement) {
@@ -7,6 +9,19 @@ export function placeCaretAtEnd(el: HTMLElement) {
     range.collapse(false);
     sel?.removeAllRanges();
     sel?.addRange(range);
+}
+
+function insertTextAtSelection(text: string) {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    const textNode = document.createTextNode(text);
+    range.insertNode(textNode);
+    range.setStartAfter(textNode);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
 }
 
 export function ContentEditableDateCell(props: {
@@ -40,7 +55,7 @@ export function ContentEditableDateCell(props: {
                 e.preventDefault();
                 const text = e.clipboardData.getData("text/plain");
                 const formatted = formatDmyInput(text.replace(/\D/g, ""));
-                document.execCommand("insertText", false, formatted);
+                insertTextAtSelection(formatted);
             }}
             className={`min-w-28 rounded px-2 py-1.5 outline-none focus:ring-2 focus:ring-ring focus:ring-inset ${invalid ? "text-destructive" : ""}`}>
             {value}

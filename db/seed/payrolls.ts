@@ -195,6 +195,8 @@ function generatePayrolls(): PayrollEntry[] {
                 isZeroTimesheetLocal,
             });
             const employment = buildSeedEmploymentSnapshot(worker, period);
+            // Zero-timesheet local FT workers: derive restDayRate only for voucher
+            // calculation (public-holiday pay); persisted restDayRate stays unchanged.
             const employmentForCalc =
                 isZeroTimesheetLocal && employment.monthlyPay != null
                     ? {
@@ -230,7 +232,6 @@ function generatePayrolls(): PayrollEntry[] {
                     ...voucherValues,
                     voucherNumber: `2025-${String((voucherSequence += 1)).padStart(4, "0")}`,
                     restDayRate: employment.restDayRate,
-                    hourlyRate: employment.hourlyRate,
                 } as VoucherEntry,
             });
         }

@@ -20,14 +20,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
-
-function RequiredMark() {
-    return (
-        <span className="text-destructive ml-0.5" aria-hidden="true">
-            *
-        </span>
-    );
-}
+import { RequiredMark } from "@/app/dashboard/worker/_shared/required-mark";
 
 type PaymentMethodFieldsProps = {
     control: Control<WorkerUpsertFormInput>;
@@ -67,6 +60,9 @@ export function PaymentMethodFields({
                                 field.onChange(method);
 
                                 if (method === "PayNow") {
+                                    form.setValue("bankAccountNumber", "", {
+                                        shouldDirty: true,
+                                    });
                                     const currentPhone =
                                         form.getValues("phone");
                                     const currentPayNowPhone =
@@ -83,9 +79,19 @@ export function PaymentMethodFields({
                                     }
                                 }
 
+                                if (method === "Bank Transfer") {
+                                    form.setValue("payNowPhone", "", {
+                                        shouldDirty: true,
+                                    });
+                                }
+
                                 if (method === "Cash") {
-                                    form.setValue("payNowPhone", "");
-                                    form.setValue("bankAccountNumber", "");
+                                    form.setValue("payNowPhone", "", {
+                                        shouldDirty: true,
+                                    });
+                                    form.setValue("bankAccountNumber", "", {
+                                        shouldDirty: true,
+                                    });
                                 }
                             }}
                             disabled={disabled}>

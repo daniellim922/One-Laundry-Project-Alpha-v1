@@ -49,10 +49,16 @@ function ConfirmActionDialog({
     confirmPendingLabel: string;
     dialogContentClassName?: string;
 }) {
+    function handleOpenChange(nextOpen: boolean) {
+        if (!nextOpen && pending) return;
+        onOpenChange(nextOpen);
+    }
+
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>{trigger}</DialogTrigger>
             <DialogContent
+                showCloseButton={!pending}
                 className={cn(
                     "[&_button]:cursor-pointer flex flex-col gap-4",
                     dialogContentClassName,

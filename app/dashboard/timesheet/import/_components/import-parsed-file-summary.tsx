@@ -1,5 +1,7 @@
 import type { AttendRecordOutput } from "@/utils/payroll/parse-attendrecord";
 
+import { Button } from "@/components/ui/button";
+
 export function ImportParsedFileSummary({
     fileName,
     parsedData,
@@ -15,12 +17,13 @@ export function ImportParsedFileSummary({
         <>
             <div className="flex flex-wrap items-center gap-4">
                 <p className="font-medium">{fileName}</p>
-                <button
+                <Button
                     type="button"
-                    onClick={onReset}
-                    className="text-primary hover:underline text-sm">
+                    variant="link"
+                    size="sm"
+                    onClick={onReset}>
                     Upload a different file
-                </button>
+                </Button>
             </div>
             <div className="text-muted-foreground text-sm">
                 <p>

@@ -88,7 +88,6 @@ export function useTimesheetImport(workers: TimesheetImportWorker[]) {
                     return;
                 }
                 setParsedData(result);
-                setEditableRows(flattenForPreview(result, workers, {}));
                 setFile(file);
             } catch (err) {
                 setError(
@@ -105,10 +104,8 @@ export function useTimesheetImport(workers: TimesheetImportWorker[]) {
 
     React.useEffect(() => {
         if (!parsedData) return;
-        setEditableRows(
-            flattenForPreview(parsedData, workers, manualWorkerMatches),
-        );
-    }, [parsedData, workers, manualWorkerMatches]);
+        setEditableRows(flattenForPreview(parsedData, workers, {}));
+    }, [parsedData, workers]);
 
     const updateEditableRow = React.useCallback(
         (

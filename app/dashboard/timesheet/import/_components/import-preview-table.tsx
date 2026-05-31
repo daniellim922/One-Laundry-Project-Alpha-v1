@@ -79,17 +79,13 @@ export function ImportPreviewTable({
                             return (
                                 <TableRow
                                     key={i}
-                                    className={
-                                        [
-                                            hasRowError(row) &&
-                                                "bg-destructive/10 hover:bg-destructive/25",
-                                            isFirstInGroup &&
-                                                idx > 0 &&
-                                                "border-t-2 border-muted-foreground/20",
-                                        ]
-                                            .filter(Boolean)
-                                            .join(" ") || undefined
-                                    }>
+                                    className={cn(
+                                        hasRowError(row) &&
+                                            "bg-destructive/10 hover:bg-destructive/25",
+                                        isFirstInGroup &&
+                                            idx > 0 &&
+                                            "border-t-2 border-muted-foreground/20",
+                                    )}>
                                     <TableCell
                                         className={cn(
                                             "p-1 min-w-[180px]",

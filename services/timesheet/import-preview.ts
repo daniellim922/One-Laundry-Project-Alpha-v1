@@ -95,10 +95,9 @@ export function previewRowToImportWire(row: TimesheetImportPreviewRow): {
 
     const timeIn = toTimesheetWireTimeHms(row.timeIn);
     const timeOutRaw = String(row.timeOut ?? "").trim();
-    const timeOut =
-        !timeOutRaw || /^\s+$/.test(timeOutRaw)
-            ? "23:59:59"
-            : toTimesheetWireTimeHms(row.timeOut);
+    const timeOut = !timeOutRaw
+        ? "23:59:59"
+        : toTimesheetWireTimeHms(row.timeOut);
 
     return { dateIn, dateOut, timeIn, timeOut };
 }
@@ -127,7 +126,7 @@ export function isPreviewTimeInInvalid(timeStr: string): boolean {
 /** Empty time-out is allowed (import defaults to end-of-day wire time). */
 export function isPreviewTimeOutInvalid(timeStr: string): boolean {
     const trimmed = String(timeStr ?? "").trim();
-    if (!trimmed || /^\s+$/.test(trimmed)) return false;
+    if (!trimmed) return false;
     const wire = toTimesheetWireTimeHms(timeStr);
     return !isTimesheetWireTimeStrict(wire);
 }
@@ -136,9 +135,7 @@ export function hasRowError(row: TimesheetImportPreviewRow): boolean {
     return !previewRowPassesImportValidation(row);
 }
 
-export function groupRowsByWorker(
-    rows: TimesheetImportPreviewRow[],
-): {
+export function groupRowsByWorker(rows: TimesheetImportPreviewRow[]): {
     row: TimesheetImportPreviewRow;
     flatIndex: number;
     isFirstInGroup: boolean;
@@ -153,19 +150,12 @@ export function groupRowsByWorker(
         list.push({ row, index: i });
         groups.set(row.workerName, list);
     }
-    const workerOrder: string[] = [];
-    for (const row of rows) {
-        if (!workerOrder.includes(row.workerName)) {
-            workerOrder.push(row.workerName);
-        }
-    }
     const result: {
         row: TimesheetImportPreviewRow;
         flatIndex: number;
         isFirstInGroup: boolean;
     }[] = [];
-    for (const name of workerOrder) {
-        const list = groups.get(name) ?? [];
+    for (const [, list] of groups.entries()) {
         for (let j = 0; j < list.length; j++) {
             result.push({
                 row: list[j]!.row,

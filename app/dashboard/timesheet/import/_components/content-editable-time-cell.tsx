@@ -1,3 +1,5 @@
+"use client";
+
 import { placeCaretAtEnd } from "./content-editable-date-cell";
 
 /** Enforce HH:MM format as user types - digits only, auto-insert colon */

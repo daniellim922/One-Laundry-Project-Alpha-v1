@@ -20,7 +20,12 @@ export async function generateAdvancePdfAfterCreate(
     } catch (e) {
         if (e instanceof Error && e.message === "ADVANCE_PDF_TIMEOUT") {
             console.warn(
-                "[advance] PDF upload timed out; continuing to list (record already saved)",
+                `[advance] PDF upload timed out for advance request ${advanceRequestId}; continuing to list (record already saved)`,
+            );
+        } else {
+            console.error(
+                `[advance] PDF generation/upload failed for advance request ${advanceRequestId}`,
+                e,
             );
         }
     }

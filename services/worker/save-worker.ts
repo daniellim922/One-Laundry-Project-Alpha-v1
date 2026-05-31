@@ -4,7 +4,7 @@ import type { WorkerUpsertValues } from "@/db/schemas/worker-employment";
 import { employmentTable } from "@/db/tables/employmentTable";
 import { workerTable, type InsertWorker } from "@/db/tables/workerTable";
 import { db } from "@/lib/db";
-import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
+import { synchronizeWorkerDraftPayrollsInTx } from "@/services/payroll/synchronize-worker-draft-payrolls";
 import { workerUpsertToRows } from "@/services/worker/worker-upsert-rows";
 
 type SaveWorkerResult =
@@ -17,34 +17,38 @@ export async function createWorker(
     const { worker, employment } = workerUpsertToRows(data);
 
     try {
-        const [employmentRow] = await db
-            .insert(employmentTable)
-            .values({
-                ...employment,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            })
-            .returning({ id: employmentTable.id });
+        const workerId = await db.transaction(async (tx) => {
+            const [employmentRow] = await tx
+                .insert(employmentTable)
+                .values({
+                    ...employment,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                })
+                .returning({ id: employmentTable.id });
 
-        const employmentId = employmentRow?.id;
-        if (!employmentId) {
-            return { success: false, error: "Failed to create employment" };
-        }
+            const employmentId = employmentRow?.id;
+            if (!employmentId) {
+                throw new Error("Failed to create employment");
+            }
 
-        const [workerRow] = await db
-            .insert(workerTable)
-            .values({
-                ...worker,
-                employmentId,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            } satisfies InsertWorker)
-            .returning({ id: workerTable.id });
+            const [workerRow] = await tx
+                .insert(workerTable)
+                .values({
+                    ...worker,
+                    employmentId,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                } satisfies InsertWorker)
+                .returning({ id: workerTable.id });
 
-        const workerId = workerRow?.id;
-        if (!workerId) {
-            return { success: false, error: "Failed to create worker" };
-        }
+            const id = workerRow?.id;
+            if (!id) {
+                throw new Error("Failed to create worker");
+            }
+
+            return id;
+        });
 
         return { success: true, id: workerId };
     } catch (error) {
@@ -73,30 +77,37 @@ export async function updateWorker(
             return { success: false, error: "Worker not found" };
         }
 
-        await db
-            .update(employmentTable)
-            .set({
-                ...employment,
-                updatedAt: new Date(),
-            })
-            .where(eq(employmentTable.id, existing.employmentId));
+        await db.transaction(async (tx) => {
+            await tx
+                .update(employmentTable)
+                .set({
+                    ...employment,
+                    updatedAt: new Date(),
+                })
+                .where(eq(employmentTable.id, existing.employmentId));
 
-        await db
-            .update(workerTable)
-            .set({
-                ...worker,
-                updatedAt: new Date(),
-            })
-            .where(eq(workerTable.id, id));
+            await tx
+                .update(workerTable)
+                .set({
+                    ...worker,
+                    updatedAt: new Date(),
+                })
+                .where(eq(workerTable.id, id));
 
-        const sync = await synchronizeWorkerDraftPayrolls({ workerId: id });
-        if ("error" in sync) {
-            return { success: false, error: sync.error };
-        }
+            const sync = await synchronizeWorkerDraftPayrollsInTx(tx, {
+                workerId: id,
+            });
+            if ("error" in sync) {
+                throw new Error(sync.error);
+            }
+        });
 
         return { success: true, id };
     } catch (error) {
         console.error("Error updating worker", error);
+        if (error instanceof Error) {
+            return { success: false, error: error.message };
+        }
         return { success: false, error: "Failed to update worker" };
     }
 }

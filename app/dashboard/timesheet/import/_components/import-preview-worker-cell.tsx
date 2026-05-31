@@ -1,5 +1,7 @@
 import { Plus, TriangleAlert } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { SelectSearch } from "@/components/ui/SelectSearch";
 import type { TimesheetImportWorkerMatchGroup } from "../worker-matching";
 import type { TimesheetImportWorker } from "../worker-matching";
@@ -47,13 +49,14 @@ export function ImportPreviewWorkerCell({
                     Source: {importedName}
                 </p>
             </div>
-            <button
+            <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 onClick={() => onAddRowForWorker(importedName)}
-                className="text-muted-foreground hover:text-primary shrink-0 rounded p-1"
                 aria-label={`Add row for ${importedName}`}>
-                <Plus className="size-4" />
-            </button>
+                <Plus className={cn("size-4")} />
+            </Button>
         </div>
     );
 }

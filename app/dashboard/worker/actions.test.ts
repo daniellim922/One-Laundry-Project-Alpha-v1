@@ -100,6 +100,9 @@ function queueUpdateResolved() {
 describe("createWorker", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.db.transaction.mockImplementation(async (callback) =>
+            callback(mocks.db),
+        );
         mocks.createClient.mockResolvedValue({
             auth: {
                 getUser: vi.fn().mockResolvedValue({
@@ -200,6 +203,9 @@ describe("createWorker", () => {
 describe("updateWorker", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mocks.db.transaction.mockImplementation(async (callback) =>
+            callback(mocks.db),
+        );
         mocks.createClient.mockResolvedValue({
             auth: {
                 getUser: vi.fn().mockResolvedValue({
@@ -212,7 +218,7 @@ describe("updateWorker", () => {
                 }),
             },
         });
-        mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({
+        mocks.synchronizeWorkerDraftPayrollsInTx.mockResolvedValue({
             success: true,
         });
     });
@@ -281,7 +287,7 @@ describe("updateWorker", () => {
         queueSelectWorker([{ id: "worker-1", employmentId: "employment-1" }]);
         queueUpdateResolved();
         queueUpdateResolved();
-        mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({
+        mocks.synchronizeWorkerDraftPayrollsInTx.mockResolvedValue({
             error: "Failed to synchronize draft payrolls",
         });
 
@@ -301,9 +307,12 @@ describe("updateWorker", () => {
         const result = await updateWorker("worker-1", buildWorkerPayload());
 
         expect(result).toEqual({ success: true, id: "worker-1" });
-        expect(mocks.synchronizeWorkerDraftPayrolls).toHaveBeenCalledWith({
-            workerId: "worker-1",
-        });
+        expect(mocks.synchronizeWorkerDraftPayrollsInTx).toHaveBeenCalledWith(
+            mocks.db,
+            {
+                workerId: "worker-1",
+            },
+        );
         expect(mocks.revalidatePath).toHaveBeenCalledWith("/dashboard/worker");
         expect(mocks.revalidatePath).toHaveBeenCalledWith(
             "/dashboard/worker/all",

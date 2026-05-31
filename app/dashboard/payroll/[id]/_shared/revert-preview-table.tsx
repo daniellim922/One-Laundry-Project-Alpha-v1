@@ -32,6 +32,16 @@ const statusToneMap: Record<string, string> = {
     ...advanceLoanToneClassName,
 };
 
+const currencyFmt = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+});
+
+function formatCurrencyAmount(amount: number | null | undefined): string {
+    if (amount == null || Number.isNaN(Number(amount))) return "—";
+    return currencyFmt.format(Number(amount));
+}
+
 function StatusBadgePair({
     currentStatus,
     futureStatus,
@@ -67,118 +77,131 @@ function revertPreviewRowIsExpandable(row: RevertPreviewRow): boolean {
 }
 
 function RevertPreviewExpandedLines({ row }: { row: RevertPreviewRow }) {
-    if (row.timesheetLines?.length) {
-        return (
-            <Table className="text-sm">
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Current Status</TableHead>
-                        <TableHead>Future Status</TableHead>
-                        <TableHead>Date in</TableHead>
-                        <TableHead>Date out</TableHead>
-                        <TableHead>Time in</TableHead>
-                        <TableHead>Time out</TableHead>
-                        <TableHead>Hours</TableHead>
-                        <TableHead className="text-right">View</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {row.timesheetLines.map((line) => (
-                        <TableRow key={line.id}>
-                            <StatusBadgePair
-                                currentStatus={row.currentStatus}
-                                futureStatus={row.futureStatus}
-                            />
-                            <TableCell>
-                                {formatEnGbDmyNumericFromCalendar(line.dateIn)}
-                            </TableCell>
-                            <TableCell>
-                                {formatEnGbDmyNumericFromCalendar(line.dateOut)}
-                            </TableCell>
-                            <TableCell>{localTimeHm(line.timeIn)}</TableCell>
-                            <TableCell>{localTimeHm(line.timeOut)}</TableCell>
-                            <TableCell>
-                                {Number(line.hours).toFixed(2)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 shrink-0"
-                                    asChild>
-                                    <Link
-                                        href={`/dashboard/timesheet/${line.id}/view`}
-                                        aria-label="View">
-                                        <Eye className="size-4" aria-hidden />
-                                    </Link>
-                                </Button>
-                            </TableCell>
+    return (
+        <>
+            {row.timesheetLines?.length ? (
+                <Table className="text-sm">
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Current Status</TableHead>
+                            <TableHead>Future Status</TableHead>
+                            <TableHead>Date in</TableHead>
+                            <TableHead>Date out</TableHead>
+                            <TableHead>Time in</TableHead>
+                            <TableHead>Time out</TableHead>
+                            <TableHead>Hours</TableHead>
+                            <TableHead className="text-right">View</TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        );
-    }
-
-    if (row.advanceInstallmentLines?.length) {
-        return (
-            <Table className="text-sm">
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Current Status</TableHead>
-                        <TableHead>Future Status</TableHead>
-                        <TableHead>Repayment date</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead className="text-right">View</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {row.advanceInstallmentLines.map((line) => (
-                        <TableRow key={line.id}>
-                            <StatusBadgePair
-                                currentStatus={row.currentStatus}
-                                futureStatus={row.futureStatus}
-                            />
-                            <TableCell>
-                                {line.repaymentDate
-                                    ? formatEnGbDmyNumericFromCalendar(
-                                          line.repaymentDate,
-                                      )
-                                    : "—"}
-                            </TableCell>
-                            <TableCell>{`$${line.amount}`}</TableCell>
-                            <TableCell className="text-right">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 shrink-0"
-                                    asChild>
-                                    <Link
-                                        href={`/dashboard/advance/${line.advanceRequestId}`}
-                                        aria-label="View">
-                                        <Eye className="size-4" aria-hidden />
-                                    </Link>
-                                </Button>
-                            </TableCell>
+                    </TableHeader>
+                    <TableBody>
+                        {row.timesheetLines.map((line) => (
+                            <TableRow key={line.id}>
+                                <StatusBadgePair
+                                    currentStatus={row.currentStatus}
+                                    futureStatus={row.futureStatus}
+                                />
+                                <TableCell>
+                                    {formatEnGbDmyNumericFromCalendar(
+                                        line.dateIn,
+                                    )}
+                                </TableCell>
+                                <TableCell>
+                                    {formatEnGbDmyNumericFromCalendar(
+                                        line.dateOut,
+                                    )}
+                                </TableCell>
+                                <TableCell>
+                                    {localTimeHm(line.timeIn)}
+                                </TableCell>
+                                <TableCell>
+                                    {localTimeHm(line.timeOut)}
+                                </TableCell>
+                                <TableCell>
+                                    {Number(line.hours).toFixed(2)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 shrink-0"
+                                        asChild>
+                                        <Link
+                                            href={`/dashboard/timesheet/${line.id}/view`}
+                                            aria-label="View">
+                                            <Eye
+                                                className="size-4"
+                                                aria-hidden
+                                            />
+                                        </Link>
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            ) : null}
+            {row.advanceInstallmentLines?.length ? (
+                <Table className="text-sm">
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Current Status</TableHead>
+                            <TableHead>Future Status</TableHead>
+                            <TableHead>Repayment date</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead className="text-right">View</TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        );
-    }
-
-    return null;
+                    </TableHeader>
+                    <TableBody>
+                        {row.advanceInstallmentLines.map((line) => (
+                            <TableRow key={line.id}>
+                                <StatusBadgePair
+                                    currentStatus={row.currentStatus}
+                                    futureStatus={row.futureStatus}
+                                />
+                                <TableCell>
+                                    {line.repaymentDate
+                                        ? formatEnGbDmyNumericFromCalendar(
+                                              line.repaymentDate,
+                                          )
+                                        : "—"}
+                                </TableCell>
+                                <TableCell>
+                                    {formatCurrencyAmount(line.amount)}
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 shrink-0"
+                                        asChild>
+                                        <Link
+                                            href={`/dashboard/advance/${line.advanceRequestId}`}
+                                            aria-label="View">
+                                            <Eye
+                                                className="size-4"
+                                                aria-hidden
+                                            />
+                                        </Link>
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            ) : null}
+        </>
+    );
 }
 
 export function RevertPreviewTable({ rows }: { rows: RevertPreviewRow[] }) {
-    const [expandedRowNames, setExpandedRowNames] = React.useState<
-        Record<string, boolean>
+    const [expandedRowIndexes, setExpandedRowIndexes] = React.useState<
+        Record<number, boolean>
     >({});
 
-    function toggleRowExpanded(name: string) {
-        setExpandedRowNames((prev) => ({
+    function toggleRowExpanded(index: number) {
+        setExpandedRowIndexes((prev) => ({
             ...prev,
-            [name]: !prev[name],
+            [index]: !prev[index],
         }));
     }
 
@@ -192,18 +215,18 @@ export function RevertPreviewTable({ rows }: { rows: RevertPreviewRow[] }) {
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {rows.map((row) => {
+                {rows.map((row, idx) => {
                     if (revertPreviewRowIsExpandable(row)) {
-                        const expanded = !!expandedRowNames[row.name];
+                        const expanded = !!expandedRowIndexes[idx];
                         return (
-                            <React.Fragment key={row.name}>
+                            <React.Fragment key={idx}>
                                 <TableRow>
                                     <TableCell className="font-medium">
                                         <button
                                             type="button"
                                             aria-expanded={expanded}
                                             onClick={() =>
-                                                toggleRowExpanded(row.name)
+                                                toggleRowExpanded(idx)
                                             }
                                             className="flex cursor-pointer items-center gap-2 text-left underline-offset-4 hover:underline">
                                             <ChevronDown
@@ -236,7 +259,7 @@ export function RevertPreviewTable({ rows }: { rows: RevertPreviewRow[] }) {
                     }
 
                     return (
-                        <TableRow key={row.name}>
+                        <TableRow key={idx}>
                             <TableCell className="font-medium">
                                 {row.name}
                             </TableCell>

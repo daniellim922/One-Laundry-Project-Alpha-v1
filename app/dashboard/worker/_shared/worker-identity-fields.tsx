@@ -10,14 +10,7 @@ import {
     InputGroupInput,
 } from "@/components/ui/input-group";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
-
-function RequiredMark() {
-    return (
-        <span className="text-destructive ml-0.5" aria-hidden="true">
-            *
-        </span>
-    );
-}
+import { RequiredMark } from "@/app/dashboard/worker/_shared/required-mark";
 
 type WorkerIdentityFieldsProps = {
     control: Control<WorkerUpsertFormInput>;

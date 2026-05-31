@@ -73,7 +73,16 @@ function AdvanceRequestFormEditable({
         setError(null);
         setPending(true);
 
-        const payload = toSaveAdvanceRequestInput(data);
+        let payload;
+        try {
+            payload = toSaveAdvanceRequestInput(data);
+        } catch (e) {
+            setPending(false);
+            setError(
+                e instanceof Error ? e.message : "Invalid advance request data",
+            );
+            return;
+        }
 
         if (isEditMode && advanceRequestId) {
             const result = await updateAdvanceRequest(

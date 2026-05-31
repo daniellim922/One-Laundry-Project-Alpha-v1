@@ -19,6 +19,7 @@ export type WorkerUpsertRows = {
 export function workerUpsertToRows(data: WorkerUpsertValues): WorkerUpsertRows {
     const paymentMethod = data.paymentMethod ?? null;
     const isPayNow = paymentMethod === "PayNow";
+    const isBankTransfer = paymentMethod === "Bank Transfer";
 
     const employment: WorkerUpsertRows["employment"] = {
         employmentType: data.employmentType,
@@ -34,7 +35,9 @@ export function workerUpsertToRows(data: WorkerUpsertValues): WorkerUpsertRows {
         restDayRate: data.restDayRate ?? null,
         paymentMethod,
         payNowPhone: isPayNow ? trimToNull(data.payNowPhone) : null,
-        bankAccountNumber: trimToNull(data.bankAccountNumber),
+        bankAccountNumber: isBankTransfer
+            ? trimToNull(data.bankAccountNumber)
+            : null,
     };
 
     const worker: WorkerUpsertRows["worker"] = {

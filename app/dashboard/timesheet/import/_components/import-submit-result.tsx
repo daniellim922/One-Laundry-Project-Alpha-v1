@@ -11,17 +11,28 @@ export function ImportSubmitResult({
         <div className="mt-4 rounded-lg border p-4">
             {submitResult.imported != null && submitResult.imported > 0 && (
                 <p className="text-emerald-600 dark:text-emerald-400">
-                    Imported {submitResult.imported} entries.
+                    Imported {submitResult.imported}{" "}
+                    {submitResult.imported === 1 ? "entry" : "entries"}.
                     {submitResult.skipped != null &&
                         submitResult.skipped > 0 && (
-                            <> Skipped {submitResult.skipped} duplicates.</>
+                            <>
+                                {" "}
+                                Skipped {submitResult.skipped}{" "}
+                                {submitResult.skipped === 1
+                                    ? "duplicate"
+                                    : "duplicates"}
+                                .
+                            </>
                         )}
                 </p>
             )}
             {submitResult.imported === 0 && (submitResult.skipped ?? 0) > 0 && (
                 <p className="text-amber-600 dark:text-amber-400">
                     No new entries imported. Skipped {submitResult.skipped}{" "}
-                    duplicates.
+                    {(submitResult.skipped ?? 0) === 1
+                        ? "duplicate"
+                        : "duplicates"}
+                    .
                 </p>
             )}
             {submitResult.errors && submitResult.errors.length > 0 && (
