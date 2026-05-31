@@ -156,3 +156,30 @@ Drizzle table definitions live in `db/tables/` and are re-exported from `db/sche
 - Use status unions from `types/status.ts` and badge tone maps from `types/badge-tones.ts`.
 - Update `AGENTS.md`, `CONTEXT.md`, `README.md`, or `test/ARCHITECTURE.md` after schema, API, testing, or domain changes when those docs are affected.
 - Reference `CONTEXT.md` for correct domain terminology.
+
+## Cursor Cloud specific instructions
+
+### Hosted Supabase (README default)
+
+Copy `.env.example` → `.env` with `DATABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` from your project, plus `USERFLOW_LOGIN_EMAIL` / `USERFLOW_LOGIN_PASSWORD` for Playwright. Run `npm run db:reset`, create the Auth user in Supabase Studio, then `npm run dev`. See `README.md`.
+
+### Local Supabase CLI (unattended Cloud Agent / no hosted secrets)
+
+When hosted credentials are not injected, the repo can run fully on **local Supabase** (Postgres `54322`, API `54321`). Dev code already defaults `DATABASE_URL` and `NEXT_PUBLIC_*` to those endpoints when unset (`lib/env.ts`, `lib/env-public.ts`).
+
+**One-time VM prep (not in the update script):** Docker must be running. If `docker` hits permission errors, `sudo chmod 666 /var/run/docker.sock` (or start `dockerd` with `fuse-overlayfs` storage driver in nested VMs — see Cursor Cloud setup notes).
+
+**Per session (after `npm install`):**
+
+1. `npx supabase start` — keep this running.
+2. `npm run db:reset` — schema + deterministic seed (37 workers, payroll history, etc.).
+3. Create an operator Auth user (example): Admin API `POST http://127.0.0.1:54321/auth/v1/admin/users` with the local `SERVICE_ROLE_KEY` from `npx supabase status -o env`.
+4. Optional: create the `documents` storage bucket via Storage API if exercising PDF upload/download.
+5. `.env` — at minimum set `USERFLOW_LOGIN_EMAIL` and `USERFLOW_LOGIN_PASSWORD` for Playwright; add explicit `DATABASE_URL` / `NEXT_PUBLIC_*` if you override local defaults or run `npm run build` (production env validation requires public Supabase vars).
+6. `npm run dev` (or `npx playwright install chromium` once, then `npm run test:e2e`).
+
+**Lint / unit / build:** `npm run lint`, `npm run test:unit`, `npm run build` (with public Supabase vars in `.env` for production build).
+
+**GUI sign-in caveat:** Headless Chromium against `next dev` may submit the login form before the client bundle hydrates (native GET to `/login?email=...`). Supabase password auth itself works (`curl` to `/auth/v1/token` or Playwright after hydration). Prefer the **Desktop pane** for manual login verification, or wait for client hydration before clicking **Sign in** in automation.
+
+**Quick data smoke test without UI:** query seeded workers, e.g. `npx tsx` + `postgres` client against `postgresql://postgres:postgres@127.0.0.1:54322/postgres`.
