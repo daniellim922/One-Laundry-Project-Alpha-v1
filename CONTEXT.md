@@ -1,103 +1,229 @@
-# Context
+# Workforce Payroll and Back-Office Spend
 
-## Decisions
+This context supports internal operators running worker employment, attendance, payroll, salary advances, and business expenses for a laundry business. Customer-facing laundry orders, customer service delivery, inventory, and full accounting ledger workflows are outside this context.
 
-### Employment is a mutable view container
+## Language
 
-**Status:** Resolved  
-Employment exists as a separate table purely for normalization and ease of view. It is **not** a historical contract record. A Worker has exactly one current Employment. Rate changes mutate this record directly; Draft payrolls re-sync from it, while Settled payrolls remain frozen via voucher snapshots.
+### People and Employment
 
-### Rest-day premium is premium for working on rest days
+**Worker**:
+A person on staff whose attendance, payroll, advances, and employment terms are managed in this context. A Worker has one current Employment.
+_Avoid_: Staff member, Employee except in formal document copy
 
-**Status:** Resolved  
-`restDays` on the voucher represents **rest days worked** (typically Sundays worked), inferred as the rest-day budget minus days with no timesheet entry (assumed rest days taken off). The UI allows manual override for edge cases such as 5-Sunday months. The hardcoded budget of 4 should eventually be replaced by dynamic counting of actual rest days in the pay period.
+**Employee**:
+Formal wording for a Worker in signed documents and legal-style copy. Employee is not a separate entity in this context.
+_Avoid_: Using Employee as the domain entity name
 
-### CPF is a manually-entered flat amount
+**Employment**:
+The current pay and work arrangement for a Worker: employment type, arrangement, shift pattern, pay rates, minimum working hours, CPF, and payment method. Employment is not a historical contract record.
+_Avoid_: Contract, employment history
 
-**Status:** Resolved  
-CPF is intentionally modeled as a flat manually-entered amount on Employment, not a computed percentage. This is an operational simplification.
+**Employment type**:
+The Full Time or Part Time classification that determines how a Worker's payroll earnings are calculated.
+_Avoid_: Arrangement, shift pattern, worker category
 
-### Paid installments are immutable outside of payroll Reopen
+**Employment arrangement**:
+The Foreign Worker or Local Worker classification used for operational and compliance grouping.
+_Avoid_: Employment type, visa details, shift pattern
 
-**Status:** Resolved  
-Installments in `Installment Paid` status cannot be edited or deleted through the advance request form. The server-side save flow must reject updates that omit or alter paid installments, and matching paid rows should remain stored as-is while only unpaid rows are replaced. The only path back to `Installment Loan` is via payroll `Reopen`, which reverts the entire settled run.
+**Shift pattern**:
+The Day Shift or Night Shift setting on Employment that tells the system how imported attendance cells become Timesheet entries. Shift pattern is not a roster, schedule, or employment type.
+_Avoid_: Employment type, arrangement, roster
 
-### Timesheet entries are single-day or overnight shifts
+**Worker status**:
+Whether a Worker is available for new operational work. Inactive Workers keep their history and may still have existing Draft payrolls finalized, but they are not eligible for new timesheets or new payroll creation.
+_Avoid_: Archived, deleted, disabled
 
-**Status:** Resolved  
-The timesheet model supports `dateIn`/`dateOut` spanning two calendar days to handle overnight shifts (e.g., 20:00 to 08:00 next day). Rest day and public holiday logic keys off `dateIn` only. Spans beyond two days are accepted as a known edge case that is practically unlikely.
+**Payment method**:
+How Payroll Grand Total is disbursed to a Worker: PayNow, Bank Transfer, or Cash, with payout identifiers where needed.
+_Avoid_: Payout channel when the configured worker payment method is meant
 
-### Timesheet hours must be a faithful derivative of timestamps
+### Time and Attendance
 
-**Status:** Resolved  
-`timesheetTable.hours` must always equal the computed duration from `dateIn`/`timeIn`/`dateOut`/`timeOut`. The invariant now lives in the database: `hours` is a Postgres generated column, and create/update/import flows write timestamps only. This keeps backfilled legacy rows and future edits structurally aligned without trusting application-side recalculation.
+**Timesheet entry**:
+A single worked interval for one Worker. A Timesheet entry may be same-day or overnight, and its Hours are derived from clock-in and clock-out timestamps rather than manually authored.
+_Avoid_: Attendance row, clock record
 
-### Unresolved worker matches block timesheet imports
+**Hours worked**:
+The decimal worked duration derived from a Timesheet entry's clock-in and clock-out timestamps. Hours worked are not manually authored.
+_Avoid_: Hours when minimum hours or overtime hours are meant
 
-**Status:** Resolved  
-An **Unresolved worker match** is an imported timesheet worker name that does not map to exactly one existing active **Worker** by normalized exact name matching. Timesheet imports must not be submitted while any imported worker name remains unresolved; the operator must explicitly map each unresolved name to an active Worker before import. A manual match applies to every row with the same imported worker name in the current file. Multiple imported names may be manually matched to the same **Worker**. The imported worker name remains visible as source evidence, while the selected **Worker** is the identity used for import.
+**Timesheet settlement status**:
+Whether a Timesheet entry has been covered by a Settled Payroll. Use Timesheet Unpaid and Timesheet Paid to avoid confusing this status with Advance Paid, Installment Paid, or Expense Paid.
+_Avoid_: Paid, unpaid
 
-### Inactive workers block new work but preserve existing drafts
+**AttendRecord import**:
+The process of turning an external attendance file into Timesheet entries. AttendRecord is source evidence for attendance, not a native entity in this context.
+_Avoid_: AttendRecord row as a domain object
 
-**Status:** Resolved  
-`Inactive` status must block **new** payroll creation and **new** timesheet entry at the service boundary. Existing Draft payrolls for the worker remain settleable so final pay can be processed. Existing timesheets should be editable until their containing payroll is Settled, after which they are protected by the `Timesheet Paid` flag as usual. The service layer (not just the UI) must enforce the status check.
+**Unresolved worker match**:
+An imported worker name that does not resolve to exactly one active Worker. The operator must map unresolved names before the import can create Timesheet entries.
+_Avoid_: Missing employee, unknown staff
 
-### Expense module is independent of payroll
+### Payroll
 
-**Status:** Resolved  
-Expenses are a separate back-office spend module with no Worker or Payroll allocation. They track shop overhead and general operational costs only.
+**Payroll**:
+A pay run for one Worker over one Pay period, with a Payroll date and Draft or Settled status. Several Payrolls may be generated or settled together operationally, but the domain object remains one Worker's run.
+_Avoid_: Monthly payroll batch, payslip
 
-### Expenses snapshot master data names at write time
+**Pay period**:
+The inclusive date range of Timesheet entries considered for one Payroll.
+_Avoid_: Cycle, month when the range is not exactly a calendar month
 
-**Status:** Resolved  
-`expensesTable` stores denormalized text columns (`supplierName`, `categoryName`, `subcategoryName`) rather than FK references to the lookup tables (`expense_supplier`, `expense_category`, `expense_subcategory`). This is intentional: an expense record preserves the supplier/category names as they were when recorded, so historical expenses remain readable even if master data is later renamed or deleted. Same pattern as payroll vouchers snapshotting employment data.
+**Payroll date**:
+The payment or processing date for a Payroll. Payroll date should be on or after the Pay period ends.
+_Avoid_: Pay day when a precise payroll date is meant
 
-### Expense category type (Fixed/Variable) dropped
+**Payroll status**:
+Draft means a Payroll's figures can still change. Settled means the Payroll has been finalized and its covered Timesheet entries and advance Installments have been applied.
+_Avoid_: Approved, locked, posted
 
-**Status:** Resolved  
-The binary Fixed/Variable classification on expense categories was removed because operators need more than two grouping buckets. Categories are now just a name — reporting rollups can be built on the category/subcategory hierarchy itself without a hardcoded type enum.
+**Payroll voucher**:
+The calculation snapshot for a Payroll: copied employment terms, hours, premiums, deductions, CPF, advance recovery, payout details, Payroll Subtotal, Payroll Grand Total, and Voucher number. A Payroll voucher is not a separate pay run.
+_Avoid_: Payslip, voucher as a separate payroll
 
-### Expense status is bidirectional
+**Payroll download**:
+A stored PDF or ZIP download for existing Payrolls. Payroll download is a delivery artifact and does not recalculate the Payroll.
+_Avoid_: Export when a Payroll download is meant, payslip file as a separate payroll entity
 
-**Status:** Resolved  
-`Expense Submitted ↔ Expense Paid` is a two-way transition. Reverting to Expense Submitted re-enables full editing with no residual locks — there is no "has been paid before" flag. The status field alone gates editability (edits blocked while Expense Paid). This is simpler than payroll Settle/Reopen because expenses have no linked timesheets, advances, or worker balances to unwind.
+**Voucher number**:
+The human-facing sequential identifier on a Payroll voucher, formatted by year such as 2026-0001. It is for auditability and communication, not numeric calculation.
+_Avoid_: Payroll ID, payslip ID
 
-### Only Expense Submitted expenses may be deleted
+**Revert payroll**:
+The action of moving a Settled Payroll back to Draft. Reverting a Payroll returns its covered Timesheet entries to Timesheet Unpaid and its affected Installments to Installment Loan.
+_Avoid_: Reopen, undo payout
 
-**Status:** Resolved  
-Deletion removes an **Expense** permanently and is allowed only while status is **Expense Submitted**. **Expense Paid** rows cannot be deleted; the operator must revert to **Expense Submitted** first. There is no soft-delete or archive status for expenses in the current model.
+**Monthly pay**:
+The fixed base amount for a Full Time Worker in a Pay period.
+_Avoid_: Salary when a precise payroll component is meant
 
-### Expense export is a full-register Excel download
+**Minimum working hours**:
+The hours threshold for a Full Time Worker in a Pay period.
+_Avoid_: Quota, target hours
 
-**Status:** Resolved  
-Operators can download all expenses as one **.xlsx** file (**Expense export**): one row per expense with the column set and SGD decimal money fields described in **UBIQUITOUS_LANGUAGE.md**. The database continues to store money as integer cents. Filtered or date-range exports are deferred until product asks for them.
+**Minimum-hours bulk update**:
+A batch operation that changes Minimum working hours for multiple active Full Time Workers and refreshes their affected Draft Payrolls.
+_Avoid_: Mass edit when the payroll refresh implication matters
 
-### Payroll subTotal clamped at zero
+**Overtime hours**:
+Full Time hours worked above Minimum working hours in a Pay period.
+_Avoid_: OT in formal domain docs
 
-**Status:** Resolved  
-`subTotal` must never be negative. `hoursNotMetDeduction` is capped so that it cannot exceed `basePayTotal`. `Grand Total` is explicitly allowed to go negative; the business accepts this as unrecoverable debt when a worker has left, and does not pursue external recovery.
+**Overtime pay**:
+Overtime hours multiplied by the Worker's Hourly rate.
+_Avoid_: Overtime premium when the rule is plain hourly multiplication
 
-### Part-timers are pure hourly with no premiums
+**Rest days worked**:
+Rest days in the Pay period on which the Worker worked.
+_Avoid_: Rest days taken
 
-**Status:** Resolved — code contradiction found  
-Part-time workers earn `hourlyRate × totalHoursWorked` only. No overtime, no rest day pay, no public holiday pay. The current code in `utils/payroll/payroll-utils.ts` incorrectly adds `publicHolidayPay` to part-time earnings; this must be removed. The glossary has been corrected.
+**Rest-day premium**:
+Premium pay for Rest days worked. It compensates work on a rest day, not resting.
+_Avoid_: Weekend pay unless the rest day is explicitly a weekend
 
-### Voucher numbers are year-scoped sequential serials
+**Public holiday pay**:
+Premium pay for configured public holidays worked in the Pay period.
+_Avoid_: PH pay in domain docs
 
-**Status:** Resolved  
-Voucher numbers must be sequential within each calendar year (e.g., `2025-0042`), not random hex-derived values. The current `generateVoucherNumber()` implementation is a placeholder to be replaced.
+**Public holiday calendar**:
+Shared payroll master data of named public-holiday dates used to calculate public holiday pay for Draft Payrolls. Updating the calendar changes affected Draft Payrolls, but not Settled Payrolls.
+_Avoid_: Worker-specific holiday setting
 
-### Payroll date must be on or after period end
+**Hours-not-met deduction**:
+A Payroll voucher deduction when a Full Time Worker's hours are below Minimum working hours.
+_Avoid_: Penalty
 
-**Status:** Resolved  
-`payrollDate` must satisfy `payrollDate >= periodEnd`. Payroll is generated only after the pay period has closed; mid-period advances are handled by the separate Advance module.
+**Part Time payroll**:
+Hourly rate multiplied by Hours worked. Part Time Workers do not receive overtime pay, rest-day premium, public holiday pay, or hours-not-met deduction in this context.
+_Avoid_: Applying Full Time payroll components to Part Time Workers
 
-### Payroll period overlap is a DB-level invariant
+**CPF**:
+The employee CPF amount deducted from Payroll Subtotal toward Payroll Grand Total. CPF is manually entered as a flat amount; employer CPF is outside the current context.
+_Avoid_: Employer CPF, computed CPF percentage
 
-**Status:** Resolved  
-The no-overlap rule for pay periods per worker must be enforced by a Postgres exclusion constraint, not just application code. It should be declared in the Drizzle schema (or a tracked raw SQL migration) so it is recreated on `db:migrate`.
+**Payroll Subtotal**:
+Payroll voucher earnings after hours-not-met deduction, before CPF and advance recovery.
+_Avoid_: Gross pay
 
-### Guided monthly payroll workflow is a calendar-month checklist
+**Payroll Grand Total**:
+The final Payroll voucher amount after CPF and advance recovery. Payroll Grand Total may be negative.
+_Avoid_: Take-home pay when negative amounts are possible
 
-**Status:** Resolved  
-The dashboard “Guided monthly payroll workflow” is **not** bound to a specific pay period, payroll month, or payroll date. It keys completion off the **current business month** in `Asia/Singapore` and tracks whether the operator performed each action (mass minimum-hours update, timesheet import, draft payroll generation, payroll ZIP download, draft payroll settlement) at least once in that month. A new business month **resets** the visible checklist. Which historical periods payrolls or timesheets refer to is irrelevant to the guide.
+**Guided monthly payroll workflow**:
+The dashboard checklist for the current business month that orients operators through the usual payroll sequence. It is guidance and navigation, not proof that a specific Pay period is complete.
+_Avoid_: Audit checklist, payroll completion ledger
+
+### Salary Advances
+
+**Advance request**:
+A Worker's signed request for salary money before normal payroll recovery, including requested amount, purpose, signatures, and request status.
+_Avoid_: Loan application unless policy uses loan language explicitly
+
+**Installment**:
+An individual repayment line for an Advance request. Installments are recovered through Payroll when their repayment date falls in the Pay period.
+_Avoid_: Advance when the repayment line is meant
+
+**Advance request status**:
+Advance Loan means at least one Installment is still outstanding. Advance Paid means all linked Installments are Installment Paid.
+_Avoid_: Settled, paid without the Advance prefix
+
+**Installment status**:
+Installment Loan means this repayment line is still outstanding. Installment Paid means this repayment line has been recovered through Payroll.
+_Avoid_: Paid without the Installment prefix
+
+**Paid Installment**:
+An Installment in Installment Paid status. A Paid Installment is immutable from the Advance request form and can only return to Installment Loan when the Payroll that recovered it is reverted.
+_Avoid_: Editing a recovered installment directly
+
+### Operating Expenses
+
+**Operating Expense**:
+A recorded business spend line for laundry operations. Operating Expenses are independent of Workers, Payroll, and salary advances; they are not reimbursements through Payroll.
+_Avoid_: Expense when the distinction from payroll or advances matters, reimbursement
+
+**Operating Expense category**:
+A top-level user-maintained grouping for Operating Expenses.
+_Avoid_: Ledger code unless accounting formally adopts ledger codes
+
+**Operating Expense subcategory**:
+A user-maintained label under one Operating Expense category.
+_Avoid_: Free-text tag
+
+**Operating Expense supplier**:
+Vendor master data for Operating Expenses, with a supplier name and optional supplier GST registration number.
+_Avoid_: Worker, creditor unless accounting requires that term
+
+**Operating Expense master data**:
+The shared set of Operating Expense categories, subcategories, and suppliers used when recording Operating Expenses.
+_Avoid_: Expense settings
+
+**Operating Expense snapshot**:
+The category, subcategory, and supplier names saved on an Operating Expense as they were recorded. Later master-data changes do not rewrite historical Operating Expenses.
+_Avoid_: Live category reference when history is meant
+
+**Operating Expense status**:
+The status of an Operating Expense, using the labels Expense Submitted and Expense Paid in UI and data. Expense Submitted is editable and deletable; Expense Paid is not editable or deletable until reverted to Expense Submitted.
+_Avoid_: Treating Expense Submitted or Expense Paid as statuses for payroll, advances, or generic expenses
+
+**Operating Expense Subtotal**:
+The pre-GST amount for an Operating Expense.
+_Avoid_: Payroll Subtotal
+
+**Operating Expense GST**:
+The Goods and Services Tax amount for an Operating Expense.
+_Avoid_: CPF, tax on payroll
+
+**Operating Expense Grand Total**:
+Operating Expense Subtotal plus Operating Expense GST.
+_Avoid_: Payroll Grand Total
+
+**Operating Expense export**:
+A downloadable .xlsx register of Operating Expenses. Amounts render as SGD decimal values for spreadsheet use, even when persisted money values are stored as cents.
+_Avoid_: Payroll download, accounting ledger posting
+
+### Access
+
+**Authenticated operator**:
+A signed-in internal user who performs workforce payroll and back-office spend work in this app. Operators share one capability model unless separate roles are introduced later.
+_Avoid_: Customer, tenant, public user
