@@ -21,10 +21,8 @@ export async function getExpenseMonthlyAggregates(): Promise<MonthlySupplierAmou
             subcategoryName: expensesTable.subcategoryName,
             year: yearExpr,
             month: monthExpr,
-            grandTotalAmount:
-                sql<number>`coalesce(sum(${expensesTable.grandTotalCents}), 0)::double precision / 100.0`,
-            subTotalAmount:
-                sql<number>`coalesce(sum(${expensesTable.subtotalCents}), 0)::double precision / 100.0`,
+            grandTotalAmount: sql<number>`coalesce(sum(${expensesTable.grandTotalCents}), 0)::double precision / 100.0`,
+            subTotalAmount: sql<number>`coalesce(sum(${expensesTable.subtotalCents}), 0)::double precision / 100.0`,
         })
         .from(expensesTable)
         .where(

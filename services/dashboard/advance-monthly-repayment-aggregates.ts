@@ -1,14 +1,14 @@
 import { and, eq, gte, isNotNull, lte, sql } from "drizzle-orm";
 
-import { db } from "@/lib/db";
-import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
-import { advanceTable } from "@/db/tables/advanceTable";
-import { employmentTable } from "@/db/tables/employmentTable";
-import { workerTable } from "@/db/tables/workerTable";
 import {
     dashboardYearWindow,
     yearMonthSqlFromColumn,
 } from "@/app/dashboard/_shared/dashboard-year-window";
+import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
+import { advanceTable } from "@/db/tables/advanceTable";
+import { employmentTable } from "@/db/tables/employmentTable";
+import { workerTable } from "@/db/tables/workerTable";
+import { db } from "@/lib/db";
 import type { MonthlyWorkerAmountAggregatesPayload } from "@/types/monthly-worker-amount-aggregates";
 
 export async function getAdvanceMonthlyRepaymentAggregates(): Promise<MonthlyWorkerAmountAggregatesPayload> {
@@ -32,7 +32,10 @@ export async function getAdvanceMonthlyRepaymentAggregates(): Promise<MonthlyWor
             advanceRequestTable,
             eq(advanceTable.advanceRequestId, advanceRequestTable.id),
         )
-        .innerJoin(workerTable, eq(advanceRequestTable.workerId, workerTable.id))
+        .innerJoin(
+            workerTable,
+            eq(advanceRequestTable.workerId, workerTable.id),
+        )
         .innerJoin(
             employmentTable,
             eq(workerTable.employmentId, employmentTable.id),

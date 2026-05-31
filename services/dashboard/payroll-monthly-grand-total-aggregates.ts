@@ -4,7 +4,7 @@ import { employmentTable } from "@/db/tables/employmentTable";
 import { payrollTable } from "@/db/tables/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { workerTable } from "@/db/tables/workerTable";
-import { payrollSettledAggregateQueryBuilder } from "@/app/dashboard/_shared/payroll-aggregate-base";
+import { payrollSettledAggregateQueryBuilder } from "@/services/dashboard/_shared/payroll-aggregate-base";
 import type {
     MonthlyWorkerAmountAggregatesPayload,
     MonthlyWorkerAmountRow,

@@ -2,7 +2,7 @@ import { GuidedMonthlyWorkflowCard } from "@/components/dashboard/guided-monthly
 import { MonthlyPayrollCategoryStackedOverviewCard } from "@/components/dashboard/monthly-payroll-category-stacked-overview-card";
 import { getGuidedMonthlyWorkflowSnapshot } from "@/services/payroll/guided-monthly-workflow";
 
-import { getPayrollMonthlyCategoryAggregates } from "./get-payroll-monthly-category-aggregates";
+import { getPayrollMonthlyCategoryAggregates } from "@/services/dashboard/payroll-monthly-category-aggregates";
 
 export async function DashboardHomeLoader() {
     const workflowSnapshot = await getGuidedMonthlyWorkflowSnapshot();
