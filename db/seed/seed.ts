@@ -19,7 +19,9 @@ import {
     payrollVoucherTable,
     type InsertPayrollVoucher,
 } from "@/db/tables/payrollVoucherTable";
+import type { WorkerUpsertValues } from "@/db/schemas/worker-employment";
 import { workers } from "@/db/seed/workers";
+import { workerUpsertToRows } from "@/services/worker/worker-upsert-rows";
 import { timesheets } from "./timesheet";
 import { advances } from "./advances";
 import { payrolls } from "./payrolls";
@@ -28,60 +30,43 @@ import { seedExpenseMasterData } from "./expense-master-data";
 import { SEED_TIMESTAMP } from "./constants";
 
 type SplitWorkerSeed = {
-    employment: InsertEmployment;
-    worker: Omit<InsertWorker, "employmentId">;
+    employment: Omit<InsertEmployment, "id" | "createdAt" | "updatedAt">;
+    worker: Omit<
+        InsertWorker,
+        "employmentId" | "id" | "createdAt" | "updatedAt"
+    >;
 };
 
-type WorkerSeed = (typeof workers)[number] &
-    Partial<{
-        cpf: number;
-        monthlyPay: number;
-        minimumWorkingHours: number;
-        hourlyRate: number;
-        restDayRate: number;
-        paymentMethod: string;
-        payNowPhone: string;
-        bankAccountNumber: string;
-        email: string;
-        phone: string;
-        countryOfOrigin: string;
-        race: string;
-        employmentType: string;
-        employmentArrangement: string;
-        shiftPattern: string;
-        status: string;
-    }>;
-
-function splitWorkerSeed(seed: WorkerSeed): SplitWorkerSeed {
-    const employment: InsertEmployment = {
-        employmentType: seed.employmentType ?? null,
-        employmentArrangement: seed.employmentArrangement ?? null,
-        ...(seed.shiftPattern != null
-            ? {
-                  shiftPattern:
-                      seed.shiftPattern as InsertEmployment["shiftPattern"],
-              }
-            : {}),
-        cpf: seed.cpf ?? null,
-        monthlyPay: seed.monthlyPay ?? null,
-        minimumWorkingHours: seed.minimumWorkingHours ?? null,
-        hourlyRate: seed.hourlyRate ?? null,
-        restDayRate: seed.restDayRate ?? null,
-        paymentMethod: seed.paymentMethod ?? null,
-        payNowPhone: seed.payNowPhone ?? null,
-        bankAccountNumber: seed.bankAccountNumber ?? null,
-    };
-
-    const worker: Omit<InsertWorker, "employmentId"> = {
+function splitWorkerSeed(seed: (typeof workers)[number]): SplitWorkerSeed {
+    const upsert = {
         name: seed.name,
-        email: seed.email ?? null,
-        phone: seed.phone ?? null,
-        status: seed.status ?? "Active",
-        countryOfOrigin: seed.countryOfOrigin ?? null,
-        race: seed.race ?? null,
-    };
+        email: "email" in seed ? seed.email : undefined,
+        phone: "phone" in seed ? seed.phone : undefined,
+        status: seed.status,
+        countryOfOrigin:
+            "countryOfOrigin" in seed ? seed.countryOfOrigin : undefined,
+        race: "race" in seed ? seed.race : undefined,
+        employmentType: seed.employmentType,
+        employmentArrangement: seed.employmentArrangement,
+        shiftPattern:
+            "shiftPattern" in seed && seed.shiftPattern != null
+                ? seed.shiftPattern
+                : "Day Shift",
+        cpf: "cpf" in seed ? seed.cpf : undefined,
+        monthlyPay: "monthlyPay" in seed ? seed.monthlyPay : undefined,
+        minimumWorkingHours:
+            "minimumWorkingHours" in seed
+                ? seed.minimumWorkingHours
+                : undefined,
+        hourlyRate: "hourlyRate" in seed ? seed.hourlyRate : undefined,
+        restDayRate: "restDayRate" in seed ? seed.restDayRate : undefined,
+        paymentMethod: seed.paymentMethod,
+        payNowPhone: "payNowPhone" in seed ? seed.payNowPhone : undefined,
+        bankAccountNumber:
+            "bankAccountNumber" in seed ? seed.bankAccountNumber : undefined,
+    } as WorkerUpsertValues;
 
-    return { employment, worker };
+    return workerUpsertToRows(upsert);
 }
 
 async function seedTimesheets(

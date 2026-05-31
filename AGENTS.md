@@ -112,29 +112,30 @@ Drizzle table definitions live in `db/tables/` and are re-exported from `db/sche
 
 ## Key file locations
 
-| What | Where |
-|---|---|
-| Route pages + server actions | `app/dashboard/<feature>/` |
-| API routes and shared transport helpers | `app/api/`, `app/api/_shared/` |
-| Shared service/use-case modules | `services/<feature>/` |
-| React PDF voucher templates | `services/pdf/react-pdf/` |
-| Supabase Storage helpers (documents bucket) | `lib/supabase/storage.ts` |
-| Client PDF generate + upload | `lib/client/generate-and-upload-pdf.ts` |
-| Guided workflow snapshot + activity signals | `services/payroll/guided-monthly-workflow.ts`, `services/payroll/guided-monthly-workflow-activity.ts`, `db/tables/guidedMonthlyWorkflowActivityTable.ts` |
-| Shared payroll master data | `app/dashboard/payroll/public-holidays/`, `services/payroll/public-holiday-calendar.ts`, `db/tables/publicHolidayTable.ts`, `db/schemas/public-holiday.ts` |
-| Operating Expense master data + service | `app/dashboard/expenses/categories/`, `services/expense/`, `db/tables/expenseCategoryTable.ts`, `db/tables/expenseSubcategoryTable.ts`, `db/tables/expenseSupplierTable.ts` |
-| Operating Expense API routes | `app/api/expenses/` (CRUD, status transitions, categories, subcategories, suppliers) |
-| Shared UI primitives (read-only) | `components/ui/` |
-| Data table components | `components/data-table/` |
-| Form page shell | `components/form-page-layout.tsx` |
-| Third-party integrations (DB, Tailwind `cn`) | `lib/db.ts`, `lib/utils.ts` |
-| App utilities and domain helpers | `utils/` grouped: `nav/` (`nav-config.ts`, `dashboard-nav-features.ts`), `time/` (`calendar-date.ts`, `hm-time.ts`, `intl-en-gb.ts`, `iso-local-midnight.ts`), `payroll/` (`payroll-utils.ts`, `parse-attendrecord.ts`, `payroll-period-conflicts.ts`), `advance/` (`queries.ts`) |
-| All Drizzle table schemas | `db/tables/` (re-exported via `db/schema.ts`) |
-| Drizzle-derived Zod (forms + aligned API bodies) | `db/schemas/` (`worker-employment.ts`, `payroll-period.ts`, `timesheet-entry.ts`, `advance-request.ts`, `expense.ts`, `api.ts`, …) |
-| Domain status enums + badge tones | `types/status.ts`, `types/badge-tones.ts` |
-| Seeds | `db/seed/` |
-| Schema push | `drizzle.config.ts` via `npm run db:migrate` (`drizzle-kit push`; generated `drizzle/` is gitignored) |
-| Installed local agent skills | `.agents/skills/` |
+| What                                             | Where                                                                                                                                                                                                                                                                             |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Route pages + server actions                     | `app/dashboard/<feature>/`                                                                                                                                                                                                                                                        |
+| API routes and shared transport helpers          | `app/api/`, `app/api/_shared/`                                                                                                                                                                                                                                                    |
+| Shared service/use-case modules                  | `services/<feature>/`                                                                                                                                                                                                                                                             |
+| Worker create/update service                     | `services/worker/save-worker.ts`, `services/worker/worker-upsert-rows.ts`                                                                                                                                                                                                         |
+| React PDF voucher templates                      | `services/pdf/react-pdf/`                                                                                                                                                                                                                                                         |
+| Supabase Storage helpers (documents bucket)      | `lib/supabase/storage.ts`                                                                                                                                                                                                                                                         |
+| Client PDF generate + upload                     | `lib/client/generate-and-upload-pdf.ts`                                                                                                                                                                                                                                           |
+| Guided workflow snapshot + activity signals      | `services/payroll/guided-monthly-workflow.ts`, `services/payroll/guided-monthly-workflow-activity.ts`, `db/tables/guidedMonthlyWorkflowActivityTable.ts`                                                                                                                          |
+| Shared payroll master data                       | `app/dashboard/payroll/public-holidays/`, `services/payroll/public-holiday-calendar.ts`, `db/tables/publicHolidayTable.ts`, `db/schemas/public-holiday.ts`                                                                                                                        |
+| Operating Expense master data + service          | `app/dashboard/expenses/categories/`, `services/expense/`, `db/tables/expenseCategoryTable.ts`, `db/tables/expenseSubcategoryTable.ts`, `db/tables/expenseSupplierTable.ts`                                                                                                       |
+| Operating Expense API routes                     | `app/api/expenses/` (CRUD, status transitions, categories, subcategories, suppliers)                                                                                                                                                                                              |
+| Shared UI primitives (read-only)                 | `components/ui/`                                                                                                                                                                                                                                                                  |
+| Data table components                            | `components/data-table/`                                                                                                                                                                                                                                                          |
+| Form page shell                                  | `components/form-page-layout.tsx`                                                                                                                                                                                                                                                 |
+| Third-party integrations (DB, Tailwind `cn`)     | `lib/db.ts`, `lib/utils.ts`                                                                                                                                                                                                                                                       |
+| App utilities and domain helpers                 | `utils/` grouped: `nav/` (`nav-config.ts`, `dashboard-nav-features.ts`), `time/` (`calendar-date.ts`, `hm-time.ts`, `intl-en-gb.ts`, `iso-local-midnight.ts`), `payroll/` (`payroll-utils.ts`, `parse-attendrecord.ts`, `payroll-period-conflicts.ts`), `advance/` (`queries.ts`) |
+| All Drizzle table schemas                        | `db/tables/` (re-exported via `db/schema.ts`)                                                                                                                                                                                                                                     |
+| Drizzle-derived Zod (forms + aligned API bodies) | `db/schemas/` (`worker-employment.ts`, `payroll-period.ts`, `timesheet-entry.ts`, `advance-request.ts`, `expense.ts`, `api.ts`, …)                                                                                                                                                |
+| Domain status enums + badge tones                | `types/status.ts`, `types/badge-tones.ts`                                                                                                                                                                                                                                         |
+| Seeds                                            | `db/seed/`                                                                                                                                                                                                                                                                        |
+| Schema push                                      | `drizzle.config.ts` via `npm run db:migrate` (`drizzle-kit push`; generated `drizzle/` is gitignored)                                                                                                                                                                             |
+| Installed local agent skills                     | `.agents/skills/`                                                                                                                                                                                                                                                                 |
 
 ## Testing
 
