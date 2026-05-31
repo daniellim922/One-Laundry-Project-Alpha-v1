@@ -120,8 +120,9 @@ function buildSeedEmploymentSnapshot(worker: SeedWorker, period: SeedPeriod) {
         payNowPhone:
             "payNowPhone" in worker ? (worker.payNowPhone ?? null) : null,
         bankAccountNumber:
-            "bankAccountNumber" in worker
-                ? (worker.bankAccountNumber ?? null)
+            "bankAccountNumber" in worker &&
+            typeof worker.bankAccountNumber === "string"
+                ? worker.bankAccountNumber
                 : null,
     };
 }
@@ -230,7 +231,7 @@ function generatePayrolls(): PayrollEntry[] {
                     voucherNumber: `2025-${String((voucherSequence += 1)).padStart(4, "0")}`,
                     restDayRate: employment.restDayRate,
                     hourlyRate: employment.hourlyRate,
-                },
+                } as VoucherEntry,
             });
         }
     }
