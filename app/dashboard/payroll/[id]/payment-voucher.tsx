@@ -17,6 +17,7 @@ import {
     DownloadMetadataTable,
 } from "@/components/ui/download-document-shell";
 import { VoucherSignatureSection } from "@/components/ui/signature-section";
+import type { AdhocLineItem } from "@/db/tables/payrollVoucherTable";
 import { buildVoucherLineItems } from "@/services/payroll/voucher-line-items";
 import { parseIsoToDateStrict } from "@/utils/time/calendar-date";
 import {
@@ -43,7 +44,7 @@ interface PaymentVoucherProps {
         publicHolidayPay: number | null;
         cpf: number | null;
         advance?: number | null;
-        adhoc?: Array<{ name: string; amount: number }>;
+        adhoc?: AdhocLineItem[] | null;
         subTotal: number | null;
         grandTotal: number | null;
         paymentMethod: string | null;

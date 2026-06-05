@@ -1,3 +1,5 @@
+import type { AdhocLineItem } from "@/db/tables/payrollVoucherTable";
+
 export type VoucherLineItem = {
     description: string;
     qty?: number;
@@ -22,7 +24,7 @@ export type VoucherLineItemsInput = {
     publicHolidayPay: number | null;
     cpf: number | null;
     advance?: number | null;
-    adhoc?: Array<{ name: string; amount: number }>;
+    adhoc?: AdhocLineItem[] | null;
     subTotal: number | null;
     grandTotal: number | null;
 };
