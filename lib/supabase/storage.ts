@@ -98,12 +98,24 @@ export function advanceStoragePath(advanceRequestId: string): StoragePath {
     return `advance/${advanceRequestId}/voucher.pdf`;
 }
 
+/**
+ * Uploads (upserts) a PDF to the documents bucket. Accepts a browser `Blob`
+ * (client-side generation) or a Node `Buffer` / `Uint8Array` (server-side
+ * generation via `renderToBuffer`), wrapping byte sources in a `Blob` so the
+ * Supabase client receives a consistent payload.
+ */
 export async function uploadPdf(
     client: SupabaseClient,
     path: StoragePath,
-    blob: Blob,
+    body: Blob | Buffer | Uint8Array,
 ) {
-    const { error } = await client.storage.from(BUCKET).upload(path, blob, {
+    const payload =
+        body instanceof Blob
+            ? body
+            : new Blob([body as unknown as BlobPart], {
+                  type: "application/pdf",
+              });
+    const { error } = await client.storage.from(BUCKET).upload(path, payload, {
         contentType: "application/pdf",
         upsert: true,
     });

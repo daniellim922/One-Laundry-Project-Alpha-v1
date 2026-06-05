@@ -3,6 +3,8 @@ import type { z } from "zod";
 import { requireCurrentApiUser } from "@/app/api/_shared/auth";
 import { apiError, apiSuccess } from "@/app/api/_shared/responses";
 import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
+import { createClient } from "@/lib/supabase/server";
+import { regeneratePayrollPdf } from "@/services/pdf/regenerate-payroll-pdf";
 
 type VoucherMutationFailure = {
     success: false;
@@ -88,6 +90,13 @@ export async function handlePayrollVoucherJsonPatch<
         ]);
     } catch (e) {
         console.error(`revalidateTransportPaths after ${options.logLabel}`, e);
+    }
+
+    try {
+        const supabase = await createClient();
+        await regeneratePayrollPdf(id, supabase);
+    } catch (e) {
+        console.error(`regeneratePayrollPdf after ${options.logLabel}`, e);
     }
 
     return apiSuccess(result);

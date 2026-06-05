@@ -6,6 +6,7 @@ import { employmentTable } from "@/db/tables/employmentTable";
 import { workerTable } from "@/db/tables/workerTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { recordGuidedMonthlyWorkflowStepCompletion } from "@/services/payroll/guided-monthly-workflow-activity";
+import { regeneratePayrollPdfsAfterMutation } from "@/services/pdf/regenerate-payroll-pdfs-best-effort";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
 import { transformNightShiftEntries } from "@/services/timesheet/transform-night-shift-entries";
 import { assertWorkerEligibleForTimesheet } from "@/services/worker/assert-worker-eligible-for-timesheet";
@@ -281,6 +282,7 @@ export async function importAttendRecordTimesheet(
         const affectedWorkerIds = [
             ...new Set(insertedRows.map((row) => row.workerId)),
         ];
+        const payrollIds: string[] = [];
         for (const workerId of affectedWorkerIds) {
             const sync = await synchronizeWorkerDraftPayrolls({ workerId });
             if ("error" in sync) {
@@ -291,7 +293,10 @@ export async function importAttendRecordTimesheet(
                     errors: [...errors, sync.error],
                 };
             }
+            payrollIds.push(...sync.payrollIds);
         }
+
+        await regeneratePayrollPdfsAfterMutation(payrollIds);
     }
 
     return {

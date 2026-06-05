@@ -22,6 +22,10 @@ vi.mock("@/services/payroll/guided-monthly-workflow-activity", () => ({
         mocks.recordGuidedMonthlyWorkflowStepCompletion(...args),
 }));
 
+vi.mock("@/services/pdf/regenerate-payroll-pdfs-best-effort", () => ({
+    regeneratePayrollPdfsAfterMutation: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { importAttendRecordTimesheet } from "@/services/timesheet/import-attend-record-timesheet";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { workerTable } from "@/db/tables/workerTable";
@@ -153,7 +157,10 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
                 makeInsertChainResult(rows),
             ),
         }));
-        mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({ success: true });
+        mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({
+            success: true,
+            payrollIds: [],
+        });
     });
 
     it("imports rows and synchronizes each affected worker once", async () => {
@@ -220,7 +227,7 @@ describe("services/timesheet/import-attend-record-timesheet", () => {
 
     it("returns synchronization failures in the import error list", async () => {
         mocks.synchronizeWorkerDraftPayrolls
-            .mockResolvedValueOnce({ success: true })
+            .mockResolvedValueOnce({ success: true, payrollIds: [] })
             .mockResolvedValueOnce({
                 error: "Failed to synchronize Draft payrolls",
             });

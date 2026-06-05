@@ -23,6 +23,14 @@ vi.mock("@/services/payroll/update-voucher-pay-rates", () => ({
         mocks.updateVoucherPayRate(...args),
 }));
 
+vi.mock("@/lib/supabase/server", () => ({
+    createClient: vi.fn().mockResolvedValue({}),
+}));
+
+vi.mock("@/services/pdf/regenerate-payroll-pdf", () => ({
+    regeneratePayrollPdf: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { PATCH } from "@/app/api/payroll/[id]/voucher-rates/route";
 
 const PAYROLL_1 = "30000000-0000-4000-8000-000000000001";

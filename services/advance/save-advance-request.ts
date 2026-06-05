@@ -1,8 +1,11 @@
 import { and, eq, ne } from "drizzle-orm";
 
 import { db } from "@/lib/db";
+import {
+    regenerateAdvancePdfAfterMutation,
+    regeneratePayrollPdfsAfterMutation,
+} from "@/services/pdf/regenerate-payroll-pdfs-best-effort";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
-import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
 import {
     advanceRequestTable,
     type InsertAdvanceRequest,
@@ -189,25 +192,6 @@ function validateAdvanceInput(
         };
     }
 
-    for (const inst of validInstallments) {
-        if (inst.repaymentDate < requestDate) {
-            return {
-                success: false,
-                error: "Repayment date must be on or after date of request",
-            };
-        }
-    }
-
-    const today = dateToLocalIsoYmd();
-    for (const inst of validInstallments) {
-        if (inst.status !== "Installment Paid" && inst.repaymentDate < today) {
-            return {
-                success: false,
-                error: "Expected repayment date cannot be before today",
-            };
-        }
-    }
-
     return {
         workerId,
         requestDate,
@@ -301,6 +285,9 @@ export async function createAdvanceRequestRecord(
         if ("error" in sync) {
             return { success: false, error: sync.error };
         }
+
+        await regenerateAdvancePdfAfterMutation(requestId);
+        await regeneratePayrollPdfsAfterMutation(sync.payrollIds);
 
         return { success: true, id: requestId };
     } catch (error) {
@@ -398,6 +385,8 @@ export async function updateAdvanceRequestRecord(
             return { success: false, error: sync.error };
         }
 
+        const payrollIds = [...sync.payrollIds];
+
         if (oldWorkerId && oldWorkerId !== parsed.workerId) {
             const oldSync = await synchronizeWorkerDraftPayrolls({
                 workerId: oldWorkerId,
@@ -405,7 +394,11 @@ export async function updateAdvanceRequestRecord(
             if ("error" in oldSync) {
                 return { success: false, error: oldSync.error };
             }
+            payrollIds.push(...oldSync.payrollIds);
         }
+
+        await regenerateAdvancePdfAfterMutation(id);
+        await regeneratePayrollPdfsAfterMutation(payrollIds);
 
         return { success: true, id };
     } catch (error) {

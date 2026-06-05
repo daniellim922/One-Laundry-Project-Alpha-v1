@@ -66,6 +66,7 @@ describe("massUpdateWorkerMinimumWorkingHours", () => {
         vi.clearAllMocks();
         mocks.synchronizeWorkerDraftPayrollsInTx.mockResolvedValue({
             success: true,
+            payrollIds: [],
         });
     });
 
@@ -74,7 +75,11 @@ describe("massUpdateWorkerMinimumWorkingHours", () => {
             updates: [],
         });
 
-        expect(result).toEqual({ updatedCount: 0, failed: [] });
+        expect(result).toEqual({
+            updatedCount: 0,
+            affectedPayrollIds: [],
+            failed: [],
+        });
         expect(mocks.db.transaction).not.toHaveBeenCalled();
         expect(
             mocks.recordGuidedMonthlyWorkflowStepCompletion,
@@ -107,7 +112,7 @@ describe("massUpdateWorkerMinimumWorkingHours", () => {
         });
 
         mocks.synchronizeWorkerDraftPayrollsInTx
-            .mockResolvedValueOnce({ success: true })
+            .mockResolvedValueOnce({ success: true, payrollIds: ["payroll-1"] })
             .mockResolvedValueOnce({
                 error: "Failed to synchronize draft payrolls",
             });
@@ -161,6 +166,7 @@ describe("massUpdateWorkerMinimumWorkingHours", () => {
 
         expect(result).toEqual({
             updatedCount: 0,
+            affectedPayrollIds: [],
             failed: [
                 {
                     workerId: "worker-3",
@@ -179,6 +185,7 @@ describe("massUpdateWorkerMinimumWorkingHours", () => {
 
         expect(result).toEqual({
             updatedCount: 0,
+            affectedPayrollIds: [],
             failed: [
                 {
                     workerId: "worker-4",

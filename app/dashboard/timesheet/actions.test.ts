@@ -28,6 +28,10 @@ vi.mock("@/services/payroll/synchronize-worker-draft-payrolls", () => ({
         mocks.synchronizeWorkerDraftPayrolls(...args),
 }));
 
+vi.mock("@/services/pdf/regenerate-payroll-pdfs-best-effort", () => ({
+    regeneratePayrollPdfsAfterMutation: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { updateTimesheetEntry } from "@/app/dashboard/timesheet/actions";
 
 function mockSelectResolved(rows: unknown[]) {
@@ -55,7 +59,10 @@ describe("updateTimesheetEntry", () => {
                 }),
             },
         });
-        mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({ success: true });
+        mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({
+            success: true,
+            payrollIds: [],
+        });
     });
 
     it("returns error and does not update when entry is Timesheet Paid", async () => {

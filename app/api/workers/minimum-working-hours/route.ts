@@ -2,6 +2,7 @@ import { requireCurrentApiUser } from "@/app/api/_shared/auth";
 import { revalidateTransportPaths } from "@/app/api/_shared/revalidate";
 import { apiError, apiSuccess } from "@/app/api/_shared/responses";
 import { workerMinimumHoursBatchRequestSchema } from "@/db/schemas/api";
+import { regeneratePayrollPdfsAfterMutation } from "@/services/pdf/regenerate-payroll-pdfs-best-effort";
 import { massUpdateWorkerMinimumWorkingHours } from "@/services/worker/mass-update-minimum-working-hours";
 
 export async function PATCH(request: Request) {
@@ -32,6 +33,10 @@ export async function PATCH(request: Request) {
     }
 
     const result = await massUpdateWorkerMinimumWorkingHours(parsedBody.data);
+
+    if (result.affectedPayrollIds.length > 0) {
+        await regeneratePayrollPdfsAfterMutation(result.affectedPayrollIds);
+    }
 
     if (result.updatedCount > 0) {
         revalidateTransportPaths([

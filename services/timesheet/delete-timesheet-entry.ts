@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { db } from "@/lib/db";
+import { regeneratePayrollPdfsAfterMutation } from "@/services/pdf/regenerate-payroll-pdfs-best-effort";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
 
 export async function deleteTimesheetEntry(input: { id: string }) {
@@ -33,6 +34,8 @@ export async function deleteTimesheetEntry(input: { id: string }) {
                 error: sync.error,
             };
         }
+
+        await regeneratePayrollPdfsAfterMutation(sync.payrollIds);
     }
 
     return {

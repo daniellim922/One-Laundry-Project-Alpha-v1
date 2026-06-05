@@ -28,6 +28,10 @@ vi.mock("@/services/payroll/guided-monthly-workflow-activity", () => ({
         mocks.recordGuidedMonthlyWorkflowStepCompletion(...args),
 }));
 
+vi.mock("@/services/pdf/regenerate-payroll-pdfs-best-effort", () => ({
+    regeneratePayrollPdfsAfterMutation: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("@/utils/payroll/payroll-period-conflicts", async () => {
     const actual =
         await vi.importActual<

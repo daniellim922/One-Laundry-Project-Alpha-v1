@@ -14,6 +14,7 @@ import {
 } from "@/db/tables/employmentTable";
 import { workerTable, type InsertWorker } from "@/db/tables/workerTable";
 import { db } from "@/lib/db";
+import { regeneratePayrollPdfsAfterMutation } from "@/services/pdf/regenerate-payroll-pdfs-best-effort";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
 
 function trimToNull(s: string | null | undefined): string | null {
@@ -180,6 +181,8 @@ export async function updateWorker(
         if ("error" in sync) {
             return { success: false, error: sync.error };
         }
+
+        await regeneratePayrollPdfsAfterMutation(sync.payrollIds);
 
         revalidatePath("/dashboard/worker");
         revalidatePath("/dashboard/worker/all");

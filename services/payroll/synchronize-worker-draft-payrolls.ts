@@ -13,7 +13,9 @@ import {
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-export type PayrollSyncResult = { success: true } | { error: string };
+export type PayrollSyncResult =
+    | { success: true; payrollIds: string[] }
+    | { error: string };
 
 async function synchronizeWorkerDraftPayrollsWithExecutor(
     executor: DraftPayrollExecutor,
@@ -38,7 +40,7 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
             );
 
         if (drafts.length === 0) {
-            return { success: true };
+            return { success: true, payrollIds: [] };
         }
 
         const [employmentRow] = await executor
@@ -53,10 +55,16 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
 
         const employment = employmentRow?.employment ?? null;
         if (!employment) {
-            return { success: true };
+            return {
+                success: true,
+                payrollIds: drafts.map((payroll) => payroll.id),
+            };
         }
 
+        const payrollIds: string[] = [];
+
         for (const payroll of drafts) {
+            payrollIds.push(payroll.id);
             const entryRows = await executor
                 .select({
                     hours: timesheetTable.hours,
@@ -85,7 +93,7 @@ async function synchronizeWorkerDraftPayrollsWithExecutor(
             });
         }
 
-        return { success: true };
+        return { success: true, payrollIds };
     } catch (error) {
         console.error("Error synchronizing worker Draft payrolls", error);
         return { error: "Failed to synchronize Draft payrolls" };

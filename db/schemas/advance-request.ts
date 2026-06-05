@@ -4,7 +4,6 @@ import * as z from "zod";
 
 import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
 import { advanceTable } from "@/db/tables/advanceTable";
-import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
 
 const installmentRowSchema = createInsertSchema(advanceTable, {
     amount: z.number().int().positive().optional(),
@@ -55,7 +54,6 @@ export const advanceRequestFormSchema = z
         installmentAmounts: z.array(installmentRowSchema),
     })
     .superRefine((values, ctx) => {
-        const today = dateToLocalIsoYmd();
         let hasValidInstallment = false;
         const amountRequested = values.amount;
         const validInstallmentAmounts: number[] = [];
@@ -80,28 +78,6 @@ export const advanceRequestFormSchema = z
                     path: ["installmentAmounts", i, "repaymentDate"],
                     message:
                         "Expected repayment date is required when amount is set",
-                });
-            }
-
-            if (hasRepaymentDate && repaymentDate < values.requestDate) {
-                ctx.addIssue({
-                    code: "custom",
-                    path: ["installmentAmounts", i, "repaymentDate"],
-                    message:
-                        "Expected repayment date must be on or after date of request",
-                });
-            }
-
-            if (
-                hasRepaymentDate &&
-                row.status !== "Installment Paid" &&
-                /^\d{4}-\d{2}-\d{2}$/.test(repaymentDate) &&
-                repaymentDate < today
-            ) {
-                ctx.addIssue({
-                    code: "custom",
-                    path: ["installmentAmounts", i, "repaymentDate"],
-                    message: "Expected repayment date cannot be before today",
                 });
             }
 

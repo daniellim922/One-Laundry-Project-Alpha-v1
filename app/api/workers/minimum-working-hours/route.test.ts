@@ -21,6 +21,10 @@ vi.mock("@/services/worker/mass-update-minimum-working-hours", () => ({
         mocks.massUpdateWorkerMinimumWorkingHours(...args),
 }));
 
+vi.mock("@/services/pdf/regenerate-payroll-pdfs-best-effort", () => ({
+    regeneratePayrollPdfsAfterMutation: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { PATCH } from "@/app/api/workers/minimum-working-hours/route";
 
 import {
@@ -44,6 +48,7 @@ describe("PATCH /api/workers/minimum-working-hours", () => {
     it("returns structured success and revalidates worker + payroll pages", async () => {
         mocks.massUpdateWorkerMinimumWorkingHours.mockResolvedValue({
             updatedCount: 1,
+            affectedPayrollIds: ["payroll-1"],
             failed: [],
         });
 
@@ -69,6 +74,7 @@ describe("PATCH /api/workers/minimum-working-hours", () => {
             ok: true,
             data: {
                 updatedCount: 1,
+                affectedPayrollIds: ["payroll-1"],
                 failed: [],
             },
         });
