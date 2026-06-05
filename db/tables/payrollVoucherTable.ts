@@ -4,7 +4,13 @@ import {
     text,
     timestamp,
     real,
+    jsonb,
 } from "drizzle-orm/pg-core";
+
+export type AdhocLineItem = {
+    name: string;
+    amount: number;
+};
 
 export const payrollVoucherTable = pgTable("payroll_voucher", {
     id: uuid().primaryKey().defaultRandom(),
@@ -29,6 +35,7 @@ export const payrollVoucherTable = pgTable("payroll_voucher", {
 
     cpf: real("cpf"),
     advance: real("advance"),
+    adhoc: jsonb("adhoc").$type<AdhocLineItem[]>().default([]),
     subTotal: real("sub_total"),
     grandTotal: real("grand_total"),
 

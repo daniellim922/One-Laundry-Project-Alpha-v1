@@ -5,6 +5,7 @@ import * as z from "zod";
 import { employmentTable } from "@/db/tables/employmentTable";
 import { payrollTable } from "@/db/tables/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
+import { adhocLineItemsSchema } from "@/db/schemas/payroll-voucher";
 
 export const expenseStatusPatchRequestSchema = z.object({
     status: z.enum(["Expense Paid", "Expense Submitted"]),
@@ -33,6 +34,11 @@ export const payrollVoucherDaysUpdateRequestSchema = z.object({
     voucherId: z.uuid(),
     restDays: voucherDayFields.shape.restDays,
     publicHolidays: voucherDayFields.shape.publicHolidays,
+});
+
+export const payrollVoucherAdhocUpdateRequestSchema = z.object({
+    voucherId: z.uuid(),
+    adhoc: adhocLineItemsSchema,
 });
 
 export const payrollVoucherPayRateUpdateRequestSchema = z

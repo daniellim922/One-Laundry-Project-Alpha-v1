@@ -82,12 +82,19 @@ export async function refreshDraftPayrollVoucher(
         .filter((advance) => advance.status === "Installment Loan")
         .reduce((sum, advance) => sum + advance.amount, 0);
 
+    const [existingVoucher] = await executor
+        .select({ adhoc: payrollVoucherTable.adhoc })
+        .from(payrollVoucherTable)
+        .where(eq(payrollVoucherTable.id, payroll.payrollVoucherId))
+        .limit(1);
+
     const voucherValues = buildDraftPayrollVoucherValues({
         employment,
         totalHoursWorked,
         restDays,
         publicHolidays,
         advanceTotal,
+        adhoc: existingVoucher?.adhoc ?? [],
     });
 
     await executor

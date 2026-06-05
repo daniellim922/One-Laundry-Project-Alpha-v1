@@ -94,6 +94,13 @@ describe("synchronizeWorkerDraftPayrolls", () => {
                         where: vi.fn().mockResolvedValue([]),
                     }),
                 }),
+            })
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockReturnValue({
+                        limit: vi.fn().mockResolvedValue([{ adhoc: [] }]),
+                    }),
+                }),
             });
 
         const updateWhere = vi.fn().mockResolvedValue(undefined);
@@ -169,6 +176,13 @@ describe("synchronizeWorkerDraftPayrolls", () => {
                 from: vi.fn().mockReturnValue({
                     innerJoin: vi.fn().mockReturnValue({
                         where: vi.fn().mockResolvedValue([]),
+                    }),
+                }),
+            })
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockReturnValue({
+                        limit: vi.fn().mockResolvedValue([{ adhoc: [] }]),
                     }),
                 }),
             });

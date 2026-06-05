@@ -86,6 +86,7 @@ export async function buildPayrollPdfData(
                 publicHolidayPay: voucher.publicHolidayPay,
                 cpf: voucher.cpf,
                 advance: voucher.advance,
+                adhoc: voucher.adhoc ?? [],
                 subTotal: voucher.subTotal,
                 grandTotal: voucher.grandTotal,
                 paymentMethod: voucher.paymentMethod,

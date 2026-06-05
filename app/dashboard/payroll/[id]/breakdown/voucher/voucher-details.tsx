@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import type { SelectPayrollVoucher } from "@/db/tables/payrollVoucherTable";
 import { VoucherEditableMoney } from "../../voucher-editable-money";
 import { VoucherEditableNumber } from "../../voucher-editable-number";
+import { VoucherAdhocEditor } from "../../voucher-adhoc-editor";
 
 type Props = {
     payrollId: string;
@@ -166,6 +167,12 @@ export function VoucherDetails({
                         readOnly={partTimeLocked}
                     />
                 </VoucherDetailSection>
+                <VoucherAdhocEditor
+                    payrollId={payrollId}
+                    voucherId={voucher.id}
+                    adhoc={voucher.adhoc}
+                    readOnly={!isDraft}
+                />
             </CollapsibleContent>
         </Collapsible>
     );

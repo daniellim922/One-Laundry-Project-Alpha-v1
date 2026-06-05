@@ -171,6 +171,7 @@ async function computeDraftVoucherInputs(
         restDays,
         publicHolidays,
         advanceTotal,
+        adhoc: [],
     });
 }
 

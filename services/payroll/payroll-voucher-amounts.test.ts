@@ -54,4 +54,32 @@ describe("calculateVoucherAmounts", () => {
         expect(result.subTotal).toBe(4000);
         expect(result.grandTotal).toBe(4000);
     });
+
+    it("adds adhocTotal to grandTotal without changing subTotal", () => {
+        const result = calculateVoucherAmounts({
+            basePayTotal: 2000,
+            hoursNotMet: 0,
+            hourlyRate: 10,
+            cpf: 100,
+            advance: 50,
+            adhocTotal: 75,
+        });
+
+        expect(result.subTotal).toBe(2000);
+        expect(result.grandTotal).toBe(1925);
+    });
+
+    it("subtracts negative adhocTotal from grandTotal", () => {
+        const result = calculateVoucherAmounts({
+            basePayTotal: 2000,
+            hoursNotMet: 0,
+            hourlyRate: 10,
+            cpf: 0,
+            advance: 0,
+            adhocTotal: -150,
+        });
+
+        expect(result.subTotal).toBe(2000);
+        expect(result.grandTotal).toBe(1850);
+    });
 });

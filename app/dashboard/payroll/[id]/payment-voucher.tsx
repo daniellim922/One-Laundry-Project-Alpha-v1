@@ -17,6 +17,7 @@ import {
     DownloadMetadataTable,
 } from "@/components/ui/download-document-shell";
 import { VoucherSignatureSection } from "@/components/ui/signature-section";
+import { buildVoucherLineItems } from "@/services/payroll/voucher-line-items";
 import { parseIsoToDateStrict } from "@/utils/time/calendar-date";
 import {
     formatEnGbDayMonthLongYear,
@@ -42,6 +43,7 @@ interface PaymentVoucherProps {
         publicHolidayPay: number | null;
         cpf: number | null;
         advance?: number | null;
+        adhoc?: Array<{ name: string; amount: number }>;
         subTotal: number | null;
         grandTotal: number | null;
         paymentMethod: string | null;
@@ -104,103 +106,14 @@ export function PaymentVoucher({
     const voucherDate = payrollDateParsed
         ? formatEnGbDmyNumeric(payrollDateParsed)
         : "";
-    const earnings: LineItem[] = [];
-    const deductions: LineItem[] = [];
-    const isPartTime = voucher.employmentType === "Part Time";
-
-    if (isPartTime) {
-        earnings.push({
-            description: "Hourly Rate",
-            qty: voucher.totalHoursWorked ?? 0,
-            unit: "hrs",
-            rate: voucher.hourlyRate ?? 0,
-            amount:
-                Math.round(
-                    (voucher.totalHoursWorked ?? 0) *
-                        (voucher.hourlyRate ?? 0) *
-                        100,
-                ) / 100,
-        });
-    } else {
-        earnings.push({
-            description: "Monthly Pay",
-            amount: voucher.monthlyPay ?? 0,
-        });
-
-        if (voucher.overtimeHours != null && voucher.overtimeHours > 0) {
-            earnings.push({
-                description: "Overtime",
-                qty: voucher.overtimeHours,
-                unit: "hrs",
-                rate: voucher.hourlyRate ?? 0,
-                amount: voucher.overtimePay ?? 0,
-            });
-        }
-
-        if (
-            voucher.restDays != null &&
-            voucher.restDays > 0 &&
-            voucher.restDayRate != null
-        ) {
-            earnings.push({
-                description: "Rest-day premium",
-                qty: voucher.restDays,
-                unit: "day",
-                rate: voucher.restDayRate,
-                amount: voucher.restDayPay ?? 0,
-            });
-        }
-    }
-
-    if (
-        voucher.publicHolidays != null &&
-        voucher.publicHolidays > 0 &&
-        voucher.restDayRate != null
-    ) {
-        earnings.push({
-            description: "Public Holiday Pay",
-            qty: voucher.publicHolidays,
-            unit: "day",
-            rate: voucher.restDayRate,
-            amount: voucher.publicHolidayPay ?? 0,
-        });
-    }
-
-    const hoursNotMetItem: LineItem | null =
-        voucher.hoursNotMetDeduction != null &&
-        voucher.hoursNotMetDeduction !== 0
-            ? {
-                  description: "Hours Not Met Deduction",
-                  qty: Math.abs(voucher.hoursNotMet ?? 0),
-                  unit: "hrs",
-                  rate: voucher.hourlyRate ?? 0,
-                  amount: voucher.hoursNotMetDeduction,
-              }
-            : null;
-
-    if (voucher.cpf != null && voucher.cpf > 0) {
-        deductions.push({
-            description: "CPF",
-            amount: -voucher.cpf,
-        });
-    }
-
-    if (voucher.advance != null && voucher.advance > 0) {
-        deductions.push({
-            description: "Advance Pay",
-            amount: -voucher.advance,
-        });
-    }
-
-    const grossPay = earnings.reduce((sum, item) => sum + item.amount, 0);
-    const totalDeductions = deductions.reduce(
-        (sum, item) => sum + item.amount,
-        0,
-    );
-    const subTotal =
-        voucher.subTotal ?? grossPay + (hoursNotMetItem?.amount ?? 0);
-    const grandTotal =
-        voucher.grandTotal ?? voucher.subTotal ?? grossPay + totalDeductions;
+    const {
+        earnings,
+        deductions,
+        adhocItems,
+        hoursNotMetItem,
+        subTotal,
+        grandTotal,
+    } = buildVoucherLineItems(voucher);
 
     const baseMethod = voucher.paymentMethod ?? "Cheque / Cash / Bank Transfer";
     const paymentMethodDisplay =
@@ -216,10 +129,13 @@ export function PaymentVoucher({
 
         setIsGenerating(true);
         try {
-            const res = await fetch(`/api/payroll/${payroll.id}/pdf?mode=voucher`, {
-                method: "GET",
-                cache: "no-store",
-            });
+            const res = await fetch(
+                `/api/payroll/${payroll.id}/pdf?mode=voucher`,
+                {
+                    method: "GET",
+                    cache: "no-store",
+                },
+            );
             if (!res.ok) throw new Error(`PDF download failed (${res.status})`);
             const blob = await res.blob();
             const url = URL.createObjectURL(blob);
@@ -287,79 +203,85 @@ export function PaymentVoucher({
                     ]}
                 />
 
-                    {/* Line items table */}
-                    <Table className="w-full border-collapse text-sm [&_th]:align-middle [&_td]:align-middle">
-                        <TableHeader>
-                            <TableRow className="border-y-2 border-black">
-                                <TableHead className="py-2 pl-2 text-left font-semibold text-black">
-                                    DESCRIPTION
-                                </TableHead>
-                                <TableHead className="w-[60px] py-2 text-center font-semibold text-black">
-                                    QTY
-                                </TableHead>
-                                <TableHead className="w-[40px] py-2 text-black" />
-                                <TableHead className="w-[20px] py-2 text-black" />
-                                <TableHead className="w-[80px] py-2 text-center font-semibold text-black">
-                                    RATE
-                                </TableHead>
-                                <TableHead
-                                    className="w-[140px] border-l border-black py-2 text-center font-semibold text-black"
-                                    colSpan={2}>
-                                    AMOUNT
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {/* Earnings */}
-                            {earnings.map((item, i) => (
-                                <ItemRow key={`e-${i}`} item={item} />
-                            ))}
+                {/* Line items table */}
+                <Table className="w-full border-collapse text-sm [&_th]:align-middle [&_td]:align-middle">
+                    <TableHeader>
+                        <TableRow className="border-y-2 border-black">
+                            <TableHead className="py-2 pl-2 text-left font-semibold text-black">
+                                DESCRIPTION
+                            </TableHead>
+                            <TableHead className="w-[60px] py-2 text-center font-semibold text-black">
+                                QTY
+                            </TableHead>
+                            <TableHead className="w-[40px] py-2 text-black" />
+                            <TableHead className="w-[20px] py-2 text-black" />
+                            <TableHead className="w-[80px] py-2 text-center font-semibold text-black">
+                                RATE
+                            </TableHead>
+                            <TableHead
+                                className="w-[140px] border-l border-black py-2 text-center font-semibold text-black"
+                                colSpan={2}>
+                                AMOUNT
+                            </TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {/* Earnings */}
+                        {earnings.map((item, i) => (
+                            <ItemRow key={`e-${i}`} item={item} />
+                        ))}
 
-                            {/* Hours not met (before subtotal) */}
-                            {hoursNotMetItem && (
-                                <ItemRow
-                                    key="hours-not-met"
-                                    item={hoursNotMetItem}
-                                />
-                            )}
+                        {/* Hours not met (before subtotal) */}
+                        {hoursNotMetItem && (
+                            <ItemRow
+                                key="hours-not-met"
+                                item={hoursNotMetItem}
+                            />
+                        )}
 
-                            {/* Subtotal */}
-                            <TableRow className="border-t border-neutral-400">
-                                <TableCell
-                                    className="py-2 pl-2 text-left text-xs font-semibold uppercase tracking-wide text-black"
-                                    colSpan={5}>
-                                    Subtotal
-                                </TableCell>
-                                <TableCell
-                                    className="border-l border-black py-2 pl-3 pr-3 text-right font-semibold"
-                                    colSpan={2}>
-                                    ${currencyFmt.format(subTotal)}
-                                </TableCell>
-                            </TableRow>
+                        {/* Subtotal */}
+                        <TableRow className="border-t border-neutral-400">
+                            <TableCell
+                                className="py-2 pl-2 text-left text-xs font-semibold uppercase tracking-wide text-black"
+                                colSpan={5}>
+                                Subtotal
+                            </TableCell>
+                            <TableCell
+                                className="border-l border-black py-2 pl-3 pr-3 text-right font-semibold"
+                                colSpan={2}>
+                                ${currencyFmt.format(subTotal)}
+                            </TableCell>
+                        </TableRow>
 
-                            {/* Deductions */}
-                            {deductions.map((item, i) => (
-                                <ItemRow key={`d-${i}`} item={item} />
-                            ))}
-                        </TableBody>
-                        <TableFooter className="bg-white print:bg-white">
-                            <TableRow className="border-t-2 border-black hover:bg-white">
-                                <TableCell className="py-3 pl-2 text-sm font-semibold" colSpan={1}>
-                                    Grand Total
-                                </TableCell>
-                                <TableCell
-                                    className="whitespace-nowrap py-3 pr-4 text-right text-sm"
-                                    colSpan={4}>
-                                    {paymentMethodDisplay}
-                                </TableCell>
-                                <TableCell
-                                    className="border-l border-black py-3 pl-3 pr-3 text-right text-base font-bold"
-                                    colSpan={2}>
-                                    ${currencyFmt.format(grandTotal)}
-                                </TableCell>
-                            </TableRow>
-                        </TableFooter>
-                    </Table>
+                        {/* Deductions */}
+                        {deductions.map((item, i) => (
+                            <ItemRow key={`d-${i}`} item={item} />
+                        ))}
+
+                        {adhocItems.map((item, i) => (
+                            <ItemRow key={`a-${i}`} item={item} />
+                        ))}
+                    </TableBody>
+                    <TableFooter className="bg-white print:bg-white">
+                        <TableRow className="border-t-2 border-black hover:bg-white">
+                            <TableCell
+                                className="py-3 pl-2 text-sm font-semibold"
+                                colSpan={1}>
+                                Grand Total
+                            </TableCell>
+                            <TableCell
+                                className="whitespace-nowrap py-3 pr-4 text-right text-sm"
+                                colSpan={4}>
+                                {paymentMethodDisplay}
+                            </TableCell>
+                            <TableCell
+                                className="border-l border-black py-3 pl-3 pr-3 text-right text-base font-bold"
+                                colSpan={2}>
+                                ${currencyFmt.format(grandTotal)}
+                            </TableCell>
+                        </TableRow>
+                    </TableFooter>
+                </Table>
 
                 <VoucherSignatureSection
                     approvedLabel="Payment approved"
@@ -377,18 +299,24 @@ export function PaymentVoucher({
 function ItemRow({ item }: { item: LineItem }) {
     return (
         <TableRow className="border-b border-neutral-200">
-            <TableCell className="py-2 pl-2 font-medium">{item.description}</TableCell>
+            <TableCell className="py-2 pl-2 font-medium">
+                {item.description}
+            </TableCell>
             <TableCell className="w-[60px] py-2 text-center">
                 {item.qty != null ? fmtQty(item.qty, item.unit ?? "") : ""}
             </TableCell>
-            <TableCell className="w-[40px] py-2 pl-1">{item.unit ?? ""}</TableCell>
+            <TableCell className="w-[40px] py-2 pl-1">
+                {item.unit ?? ""}
+            </TableCell>
             <TableCell className="w-[20px] py-2 text-center">
                 {item.qty != null ? "x" : ""}
             </TableCell>
             <TableCell className="w-[80px] py-2 text-center">
                 {item.rate != null ? `$${currencyFmt.format(item.rate)}` : ""}
             </TableCell>
-            <TableCell className="w-[20px] border-l border-black py-2 pl-3">$</TableCell>
+            <TableCell className="w-[20px] border-l border-black py-2 pl-3">
+                $
+            </TableCell>
             <TableCell className="w-[100px] py-2 pr-3 text-right">
                 {item.amount < 0 && "-"}
                 {currencyFmt.format(Math.abs(item.amount))}

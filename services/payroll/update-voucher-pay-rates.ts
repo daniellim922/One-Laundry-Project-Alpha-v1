@@ -91,6 +91,7 @@ export async function updateVoucherPayRate(input: {
             paymentMethod: payrollVoucherTable.paymentMethod,
             payNowPhone: payrollVoucherTable.payNowPhone,
             bankAccountNumber: payrollVoucherTable.bankAccountNumber,
+            adhoc: payrollVoucherTable.adhoc,
         })
         .from(payrollVoucherTable)
         .where(eq(payrollVoucherTable.id, voucherId))
@@ -162,6 +163,7 @@ export async function updateVoucherPayRate(input: {
         restDays,
         publicHolidays,
         advanceTotal: Number(voucher.advance ?? 0),
+        adhoc: voucher.adhoc ?? [],
     });
 
     const persist = await persistDraftPayrollVoucherUpdate({
