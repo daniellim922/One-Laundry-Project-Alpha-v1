@@ -1,6 +1,8 @@
 import { type employmentTable, type payrollVoucherTable } from "@/db/schema";
+import type { AdhocLineItem } from "@/db/tables/payrollVoucherTable";
 import { calculatePay } from "@/utils/payroll/payroll-utils";
 
+import { computeAdhocTotal } from "@/services/payroll/adhoc-line-items";
 import {
     calculateVoucherAmounts,
     clampHoursNotMet,
@@ -30,6 +32,7 @@ export function buildDraftPayrollVoucherValues(input: {
     restDays: number;
     publicHolidays: number;
     advanceTotal: number;
+    adhoc?: AdhocLineItem[];
 }): Pick<
     typeof payrollVoucherTable.$inferInsert,
     | "employmentType"
@@ -49,14 +52,22 @@ export function buildDraftPayrollVoucherValues(input: {
     | "publicHolidayPay"
     | "cpf"
     | "advance"
+    | "adhoc"
     | "subTotal"
     | "grandTotal"
     | "paymentMethod"
     | "payNowPhone"
     | "bankAccountNumber"
 > {
-    const { employment, totalHoursWorked, restDays, publicHolidays, advanceTotal } =
-        input;
+    const {
+        employment,
+        totalHoursWorked,
+        restDays,
+        publicHolidays,
+        advanceTotal,
+        adhoc = [],
+    } = input;
+    const adhocTotal = computeAdhocTotal(adhoc);
 
     const payCalc = calculatePay({
         employmentType: employment.employmentType,
@@ -83,6 +94,7 @@ export function buildDraftPayrollVoucherValues(input: {
             basePayTotal: payCalc.earningsTotal,
             cpf: employment.cpf,
             advance: advanceTotal,
+            adhocTotal,
         });
 
     return {
@@ -103,6 +115,7 @@ export function buildDraftPayrollVoucherValues(input: {
         publicHolidayPay: payCalc.publicHolidayPay,
         cpf: employment.cpf,
         advance: advanceTotal,
+        adhoc,
         subTotal,
         grandTotal,
         paymentMethod: employment.paymentMethod,

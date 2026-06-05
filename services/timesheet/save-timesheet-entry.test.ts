@@ -18,6 +18,10 @@ vi.mock("@/services/payroll/synchronize-worker-draft-payrolls", () => ({
         mocks.synchronizeWorkerDraftPayrolls(...args),
 }));
 
+vi.mock("@/services/pdf/regenerate-payroll-pdfs-best-effort", () => ({
+    regeneratePayrollPdfsAfterMutation: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { createTimesheetEntryRecord } from "@/services/timesheet/save-timesheet-entry";
 import { updateTimesheetEntryRecord } from "@/services/timesheet/save-timesheet-entry";
 
@@ -37,7 +41,10 @@ describe("services/timesheet/save-timesheet-entry", () => {
         mocks.db.insert.mockReturnValue({
             values: vi.fn().mockResolvedValue(undefined),
         });
-        mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({ success: true });
+        mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({
+            success: true,
+            payrollIds: [],
+        });
     });
 
     it("returns a clear error when creating a timesheet entry for an inactive worker", async () => {

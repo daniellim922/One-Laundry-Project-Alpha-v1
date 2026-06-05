@@ -1,6 +1,8 @@
 import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
+import { employmentTable } from "@/db/tables/employmentTable";
+import type { AdhocLineItem } from "@/db/tables/payrollVoucherTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import {
     assertDraftPayrollVoucher,
@@ -11,14 +13,13 @@ import {
 } from "@/services/payroll/_shared/voucher-update-pipeline";
 import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll-voucher-values";
 
-export type UpdateVoucherDaysResult = VoucherMutationResult;
+export type UpdateVoucherAdhocResult = VoucherMutationResult;
 
-export async function updateVoucherDays(input: {
+export async function updateVoucherAdhoc(input: {
     payrollId: string;
     voucherId: string;
-    restDays: number;
-    publicHolidays: number;
-}): Promise<UpdateVoucherDaysResult> {
+    adhoc: AdhocLineItem[];
+}): Promise<UpdateVoucherAdhocResult> {
     const identifiers = validatePayrollAndVoucherIds(
         input.payrollId,
         input.voucherId,
@@ -27,26 +28,12 @@ export async function updateVoucherDays(input: {
         return identifiers.result;
     }
     const { payrollId, voucherId } = identifiers;
-    const { restDays, publicHolidays } = input;
-    if (!Number.isFinite(restDays) || restDays < 0) {
-        return {
-            success: false,
-            code: "VALIDATION_ERROR",
-            error: "Invalid restDays",
-        };
-    }
-    if (!Number.isFinite(publicHolidays) || publicHolidays < 0) {
-        return {
-            success: false,
-            code: "VALIDATION_ERROR",
-            error: "Invalid publicHolidays",
-        };
-    }
+    const { adhoc } = input;
 
     const guard = await assertDraftPayrollVoucher(
         payrollId,
         voucherId,
-        "Only Draft payrolls can edit voucher days",
+        "Only Draft payrolls can edit voucher adhoc line items",
     );
     if (!guard.ok) {
         return guard.result;
@@ -55,6 +42,7 @@ export async function updateVoucherDays(input: {
     const [voucher] = await db
         .select({
             employmentType: payrollVoucherTable.employmentType,
+            employmentArrangement: payrollVoucherTable.employmentArrangement,
             totalHoursWorked: payrollVoucherTable.totalHoursWorked,
             minimumWorkingHours: payrollVoucherTable.minimumWorkingHours,
             monthlyPay: payrollVoucherTable.monthlyPay,
@@ -62,7 +50,11 @@ export async function updateVoucherDays(input: {
             restDayRate: payrollVoucherTable.restDayRate,
             cpf: payrollVoucherTable.cpf,
             advance: payrollVoucherTable.advance,
-            adhoc: payrollVoucherTable.adhoc,
+            restDays: payrollVoucherTable.restDays,
+            publicHolidays: payrollVoucherTable.publicHolidays,
+            paymentMethod: payrollVoucherTable.paymentMethod,
+            payNowPhone: payrollVoucherTable.payNowPhone,
+            bankAccountNumber: payrollVoucherTable.bankAccountNumber,
         })
         .from(payrollVoucherTable)
         .where(eq(payrollVoucherTable.id, voucherId))
@@ -77,17 +69,27 @@ export async function updateVoucherDays(input: {
     }
 
     const totalHoursWorked = Number(voucher.totalHoursWorked ?? 0);
+    const restDays = Number(voucher.restDays ?? 0);
+    const publicHolidays = Number(voucher.publicHolidays ?? 0);
     const minimumWorkingHours =
         voucher.minimumWorkingHours != null
             ? Number(voucher.minimumWorkingHours)
             : null;
+
+    type Em = Pick<
+        typeof employmentTable.$inferSelect,
+        | "employmentType"
+        | "employmentArrangement"
+        | "paymentMethod"
+    >;
 
     const voucherValues = buildDraftPayrollVoucherValues({
         employment: {
             employmentType: normalizeEmploymentTypeForVoucher(
                 voucher.employmentType,
             ),
-            employmentArrangement: "Local Worker",
+            employmentArrangement: (voucher.employmentArrangement ??
+                "Local Worker") as Em["employmentArrangement"],
             minimumWorkingHours,
             monthlyPay:
                 voucher.monthlyPay != null ? Number(voucher.monthlyPay) : null,
@@ -96,22 +98,24 @@ export async function updateVoucherDays(input: {
             restDayRate:
                 voucher.restDayRate != null ? Number(voucher.restDayRate) : null,
             cpf: voucher.cpf != null ? Number(voucher.cpf) : null,
-            paymentMethod: "Cash",
-            payNowPhone: null,
-            bankAccountNumber: null,
+            paymentMethod: (voucher.paymentMethod ?? "Cash") as NonNullable<
+                Em["paymentMethod"]
+            >,
+            payNowPhone: voucher.payNowPhone,
+            bankAccountNumber: voucher.bankAccountNumber,
         },
         totalHoursWorked,
         restDays,
         publicHolidays,
-        advanceTotal: voucher.advance ?? 0,
-        adhoc: voucher.adhoc ?? [],
+        advanceTotal: Number(voucher.advance ?? 0),
+        adhoc,
     });
 
     const persist = await persistDraftPayrollVoucherUpdate({
         voucherId,
         voucherValues,
-        logLabel: "Error updating voucher days",
-        userFacingError: "Failed to update voucher days",
+        logLabel: "Error updating voucher adhoc line items",
+        userFacingError: "Failed to update voucher adhoc line items",
     });
     if (!persist.ok) {
         return persist.result;

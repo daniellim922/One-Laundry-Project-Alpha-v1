@@ -21,6 +21,11 @@ vi.mock("@/lib/supabase/server", () => ({
         mocks.createClient(...args),
 }));
 
+vi.mock("@/services/pdf/regenerate-payroll-pdfs-best-effort", () => ({
+    regeneratePayrollPdfsAfterMutation: vi.fn().mockResolvedValue(undefined),
+    regenerateAdvancePdfAfterMutation: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("@/services/advance/save-advance-request", async (importOriginal) => {
     const actual =
         await importOriginal<typeof import("@/services/advance/save-advance-request")>();

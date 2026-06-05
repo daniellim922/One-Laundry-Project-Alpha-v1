@@ -96,6 +96,27 @@ export function updateVoucherDays(input: {
     });
 }
 
+export function updateVoucherAdhoc(input: {
+    payrollId: string;
+    voucherId: string;
+    adhoc: Array<{ name: string; amount: number }>;
+}) {
+    return writePayrollApi<{
+        success: true;
+        payrollId: string;
+        voucherId: string;
+    }>(`/api/payroll/${input.payrollId}/voucher-adhoc`, {
+        method: "PATCH",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            voucherId: input.voucherId,
+            adhoc: input.adhoc,
+        }),
+    });
+}
+
 export function requestUpdateVoucherPayRate(input: {
     payrollId: string;
     voucherId: string;

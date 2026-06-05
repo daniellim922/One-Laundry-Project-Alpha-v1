@@ -17,6 +17,10 @@ vi.mock("@/services/payroll/synchronize-worker-draft-payrolls", () => ({
         mocks.synchronizeWorkerDraftPayrolls(...args),
 }));
 
+vi.mock("@/services/pdf/regenerate-payroll-pdfs-best-effort", () => ({
+    regeneratePayrollPdfsAfterMutation: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { deleteTimesheetEntry } from "@/services/timesheet/delete-timesheet-entry";
 
 function mockSelectResolved(rows: unknown[]) {
@@ -39,7 +43,10 @@ describe("services/timesheet/delete-timesheet-entry", () => {
 
     it("deletes the entry and synchronizes the affected worker's draft payrolls", async () => {
         mockSelectResolved([{ workerId: "worker-1" }]);
-        mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({ success: true });
+        mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({
+            success: true,
+            payrollIds: [],
+        });
 
         await expect(deleteTimesheetEntry({ id: "entry-1" })).resolves.toEqual({
             success: true,

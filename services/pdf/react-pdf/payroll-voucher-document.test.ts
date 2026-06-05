@@ -66,4 +66,22 @@ describe("buildLineItems", () => {
             "Public Holiday Pay",
         ]);
     });
+
+    it("renders adhoc line items after deductions and before grand total", () => {
+        const result = buildLineItems(
+            fullTimeVoucher({
+                adhoc: [
+                    { name: "Transport", amount: 25 },
+                    { name: "Adjustment", amount: -10 },
+                ],
+                subTotal: 4000,
+                grandTotal: 4015,
+            }),
+        );
+
+        expect(result.adhocItems).toEqual([
+            { description: "Transport", amount: 25 },
+            { description: "Adjustment", amount: -10 },
+        ]);
+    });
 });

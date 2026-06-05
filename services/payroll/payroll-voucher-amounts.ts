@@ -20,6 +20,7 @@ export function calculateVoucherAmounts(args: {
     basePayTotal: number;
     cpf: number | null;
     advance?: number | null;
+    adhocTotal?: number;
     hoursNotMet: number | null;
     hourlyRate: number | null;
 }) {
@@ -30,7 +31,10 @@ export function calculateVoucherAmounts(args: {
     const hoursNotMetDeduction = Math.max(rawDeduction, -args.basePayTotal);
     const subTotal = roundMoney(args.basePayTotal + hoursNotMetDeduction);
     const grandTotal = roundMoney(
-        subTotal - (args.cpf ?? 0) - (args.advance ?? 0),
+        subTotal -
+            (args.cpf ?? 0) -
+            (args.advance ?? 0) +
+            (args.adhocTotal ?? 0),
     );
 
     return {

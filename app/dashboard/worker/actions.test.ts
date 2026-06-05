@@ -34,6 +34,10 @@ vi.mock("@/services/payroll/synchronize-worker-draft-payrolls", () => ({
         mocks.synchronizeWorkerDraftPayrollsInTx(...args),
 }));
 
+vi.mock("@/services/pdf/regenerate-payroll-pdfs-best-effort", () => ({
+    regeneratePayrollPdfsAfterMutation: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { createWorker, updateWorker } from "@/app/dashboard/worker/actions";
 
 function buildWorkerPayload(
@@ -214,6 +218,7 @@ describe("updateWorker", () => {
         });
         mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({
             success: true,
+            payrollIds: [],
         });
     });
 

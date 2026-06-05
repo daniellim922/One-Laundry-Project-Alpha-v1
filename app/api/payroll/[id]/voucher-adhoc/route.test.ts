@@ -5,7 +5,7 @@ import { mockAuthenticatedApiOperator } from "@/test/_support/api-auth-mock";
 const mocks = vi.hoisted(() => ({
     requireCurrentApiUser: vi.fn(),
     revalidateTransportPaths: vi.fn(),
-    updateVoucherDays: vi.fn(),
+    updateVoucherAdhoc: vi.fn(),
 }));
 
 vi.mock("@/app/api/_shared/auth", () => ({
@@ -18,8 +18,9 @@ vi.mock("@/app/api/_shared/revalidate", () => ({
         mocks.revalidateTransportPaths(...args),
 }));
 
-vi.mock("@/services/payroll/update-voucher-days", () => ({
-    updateVoucherDays: (...args: unknown[]) => mocks.updateVoucherDays(...args),
+vi.mock("@/services/payroll/update-voucher-adhoc", () => ({
+    updateVoucherAdhoc: (...args: unknown[]) =>
+        mocks.updateVoucherAdhoc(...args),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -30,19 +31,19 @@ vi.mock("@/services/pdf/regenerate-payroll-pdf", () => ({
     regeneratePayrollPdf: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { PATCH } from "@/app/api/payroll/[id]/voucher-days/route";
+import { PATCH } from "@/app/api/payroll/[id]/voucher-adhoc/route";
 
 const PAYROLL_1 = "30000000-0000-4000-8000-000000000001";
 const VOUCHER_1 = "30000000-0000-4000-8000-000000000002";
 
-describe("PATCH /api/payroll/[id]/voucher-days", () => {
+describe("PATCH /api/payroll/[id]/voucher-adhoc", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockAuthenticatedApiOperator(mocks);
     });
 
     it("returns structured success and revalidates payroll pages", async () => {
-        mocks.updateVoucherDays.mockResolvedValue({
+        mocks.updateVoucherAdhoc.mockResolvedValue({
             success: true,
             payrollId: PAYROLL_1,
             voucherId: VOUCHER_1,
@@ -50,7 +51,7 @@ describe("PATCH /api/payroll/[id]/voucher-days", () => {
 
         const response = await PATCH(
             new Request(
-                `http://localhost/api/payroll/${PAYROLL_1}/voucher-days`,
+                `http://localhost/api/payroll/${PAYROLL_1}/voucher-adhoc`,
                 {
                     method: "PATCH",
                     headers: {
@@ -58,8 +59,7 @@ describe("PATCH /api/payroll/[id]/voucher-days", () => {
                     },
                     body: JSON.stringify({
                         voucherId: VOUCHER_1,
-                        restDays: 4,
-                        publicHolidays: 1,
+                        adhoc: [{ name: "Bonus", amount: 50 }],
                     }),
                 },
             ),
@@ -77,30 +77,18 @@ describe("PATCH /api/payroll/[id]/voucher-days", () => {
                 voucherId: VOUCHER_1,
             },
         });
-        expect(mocks.updateVoucherDays).toHaveBeenCalledWith({
+        expect(mocks.updateVoucherAdhoc).toHaveBeenCalledWith({
             payrollId: PAYROLL_1,
             voucherId: VOUCHER_1,
-            restDays: 4,
-            publicHolidays: 1,
+            adhoc: [{ name: "Bonus", amount: 50 }],
         });
-        expect(mocks.revalidateTransportPaths).toHaveBeenCalledWith([
-            `/dashboard/payroll/${PAYROLL_1}/breakdown`,
-            `/dashboard/payroll/${PAYROLL_1}/summary`,
-            "/dashboard/payroll",
-            "/dashboard/payroll/all",
-        ]);
+        expect(mocks.revalidateTransportPaths).toHaveBeenCalled();
     });
 
-    it("maps voucher conflicts to 409", async () => {
-        mocks.updateVoucherDays.mockResolvedValue({
-            success: false,
-            code: "CONFLICT",
-            error: "Only Draft payrolls can edit voucher days",
-        });
-
+    it("rejects invalid adhoc payloads", async () => {
         const response = await PATCH(
             new Request(
-                `http://localhost/api/payroll/${PAYROLL_1}/voucher-days`,
+                `http://localhost/api/payroll/${PAYROLL_1}/voucher-adhoc`,
                 {
                     method: "PATCH",
                     headers: {
@@ -108,8 +96,7 @@ describe("PATCH /api/payroll/[id]/voucher-days", () => {
                     },
                     body: JSON.stringify({
                         voucherId: VOUCHER_1,
-                        restDays: 4,
-                        publicHolidays: 1,
+                        adhoc: [{ name: "", amount: 0 }],
                     }),
                 },
             ),
@@ -118,14 +105,7 @@ describe("PATCH /api/payroll/[id]/voucher-days", () => {
             },
         );
 
-        expect(response.status).toBe(409);
-        await expect(response.json()).resolves.toEqual({
-            ok: false,
-            error: {
-                code: "CONFLICT",
-                message: "Only Draft payrolls can edit voucher days",
-            },
-        });
-        expect(mocks.revalidateTransportPaths).not.toHaveBeenCalled();
+        expect(response.status).toBe(400);
+        expect(mocks.updateVoucherAdhoc).not.toHaveBeenCalled();
     });
 });

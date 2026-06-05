@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { workerTable } from "@/db/tables/workerTable";
+import { regeneratePayrollPdfsAfterMutation } from "@/services/pdf/regenerate-payroll-pdfs-best-effort";
 import { synchronizeWorkerDraftPayrolls } from "@/services/payroll/synchronize-worker-draft-payrolls";
 import { assertWorkerEligibleForTimesheet } from "@/services/worker/assert-worker-eligible-for-timesheet";
 
@@ -63,6 +64,8 @@ export async function createTimesheetEntryRecord(
         return { error: sync.error };
     }
 
+    await regeneratePayrollPdfsAfterMutation(sync.payrollIds);
+
     return { success: true as const };
 }
 
@@ -114,6 +117,8 @@ export async function updateTimesheetEntryRecord(
         return { error: sync.error };
     }
 
+    const payrollIds = [...sync.payrollIds];
+
     if (oldEntry.workerId !== workerId) {
         const syncOld = await synchronizeWorkerDraftPayrolls({
             workerId: oldEntry.workerId,
@@ -121,7 +126,10 @@ export async function updateTimesheetEntryRecord(
         if ("error" in syncOld) {
             return { error: syncOld.error };
         }
+        payrollIds.push(...syncOld.payrollIds);
     }
+
+    await regeneratePayrollPdfsAfterMutation(payrollIds);
 
     return { success: true as const };
 }

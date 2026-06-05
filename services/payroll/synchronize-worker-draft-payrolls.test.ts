@@ -42,7 +42,7 @@ describe("synchronizeWorkerDraftPayrolls", () => {
         });
 
         const r = await synchronizeWorkerDraftPayrolls({ workerId: "worker-1" });
-        expect(r).toEqual({ success: true });
+        expect(r).toEqual({ success: true, payrollIds: [] });
         expect(mocks.db.select).toHaveBeenCalled();
     });
 
@@ -65,6 +65,7 @@ describe("synchronizeWorkerDraftPayrolls", () => {
                 from: vi.fn().mockReturnValue({
                     where: vi.fn().mockResolvedValue([
                         {
+                            id: "payroll-1",
                             periodStart: "2026-03-01",
                             periodEnd: "2026-03-04",
                             payrollVoucherId: "voucher-1",
@@ -93,6 +94,13 @@ describe("synchronizeWorkerDraftPayrolls", () => {
                         where: vi.fn().mockResolvedValue([]),
                     }),
                 }),
+            })
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockReturnValue({
+                        limit: vi.fn().mockResolvedValue([{ adhoc: [] }]),
+                    }),
+                }),
             });
 
         const updateWhere = vi.fn().mockResolvedValue(undefined);
@@ -102,7 +110,7 @@ describe("synchronizeWorkerDraftPayrolls", () => {
         });
 
         const r = await synchronizeWorkerDraftPayrolls({ workerId: "worker-1" });
-        expect(r).toEqual({ success: true });
+        expect(r).toEqual({ success: true, payrollIds: ["payroll-1"] });
         expect(updateSet).toHaveBeenCalledWith(
             expect.objectContaining({
                 restDays: 0,
@@ -129,6 +137,7 @@ describe("synchronizeWorkerDraftPayrolls", () => {
                 from: vi.fn().mockReturnValue({
                     where: vi.fn().mockResolvedValue([
                         {
+                            id: "payroll-2",
                             periodStart: "2025-12-31",
                             periodEnd: "2026-01-02",
                             payrollVoucherId: "voucher-1",
@@ -169,6 +178,13 @@ describe("synchronizeWorkerDraftPayrolls", () => {
                         where: vi.fn().mockResolvedValue([]),
                     }),
                 }),
+            })
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockReturnValue({
+                        limit: vi.fn().mockResolvedValue([{ adhoc: [] }]),
+                    }),
+                }),
             });
 
         const updateWhere = vi.fn().mockResolvedValue(undefined);
@@ -179,7 +195,7 @@ describe("synchronizeWorkerDraftPayrolls", () => {
 
         const r = await synchronizeWorkerDraftPayrolls({ workerId: "worker-1" });
 
-        expect(r).toEqual({ success: true });
+        expect(r).toEqual({ success: true, payrollIds: ["payroll-2"] });
         expect(updateSet).toHaveBeenCalledWith(
             expect.objectContaining({
                 restDays: 0,

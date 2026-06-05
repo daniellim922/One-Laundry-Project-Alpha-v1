@@ -17,6 +17,7 @@ import { countPayrollPublicHolidays } from "@/services/payroll/public-holiday-pa
 import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll-voucher-values";
 import { generateVoucherNumber } from "@/services/payroll/generate-voucher-number";
 import { recordGuidedMonthlyWorkflowStepCompletion } from "@/services/payroll/guided-monthly-workflow-activity";
+import { regeneratePayrollPdfsAfterMutation } from "@/services/pdf/regenerate-payroll-pdfs-best-effort";
 import { assertWorkerEligibleForPayroll } from "@/services/worker/assert-worker-eligible-for-payroll";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -170,6 +171,7 @@ async function computeDraftVoucherInputs(
         restDays,
         publicHolidays,
         advanceTotal,
+        adhoc: [],
     });
 }
 
@@ -280,16 +282,17 @@ export async function createPayrollRecord(input: {
         return buildPayrollOverlapErrorResult(conflicts);
     }
 
+    let payrollId: string;
     try {
-        await db.transaction(async (tx) => {
-            await createPayrollForWorkerInExecutor(tx, {
+        payrollId = await db.transaction(async (tx) =>
+            createPayrollForWorkerInExecutor(tx, {
                 workerId,
                 employment: row.employment,
                 periodStart,
                 periodEnd,
                 payrollDate,
-            });
-        });
+            }),
+        );
     } catch (error) {
         if (isPayrollOverlapConstraintError(error)) {
             const latestConflicts = await findPayrollPeriodConflicts(db, {
@@ -305,6 +308,7 @@ export async function createPayrollRecord(input: {
     }
 
     await recordPayrollCreationWorkflowCompletion();
+    await regeneratePayrollPdfsAfterMutation([payrollId]);
     return { success: true };
 }
 
@@ -397,6 +401,9 @@ export async function createPayrollRecords(input: {
 
     if (created > 0) {
         await recordPayrollCreationWorkflowCompletion();
+        await regeneratePayrollPdfsAfterMutation(
+            createdPayrolls.map((row) => row.payrollId),
+        );
     }
 
     return {
@@ -499,5 +506,6 @@ export async function updatePayrollRecord(input: {
         return { error: "Failed to update payroll" };
     }
 
+    await regeneratePayrollPdfsAfterMutation([payrollId]);
     return { success: true };
 }

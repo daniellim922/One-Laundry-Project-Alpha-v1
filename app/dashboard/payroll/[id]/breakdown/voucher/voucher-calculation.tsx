@@ -348,6 +348,16 @@ export function VoucherCalculation({
                 </div>
             )}
 
+            {(voucher.adhoc ?? []).map((item, index) => (
+                <Line
+                    key={`${item.name}-${index}`}
+                    label={item.name}
+                    sign={item.amount >= 0 ? "+" : "-"}
+                    amount={Math.abs(item.amount)}
+                    creditGreen={item.amount > 0}
+                />
+            ))}
+
             <Divider double />
 
             <Line

@@ -24,6 +24,10 @@ vi.mock("@/services/payroll/public-holiday-calendar", () => ({
         mocks.savePublicHolidaysForYear(...args),
 }));
 
+vi.mock("@/services/pdf/regenerate-payroll-pdfs-best-effort", () => ({
+    regeneratePayrollPdfsAfterMutation: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { savePublicHolidayYear } from "@/app/dashboard/payroll/public-holidays/actions";
 
 describe("public holiday year action", () => {

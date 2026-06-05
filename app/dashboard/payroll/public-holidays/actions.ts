@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireCurrentDashboardUser } from "@/app/dashboard/_shared/auth";
 import type { PublicHolidayYearInput } from "@/db/schemas/public-holiday";
+import { regeneratePayrollPdfsAfterMutation } from "@/services/pdf/regenerate-payroll-pdfs-best-effort";
 import {
     savePublicHolidaysForYear,
 } from "@/services/payroll/public-holiday-calendar";
@@ -15,6 +16,8 @@ export async function savePublicHolidayYear(input: PublicHolidayYearInput) {
     if ("error" in result) {
         return result;
     }
+
+    await regeneratePayrollPdfsAfterMutation(result.affectedPayrollIds);
 
     revalidatePath("/dashboard/payroll/public-holidays");
     revalidatePath("/dashboard/payroll");

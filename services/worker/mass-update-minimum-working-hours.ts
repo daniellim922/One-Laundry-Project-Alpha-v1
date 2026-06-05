@@ -15,6 +15,7 @@ export type WorkerHoursBulkUpdateInput = {
 
 export type WorkerHoursBulkUpdateResult = {
     updatedCount: number;
+    affectedPayrollIds: string[];
     failed: Array<{
         workerId: string;
         workerName: string;
@@ -38,10 +39,11 @@ export async function massUpdateWorkerMinimumWorkingHours(
 ): Promise<WorkerHoursBulkUpdateResult> {
     const updates = Array.isArray(input?.updates) ? input.updates : [];
     if (updates.length === 0) {
-        return { updatedCount: 0, failed: [] };
+        return { updatedCount: 0, affectedPayrollIds: [], failed: [] };
     }
 
     let updatedCount = 0;
+    const affectedPayrollIds: string[] = [];
     const failed: WorkerHoursBulkUpdateResult["failed"] = [];
 
     for (const update of updates) {
@@ -130,6 +132,7 @@ export async function massUpdateWorkerMinimumWorkingHours(
                         error: sync.error,
                     });
                 }
+                affectedPayrollIds.push(...sync.payrollIds);
             });
 
             updatedCount += 1;
@@ -165,5 +168,5 @@ export async function massUpdateWorkerMinimumWorkingHours(
         }
     }
 
-    return { updatedCount, failed };
+    return { updatedCount, affectedPayrollIds, failed };
 }

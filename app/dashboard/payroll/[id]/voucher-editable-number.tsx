@@ -2,9 +2,7 @@
 
 import { useMemo } from "react";
 
-import { generateAndUploadPayrollPdf } from "@/lib/client/generate-and-upload-pdf";
 import { updateVoucherDays } from "../command-api";
-import type { VoucherPdfRegenerationStatus } from "./voucher-editable-money";
 import { VoucherEditableField } from "./voucher-editable-field";
 
 type Props = {
@@ -19,8 +17,6 @@ type Props = {
     size?: "default" | "lg";
     /** Full-width input, left-aligned (e.g. merged voucher card grid). */
     fullWidth?: boolean;
-    /** Fired when a stored PDF is regenerated after a successful commit (draft flows). */
-    onPdfRegenerationStatus?: (status: VoucherPdfRegenerationStatus) => void;
 };
 
 function parseNumber(text: string): number | null {
@@ -41,7 +37,6 @@ export function VoucherEditableNumber({
     readOnly = false,
     size = "default",
     fullWidth = false,
-    onPdfRegenerationStatus,
 }: Props) {
     const currentValue = field === "restDays" ? restDays : publicHolidays;
     const committedDisplay = useMemo(
@@ -64,19 +59,6 @@ export function VoucherEditableNumber({
                     return { ok: false, error: "Must be ≥ 0" };
                 }
                 return { ok: true, value: numeric };
-            }}
-            onAfterCommit={() => {
-                const notify = onPdfRegenerationStatus;
-                notify?.("generating");
-                generateAndUploadPayrollPdf(payrollId)
-                    .then(() => {
-                        notify?.("done");
-                        setTimeout(() => notify?.("idle"), 3000);
-                    })
-                    .catch(() => {
-                        notify?.("failed");
-                        setTimeout(() => notify?.("idle"), 5000);
-                    });
             }}
             commit={async (numeric) => {
                 const n = numeric ?? 0;

@@ -18,6 +18,11 @@ vi.mock("@/services/payroll/synchronize-worker-draft-payrolls", () => ({
         mocks.synchronizeWorkerDraftPayrolls(...args),
 }));
 
+vi.mock("@/services/pdf/regenerate-payroll-pdfs-best-effort", () => ({
+    regeneratePayrollPdfsAfterMutation: vi.fn().mockResolvedValue(undefined),
+    regenerateAdvancePdfAfterMutation: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock("@/utils/time/calendar-date", async (importOriginal) => {
     const actual = await importOriginal<typeof import("@/utils/time/calendar-date")>();
     return {
@@ -53,7 +58,10 @@ describe("services/advance/save-advance-request", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mocks.dateToLocalIsoYmd.mockReturnValue("2026-04-13");
-        mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({ success: true });
+        mocks.synchronizeWorkerDraftPayrolls.mockResolvedValue({
+            success: true,
+            payrollIds: [],
+        });
     });
 
     it("creates the request, inserts installments, and synchronizes draft payrolls", async () => {

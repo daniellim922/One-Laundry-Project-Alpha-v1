@@ -16,7 +16,6 @@ import {
 
 import { createAdvanceRequest } from "@/app/dashboard/advance/new/actions";
 import { updateAdvanceRequest } from "@/app/dashboard/advance/[id]/edit/actions";
-import { generateAndUploadAdvancePdf } from "@/lib/client/generate-and-upload-pdf";
 import {
     advanceRequestFormSchema,
     type AdvanceRequestFormValues,
@@ -318,7 +317,6 @@ function AdvanceRequestFormEditable({
 }: AdvanceRequestFormEditableProps) {
     const router = useRouter();
     const [pending, setPending] = React.useState(false);
-    const [generatingPdf, setGeneratingPdf] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const isEditMode = Boolean(initialData && advanceRequestId);
     const showInstallmentStatusColumn = isEditMode;
@@ -402,30 +400,6 @@ function AdvanceRequestFormEditable({
         if (!result.success) {
             setError(result.error);
             return;
-        }
-
-        setGeneratingPdf(true);
-        try {
-            const pdfMs = 60_000;
-            const timeout = new Promise<never>((_, reject) => {
-                setTimeout(
-                    () => reject(new Error("ADVANCE_PDF_TIMEOUT")),
-                    pdfMs,
-                );
-            });
-            await Promise.race([
-                generateAndUploadAdvancePdf(result.id),
-                timeout,
-            ]);
-        } catch (e) {
-            if (e instanceof Error && e.message === "ADVANCE_PDF_TIMEOUT") {
-                console.warn(
-                    "[advance] PDF upload timed out; continuing to list (record already saved)",
-                );
-            }
-            // PDF generation is best-effort; the advance is already saved
-        } finally {
-            setGeneratingPdf(false);
         }
 
         router.push("/dashboard/advance/all");
@@ -766,11 +740,6 @@ function AdvanceRequestFormEditable({
                                                                 onValueChange={
                                                                     field.onChange
                                                                 }
-                                                                min={
-                                                                    isPaidInstallment
-                                                                        ? undefined
-                                                                        : dateToLocalIsoYmd()
-                                                                }
                                                                 disabled={
                                                                     pending ||
                                                                     isPaidInstallment
@@ -974,17 +943,15 @@ function AdvanceRequestFormEditable({
                 )}
                 <Button
                     type="submit"
-                    disabled={pending || generatingPdf || workers.length === 0}
+                    disabled={pending || workers.length === 0}
                     data-testid="advance-request-submit">
-                    {generatingPdf
-                        ? "Generating PDF…"
-                        : pending
-                          ? isEditMode
-                              ? "Saving…"
-                              : "Submitting…"
-                          : isEditMode
-                            ? "Save changes"
-                            : "Submit request"}
+                    {pending
+                        ? isEditMode
+                            ? "Saving…"
+                            : "Submitting…"
+                        : isEditMode
+                          ? "Save changes"
+                          : "Submit request"}
                 </Button>
             </div>
         </form>

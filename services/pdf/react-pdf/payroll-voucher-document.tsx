@@ -3,6 +3,11 @@
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
 
 import {
+    buildVoucherLineItems,
+    type VoucherLineItem,
+} from "@/services/payroll/voucher-line-items";
+
+import {
     DocumentShell,
     MetadataTable,
     SignatureSection,
@@ -18,14 +23,6 @@ function fmtQty(n: number, unit: string): string {
     if (unit === "day") return String(Math.round(n));
     return n.toFixed(2);
 }
-
-type LineItem = {
-    description: string;
-    qty?: number;
-    unit?: string;
-    rate?: number;
-    amount: number;
-};
 
 export type PayrollVoucherData = {
     voucher: {
@@ -46,6 +43,7 @@ export type PayrollVoucherData = {
         publicHolidayPay: number | null;
         cpf: number | null;
         advance?: number | null;
+        adhoc?: Array<{ name: string; amount: number }>;
         subTotal: number | null;
         grandTotal: number | null;
         paymentMethod: string | null;
@@ -65,7 +63,12 @@ const s = StyleSheet.create({
         borderBottom: "0.5pt solid #ccc",
         paddingVertical: 4,
     },
-    descCell: { width: "40%", paddingLeft: 4, fontSize: 8, fontWeight: "medium" },
+    descCell: {
+        width: "40%",
+        paddingLeft: 4,
+        fontSize: 8,
+        fontWeight: "medium",
+    },
     qtyCell: { width: "10%", textAlign: "center", fontSize: 8 },
     unitCell: { width: "8%", fontSize: 8, paddingLeft: 2 },
     xCell: { width: "4%", textAlign: "center", fontSize: 8 },
@@ -76,7 +79,12 @@ const s = StyleSheet.create({
         paddingLeft: 6,
         fontSize: 8,
     },
-    amountCell: { width: "20%", textAlign: "right", paddingRight: 6, fontSize: 8 },
+    amountCell: {
+        width: "20%",
+        textAlign: "right",
+        paddingRight: 6,
+        fontSize: 8,
+    },
     subtotalRow: {
         flexDirection: "row",
         borderTop: "0.5pt solid #999",
@@ -125,7 +133,7 @@ const s = StyleSheet.create({
     },
 });
 
-function ItemRow({ item }: { item: LineItem }) {
+function ItemRow({ item }: { item: VoucherLineItem }) {
     return (
         <View style={s.itemRow}>
             <Text style={s.descCell}>{item.description}</Text>
@@ -146,106 +154,8 @@ function ItemRow({ item }: { item: LineItem }) {
     );
 }
 
-function hasPositiveQuantity(value: number | null | undefined): value is number {
-    return value != null && value > 0;
-}
-
-function hasNonZeroAmount(value: number | null | undefined): boolean {
-    return (value ?? 0) !== 0;
-}
-
 export function buildLineItems(voucher: PayrollVoucherData["voucher"]) {
-    const earnings: LineItem[] = [];
-    const deductions: LineItem[] = [];
-    const isPartTime = voucher.employmentType === "Part Time";
-
-    if (isPartTime) {
-        earnings.push({
-            description: "Hourly Rate",
-            qty: voucher.totalHoursWorked ?? 0,
-            unit: "hrs",
-            rate: voucher.hourlyRate ?? 0,
-            amount:
-                Math.round(
-                    (voucher.totalHoursWorked ?? 0) *
-                        (voucher.hourlyRate ?? 0) *
-                        100,
-                ) / 100,
-        });
-    } else {
-        earnings.push({
-            description: "Monthly Pay",
-            amount: voucher.monthlyPay ?? 0,
-        });
-
-        if (
-            hasPositiveQuantity(voucher.overtimeHours) &&
-            hasNonZeroAmount(voucher.overtimePay)
-        ) {
-            earnings.push({
-                description: "Overtime",
-                qty: voucher.overtimeHours,
-                unit: "hrs",
-                rate: voucher.hourlyRate ?? 0,
-                amount: voucher.overtimePay ?? 0,
-            });
-        }
-
-        if (
-            hasPositiveQuantity(voucher.restDays) &&
-            voucher.restDayRate != null &&
-            hasNonZeroAmount(voucher.restDayPay)
-        ) {
-            earnings.push({
-                description: "Rest-day premium",
-                qty: voucher.restDays,
-                unit: "day",
-                rate: voucher.restDayRate,
-                amount: voucher.restDayPay ?? 0,
-            });
-        }
-    }
-
-    if (
-        hasPositiveQuantity(voucher.publicHolidays) &&
-        voucher.restDayRate != null &&
-        hasNonZeroAmount(voucher.publicHolidayPay)
-    ) {
-        earnings.push({
-            description: "Public Holiday Pay",
-            qty: voucher.publicHolidays,
-            unit: "day",
-            rate: voucher.restDayRate,
-            amount: voucher.publicHolidayPay ?? 0,
-        });
-    }
-
-    let hoursNotMetItem: LineItem | null = null;
-    if (hasNonZeroAmount(voucher.hoursNotMetDeduction)) {
-        hoursNotMetItem = {
-            description: "Hours Not Met Deduction",
-            qty: Math.abs(voucher.hoursNotMet ?? 0),
-            unit: "hrs",
-            rate: voucher.hourlyRate ?? 0,
-            amount: voucher.hoursNotMetDeduction ?? 0,
-        };
-    }
-
-    if (voucher.cpf != null && voucher.cpf > 0) {
-        deductions.push({ description: "CPF", amount: -voucher.cpf });
-    }
-    if (voucher.advance != null && voucher.advance > 0) {
-        deductions.push({ description: "Advance Pay", amount: -voucher.advance });
-    }
-
-    const grossPay = earnings.reduce((sum, item) => sum + item.amount, 0);
-    const totalDeductions = deductions.reduce((sum, item) => sum + item.amount, 0);
-    const subTotal =
-        voucher.subTotal ?? grossPay + (hoursNotMetItem?.amount ?? 0);
-    const grandTotal =
-        voucher.grandTotal ?? voucher.subTotal ?? grossPay + totalDeductions;
-
-    return { earnings, deductions, hoursNotMetItem, subTotal, grandTotal };
+    return buildVoucherLineItems(voucher);
 }
 
 function paymentMethodDisplay(voucher: PayrollVoucherData["voucher"]): string {
@@ -270,8 +180,14 @@ export function PayrollVoucherPage({ data }: { data: PayrollVoucherData }) {
         workerName,
         approverSignatureDataUrl,
     } = data;
-    const { earnings, deductions, hoursNotMetItem, subTotal, grandTotal } =
-        buildLineItems(voucher);
+    const {
+        earnings,
+        deductions,
+        adhocItems,
+        hoursNotMetItem,
+        subTotal,
+        grandTotal,
+    } = buildLineItems(voucher);
 
     return (
         <DocumentShell title="PAYMENT VOUCHER">
@@ -365,6 +281,10 @@ export function PayrollVoucherPage({ data }: { data: PayrollVoucherData }) {
                 {/* Deductions */}
                 {deductions.map((item, i) => (
                     <ItemRow key={`d-${i}`} item={item} />
+                ))}
+
+                {adhocItems.map((item, i) => (
+                    <ItemRow key={`a-${i}`} item={item} />
                 ))}
 
                 {/* Grand Total footer */}

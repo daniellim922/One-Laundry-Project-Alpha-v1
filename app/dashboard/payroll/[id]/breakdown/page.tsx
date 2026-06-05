@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Eye, MoreHorizontal, Pencil } from "lucide-react";
+import { Eye, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,12 +12,6 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import type { TimesheetPaymentStatus } from "@/types/status";
 import { timesheetPaymentStatusBadgeTone } from "@/types/badge-tones";
 import {
@@ -32,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { computeRestDaysForPayrollPeriod } from "@/utils/payroll/missing-timesheet-dates";
 import { VoucherCalculation } from "./voucher/voucher-calculation";
 import { VoucherDetails } from "./voucher/voucher-details";
+import { WorkerActionsMenu } from "./worker-actions-menu";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -80,32 +75,7 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                         <CardTitle>
                             Worker Employment Breakdown as of {todayDmy}
                         </CardTitle>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    className="h-8 w-8 p-0"
-                                    aria-label="Worker actions">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild>
-                                    <Link
-                                        href={`/dashboard/worker/${worker.id}/view`}>
-                                        <Eye className="h-4 w-4" />
-                                        View
-                                    </Link>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem asChild>
-                                    <Link
-                                        href={`/dashboard/worker/${worker.id}/edit`}>
-                                        <Pencil className="h-4 w-4" />
-                                        Edit
-                                    </Link>
-                                </DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <WorkerActionsMenu workerId={worker.id} />
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
