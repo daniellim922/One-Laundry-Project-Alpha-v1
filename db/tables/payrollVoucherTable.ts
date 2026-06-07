@@ -7,6 +7,8 @@ import {
     jsonb,
 } from "drizzle-orm/pg-core";
 
+import { WORKER_SHIFT_PATTERNS } from "@/types/status";
+
 export type AdhocLineItem = {
     name: string;
     amount: number;
@@ -17,6 +19,9 @@ export const payrollVoucherTable = pgTable("payroll_voucher", {
     voucherNumber: text("voucher_number"),
     employmentType: text("employment_type"),
     employmentArrangement: text("employment_arrangement"),
+    shiftPattern: text("shift_pattern", {
+        enum: WORKER_SHIFT_PATTERNS,
+    }),
     monthlyPay: real("monthly_pay"),
     minimumWorkingHours: real("minimum_working_hours"),
     totalHoursWorked: real("total_hours_worked"),

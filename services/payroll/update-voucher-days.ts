@@ -55,6 +55,7 @@ export async function updateVoucherDays(input: {
     const [voucher] = await db
         .select({
             employmentType: payrollVoucherTable.employmentType,
+            shiftPattern: payrollVoucherTable.shiftPattern,
             totalHoursWorked: payrollVoucherTable.totalHoursWorked,
             minimumWorkingHours: payrollVoucherTable.minimumWorkingHours,
             monthlyPay: payrollVoucherTable.monthlyPay,
@@ -88,6 +89,7 @@ export async function updateVoucherDays(input: {
                 voucher.employmentType,
             ),
             employmentArrangement: "Local Worker",
+            shiftPattern: voucher.shiftPattern ?? "Day Shift",
             minimumWorkingHours,
             monthlyPay:
                 voucher.monthlyPay != null ? Number(voucher.monthlyPay) : null,

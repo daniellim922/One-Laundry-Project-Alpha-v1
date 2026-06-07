@@ -5,6 +5,7 @@ import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll
 const baseEmployment = {
     employmentType: "Full Time" as const,
     employmentArrangement: "Local Worker" as const,
+    shiftPattern: "Night Shift" as const,
     minimumWorkingHours: 260,
     monthlyPay: 4000,
     hourlyRate: 10,
@@ -41,5 +42,17 @@ describe("buildDraftPayrollVoucherValues", () => {
         });
 
         expect(result.adhoc).toEqual([]);
+    });
+
+    it("copies shift pattern into the voucher employment snapshot", () => {
+        const result = buildDraftPayrollVoucherValues({
+            employment: baseEmployment,
+            totalHoursWorked: 260,
+            restDays: 0,
+            publicHolidays: 0,
+            advanceTotal: 0,
+        });
+
+        expect(result.shiftPattern).toBe("Night Shift");
     });
 });

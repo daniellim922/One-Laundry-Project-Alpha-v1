@@ -12,6 +12,7 @@ type DraftVoucherEmploymentSnapshot = Pick<
     typeof employmentTable.$inferSelect,
     | "employmentType"
     | "employmentArrangement"
+    | "shiftPattern"
     | "minimumWorkingHours"
     | "monthlyPay"
     | "hourlyRate"
@@ -37,6 +38,7 @@ export function buildDraftPayrollVoucherValues(input: {
     typeof payrollVoucherTable.$inferInsert,
     | "employmentType"
     | "employmentArrangement"
+    | "shiftPattern"
     | "monthlyPay"
     | "minimumWorkingHours"
     | "totalHoursWorked"
@@ -100,6 +102,7 @@ export function buildDraftPayrollVoucherValues(input: {
     return {
         employmentType: employment.employmentType,
         employmentArrangement: employment.employmentArrangement,
+        shiftPattern: employment.shiftPattern,
         monthlyPay: employment.monthlyPay,
         minimumWorkingHours: employment.minimumWorkingHours,
         totalHoursWorked,

@@ -79,6 +79,7 @@ export async function updateVoucherPayRate(input: {
         .select({
             employmentType: payrollVoucherTable.employmentType,
             employmentArrangement: payrollVoucherTable.employmentArrangement,
+            shiftPattern: payrollVoucherTable.shiftPattern,
             totalHoursWorked: payrollVoucherTable.totalHoursWorked,
             minimumWorkingHours: payrollVoucherTable.minimumWorkingHours,
             monthlyPay: payrollVoucherTable.monthlyPay,
@@ -138,6 +139,7 @@ export async function updateVoucherPayRate(input: {
         typeof employmentTable.$inferSelect,
         | "employmentType"
         | "employmentArrangement"
+        | "shiftPattern"
         | "paymentMethod"
     >;
 
@@ -148,6 +150,7 @@ export async function updateVoucherPayRate(input: {
             ),
             employmentArrangement: (voucher.employmentArrangement ??
                 "Local Worker") as Em["employmentArrangement"],
+            shiftPattern: voucher.shiftPattern ?? "Day Shift",
             minimumWorkingHours,
             monthlyPay,
             hourlyRate,

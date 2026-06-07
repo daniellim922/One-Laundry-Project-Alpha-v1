@@ -3,7 +3,6 @@ import { asc, desc, eq } from "drizzle-orm";
 import { payrollTable, type SelectPayroll } from "@/db/tables/payrollTable";
 import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { workerTable } from "@/db/tables/workerTable";
-import { employmentTable } from "@/db/tables/employmentTable";
 import { db } from "@/lib/db";
 import type {
     PayrollStatus,
@@ -21,8 +20,20 @@ export type PayrollSelectionRow = SelectPayroll & {
     voucherNumber: string | null;
 };
 
+function normalizeVoucherEmploymentType(
+    value: string | null,
+): WorkerEmploymentType {
+    return value === "Part Time" ? "Part Time" : "Full Time";
+}
+
+function normalizeVoucherEmploymentArrangement(
+    value: string | null,
+): WorkerEmploymentArrangement {
+    return value === "Foreign Worker" ? "Foreign Worker" : "Local Worker";
+}
+
 /**
- * Payroll rows with worker / employment / voucher joins and the same ordering
+ * Payroll rows with worker / voucher joins and the same ordering
  * as the All payrolls dashboard table. Optional status narrows the set (e.g. Draft for settlement).
  */
 export async function queryPayrollRowsWithWorkerForList(
@@ -32,17 +43,13 @@ export async function queryPayrollRowsWithWorkerForList(
         .select({
             payroll: payrollTable,
             workerName: workerTable.name,
-            employmentType: employmentTable.employmentType,
-            shiftPattern: employmentTable.shiftPattern,
-            employmentArrangement: employmentTable.employmentArrangement,
+            employmentType: payrollVoucherTable.employmentType,
+            shiftPattern: payrollVoucherTable.shiftPattern,
+            employmentArrangement: payrollVoucherTable.employmentArrangement,
             voucherNumber: payrollVoucherTable.voucherNumber,
         })
         .from(payrollTable)
         .innerJoin(workerTable, eq(payrollTable.workerId, workerTable.id))
-        .innerJoin(
-            employmentTable,
-            eq(workerTable.employmentId, employmentTable.id),
-        )
         .innerJoin(
             payrollVoucherTable,
             eq(payrollTable.payrollVoucherId, payrollVoucherTable.id),
@@ -56,17 +63,19 @@ export async function queryPayrollRowsWithWorkerForList(
     const rows = await filtered.orderBy(
         asc(payrollTable.status),
         desc(payrollTable.payrollDate),
-        asc(employmentTable.employmentArrangement),
-        asc(employmentTable.employmentType),
+        asc(payrollVoucherTable.employmentArrangement),
+        asc(payrollVoucherTable.employmentType),
         asc(workerTable.name),
     );
 
     return rows.map((row) => ({
         ...row.payroll,
         workerName: row.workerName,
-        employmentType: row.employmentType,
-        shiftPattern: row.shiftPattern,
-        employmentArrangement: row.employmentArrangement,
+        employmentType: normalizeVoucherEmploymentType(row.employmentType),
+        shiftPattern: row.shiftPattern ?? "Day Shift",
+        employmentArrangement: normalizeVoucherEmploymentArrangement(
+            row.employmentArrangement,
+        ),
         voucherNumber: row.voucherNumber,
     }));
 }
