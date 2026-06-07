@@ -148,6 +148,14 @@ export default async function PayrollBreakdownPage({ params }: PageProps) {
                                         {employment.paymentMethod ?? "–"}
                                     </p>
                                 </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm text-muted-foreground">
+                                        Shift Pattern
+                                    </p>
+                                    <p className="text-sm font-medium">
+                                        {employment.shiftPattern ?? "–"}
+                                    </p>
+                                </div>
                                 {employment.paymentMethod === "PayNow" &&
                                     employment.payNowPhone && (
                                         <div className="space-y-1">
