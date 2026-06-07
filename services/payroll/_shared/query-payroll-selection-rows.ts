@@ -9,12 +9,14 @@ import type {
     PayrollStatus,
     WorkerEmploymentArrangement,
     WorkerEmploymentType,
+    WorkerShiftPattern,
 } from "@/types/status";
 
 export type PayrollSelectionRow = SelectPayroll & {
     workerName: string;
     status: PayrollStatus;
     employmentType: WorkerEmploymentType;
+    shiftPattern: WorkerShiftPattern;
     employmentArrangement: WorkerEmploymentArrangement;
     voucherNumber: string | null;
 };
@@ -31,6 +33,7 @@ export async function queryPayrollRowsWithWorkerForList(
             payroll: payrollTable,
             workerName: workerTable.name,
             employmentType: employmentTable.employmentType,
+            shiftPattern: employmentTable.shiftPattern,
             employmentArrangement: employmentTable.employmentArrangement,
             voucherNumber: payrollVoucherTable.voucherNumber,
         })
@@ -62,6 +65,7 @@ export async function queryPayrollRowsWithWorkerForList(
         ...row.payroll,
         workerName: row.workerName,
         employmentType: row.employmentType,
+        shiftPattern: row.shiftPattern,
         employmentArrangement: row.employmentArrangement,
         voucherNumber: row.voucherNumber,
     }));

@@ -14,11 +14,13 @@ import {
     employmentArrangementBadgeTone,
     employmentTypeBadgeTone,
     payrollStatusBadgeTone,
+    shiftPatternBadgeTone,
 } from "@/types/badge-tones";
 import type {
     PayrollStatus,
     WorkerEmploymentArrangement,
     WorkerEmploymentType,
+    WorkerShiftPattern,
 } from "@/types/status";
 import { Eye } from "lucide-react";
 import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
@@ -27,6 +29,7 @@ export type PayrollWithWorker = SelectPayroll & {
     workerName: string;
     status: PayrollStatus;
     employmentType: WorkerEmploymentType;
+    shiftPattern: WorkerShiftPattern;
     employmentArrangement: WorkerEmploymentArrangement;
     voucherNumber: string | null;
 };
@@ -67,6 +70,16 @@ export const columns: ColumnDef<PayrollWithWorker>[] = [
         accessorKey: "periodEnd",
         header: createSortableHeader("Period End"),
         cell: ({ row }) => formatEnGbDmyNumericFromCalendar(row.original.periodEnd),
+    },
+    {
+        accessorKey: "shiftPattern",
+        header: createSortableHeader("Shift Pattern"),
+        meta: { globalSearch: true },
+        cell: createBadgeCell<PayrollWithWorker>({
+            value: (r) => r.shiftPattern,
+            variant: "outline",
+            toneClassNameFor: (r) => shiftPatternBadgeTone[r.shiftPattern],
+        }),
     },
     {
         accessorKey: "employmentType",
