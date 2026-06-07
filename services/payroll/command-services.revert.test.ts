@@ -92,4 +92,27 @@ describe("payroll command services / revertPayroll", () => {
         );
         expect(state.advances.slice(1)).toEqual(preserved.otherAdvances);
     });
+
+    it("reverts a cross-midnight timesheet when dateIn is inside the payroll period", async () => {
+        const state = makePayrollCommandState();
+        state.payrolls[0]!.status = "Settled";
+        state.timesheets[0]!.dateIn = "2026-01-31";
+        state.timesheets[0]!.dateOut = "2026-02-01";
+        state.timesheets[0]!.status = "Timesheet Paid";
+        state.advanceRequests[0]!.status = "Advance Paid";
+        state.advances[0]!.status = "Installment Paid";
+        configureStatefulPayrollCommandDatabase(mocks, state, ["payroll-1"]);
+
+        await expect(revertPayroll({ payrollId: "payroll-1" })).resolves.toEqual({
+            success: true,
+            payrollId: "payroll-1",
+        });
+
+        expect(state.timesheets[0]).toMatchObject({
+            id: "timesheet-selected",
+            dateIn: "2026-01-31",
+            dateOut: "2026-02-01",
+            status: "Timesheet Unpaid",
+        });
+    });
 });

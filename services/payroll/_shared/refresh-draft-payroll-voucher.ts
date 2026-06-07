@@ -9,6 +9,7 @@ import { timesheetTable } from "@/db/tables/timesheetTable";
 import { db } from "@/lib/db";
 import { buildDraftPayrollVoucherValues } from "@/services/payroll/draft-payroll-voucher-values";
 import { countPayrollPublicHolidays } from "@/services/payroll/public-holiday-payroll";
+import { timesheetInPayrollWindowWhere } from "@/services/payroll/_shared/payroll-timesheet-window";
 
 export type DraftPayrollExecutor = Pick<typeof db, "select" | "update">;
 
@@ -41,11 +42,11 @@ export async function refreshDraftPayrollVoucher(
             })
             .from(timesheetTable)
             .where(
-                and(
-                    eq(timesheetTable.workerId, payroll.workerId),
-                    gte(timesheetTable.dateIn, payroll.periodStart),
-                    lte(timesheetTable.dateOut, payroll.periodEnd),
-                ),
+                timesheetInPayrollWindowWhere({
+                    workerId: payroll.workerId,
+                    periodStart: payroll.periodStart,
+                    periodEnd: payroll.periodEnd,
+                }),
             ));
 
     const totalHoursWorked = entryRows.reduce(

@@ -1,4 +1,4 @@
-import { and, eq, gte, lte } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payrollTable";
@@ -9,6 +9,7 @@ import { dateToLocalIsoYmd } from "@/utils/time/calendar-date";
 import type { PayrollPdfData } from "@/services/pdf/react-pdf";
 import { getBundledApproverSignatureDataUrl } from "@/services/pdf/approver-signature";
 import { formatEnGbDmyNumericFromCalendar } from "@/utils/time/intl-en-gb";
+import { timesheetInPayrollWindowWhere } from "@/services/payroll/_shared/payroll-timesheet-window";
 
 function normalizePgDate(value: string | Date): string {
     return value instanceof Date ? dateToLocalIsoYmd(value) : value;
@@ -54,11 +55,11 @@ export async function buildPayrollPdfData(
         })
         .from(timesheetTable)
         .where(
-            and(
-                eq(timesheetTable.workerId, payroll.workerId),
-                gte(timesheetTable.dateIn, payroll.periodStart),
-                lte(timesheetTable.dateOut, payroll.periodEnd),
-            ),
+            timesheetInPayrollWindowWhere({
+                workerId: payroll.workerId,
+                periodStart: payroll.periodStart,
+                periodEnd: payroll.periodEnd,
+            }),
         )
         .orderBy(timesheetTable.dateIn);
 

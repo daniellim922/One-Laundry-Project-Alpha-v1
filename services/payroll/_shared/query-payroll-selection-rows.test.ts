@@ -37,6 +37,7 @@ vi.mock("@/lib/db", () => ({
 
 import { employmentTable } from "@/db/tables/employmentTable";
 import { payrollTable } from "@/db/tables/payrollTable";
+import { payrollVoucherTable } from "@/db/tables/payrollVoucherTable";
 import { workerTable } from "@/db/tables/workerTable";
 import { listDraftPayrollsForSettlement } from "@/services/payroll/list-draft-payrolls-for-settlement";
 import { listPayrollsForDownload } from "@/services/payroll/list-payrolls-for-download";
@@ -56,9 +57,7 @@ describe("queryPayrollRowsWithWorkerForList", () => {
         mocks.db.select.mockReturnValue({
             from: vi.fn().mockReturnValue({
                 innerJoin: vi.fn().mockReturnValue({
-                    innerJoin: vi.fn().mockReturnValue({
-                        innerJoin: vi.fn().mockReturnValue(options.mockAfterJoins),
-                    }),
+                    innerJoin: vi.fn().mockReturnValue(options.mockAfterJoins),
                 }),
             }),
         });
@@ -103,10 +102,49 @@ describe("queryPayrollRowsWithWorkerForList", () => {
         expect(drizzleAscSpy).toHaveBeenCalledWith(payrollTable.status);
         expect(drizzleDescSpy).toHaveBeenCalledWith(payrollTable.payrollDate);
         expect(drizzleAscSpy).toHaveBeenCalledWith(
+            payrollVoucherTable.employmentArrangement,
+        );
+        expect(drizzleAscSpy).toHaveBeenCalledWith(
+            payrollVoucherTable.employmentType,
+        );
+        expect(drizzleAscSpy).toHaveBeenCalledWith(workerTable.name);
+        expect(drizzleAscSpy).not.toHaveBeenCalledWith(
             employmentTable.employmentArrangement,
         );
-        expect(drizzleAscSpy).toHaveBeenCalledWith(employmentTable.employmentType);
-        expect(drizzleAscSpy).toHaveBeenCalledWith(workerTable.name);
+        expect(drizzleAscSpy).not.toHaveBeenCalledWith(
+            employmentTable.employmentType,
+        );
+    });
+
+    it("selects payroll list employment fields from payroll voucher snapshots", async () => {
+        const orderBy = vi.fn().mockResolvedValue([]);
+        const whereOnQuery = vi.fn().mockReturnValue({ orderBy });
+
+        configureJoinChain({
+            mockAfterJoins: {
+                where: whereOnQuery,
+                orderBy,
+            },
+        });
+
+        await queryPayrollRowsWithWorkerForList();
+
+        const selectShape = mocks.db.select.mock.calls[0]![0] as {
+            employmentType: unknown;
+            shiftPattern: unknown;
+            employmentArrangement: unknown;
+        };
+
+        expect(selectShape.employmentType).toBe(payrollVoucherTable.employmentType);
+        expect(selectShape.shiftPattern).toBe(payrollVoucherTable.shiftPattern);
+        expect(selectShape.employmentArrangement).toBe(
+            payrollVoucherTable.employmentArrangement,
+        );
+        expect(selectShape.employmentType).not.toBe(employmentTable.employmentType);
+        expect(selectShape.shiftPattern).not.toBe(employmentTable.shiftPattern);
+        expect(selectShape.employmentArrangement).not.toBe(
+            employmentTable.employmentArrangement,
+        );
     });
 
     it("flattens payroll join row into PayrollSelectionRow", async () => {
@@ -123,8 +161,9 @@ describe("queryPayrollRowsWithWorkerForList", () => {
             {
                 payroll,
                 workerName: "Ada",
-                employmentType: "Full Time",
-                employmentArrangement: "Local Worker",
+                employmentType: "Part Time",
+                shiftPattern: "Night Shift",
+                employmentArrangement: "Foreign Worker",
                 voucherNumber: "2026-0001",
             },
         ]);
@@ -141,8 +180,9 @@ describe("queryPayrollRowsWithWorkerForList", () => {
             {
                 ...payroll,
                 workerName: "Ada",
-                employmentType: "Full Time",
-                employmentArrangement: "Local Worker",
+                employmentType: "Part Time",
+                shiftPattern: "Night Shift",
+                employmentArrangement: "Foreign Worker",
                 voucherNumber: "2026-0001",
             },
         ]);

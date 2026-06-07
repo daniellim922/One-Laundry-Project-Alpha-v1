@@ -14,6 +14,7 @@ import {
     refreshDraftPayrollVoucher,
     type DraftPayrollExecutor,
 } from "@/services/payroll/_shared/refresh-draft-payroll-voucher";
+import { timesheetInPayrollWindowWhere } from "@/services/payroll/_shared/payroll-timesheet-window";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -90,11 +91,11 @@ async function refreshAffectedDraftPayrollsForPublicHolidayYearWithExecutor(
                 })
                 .from(timesheetTable)
                 .where(
-                    and(
-                        eq(timesheetTable.workerId, payroll.workerId),
-                        gte(timesheetTable.dateIn, payroll.periodStart),
-                        lte(timesheetTable.dateOut, payroll.periodEnd),
-                    ),
+                    timesheetInPayrollWindowWhere({
+                        workerId: payroll.workerId,
+                        periodStart: payroll.periodStart,
+                        periodEnd: payroll.periodEnd,
+                    }),
                 );
 
             const missingCount = countMissingTimesheetDateIns({

@@ -2,26 +2,29 @@ import { pgTable, uuid, text, timestamp } from "drizzle-orm/pg-core";
 import { employmentTable, type SelectEmployment } from "./employmentTable";
 import { workerStatusEnum } from "./statusEnums";
 
-export const workerTable = pgTable("worker", {
-    id: uuid().primaryKey().defaultRandom(),
-    name: text("name").notNull(),
-    email: text("email"),
-    phone: text("phone"),
-    status: workerStatusEnum("status").notNull(),
-    countryOfOrigin: text("country_of_origin"),
-    race: text("race"),
+export const workerTable = pgTable(
+    "worker",
+    {
+        id: uuid().primaryKey().defaultRandom(),
+        name: text("name").notNull(),
+        email: text("email"),
+        phone: text("phone"),
+        status: workerStatusEnum("status").notNull(),
+        countryOfOrigin: text("country_of_origin"),
+        race: text("race"),
 
-    employmentId: uuid("employment_id")
-        .notNull()
-        .references(() => employmentTable.id, { onDelete: "cascade" }),
+        employmentId: uuid("employment_id")
+            .notNull()
+            .references(() => employmentTable.id, { onDelete: "cascade" }),
 
-    createdAt: timestamp("created_at", { withTimezone: false })
-        .notNull()
-        .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: false })
-        .notNull()
-        .defaultNow(),
-});
+        createdAt: timestamp("created_at", { withTimezone: false })
+            .notNull()
+            .defaultNow(),
+        updatedAt: timestamp("updated_at", { withTimezone: false })
+            .notNull()
+            .defaultNow(),
+    },
+).enableRLS();
 
 export type SelectWorker = typeof workerTable.$inferSelect;
 export type InsertWorker = typeof workerTable.$inferInsert;

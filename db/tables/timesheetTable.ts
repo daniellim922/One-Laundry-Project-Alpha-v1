@@ -41,7 +41,7 @@ export const timesheetTable = pgTable(
             table.dateIn,
         ),
     ],
-);
+).enableRLS();
 
 export type SelectTimesheet = typeof timesheetTable.$inferSelect;
 export type InsertTimesheet = typeof timesheetTable.$inferInsert;

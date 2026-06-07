@@ -1,4 +1,4 @@
-import { and, eq, gte, lte } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 
 import { getAdvancesForPayrollPeriod } from "@/utils/advance/queries";
@@ -13,6 +13,7 @@ import {
     timesheetDateInKey,
 } from "@/utils/payroll/missing-timesheet-dates";
 import { listPayrollPublicHolidays } from "@/services/payroll/public-holiday-payroll";
+import { timesheetInPayrollWindowWhere } from "@/services/payroll/_shared/payroll-timesheet-window";
 
 export async function getPayrollDetailData(id: string) {
     const [row] = await db
@@ -43,11 +44,11 @@ export async function getPayrollDetailData(id: string) {
         .select()
         .from(timesheetTable)
         .where(
-            and(
-                eq(timesheetTable.workerId, payroll.workerId),
-                gte(timesheetTable.dateIn, payroll.periodStart),
-                lte(timesheetTable.dateOut, payroll.periodEnd),
-            ),
+            timesheetInPayrollWindowWhere({
+                workerId: payroll.workerId,
+                periodStart: payroll.periodStart,
+                periodEnd: payroll.periodEnd,
+            }),
         )
         .orderBy(timesheetTable.dateIn);
 

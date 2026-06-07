@@ -44,3 +44,4 @@ To verify the flow end to end:
 
 - `lib/db.ts` is the single database client for app traffic, `drizzle-kit push`, wipe, and seed. `npm run db:migrate` runs `drizzle-kit push` via `drizzle.config.ts`.
 - Drizzle (`db/schema.ts`) is the schema source of truth.
+- Public application tables declare `.enableRLS()` in `db/tables/` so Supabase Row Level Security stays enabled after Drizzle migrations. The app does not use Supabase table APIs for application data; server-side Drizzle access goes through `DATABASE_URL`.

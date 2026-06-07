@@ -43,6 +43,7 @@ export async function updateVoucherAdhoc(input: {
         .select({
             employmentType: payrollVoucherTable.employmentType,
             employmentArrangement: payrollVoucherTable.employmentArrangement,
+            shiftPattern: payrollVoucherTable.shiftPattern,
             totalHoursWorked: payrollVoucherTable.totalHoursWorked,
             minimumWorkingHours: payrollVoucherTable.minimumWorkingHours,
             monthlyPay: payrollVoucherTable.monthlyPay,
@@ -80,6 +81,7 @@ export async function updateVoucherAdhoc(input: {
         typeof employmentTable.$inferSelect,
         | "employmentType"
         | "employmentArrangement"
+        | "shiftPattern"
         | "paymentMethod"
     >;
 
@@ -90,6 +92,7 @@ export async function updateVoucherAdhoc(input: {
             ),
             employmentArrangement: (voucher.employmentArrangement ??
                 "Local Worker") as Em["employmentArrangement"],
+            shiftPattern: voucher.shiftPattern ?? "Day Shift",
             minimumWorkingHours,
             monthlyPay:
                 voucher.monthlyPay != null ? Number(voucher.monthlyPay) : null,

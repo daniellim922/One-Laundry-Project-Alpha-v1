@@ -151,6 +151,10 @@ describe("getPayrollRevertPreview", () => {
             "2026-01-01",
         );
         expect(drizzleLteSpy).toHaveBeenCalledWith(
+            timesheetTable.dateIn,
+            "2026-01-31",
+        );
+        expect(drizzleLteSpy).not.toHaveBeenCalledWith(
             timesheetTable.dateOut,
             "2026-01-31",
         );

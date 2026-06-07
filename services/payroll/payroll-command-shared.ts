@@ -1,4 +1,4 @@
-import { and, eq, gte, inArray, lte } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
@@ -6,6 +6,7 @@ import { advanceTable } from "@/db/tables/advanceTable";
 import { payrollTable } from "@/db/tables/payrollTable";
 import { timesheetTable } from "@/db/tables/timesheetTable";
 import { advanceRepaymentInPayrollWindowWhere } from "@/services/payroll/_shared/advance-repayment-window";
+import { timesheetInPayrollWindowWhere } from "@/services/payroll/_shared/payroll-timesheet-window";
 
 export type PayrollCommandTransaction = Parameters<
     Parameters<typeof db.transaction>[0]
@@ -116,12 +117,12 @@ async function updateTimesheetsInPayrollPeriod(
             updatedAt: args.now,
         })
         .where(
-            and(
-                eq(timesheetTable.workerId, payroll.workerId),
-                gte(timesheetTable.dateIn, payroll.periodStart),
-                lte(timesheetTable.dateOut, payroll.periodEnd),
-                eq(timesheetTable.status, args.fromStatus),
-            ),
+            timesheetInPayrollWindowWhere({
+                workerId: payroll.workerId,
+                periodStart: payroll.periodStart,
+                periodEnd: payroll.periodEnd,
+                status: args.fromStatus,
+            }),
         );
 }
 
