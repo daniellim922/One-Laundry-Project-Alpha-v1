@@ -35,7 +35,7 @@ export const guidedMonthlyWorkflowActivityTable = pgTable(
             table.stepId,
         ),
     ],
-);
+).enableRLS();
 
 export type SelectGuidedMonthlyWorkflowActivity =
     typeof guidedMonthlyWorkflowActivityTable.$inferSelect;

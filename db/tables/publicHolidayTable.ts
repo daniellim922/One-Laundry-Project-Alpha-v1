@@ -21,7 +21,7 @@ export const publicHolidayTable = pgTable(
             .defaultNow(),
     },
     (table) => [uniqueIndex("public_holiday_date_unique").on(table.date)],
-);
+).enableRLS();
 
 export type SelectPublicHoliday = typeof publicHolidayTable.$inferSelect;
 export type InsertPublicHoliday = typeof publicHolidayTable.$inferInsert;
