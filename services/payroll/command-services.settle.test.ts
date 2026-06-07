@@ -144,4 +144,23 @@ describe("payroll command services / settlePayroll", () => {
         );
         expect(state.advances.slice(1)).toEqual(preserved.otherAdvances);
     });
+
+    it("settles a cross-midnight timesheet when dateIn is inside the payroll period", async () => {
+        const state = makePayrollCommandState();
+        state.timesheets[0]!.dateIn = "2026-01-31";
+        state.timesheets[0]!.dateOut = "2026-02-01";
+        configureStatefulPayrollCommandDatabase(mocks, state, ["payroll-1"]);
+
+        await expect(settlePayroll({ payrollId: "payroll-1" })).resolves.toEqual({
+            success: true,
+            payrollId: "payroll-1",
+        });
+
+        expect(state.timesheets[0]).toMatchObject({
+            id: "timesheet-selected",
+            dateIn: "2026-01-31",
+            dateOut: "2026-02-01",
+            status: "Timesheet Paid",
+        });
+    });
 });

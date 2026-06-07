@@ -410,6 +410,53 @@ describe("payroll overlap action handling", () => {
         });
     });
 
+    it("includes a night-shift timesheet whose dateIn is inside the payroll period and dateOut is after it", async () => {
+        const txSelect = vi
+            .fn()
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockResolvedValue([
+                        {
+                            dateIn: "2026-05-31",
+                            dateOut: "2026-06-01",
+                            hours: "11.25",
+                        },
+                    ]),
+                }),
+            })
+            .mockReturnValueOnce({
+                from: vi.fn().mockReturnValue({
+                    where: vi.fn().mockResolvedValue([]),
+                }),
+            });
+        const insertedVoucherValues: Array<Record<string, unknown>> = [];
+
+        mockSelectWithJoinLimitResolved([activeWorkerPayrollRow()]);
+        mocks.findPayrollPeriodConflicts.mockResolvedValueOnce([]);
+        mocks.getAdvancesForPayrollPeriod.mockResolvedValueOnce([]);
+        mocks.db.transaction.mockImplementationOnce(
+            async (callback: (tx: unknown) => Promise<void>) =>
+                callback({
+                    select: txSelect,
+                    insert: createPayrollInsertExecutor(insertedVoucherValues),
+                }),
+        );
+
+        const result = await createPayrollRecord({
+            workerId: "worker-1",
+            periodStart: "2026-05-01",
+            periodEnd: "2026-05-31",
+            payrollDate: "2026-06-05",
+        });
+
+        expect(result).toEqual({ success: true });
+        expect(insertedVoucherValues[0]).toEqual(
+            expect.objectContaining({
+                totalHoursWorked: 11.25,
+            }),
+        );
+    });
+
     it("records guided monthly workflow completion after batch payroll creation", async () => {
         const txSelect = vi
             .fn()

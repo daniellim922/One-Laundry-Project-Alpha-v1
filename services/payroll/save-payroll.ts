@@ -1,4 +1,4 @@
-import { and, eq, gte, lte } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { getAdvancesForPayrollPeriod } from "@/utils/advance/queries";
@@ -19,6 +19,7 @@ import { generateVoucherNumber } from "@/services/payroll/generate-voucher-numbe
 import { recordGuidedMonthlyWorkflowStepCompletion } from "@/services/payroll/guided-monthly-workflow-activity";
 import { regeneratePayrollPdfsAfterMutation } from "@/services/pdf/regenerate-payroll-pdfs-best-effort";
 import { assertWorkerEligibleForPayroll } from "@/services/worker/assert-worker-eligible-for-payroll";
+import { timesheetInPayrollWindowWhere } from "@/services/payroll/_shared/payroll-timesheet-window";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type CreatePayrollExecutor = Pick<DbTransaction, "select" | "insert">;
@@ -132,11 +133,11 @@ async function computeDraftVoucherInputs(
         .select()
         .from(timesheetTable)
         .where(
-            and(
-                eq(timesheetTable.workerId, workerId),
-                gte(timesheetTable.dateIn, periodStart),
-                lte(timesheetTable.dateOut, periodEnd),
-            ),
+            timesheetInPayrollWindowWhere({
+                workerId,
+                periodStart,
+                periodEnd,
+            }),
         );
 
     const totalHoursWorked = entries.reduce(

@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, lte } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
 import { db } from "@/lib/db";
 import { payrollTable } from "@/db/tables/payrollTable";
@@ -6,6 +6,7 @@ import { timesheetTable } from "@/db/tables/timesheetTable";
 import { advanceTable } from "@/db/tables/advanceTable";
 import { advanceRequestTable } from "@/db/tables/advanceRequestTable";
 import { advanceRepaymentInPayrollWindowWhere } from "@/services/payroll/_shared/advance-repayment-window";
+import { timesheetInPayrollWindowWhere } from "@/services/payroll/_shared/payroll-timesheet-window";
 
 export type RevertPreviewTimesheetLine = {
     id: string;
@@ -73,12 +74,12 @@ export async function getPayrollRevertPreview(
         })
         .from(timesheetTable)
         .where(
-            and(
-                eq(timesheetTable.workerId, payroll.workerId),
-                gte(timesheetTable.dateIn, payroll.periodStart),
-                lte(timesheetTable.dateOut, payroll.periodEnd),
-                eq(timesheetTable.status, "Timesheet Paid"),
-            ),
+            timesheetInPayrollWindowWhere({
+                workerId: payroll.workerId,
+                periodStart: payroll.periodStart,
+                periodEnd: payroll.periodEnd,
+                status: "Timesheet Paid",
+            }),
         )
         .orderBy(asc(timesheetTable.dateIn));
 
